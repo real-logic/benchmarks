@@ -62,7 +62,7 @@ public class MatrixBenchmark
     public DoubleHistogram[] testQuantilesComputationGood()
     {
         DoubleHistogram[] periodHistograms = new DoubleHistogram[PERIODS];
-        int runIndex = 0;
+        int index = 0;
 
         for (int p = 0; p < PERIODS; p++)
         {
@@ -71,8 +71,8 @@ public class MatrixBenchmark
 
             for (int i = 0; i < RUNS; i++)
             {
-                histogram.recordValue(totalReturns[runIndex]);
-                runIndex++;
+                histogram.recordValue(totalReturns[index]);
+                index++;
             }
         }
 
@@ -90,11 +90,11 @@ public class MatrixBenchmark
             final DoubleHistogram histogram = new DoubleHistogram(NUMBER_OF_SIGNIFICANT_VALUE_DIGITS);
             periodHistograms[p] = histogram;
 
-            int runIndex = p;
+            int index = p;
             for (int i = 0; i < RUNS; i++)
             {
-                histogram.recordValue(totalReturns[runIndex]);
-                runIndex += PERIODS;
+                histogram.recordValue(totalReturns[index]);
+                index += PERIODS;
             }
         }
 
