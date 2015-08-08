@@ -40,7 +40,8 @@ jmh {
     jmhVersion = '1.10.3'
     warmupIterations = 3
     iterations = 5
-    timeUnit = 'ns'
+    fork= 5
+    timeUnit = 'ms'
 }
 
 dependencies {
