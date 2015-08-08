@@ -14,9 +14,9 @@ public class MatrixBenchmark
     public static final int ARRAY_LENGTH = RUNS * PERIODS;
     public static final double MONTHLY_PAYMENT = 250.0;
 
+    final double[] lumpSums = new double[PERIODS];
     final double[] riskFactors = new double[ARRAY_LENGTH];
     final double[] returnFactors = new double[ARRAY_LENGTH];
-    final double[] lumpSums = new double[ARRAY_LENGTH];
     final double[] totalReturns = new double[ARRAY_LENGTH];
 
     @Setup
@@ -26,6 +26,10 @@ public class MatrixBenchmark
         for (int i = 0; i < ARRAY_LENGTH; i++)
         {
             riskFactors[i] = random.nextDouble();
+        }
+
+        for (int i = 0; i < PERIODS; i++)
+        {
             lumpSums[i] = MONTHLY_PAYMENT;
         }
 
@@ -110,11 +114,21 @@ public class MatrixBenchmark
     private double[] computeTotalReturns()
     {
         double totalReturn = 0.0;
+        int runIndex = 0;
 
-        for (int i = 0; i < ARRAY_LENGTH; i++)
+        for (int p = 0; p < PERIODS; p++)
         {
-            totalReturn = (totalReturn + lumpSums[i]) * returnFactors[i];
-            totalReturns[i] = totalReturn;
+            final double lumpSum = lumpSums[p];
+
+            for (int i = 0; i < RUNS; i++)
+            {
+
+                final int index = runIndex + i;
+                totalReturn = (totalReturn + lumpSum) * returnFactors[index];
+                totalReturns[index] = totalReturn;
+            }
+
+            runIndex += PERIODS;
         }
 
         return totalReturns;
