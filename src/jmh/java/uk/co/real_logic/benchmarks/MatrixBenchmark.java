@@ -17,7 +17,7 @@ public class MatrixBenchmark
     final double[] lumpSums = new double[PERIODS];
     final double[] riskFactors = new double[ARRAY_LENGTH];
     final double[] returnFactors = new double[ARRAY_LENGTH];
-    final double[] totalReturns = new double[ARRAY_LENGTH];
+    final double[] totalReturns = new double[ARRAY_LENGTH + PERIODS];
 
     @Setup
     public void setup()
@@ -52,7 +52,7 @@ public class MatrixBenchmark
 
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
-    public double[] testSimulationComputation()
+    public double[] testTotalReturnsComputation()
     {
         return computeTotalReturns();
     }
@@ -113,8 +113,7 @@ public class MatrixBenchmark
 
     private double[] computeTotalReturns()
     {
-        double totalReturn = 0.0;
-        int runIndex = 0;
+        int simulationIndex = PERIODS;
 
         for (int p = 0; p < PERIODS; p++)
         {
@@ -122,13 +121,11 @@ public class MatrixBenchmark
 
             for (int i = 0; i < RUNS; i++)
             {
-
-                final int index = runIndex + i;
-                totalReturn = (totalReturn + lumpSum) * returnFactors[index];
-                totalReturns[index] = totalReturn;
+                final int index = simulationIndex + i;
+                totalReturns[index] = (totalReturns[index - PERIODS] + lumpSum) * returnFactors[index];
             }
 
-            runIndex += PERIODS;
+            simulationIndex += PERIODS;
         }
 
         return totalReturns;
