@@ -1,0 +1,63 @@
+/*
+ * Copyright 2015 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+    repositories {
+        mavenLocal()
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
+        classpath "me.champeau.gradle:jmh-gradle-plugin:0.2.0"
+    }
+}
+
+defaultTasks 'clean', 'jmh'
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'me.champeau.gradle.jmh'
+
+group = 'uk.co.real_logic.jmh'
+version = '0.1-SNAPSHOT'
+
+jmh {
+    include = '.*Benchmark.*'
+    jmhVersion = '1.10.3'
+    warmupIterations = 5
+    iterations = 10
+    timeUnit = 'ns'
+}
+
+dependencies {
+    jmh 'org.hdrhistogram:HdrHistogram:2.1.6'
+}
+
+compileJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
