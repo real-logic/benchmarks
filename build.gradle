@@ -16,7 +16,6 @@
 
 buildscript {
     repositories {
-        mavenLocal()
         jcenter()
     }
 
@@ -39,8 +38,8 @@ version = '0.1-SNAPSHOT'
 jmh {
     include = '.*Benchmark.*'
     jmhVersion = '1.10.3'
-    warmupIterations = 5
-    iterations = 10
+    warmupIterations = 3
+    iterations = 5
     timeUnit = 'ns'
 }
 
@@ -58,6 +57,5 @@ compileTestJava.options.encoding = 'UTF-8'
 
 repositories {
     mavenCentral()
-    mavenLocal()
 }
 
