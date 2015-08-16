@@ -7,18 +7,17 @@ import org.openjdk.jmh.annotations.*;
 import java.util.Random;
 
 @State(Scope.Thread)
-public class MatrixBenchmark
+public class CombinedStepsMatrixBenchmark
 {
     public static final int NUMBER_OF_SIGNIFICANT_VALUE_DIGITS = 2;
     public static final int RUNS = 200_000;
     public static final int PERIODS = 30 * 12;
     public static final int TOTAL_RUNS = RUNS * PERIODS;
+    public static final int VECTOR_SIZE = TOTAL_RUNS + RUNS;
     public static final double MONTHLY_PAYMENT = 2500.0; // pennies rather than pounds
 
     final double[] lumpSums = new double[PERIODS];
-    final double[] riskFactors = new double[TOTAL_RUNS];
-    final double[] returnFactors = new double[TOTAL_RUNS];
-    final double[] totalReturns = new double[TOTAL_RUNS + RUNS];
+    final double[] vector = new double[VECTOR_SIZE];
     final double[][] quantiles = new double[PERIODS][];
     final Histogram histogram = new Histogram(NUMBER_OF_SIGNIFICANT_VALUE_DIGITS);
 
@@ -26,9 +25,9 @@ public class MatrixBenchmark
     public void setup()
     {
         final Random random = new Random();
-        for (int i = 0; i < TOTAL_RUNS; i++)
+        for (int i = RUNS; i < VECTOR_SIZE; i++)
         {
-            riskFactors[i] = random.nextDouble();
+            vector[i] = random.nextDouble();
         }
 
         for (int i = 0; i < PERIODS; i++)
@@ -36,44 +35,41 @@ public class MatrixBenchmark
             quantiles[i] = new double[9];
             lumpSums[i] = MONTHLY_PAYMENT;
         }
-
-        final double m = 0.7;
-        final double c = 0.25 + 1.0;
-
-        computeReturnFactors(m, c);
-        computeTotalReturns();
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.SampleTime)
-    public double[] testReturnFactorsComputation()
-    {
-        final double m = 0.7;
-        final double c = 0.25 + 1.0;
-
-        return computeReturnFactors(m, c);
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.SampleTime)
-    public double[] testTotalReturnsComputation()
-    {
-        return computeTotalReturns();
     }
 
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
     public double[][] testQuantilesComputation()
     {
-        int simulation = RUNS;
+        final double m = 0.7;
+        final double c = 0.25 + 1.0;
 
+        // Compute total returns
+        int simulation = RUNS;
+        for (int p = 0; p < PERIODS; p++)
+        {
+            final double lumpSum = lumpSums[p];
+
+            for (int r = 0; r < RUNS; r++)
+            {
+                final int i = simulation + r;
+                vector[i] = (m * vector[i]) + c;
+                vector[i] *= (vector[i - RUNS] + lumpSum);
+            }
+
+            simulation += RUNS;
+        }
+
+        // Compute quantiles
+        final Histogram histogram = this.histogram;
+        simulation = RUNS;
         for (int p = 0; p < PERIODS; p++)
         {
             histogram.reset();
 
             for (int r = 0; r < RUNS; r++)
             {
-                histogram.recordValue((long)totalReturns[simulation++]);
+                histogram.recordValue((long)vector[simulation++]);
             }
 
             quantiles[p][0] = histogram.getValueAtPercentile(1.0);
@@ -88,36 +84,5 @@ public class MatrixBenchmark
         }
 
         return quantiles;
-    }
-
-    private double[] computeReturnFactors(final double m, final double c)
-    {
-        for (int i = 0; i < TOTAL_RUNS; i++)
-        {
-            returnFactors[i] = (riskFactors[i] * m) + c;
-        }
-
-        return returnFactors;
-    }
-
-    private double[] computeTotalReturns()
-    {
-        int simulationRun = RUNS;
-
-        for (int p = 0; p < PERIODS; p++)
-        {
-            final double lumpSum = lumpSums[p];
-
-            for (int r = 0; r < RUNS; r++)
-            {
-                final int resultIndex = simulationRun + r;
-                final int inputIndex = resultIndex - RUNS;
-                totalReturns[resultIndex] = (totalReturns[inputIndex] + lumpSum) * returnFactors[inputIndex];
-            }
-
-            simulationRun += RUNS;
-        }
-
-        return totalReturns;
     }
 }
