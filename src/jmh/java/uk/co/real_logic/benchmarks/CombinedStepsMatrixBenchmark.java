@@ -44,7 +44,6 @@ public class CombinedStepsMatrixBenchmark
         final double m = 0.7;
         final double c = 0.25 + 1.0;
 
-        // Compute total returns
         int simulation = RUNS;
         for (int p = 0; p < PERIODS; p++)
         {
@@ -53,14 +52,13 @@ public class CombinedStepsMatrixBenchmark
             for (int r = 0; r < RUNS; r++)
             {
                 final int i = simulation + r;
-                vector[i] = (m * vector[i]) + c;
-                vector[i] *= (vector[i - RUNS] + lumpSum);
+                vector[i] = (m * vector[i]) + c; // compute return factors from risk factors
+                vector[i] *= (vector[i - RUNS] + lumpSum); // compute accumulated returns
             }
 
             simulation += RUNS;
         }
 
-        // Compute quantiles
         final Histogram histogram = this.histogram;
         simulation = RUNS;
         for (int p = 0; p < PERIODS; p++)
