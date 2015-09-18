@@ -1,6 +1,5 @@
 package uk.co.real_logic.benchmarks;
 
-import org.HdrHistogram.DoubleHistogram;
 import org.HdrHistogram.Histogram;
 import org.openjdk.jmh.annotations.*;
 
@@ -14,6 +13,7 @@ public class MatrixBenchmark
     public static final int PERIODS = 30 * 12;
     public static final int TOTAL_RUNS = RUNS * PERIODS;
     public static final double MONTHLY_PAYMENT = 2500.0; // pennies rather than pounds
+    public static final double E = 2.71;
 
     final double[] lumpSums = new double[PERIODS];
     final double[] riskFactors = new double[TOTAL_RUNS];
@@ -37,18 +37,18 @@ public class MatrixBenchmark
             lumpSums[i] = MONTHLY_PAYMENT;
         }
 
-        final double m = 0.7;
+        final double m = 0.3;
         final double c = 0.25 + 1.0;
 
         computeReturnFactors(m, c);
-        computeTotalReturns();
+        computeTotalReturnsStandard();
     }
 
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
     public double[] testReturnFactorsComputation()
     {
-        final double m = 0.7;
+        final double m = 0.3;
         final double c = 0.25 + 1.0;
 
         return computeReturnFactors(m, c);
@@ -56,9 +56,16 @@ public class MatrixBenchmark
 
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
-    public double[] testTotalReturnsComputation()
+    public double[] testStandardTotalReturnsComputation()
     {
-        return computeTotalReturns();
+        return computeTotalReturnsStandard();
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.SampleTime)
+    public double[] testFastTotalReturnsComputation()
+    {
+        return computeTotalReturnsFast();
     }
 
     @Benchmark
@@ -100,7 +107,7 @@ public class MatrixBenchmark
         return returnFactors;
     }
 
-    private double[] computeTotalReturns()
+    private double[] computeTotalReturnsStandard()
     {
         int simulationRun = RUNS;
 
@@ -112,12 +119,54 @@ public class MatrixBenchmark
             {
                 final int resultIndex = simulationRun + r;
                 final int inputIndex = resultIndex - RUNS;
-                totalReturns[resultIndex] = (totalReturns[inputIndex] + lumpSum) * returnFactors[inputIndex];
+
+                final double pow = (totalReturns[inputIndex] + lumpSum) * returnFactors[inputIndex];
+                totalReturns[resultIndex] = Math.exp(pow);
             }
 
             simulationRun += RUNS;
         }
 
         return totalReturns;
+    }
+
+    private double[] computeTotalReturnsFast()
+    {
+        int simulationRun = RUNS;
+
+        for (int p = 0; p < PERIODS; p++)
+        {
+            final double lumpSum = lumpSums[p];
+
+            for (int r = 0; r < RUNS; r++)
+            {
+                final int resultIndex = simulationRun + r;
+                final int inputIndex = resultIndex - RUNS;
+
+                final double pow = (totalReturns[inputIndex] + lumpSum) * returnFactors[inputIndex];
+                totalReturns[resultIndex] = exp(pow);
+            }
+
+            simulationRun += RUNS;
+        }
+
+        return totalReturns;
+    }
+
+    /**
+     * Fast approximation of {@link Math#exp(double)}.
+     *
+     * Returns Euler's number <i>e</i> raised to the power of a {@code double} value.
+     *
+     * <a href="http://martin.ankerl.com/2007/02/11/optimized-exponential-functions-for-java/">Blog entry</a>
+     *
+     * @param powValue for the power
+     * @return Euler's number <i>e</i> raised to the power of a {@code double} value.
+     */
+    public static double exp(final double powValue)
+    {
+        final long tmp = (long)(1512775 * powValue + (1072693248 - 60801));
+
+        return Double.longBitsToDouble(tmp << 32);
     }
 }
