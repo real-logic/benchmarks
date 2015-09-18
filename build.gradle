@@ -37,7 +37,7 @@ version = '0.1-SNAPSHOT'
 
 jmh {
     include = '.*Benchmark.*'
-    jmhVersion = '1.10.3'
+    jmhVersion = '1.10.5'
     warmupIterations = 3
     iterations = 5
     fork= 5
@@ -45,7 +45,7 @@ jmh {
 }
 
 dependencies {
-    jmh 'org.hdrhistogram:HdrHistogram:2.1.6'
+    jmh 'org.hdrhistogram:HdrHistogram:2.1.7'
 }
 
 compileJava {
