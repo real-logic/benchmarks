@@ -63,3 +63,6 @@ repositories {
     mavenLocal()
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.7'
+}
