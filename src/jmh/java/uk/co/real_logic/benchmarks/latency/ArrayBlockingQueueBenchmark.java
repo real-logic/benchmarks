@@ -70,9 +70,13 @@ public class ArrayBlockingQueueBenchmark
                                 break;
                             }
                         }
-                        else if (value >= 0)
+                        else
                         {
-                            responseQueues[value].offer(value);
+                            final int intValue = value;
+                            if (intValue >= 0)
+                            {
+                                responseQueues[intValue].offer(value);
+                            }
                         }
                     }
                 }

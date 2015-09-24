@@ -21,7 +21,6 @@ import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -70,9 +69,13 @@ public class ConcurrentLinkedQueueBenchmark
                                 break;
                             }
                         }
-                        else if (value >= 0)
+                        else
                         {
-                            responseQueues[value].offer(value);
+                            final int intValue = value;
+                            if (intValue >= 0)
+                            {
+                                responseQueues[intValue].offer(value);
+                            }
                         }
                     }
                 }
