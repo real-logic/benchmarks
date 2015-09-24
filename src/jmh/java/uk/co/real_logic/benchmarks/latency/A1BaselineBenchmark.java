@@ -27,7 +27,7 @@ import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT
 import static uk.co.real_logic.benchmarks.latency.Configuration.QUEUE_CAPACITY;
 
 @State(Scope.Benchmark)
-public class BaselineBenchmark
+public class A1BaselineBenchmark
 {
     @State(Scope.Benchmark)
     public static class SharedState
