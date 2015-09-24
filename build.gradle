@@ -36,12 +36,13 @@ group = 'uk.co.real_logic.jmh'
 version = '0.1-SNAPSHOT'
 
 jmh {
-    include = '.*Benchmark.*'
-    jmhVersion = '1.10.5'
+    include = '.*latency.*Benchmark.*'
+    jmhVersion = '1.11'
     warmupIterations = 3
     iterations = 3
-    fork= 3
-    timeUnit = 'us'
+    fork = 3
+    timeUnit = 'ns'
+    //timeOnIteration = '3s'
 }
 
 dependencies {
