@@ -23,14 +23,16 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@State(Scope.Benchmark)
+import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
+import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
+
 public class LocklessManyToOneLinkedQueueBenchmark
 {
     @State(Scope.Benchmark)
     public static class SharedState
     {
         @Param({"1", "2", "10", "50", "100"})
-        int numMessages;
+        int burstLength;
         Integer[] values;
 
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -38,25 +40,25 @@ public class LocklessManyToOneLinkedQueueBenchmark
         final Queue<Integer> sendQueue = new ManyToOneConcurrentLinkedQueue<>();
 
         @SuppressWarnings("unchecked")
-        final Queue<Integer>[] responseQueues = new OneToOneConcurrentArrayQueue[Configuration.MAX_THREAD_COUNT];
+        final Queue<Integer>[] responseQueues = new OneToOneConcurrentArrayQueue[MAX_THREAD_COUNT];
 
-        Thread receiverThread;
+        Thread consumerThread;
 
         @Setup
         public synchronized void setup()
         {
-            for (int i = 0; i < Configuration.MAX_THREAD_COUNT; i++)
+            for (int i = 0; i < MAX_THREAD_COUNT; i++)
             {
-                responseQueues[i] = new OneToOneConcurrentArrayQueue<>(Configuration.QUEUE_CAPACITY);
+                responseQueues[i] = new OneToOneConcurrentArrayQueue<>(RESPONSE_QUEUE_CAPACITY);
             }
 
-            values = new Integer[numMessages];
-            for (int i = 0; i < numMessages; i++)
+            values = new Integer[burstLength];
+            for (int i = 0; i < burstLength; i++)
             {
-                values[i] = -(numMessages - i);
+                values[i] = -(burstLength - i);
             }
 
-            receiverThread = new Thread(
+            consumerThread = new Thread(
                 () ->
                 {
                     while (true)
@@ -74,22 +76,22 @@ public class LocklessManyToOneLinkedQueueBenchmark
                             final int intValue = value;
                             if (intValue >= 0)
                             {
-                                responseQueues[intValue].offer(intValue);
+                                responseQueues[intValue].offer(value);
                             }
                         }
                     }
                 }
             );
 
-            receiverThread.setName("receiver");
-            receiverThread.start();
+            consumerThread.setName("consumer");
+            consumerThread.start();
         }
 
         @TearDown
         public synchronized void tearDown() throws Exception
         {
             running.set(false);
-            receiverThread.join();
+            consumerThread.join();
         }
     }
 
@@ -118,22 +120,7 @@ public class LocklessManyToOneLinkedQueueBenchmark
     @Threads(1)
     public Integer test1Producer(final PerThreadState state)
     {
-        for (final Integer value : state.values)
-        {
-            while (!state.sendQueue.offer(value))
-            {
-                // busy spin
-            }
-        }
-
-        Integer value;
-        do
-        {
-            value = state.responseQueue.poll();
-        }
-        while (null == value);
-
-        return value;
+        return sendBurst(state);
     }
 
     @Benchmark
@@ -141,28 +128,18 @@ public class LocklessManyToOneLinkedQueueBenchmark
     @Threads(2)
     public Integer test2Producers(final PerThreadState state)
     {
-        for (final Integer value : state.values)
-        {
-            while (!state.sendQueue.offer(value))
-            {
-                // busy spin
-            }
-        }
-
-        Integer value;
-        do
-        {
-            value = state.responseQueue.poll();
-        }
-        while (null == value);
-
-        return value;
+        return sendBurst(state);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
     @Threads(3)
     public Integer test3Producers(final PerThreadState state)
+    {
+        return sendBurst(state);
+    }
+
+    private Integer sendBurst(final PerThreadState state)
     {
         for (final Integer value : state.values)
         {

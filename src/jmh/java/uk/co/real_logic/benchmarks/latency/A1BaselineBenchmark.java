@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
-import static uk.co.real_logic.benchmarks.latency.Configuration.QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.latency.Configuration.SEND_QUEUE_CAPACITY;
 
 @State(Scope.Benchmark)
 public class A1BaselineBenchmark
@@ -33,33 +34,33 @@ public class A1BaselineBenchmark
     public static class SharedState
     {
         @Param({"1", "2", "10", "50", "100"})
-        int numMessages;
+        int burstLength;
         Integer[] values;
 
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicInteger threadId = new AtomicInteger();
-        final Queue<Integer> sendQueue = new OneToOneConcurrentArrayQueue<>(QUEUE_CAPACITY);
+        final Queue<Integer> sendQueue = new OneToOneConcurrentArrayQueue<>(SEND_QUEUE_CAPACITY);
 
         @SuppressWarnings("unchecked")
         final Queue<Integer>[] responseQueues = new OneToOneConcurrentArrayQueue[MAX_THREAD_COUNT];
 
-        Thread receiverThread;
+        Thread consumerThread;
 
         @Setup
         public synchronized void setup()
         {
             for (int i = 0; i < MAX_THREAD_COUNT; i++)
             {
-                responseQueues[i] = new OneToOneConcurrentArrayQueue<>(QUEUE_CAPACITY);
+                responseQueues[i] = new OneToOneConcurrentArrayQueue<>(RESPONSE_QUEUE_CAPACITY);
             }
 
-            values = new Integer[numMessages];
-            for (int i = 0; i < numMessages; i++)
+            values = new Integer[burstLength];
+            for (int i = 0; i < burstLength; i++)
             {
-                values[i] = -(numMessages - i);
+                values[i] = -(burstLength - i);
             }
 
-            receiverThread = new Thread(
+            consumerThread = new Thread(
                 () ->
                 {
                     while (true)
@@ -84,15 +85,15 @@ public class A1BaselineBenchmark
                 }
             );
 
-            receiverThread.setName("receiver");
-            receiverThread.start();
+            consumerThread.setName("consumer");
+            consumerThread.start();
         }
 
         @TearDown
         public synchronized void tearDown() throws Exception
         {
             running.set(false);
-            receiverThread.join();
+            consumerThread.join();
         }
     }
 
@@ -120,6 +121,11 @@ public class A1BaselineBenchmark
     @BenchmarkMode(Mode.SampleTime)
     @Threads(1)
     public Integer test1Producer(final PerThreadState state)
+    {
+        return sendBurst(state);
+    }
+
+    private Integer sendBurst(final PerThreadState state)
     {
         for (final Integer value : state.values)
         {

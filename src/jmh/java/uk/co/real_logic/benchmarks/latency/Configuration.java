@@ -18,5 +18,6 @@ package uk.co.real_logic.benchmarks.latency;
 public class Configuration
 {
     public static final int MAX_THREAD_COUNT = 4;
-    public static final int QUEUE_CAPACITY = 16 * 1024;
+    public static final int SEND_QUEUE_CAPACITY = 64 * 1024;
+    public static final int RESPONSE_QUEUE_CAPACITY = 4 * 1024;
 }
