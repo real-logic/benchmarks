@@ -42,6 +42,7 @@ jmh {
     iterations = 3
     fork = 3
     timeUnit = 'ns'
+    jvmArgs = '-Dagrona.disable.bounds.checks=true'
     //timeOnIteration = '3s'
 }
 
