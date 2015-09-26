@@ -48,7 +48,7 @@ jmh {
 
 dependencies {
     jmh 'org.hdrhistogram:HdrHistogram:2.1.7'
-    jmh 'uk.co.real-logic:aeron-all:0.1.4-SNAPSHOT'
+    jmh 'uk.co.real-logic:aeron-all:0.1.4'
 }
 
 compileJava {
