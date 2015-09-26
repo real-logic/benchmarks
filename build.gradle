@@ -37,7 +37,7 @@ version = '0.1-SNAPSHOT'
 
 jmh {
     include = '.*latency.*Benchmark.*'
-    jmhVersion = '1.11'
+    jmhVersion = '1.11.1'
     warmupIterations = 3
     iterations = 3
     fork = 3
