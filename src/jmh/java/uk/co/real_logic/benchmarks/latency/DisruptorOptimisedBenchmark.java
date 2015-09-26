@@ -141,16 +141,6 @@ public class DisruptorOptimisedBenchmark
         {
             stopLatch.countDown();
         }
-
-        public void waitForStart() throws InterruptedException
-        {
-            startLatch.await();
-        }
-
-        public void waitForShutdown() throws InterruptedException
-        {
-            stopLatch.await();
-        }
     }
 
     @Benchmark

@@ -75,7 +75,7 @@ public class DisruptorBenchmark
                 Message::new,
                 Configuration.SEND_QUEUE_CAPACITY,
                 Executors.newCachedThreadPool(DaemonThreadFactory.INSTANCE),
-                ProducerType.MULTI, new SleepingWaitStrategy());
+                ProducerType.MULTI, new YieldingWaitStrategy());
 
             disruptor.handleEventsWith(handler);
 
