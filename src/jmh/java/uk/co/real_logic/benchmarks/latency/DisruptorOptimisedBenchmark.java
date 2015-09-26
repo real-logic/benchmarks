@@ -34,8 +34,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
 import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.latency.Configuration.SEND_QUEUE_CAPACITY;
 
-public class DisruptorBenchmark
+public class DisruptorOptimisedBenchmark
 {
     public static final Integer SENTINEL = 0;
 
@@ -48,8 +49,9 @@ public class DisruptorBenchmark
 
         final AtomicInteger threadId = new AtomicInteger();
 
-        Disruptor<Message> disruptor;
+        IntRingBuffer buffer;
         Handler handler;
+        BatchEventProcessor<IntRingBuffer.IntEvent> processor;
 
         @SuppressWarnings("unchecked")
         final Queue<Integer>[] responseQueues = new OneToOneConcurrentArrayQueue[MAX_THREAD_COUNT];
@@ -71,24 +73,18 @@ public class DisruptorBenchmark
 
             handler = new Handler(responseQueues);
 
-            disruptor = new Disruptor<>(
-                Message::new,
-                Configuration.SEND_QUEUE_CAPACITY,
-                Executors.newCachedThreadPool(DaemonThreadFactory.INSTANCE),
-                ProducerType.MULTI, new SleepingWaitStrategy());
+            Sequencer sequencer = new MultiProducerSequencer(SEND_QUEUE_CAPACITY, new YieldingWaitStrategy());
+            buffer = new IntRingBuffer(sequencer);
+            processor = buffer.createProcessor(handler);
 
-            disruptor.handleEventsWith(handler);
-
-            disruptor.start();
-
-            handler.waitForStart();
+            consumerThread = new Thread(processor);
+            consumerThread.start();
         }
 
         @TearDown
         public synchronized void tearDown() throws Exception
         {
-            disruptor.shutdown();
-            handler.waitForShutdown();
+            processor.halt();
 
             System.gc();
         }
@@ -100,7 +96,7 @@ public class DisruptorBenchmark
         int id;
         int[] values;
         Queue<Integer> responseQueue;
-        private RingBuffer<Message> ringBuffer;
+        IntRingBuffer buffer;
 
         @Setup
         public void setup(final SharedState sharedState)
@@ -110,11 +106,11 @@ public class DisruptorBenchmark
             values[values.length - 1] = id;
 
             responseQueue = sharedState.responseQueues[id];
-            ringBuffer = sharedState.disruptor.getRingBuffer();
+            buffer = sharedState.buffer;
         }
     }
 
-    public static class Handler implements EventHandler<Message>, LifecycleAware
+    public static class Handler implements IntRingBuffer.IntHandler, LifecycleAware
     {
         private final Queue<Integer>[] responseQueues;
         private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -126,15 +122,12 @@ public class DisruptorBenchmark
         }
 
         @Override
-        public void onEvent(final Message event, final long sequence, final boolean endOfBatch) throws Exception
+        public void onEvent(final int value, final long sequence, final boolean endOfBatch)
         {
-            int value = event.value;
             if (value >= 0)
             {
                 responseQueues[value].offer(SENTINEL);
             }
-
-            event.value = -1;
         }
 
         @Override
@@ -186,12 +179,11 @@ public class DisruptorBenchmark
 
     private Integer sendBurst(final PerThreadState state)
     {
-        RingBuffer<Message> ringBuffer = state.ringBuffer;
-
-        for (Integer value : state.values)
-        {
-            ringBuffer.publishEvent((m, s, i) -> m.value = i, value);
-        }
+        state.buffer.put(state.values);
+//        for (Integer value : state.values)
+//        {
+//            state.buffer.put(value);
+//        }
 
         Integer value;
         do
@@ -203,18 +195,81 @@ public class DisruptorBenchmark
         return value;
     }
 
-    private static class Message
-    {
-        int value = -1;
-    }
-
-
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-            .include(DisruptorBenchmark.class.getSimpleName())
+            .include(DisruptorOptimisedBenchmark.class.getSimpleName())
             .forks(0)
             .build();
         new Runner(opt).run();
+    }
+
+    private static class IntRingBuffer
+    {
+        private final Sequencer sequencer;
+        private final int[] buffer;
+        private final int mask;
+
+        public IntRingBuffer(final Sequencer sequencer)
+        {
+            this.sequencer = sequencer;
+            this.buffer = new int[sequencer.getBufferSize()];
+            this.mask = sequencer.getBufferSize() - 1;
+        }
+
+        private int index(final long sequence)
+        {
+            return (int) sequence & mask;
+        }
+
+        public void put(final int e)
+        {
+            final long next = sequencer.next();
+            buffer[index(next)] = e;
+            sequencer.publish(next);
+        }
+
+        public void put(final int[] es)
+        {
+            final long hi = sequencer.next(es.length);
+            final long lo = hi - (es.length - 1);
+
+            for (int i = 0; i < es.length; i++)
+            {
+                buffer[index(lo + i)] = es[i];
+            }
+
+            sequencer.publish(lo, hi);
+        }
+
+        public interface IntHandler
+        {
+            void onEvent(int value, long sequence, boolean endOfBatch);
+        }
+
+        private class IntEvent implements DataProvider<IntEvent>
+        {
+            private long sequence;
+
+            public int get()
+            {
+                return buffer[index(sequence)];
+            }
+
+            @Override
+            public IntEvent get(final long sequence)
+            {
+                this.sequence = sequence;
+                return this;
+            }
+        }
+
+        public BatchEventProcessor<IntEvent> createProcessor(final IntHandler handler)
+        {
+            return new BatchEventProcessor<>(
+                new IntEvent(),
+                sequencer.newBarrier(),
+                (event, sequence, endOfBatch) -> handler.onEvent(event.get(), sequence, endOfBatch));
+        }
     }
 }
