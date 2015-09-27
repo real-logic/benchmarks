@@ -48,6 +48,7 @@ public class AeronIpcBenchmark
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicInteger threadId = new AtomicInteger();
 
+        MediaDriver.Context ctx;
         MediaDriver mediaDriver;
         Aeron aeron;
         Publication publication;
@@ -71,7 +72,7 @@ public class AeronIpcBenchmark
                 values[i] = -(burstLength - i);
             }
 
-            final MediaDriver.Context ctx = new MediaDriver.Context()
+            ctx = new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .sharedIdleStrategy(new NoOpIdleStrategy())
                 .dirsDeleteOnStart(true);
@@ -95,7 +96,7 @@ public class AeronIpcBenchmark
 
             aeron.close();
             mediaDriver.close();
-            System.gc();
+            ctx.deleteAeronDirectory();
         }
     }
 
