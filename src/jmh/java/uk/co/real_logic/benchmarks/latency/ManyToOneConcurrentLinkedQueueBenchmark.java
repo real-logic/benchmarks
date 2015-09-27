@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
 import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
 
-public class LocklessManyToOneLinkedQueueBenchmark
+public class ManyToOneConcurrentLinkedQueueBenchmark
 {
     @State(Scope.Benchmark)
     public static class SharedState

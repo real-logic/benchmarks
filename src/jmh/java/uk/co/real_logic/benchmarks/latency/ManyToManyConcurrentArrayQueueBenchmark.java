@@ -16,7 +16,8 @@
 package uk.co.real_logic.benchmarks.latency;
 
 import org.openjdk.jmh.annotations.*;
-import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Arrays;
 import java.util.Queue;
@@ -27,7 +28,7 @@ import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT
 import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
 import static uk.co.real_logic.benchmarks.latency.Configuration.SEND_QUEUE_CAPACITY;
 
-public class LocklessManyToOneArrayQueueBenchmark
+public class ManyToManyConcurrentArrayQueueBenchmark
 {
     @State(Scope.Benchmark)
     public static class SharedState
@@ -38,7 +39,7 @@ public class LocklessManyToOneArrayQueueBenchmark
 
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicInteger threadId = new AtomicInteger();
-        final Queue<Integer> sendQueue = new ManyToOneConcurrentArrayQueue<>(SEND_QUEUE_CAPACITY);
+        final Queue<Integer> sendQueue = new ManyToManyConcurrentArrayQueue<>(SEND_QUEUE_CAPACITY);
 
         @SuppressWarnings("unchecked")
         final Queue<Integer>[] responseQueues = new OneToOneConcurrentArrayQueue[MAX_THREAD_COUNT];
