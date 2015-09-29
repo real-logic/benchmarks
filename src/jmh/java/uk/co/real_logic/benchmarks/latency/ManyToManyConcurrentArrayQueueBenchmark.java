@@ -143,9 +143,11 @@ public class ManyToManyConcurrentArrayQueueBenchmark
 
     private Integer sendBurst(final PerThreadState state)
     {
+        final Queue<Integer> sendQueue = state.sendQueue;
+
         for (final Integer value : state.values)
         {
-            while (!state.sendQueue.offer(value))
+            while (!sendQueue.offer(value))
             {
                 // busy spin
             }
