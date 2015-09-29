@@ -192,7 +192,7 @@ public class AeronIpcBenchmark
         final BufferClaim bufferClaim = state.bufferClaim;
         final Publication publication = state.publication;
 
-        for (final Integer value : state.values)
+        for (final int value : state.values)
         {
             while (publication.tryClaim(BitUtil.SIZE_OF_INT, bufferClaim) < 0)
             {
