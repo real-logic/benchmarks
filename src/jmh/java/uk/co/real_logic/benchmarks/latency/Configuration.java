@@ -19,5 +19,5 @@ public class Configuration
 {
     public static final int MAX_THREAD_COUNT = 4;
     public static final int SEND_QUEUE_CAPACITY = 64 * 1024;
-    public static final int RESPONSE_QUEUE_CAPACITY = 32 * 1024;
+    public static final int RESPONSE_QUEUE_CAPACITY = 128;
 }
