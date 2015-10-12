@@ -35,7 +35,7 @@ import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_C
 public class AeronIpcBenchmark
 {
     public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_LIMIT = 256;
+    public static final int FRAGMENT_LIMIT = 128;
     public static final Integer SENTINEL = 0;
 
     @State(Scope.Benchmark)
@@ -158,7 +158,11 @@ public class AeronIpcBenchmark
             final int value = buffer.getInt(offset);
             if (value >= 0)
             {
-                responseQueues[value].offer(SENTINEL);
+                final Queue<Integer> responseQueue = responseQueues[value];
+                while (!responseQueue.offer(SENTINEL))
+                {
+                    // busy spin
+                }
             }
         }
     }

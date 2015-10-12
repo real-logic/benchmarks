@@ -126,7 +126,11 @@ public class DisruptorBenchmark
             int value = event.value;
             if (value >= 0)
             {
-                responseQueues[value].offer(SENTINEL);
+                final Queue<Integer> responseQueue = responseQueues[value];
+                while (!responseQueue.offer(SENTINEL))
+                {
+                    // busy spin
+                }
             }
 
             event.value = -1;

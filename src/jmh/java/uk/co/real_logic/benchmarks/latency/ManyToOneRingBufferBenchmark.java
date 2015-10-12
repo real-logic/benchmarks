@@ -132,7 +132,11 @@ public class ManyToOneRingBufferBenchmark
             final int value = buffer.getInt(index);
             if (value >= 0)
             {
-                responseQueues[value].offer(SENTINEL);
+                final Queue<Integer> responseQueue = responseQueues[value];
+                while (!responseQueue.offer(SENTINEL))
+                {
+                    // busy spin
+                }
             }
         }
     }

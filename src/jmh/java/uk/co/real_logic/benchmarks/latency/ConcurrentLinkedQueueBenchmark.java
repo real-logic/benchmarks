@@ -77,7 +77,11 @@ public class ConcurrentLinkedQueueBenchmark
                             final int intValue = value;
                             if (intValue >= 0)
                             {
-                                responseQueues[intValue].offer(value);
+                                final Queue<Integer> responseQueue = responseQueues[value];
+                                while (!responseQueue.offer(value))
+                                {
+                                    // busy spin
+                                }
                             }
                         }
                     }
