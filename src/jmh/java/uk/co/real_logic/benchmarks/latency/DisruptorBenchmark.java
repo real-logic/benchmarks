@@ -71,10 +71,9 @@ public class DisruptorBenchmark
                 Configuration.SEND_QUEUE_CAPACITY,
                 Executors.newCachedThreadPool(DaemonThreadFactory.INSTANCE),
                 ProducerType.MULTI,
-                new YieldingWaitStrategy());
+                new BusySpinWaitStrategy());
 
             disruptor.handleEventsWith(handler);
-
             disruptor.start();
 
             handler.waitForStart();
