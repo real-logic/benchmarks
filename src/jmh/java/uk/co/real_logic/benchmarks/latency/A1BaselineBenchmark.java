@@ -33,7 +33,7 @@ public class A1BaselineBenchmark
     @State(Scope.Benchmark)
     public static class SharedState
     {
-        @Param({"1", "2", "10", "50", "100"})
+        @Param({"1", "10", "100"})
         int burstLength;
         Integer[] values;
 
