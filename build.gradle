@@ -37,7 +37,7 @@ version = '0.1-SNAPSHOT'
 
 jmh {
     include = '.*latency.*Benchmark.*'
-    jmhVersion = '1.11.1'
+    jmhVersion = '1.11.2'
     warmupIterations = 3
     iterations = 5
     fork = 5
@@ -47,7 +47,7 @@ jmh {
 
 dependencies {
     jmh 'org.hdrhistogram:HdrHistogram:2.1.7'
-    jmh 'uk.co.real-logic:aeron-all:0.1.5'
+    jmh 'uk.co.real-logic:aeron-all:0.2'
     jmh 'com.lmax:disruptor:3.3.2'
 }
 
