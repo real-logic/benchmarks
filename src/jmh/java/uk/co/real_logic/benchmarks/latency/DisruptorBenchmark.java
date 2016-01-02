@@ -38,7 +38,7 @@ public class DisruptorBenchmark
     @State(Scope.Benchmark)
     public static class SharedState
     {
-        @Param({"1", "10", "100"})
+        @Param({"1", "100"})
         int burstLength;
         int[] values;
 
