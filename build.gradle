@@ -47,7 +47,7 @@ jmh {
 
 dependencies {
     jmh 'org.hdrhistogram:HdrHistogram:2.1.7'
-    jmh 'uk.co.real-logic:aeron-all:0.2.2'
+    jmh 'uk.co.real-logic:aeron-all:0.2.3-SNAPSHOT'
     jmh 'com.lmax:disruptor:3.3.2'
 }
 
@@ -65,5 +65,5 @@ repositories {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.9'
+    gradleVersion = '2.10'
 }
