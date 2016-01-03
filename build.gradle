@@ -43,6 +43,7 @@ jmh {
     fork = 5
     timeUnit = 'ns'
     jvmArgs = '-Dagrona.disable.bounds.checks=true'
+    //jvmArgs = '-XX:+UseCondCardMark -Dagrona.disable.bounds.checks=true'
 }
 
 dependencies {
