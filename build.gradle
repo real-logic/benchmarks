@@ -49,7 +49,7 @@ jmh {
 dependencies {
     jmh 'org.hdrhistogram:HdrHistogram:2.1.8'
     jmh 'uk.co.real-logic:aeron-all:0.2.3'
-    jmh 'com.lmax:disruptor:3.3.2'
+    jmh 'com.lmax:disruptor:3.3.4'
 }
 
 compileJava {
