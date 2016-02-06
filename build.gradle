@@ -48,7 +48,7 @@ jmh {
 
 dependencies {
     jmh 'org.hdrhistogram:HdrHistogram:2.1.8'
-    jmh 'uk.co.real-logic:aeron-all:0.9.1'
+    jmh 'uk.co.real-logic:aeron-all:0.9.2'
     jmh 'com.lmax:disruptor:3.3.4'
 }
 
