@@ -20,7 +20,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.lmax.disruptor.util.DaemonThreadFactory;
 import org.openjdk.jmh.annotations.*;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Arrays;
 import java.util.Queue;

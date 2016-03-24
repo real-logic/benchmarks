@@ -16,9 +16,9 @@
 package uk.co.real_logic.benchmarks.latency;
 
 import org.openjdk.jmh.annotations.*;
-import uk.co.real_logic.agrona.*;
-import uk.co.real_logic.agrona.concurrent.*;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.*;
+import org.agrona.*;
+import org.agrona.concurrent.*;
+import org.agrona.concurrent.ringbuffer.*;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

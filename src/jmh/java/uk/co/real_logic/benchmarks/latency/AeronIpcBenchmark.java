@@ -16,13 +16,13 @@
 package uk.co.real_logic.benchmarks.latency;
 
 import org.openjdk.jmh.annotations.*;
-import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.ThreadingMode;
-import uk.co.real_logic.aeron.logbuffer.*;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.*;
+import io.aeron.*;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.*;
+import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.*;
 
 import java.util.Arrays;
 import java.util.Queue;
