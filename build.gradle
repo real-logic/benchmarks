@@ -18,26 +18,21 @@ buildscript {
     repositories {
         jcenter()
     }
+}
 
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
-        classpath "me.champeau.gradle:jmh-gradle-plugin:0.2.0"
-    }
+plugins {
+    id 'me.champeau.gradle.jmh' version '0.3.0'
 }
 
 defaultTasks 'clean', 'jmh'
 
 apply plugin: 'java'
 apply plugin: 'idea'
-apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'me.champeau.gradle.jmh'
-
-group = 'uk.co.real_logic.jmh'
-version = '0.1-SNAPSHOT'
 
 jmh {
     include = '.*latency.*Benchmark.*'
-    jmhVersion = '1.11.3'
+    jmhVersion = '1.12'
     warmupIterations = 3
     iterations = 5
     fork = 5
