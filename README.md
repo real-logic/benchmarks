@@ -2,6 +2,10 @@
 
 Set of latency benchmarks testing round trip time for FIFO data structures.
 
+To run the benchmarks execute the Gradle script in the base directory.
+
+    $ ./gradlew
+
 License (See LICENSE file for full license)
 -------------------------------------------
 Copyright 2015 - 2016 Real Logic Limited
