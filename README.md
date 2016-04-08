@@ -1,6 +1,6 @@
 # benchmarks
 
-Set of benchmarks testing the latency in round trip time of FIFO data structures.
+Set of latency benchmarks testing round trip time for FIFO data structures.
 
 License (See LICENSE file for full license)
 -------------------------------------------
