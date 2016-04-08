@@ -1,6 +1,6 @@
 # benchmarks
 
-Set of latency benchmarks testing round trip time for FIFO data structures.
+Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures.
 
 To run the benchmarks execute the Gradle script in the base directory.
 
