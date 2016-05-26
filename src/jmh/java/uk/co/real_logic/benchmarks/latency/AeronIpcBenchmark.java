@@ -73,8 +73,9 @@ public class AeronIpcBenchmark
             }
 
             ctx = new MediaDriver.Context()
+                .termBufferSparseFile(false)
                 .threadingMode(ThreadingMode.SHARED)
-                .sharedIdleStrategy(new NoOpIdleStrategy())
+                .sharedIdleStrategy(new BusySpinIdleStrategy())
                 .dirsDeleteOnStart(true);
 
             mediaDriver = MediaDriver.launch(ctx);
