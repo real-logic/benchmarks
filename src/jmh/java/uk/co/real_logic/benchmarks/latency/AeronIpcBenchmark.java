@@ -142,8 +142,6 @@ public class AeronIpcBenchmark
                 Thread.yield();
             }
 
-            final Image image = subscription.images().get(0);
-
             while (true)
             {
                 final int frameCount = subscription.poll(this, FRAGMENT_LIMIT);
