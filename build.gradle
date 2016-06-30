@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id 'me.champeau.gradle.jmh' version '0.3.0'
+    id 'me.champeau.gradle.jmh' version '0.3.1'
 }
 
 defaultTasks 'clean', 'jmh'
@@ -36,8 +36,8 @@ jmh {
 }
 
 dependencies {
-    jmh 'org.hdrhistogram:HdrHistogram:2.1.8'
-    jmh 'io.aeron:aeron-all:0.9.8'
+    jmh 'org.hdrhistogram:HdrHistogram:2.1.9'
+    jmh 'io.aeron:aeron-all:0.9.9'
     jmh 'com.lmax:disruptor:3.3.4'
 }
 
@@ -55,5 +55,5 @@ repositories {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.13'
+    gradleVersion = '2.14'
 }
