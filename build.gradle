@@ -26,7 +26,7 @@ apply plugin: 'me.champeau.gradle.jmh'
 
 jmh {
     include = '.*latency.*Benchmark.*'
-    jmhVersion = '1.12'
+    jmhVersion = '1.13'
     warmupIterations = 3
     iterations = 5
     fork = 5
@@ -37,8 +37,8 @@ jmh {
 
 dependencies {
     jmh 'org.hdrhistogram:HdrHistogram:2.1.9'
-    jmh 'io.aeron:aeron-all:0.9.9'
-    jmh 'com.lmax:disruptor:3.3.4'
+    jmh 'io.aeron:aeron-all:1.0'
+    jmh 'com.lmax:disruptor:3.3.5'
 }
 
 compileJava {
