@@ -37,7 +37,7 @@ jmh {
 
 dependencies {
     jmh 'io.aeron:aeron-all:1.0.1'
-    jmh 'com.lmax:disruptor:3.3.5'
+    jmh 'com.lmax:disruptor:3.3.6'
 }
 
 compileJava {
