@@ -36,8 +36,9 @@ jmh {
 }
 
 dependencies {
-    jmh 'io.aeron:aeron-all:1.0.1'
+    jmh 'io.aeron:aeron-all:1.0.2'
     jmh 'com.lmax:disruptor:3.3.6'
+    jmh 'org.hdrhistogram:HdrHistogram:2.1.9'
 }
 
 compileJava {
