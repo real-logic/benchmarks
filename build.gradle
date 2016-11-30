@@ -26,7 +26,7 @@ apply plugin: 'me.champeau.gradle.jmh'
 
 jmh {
     include = '.*latency.*Benchmark.*'
-    jmhVersion = '1.17'
+    jmhVersion = '1.17.1'
     warmupIterations = 3
     iterations = 5
     fork = 5
