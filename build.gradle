@@ -36,7 +36,7 @@ jmh {
 }
 
 dependencies {
-    jmh 'io.aeron:aeron-all:1.0.4'
+    jmh 'io.aeron:aeron-all:1.0.5'
     jmh 'com.lmax:disruptor:3.3.6'
     jmh 'org.hdrhistogram:HdrHistogram:2.1.9'
 }
