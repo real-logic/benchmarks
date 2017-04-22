@@ -8,7 +8,7 @@ To run the benchmarks execute the Gradle script in the base directory.
 
 License (See LICENSE file for full license)
 -------------------------------------------
-Copyright 2015 - 2016 Real Logic Limited
+Copyright 2015-2017 Real Logic Limited
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
