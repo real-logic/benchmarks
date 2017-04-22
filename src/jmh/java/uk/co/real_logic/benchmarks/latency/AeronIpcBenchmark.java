@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.benchmarks.latency;
 
+import org.agrona.BufferUtil;
 import org.openjdk.jmh.annotations.*;
 import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.*;
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.*;
 
@@ -29,6 +29,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
 import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
 
@@ -107,7 +108,7 @@ public class AeronIpcBenchmark
         int id;
         int[] values;
         Publication publication;
-        BufferClaim bufferClaim = new BufferClaim();
+        UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(128, 128));
         Queue<Integer> responseQueue;
 
         @Setup
@@ -192,20 +193,16 @@ public class AeronIpcBenchmark
 
     private Integer sendBurst(final PerThreadState state)
     {
-        final BufferClaim bufferClaim = state.bufferClaim;
+        final UnsafeBuffer buffer = state.buffer;
         final Publication publication = state.publication;
 
         for (final int value : state.values)
         {
-            while (publication.tryClaim(BitUtil.SIZE_OF_INT, bufferClaim) < 0)
+            buffer.putInt(0, value);
+            while (publication.offer(buffer, 0, SIZE_OF_INT) < 0)
             {
                 // busy spin
             }
-
-            final int offset = bufferClaim.offset();
-            bufferClaim.buffer().putInt(offset, value);
-
-            bufferClaim.commit();
         }
 
         Integer value;
