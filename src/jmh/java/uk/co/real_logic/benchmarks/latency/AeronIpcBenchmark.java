@@ -77,7 +77,7 @@ public class AeronIpcBenchmark
                 .termBufferSparseFile(false)
                 .threadingMode(ThreadingMode.SHARED)
                 .sharedIdleStrategy(new BusySpinIdleStrategy())
-                .dirsDeleteOnStart(true);
+                .dirDeleteOnStart(true);
 
             mediaDriver = MediaDriver.launch(ctx);
             aeron = Aeron.connect();
