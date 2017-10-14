@@ -18,14 +18,13 @@ package uk.co.real_logic.benchmarks.latency;
 import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
-import com.lmax.disruptor.util.DaemonThreadFactory;
 import org.openjdk.jmh.annotations.*;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
@@ -69,7 +68,7 @@ public class DisruptorBenchmark
             disruptor = new Disruptor<>(
                 Message::new,
                 Configuration.SEND_QUEUE_CAPACITY,
-                Executors.newCachedThreadPool(DaemonThreadFactory.INSTANCE),
+                (ThreadFactory)Thread::new,
                 ProducerType.MULTI,
                 new BusySpinWaitStrategy());
 
