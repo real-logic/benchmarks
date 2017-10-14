@@ -22,6 +22,7 @@ import io.aeron.logbuffer.*;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.openjdk.jmh.annotations.*;
@@ -44,7 +45,7 @@ public class AeronExclusiveIpcBenchmark
     @State(Scope.Benchmark)
     public static class SharedState
     {
-        @Param({"1", "100"})
+        @Param({ "1", "100" })
         int burstLength;
         int[] values;
 
@@ -140,17 +141,23 @@ public class AeronExclusiveIpcBenchmark
 
         public void run()
         {
-            while (subscription.imageCount() == 0)
+            while (!subscription.isConnected())
             {
                 Thread.yield();
             }
 
+            final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
             while (true)
             {
                 final int frameCount = subscription.poll(this, FRAGMENT_LIMIT);
-                if (0 == frameCount && !running.get())
+                if (0 == frameCount)
                 {
-                    break;
+                    if (!running.get())
+                    {
+                        break;
+                    }
+
+                    idleStrategy.idle();
                 }
             }
         }

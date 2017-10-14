@@ -42,7 +42,7 @@ public class AeronIpcBenchmark
     @State(Scope.Benchmark)
     public static class SharedState
     {
-        @Param({"1", "100"})
+        @Param({ "1", "100" })
         int burstLength;
         int[] values;
 
@@ -138,17 +138,23 @@ public class AeronIpcBenchmark
 
         public void run()
         {
-            while (subscription.imageCount() == 0)
+            while (!subscription.isConnected())
             {
                 Thread.yield();
             }
 
+            final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
             while (true)
             {
                 final int frameCount = subscription.poll(this, FRAGMENT_LIMIT);
-                if (0 == frameCount && !running.get())
+                if (0 == frameCount)
                 {
-                    break;
+                    if (!running.get())
+                    {
+                        break;
+                    }
+
+                    idleStrategy.idle();
                 }
             }
         }

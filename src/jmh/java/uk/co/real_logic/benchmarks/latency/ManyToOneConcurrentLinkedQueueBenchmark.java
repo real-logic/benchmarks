@@ -32,7 +32,7 @@ public class ManyToOneConcurrentLinkedQueueBenchmark
     @State(Scope.Benchmark)
     public static class SharedState
     {
-        @Param({"1", "100"})
+        @Param({ "1", "100" })
         int burstLength;
         Integer[] values;
 
