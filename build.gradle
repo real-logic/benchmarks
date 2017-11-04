@@ -20,27 +20,9 @@ plugins {
 
 defaultTasks 'clean', 'build', 'shadowJar'
 
-configurations {
-    shadow
-}
-
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'com.github.johnrengelman.shadow'
-
-compileJava {
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
-}
-
-compileJava.options.encoding = 'UTF-8'
-compileTestJava.options.encoding = 'UTF-8'
-
-shadowJar {
-    archiveName = 'benchmarks.jar'
-    classifier = 'benchmarks'
-    manifest.attributes('Main-Class': 'org.openjdk.jmh.Main')
-}
 
 repositories {
     mavenLocal()
@@ -55,13 +37,18 @@ dependencies {
     compile 'org.hdrhistogram:HdrHistogram:2.1.9'
 }
 
+compileJava.options.encoding = 'UTF-8'
+
 compileJava {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 }
 
-compileJava.options.encoding = 'UTF-8'
-compileTestJava.options.encoding = 'UTF-8'
+shadowJar {
+    archiveName = 'benchmarks.jar'
+    classifier = 'benchmarks'
+    manifest.attributes('Main-Class': 'org.openjdk.jmh.Main')
+}
 
 task runBenchmarks(type: Exec) {
     commandLine 'java',
