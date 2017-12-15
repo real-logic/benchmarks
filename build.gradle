@@ -32,7 +32,7 @@ repositories {
 dependencies {
     compile 'org.openjdk.jmh:jmh-core:1.19'
     compile 'org.openjdk.jmh:jmh-generator-annprocess:1.19'
-    compile 'io.aeron:aeron-all:1.6.0'
+    compile 'io.aeron:aeron-all:1.7.0'
     compile 'com.lmax:disruptor:3.3.7'
     compile 'org.hdrhistogram:HdrHistogram:2.1.9'
 }
