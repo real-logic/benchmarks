@@ -35,9 +35,9 @@ import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_C
 
 public class AeronIpcBenchmark
 {
-    public static final int STREAM_ID = 1;
-    public static final int FRAGMENT_LIMIT = 128;
-    public static final Integer SENTINEL = 0;
+    static final int STREAM_ID = 1;
+    static final int FRAGMENT_LIMIT = 128;
+    static final Integer SENTINEL = 0;
 
     @State(Scope.Benchmark)
     public static class SharedState
@@ -129,7 +129,7 @@ public class AeronIpcBenchmark
         private final AtomicBoolean running;
         private final Queue<Integer>[] responseQueues;
 
-        public Subscriber(final Subscription subscription, final AtomicBoolean running, final Queue<Integer>[] responseQueues)
+        Subscriber(final Subscription subscription, final AtomicBoolean running, final Queue<Integer>[] responseQueues)
         {
             this.subscription = subscription;
             this.running = running;

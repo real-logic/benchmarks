@@ -32,7 +32,7 @@ import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_C
 
 public class DisruptorBenchmark
 {
-    public static final Integer SENTINEL = 0;
+    static final Integer SENTINEL = 0;
 
     @State(Scope.Benchmark)
     public static class SharedState
@@ -114,12 +114,12 @@ public class DisruptorBenchmark
         private final CountDownLatch startLatch = new CountDownLatch(1);
         private final CountDownLatch stopLatch = new CountDownLatch(1);
 
-        public Handler(final Queue<Integer>[] responseQueues)
+        Handler(final Queue<Integer>[] responseQueues)
         {
             this.responseQueues = responseQueues;
         }
 
-        public void onEvent(final Message event, final long sequence, final boolean endOfBatch) throws Exception
+        public void onEvent(final Message event, final long sequence, final boolean endOfBatch)
         {
             int value = event.value;
             if (value >= 0)
@@ -155,7 +155,7 @@ public class DisruptorBenchmark
         }
     }
 
-    public static class Message
+    static class Message
     {
         int value = -1;
     }

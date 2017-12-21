@@ -31,9 +31,9 @@ import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_C
 
 public class ManyToOneRingBufferBenchmark
 {
-    public static final int MESSAGE_COUNT_LIMIT = 16;
-    public static final Integer SENTINEL = 0;
-    public static final int BUFFER_LENGTH = (64 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
+    static final int MESSAGE_COUNT_LIMIT = 16;
+    static final Integer SENTINEL = 0;
+    static final int BUFFER_LENGTH = (64 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
 
     @State(Scope.Benchmark)
     public static class SharedState
@@ -108,7 +108,7 @@ public class ManyToOneRingBufferBenchmark
         private final AtomicBoolean running;
         private final Queue<Integer>[] responseQueues;
 
-        public Subscriber(final RingBuffer ringBuffer, final AtomicBoolean running, final Queue<Integer>[] responseQueues)
+        Subscriber(final RingBuffer ringBuffer, final AtomicBoolean running, final Queue<Integer>[] responseQueues)
         {
             this.ringBuffer = ringBuffer;
             this.running = running;
