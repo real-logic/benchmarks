@@ -16,6 +16,7 @@
 package uk.co.real_logic.benchmarks.latency;
 
 import org.agrona.BufferUtil;
+import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 import io.aeron.*;
 import io.aeron.driver.MediaDriver;
@@ -167,7 +168,7 @@ public class AeronIpcBenchmark
                 final Queue<Integer> responseQueue = responseQueues[value];
                 while (!responseQueue.offer(SENTINEL))
                 {
-                    // busy spin
+                    ThreadHints.onSpinWait();
                 }
             }
         }
@@ -207,16 +208,21 @@ public class AeronIpcBenchmark
             buffer.putInt(0, value);
             while (publication.offer(buffer, 0, SIZE_OF_INT) < 0)
             {
-                // busy spin
+                ThreadHints.onSpinWait();
             }
         }
 
         Integer value;
-        do
+        while (true)
         {
             value = state.responseQueue.poll();
+            if (value != null)
+            {
+                break;
+            }
+
+            ThreadHints.onSpinWait();
         }
-        while (null == value);
 
         return value;
     }

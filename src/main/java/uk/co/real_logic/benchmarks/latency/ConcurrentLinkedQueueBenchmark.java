@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.latency;
 
+import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
@@ -71,6 +72,8 @@ public class ConcurrentLinkedQueueBenchmark
                             {
                                 break;
                             }
+
+                            ThreadHints.onSpinWait();
                         }
                         else
                         {
@@ -80,7 +83,7 @@ public class ConcurrentLinkedQueueBenchmark
                                 final Queue<Integer> responseQueue = responseQueues[value];
                                 while (!responseQueue.offer(value))
                                 {
-                                    // busy spin
+                                    ThreadHints.onSpinWait();
                                 }
                             }
                         }
@@ -152,16 +155,21 @@ public class ConcurrentLinkedQueueBenchmark
         {
             while (!sendQueue.offer(value))
             {
-                // busy spin
+                ThreadHints.onSpinWait();
             }
         }
 
         Integer value;
-        do
+        while (true)
         {
             value = state.responseQueue.poll();
+            if (value != null)
+            {
+                break;
+            }
+
+            ThreadHints.onSpinWait();
         }
-        while (null == value);
 
         return value;
     }

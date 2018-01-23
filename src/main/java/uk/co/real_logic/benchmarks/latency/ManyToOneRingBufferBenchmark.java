@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.latency;
 
+import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -135,7 +136,7 @@ public class ManyToOneRingBufferBenchmark
                 final Queue<Integer> responseQueue = responseQueues[value];
                 while (!responseQueue.offer(SENTINEL))
                 {
-                    // busy spin
+                    ThreadHints.onSpinWait();
                 }
             }
         }
@@ -175,16 +176,21 @@ public class ManyToOneRingBufferBenchmark
             tempBuffer.putInt(0, value);
             while (!ringBuffer.write(1, tempBuffer, 0, BitUtil.SIZE_OF_INT))
             {
-                // busy spin
+                ThreadHints.onSpinWait();
             }
         }
 
         Integer value;
-        do
+        while (true)
         {
             value = state.responseQueue.poll();
+            if (value != null)
+            {
+                break;
+            }
+
+            ThreadHints.onSpinWait();
         }
-        while (null == value);
 
         return value;
     }

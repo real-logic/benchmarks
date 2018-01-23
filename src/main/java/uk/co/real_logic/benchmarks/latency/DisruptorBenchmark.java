@@ -18,6 +18,7 @@ package uk.co.real_logic.benchmarks.latency;
 import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
@@ -127,7 +128,7 @@ public class DisruptorBenchmark
                 final Queue<Integer> responseQueue = responseQueues[value];
                 while (!responseQueue.offer(SENTINEL))
                 {
-                    // busy spin
+                    ThreadHints.onSpinWait();
                 }
             }
 
@@ -194,11 +195,16 @@ public class DisruptorBenchmark
         }
 
         Integer value;
-        do
+        while (true)
         {
             value = state.responseQueue.poll();
+            if (value != null)
+            {
+                break;
+            }
+
+            ThreadHints.onSpinWait();
         }
-        while (null == value);
 
         return value;
     }
