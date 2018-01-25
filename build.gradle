@@ -58,6 +58,6 @@ task runBenchmarks(type: Exec) {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.4'
+    gradleVersion = '4.5'
     distributionType = 'ALL'
 }
