@@ -127,6 +127,14 @@ public class A1BaselineBenchmark
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
     @Threads(1)
+    public Integer baselineTimingOverhead(final PerThreadState state)
+    {
+        return state.responseQueue.poll();
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.SampleTime)
+    @Threads(1)
     public Integer test1Producer(final PerThreadState state)
     {
         return sendBurst(state);
