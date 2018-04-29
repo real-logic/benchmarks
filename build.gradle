@@ -37,7 +37,7 @@ repositories {
 dependencies {
     annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.20'
     compile 'org.openjdk.jmh:jmh-core:1.20'
-    compile 'io.aeron:aeron-all:1.9.0'
+    compile 'io.aeron:aeron-all:1.9.1'
     compile 'com.lmax:disruptor:3.4.2'
     compile 'org.hdrhistogram:HdrHistogram:2.1.9'
 }
