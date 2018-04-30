@@ -42,9 +42,8 @@ dependencies {
     compile 'org.hdrhistogram:HdrHistogram:2.1.9'
 }
 
-compileJava.options.encoding = 'UTF-8'
-
 compileJava {
+    options.encoding = 'UTF-8'
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 }
