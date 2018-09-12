@@ -37,15 +37,9 @@ repositories {
 dependencies {
     annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
     compile 'org.openjdk.jmh:jmh-core:1.21'
-    compile 'io.aeron:aeron-all:1.10.5'
+    compile 'io.aeron:aeron-all:1.11.0'
     compile 'com.lmax:disruptor:3.4.2'
     compile 'org.hdrhistogram:HdrHistogram:2.1.10'
-}
-
-compileJava {
-    options.encoding = 'UTF-8'
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
 }
 
 shadowJar {
@@ -58,7 +52,7 @@ task runBenchmarks(type: Exec) {
     commandLine 'java',
     '-Dagrona.disable.bounds.checks=true',
     '-jar', 'build/libs/benchmarks.jar',
-    '-wi', '3', '-i', '5', '-tu', 'ns', '-f', '5'
+    '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
 
 wrapper {
