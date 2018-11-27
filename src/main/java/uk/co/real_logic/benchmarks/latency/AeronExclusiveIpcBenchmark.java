@@ -112,8 +112,8 @@ public class AeronExclusiveIpcBenchmark
         int id;
         int[] values;
         ExclusivePublication publication;
-        UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(128, 128));
         Queue<Integer> responseQueue;
+        final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(128, 128));
 
         @Setup
         public void setup(final SharedState sharedState)
