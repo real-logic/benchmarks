@@ -26,7 +26,6 @@ plugins {
 defaultTasks 'clean', 'build', 'shadowJar'
 
 apply plugin: 'java'
-apply plugin: 'java-library'
 apply plugin: 'idea'
 apply plugin: 'com.github.johnrengelman.shadow'
 
@@ -37,10 +36,10 @@ repositories {
 
 dependencies {
     annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
-    api 'org.openjdk.jmh:jmh-core:1.21'
-    api 'io.aeron:aeron-all:1.15.3'
-    api 'com.lmax:disruptor:3.4.2'
-    api 'org.hdrhistogram:HdrHistogram:2.1.11'
+    implementation 'org.openjdk.jmh:jmh-core:1.21'
+    implementation 'io.aeron:aeron-all:1.16.0'
+    implementation 'com.lmax:disruptor:3.4.2'
+    implementation 'org.hdrhistogram:HdrHistogram:2.1.11'
 }
 
 shadowJar {
