@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 Real Logic Ltd.
+ * Copyright 2015-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,7 +178,7 @@ public class AeronExclusiveIpcBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode(Mode.SampleTime)
+    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
     @Threads(1)
     public Integer test1Producer(final PerThreadState state)
     {
