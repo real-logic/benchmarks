@@ -22,20 +22,16 @@
 #include <atomic>
 
 #include "util/BitUtil.h"
-#include "concurrent/Atomic64.h"
-
-using namespace aeron::util;
-using namespace aeron::concurrent::atomic;
 
 template<typename T>
 class SpscConcurrentArrayQueue
 {
 public:
     SpscConcurrentArrayQueue(std::int32_t requestedCapacity) :
-        m_head(0), m_tail(0), m_capacity(BitUtil::findNextPowerOfTwo(requestedCapacity))
+        m_head(0), m_tail(0), m_capacity(aeron::util::BitUtil::findNextPowerOfTwo(requestedCapacity))
     {
         m_mask = m_capacity - 1;
-        m_buffer = new volatile std::atomic<T*>[m_capacity];
+        m_buffer = new std::atomic<T*>[m_capacity];
 
         for (int i = 0; i < m_capacity - 1; i++)
         {
@@ -60,8 +56,8 @@ public:
         std::int64_t currentTail =  m_tail.load(std::memory_order_seq_cst);
         int index = (int) (currentTail & m_mask);
 
-        volatile std::atomic<T*>* source = &m_buffer[index];
-        volatile T* ptr = source->load(std::memory_order_seq_cst);
+        std::atomic<T*>* source = &m_buffer[index];
+        T* ptr = source->load(std::memory_order_seq_cst);
         if (nullptr == ptr)
         {
             source->store(t, std::memory_order_acq_rel);
@@ -77,8 +73,8 @@ public:
     {
         std::int64_t currentHead = m_head.load(std::memory_order_seq_cst);
         int index = (int) (currentHead & m_mask);
-        volatile std::atomic<T*>* source = &m_buffer[index];
-        volatile T* t = source->load(std::memory_order_seq_cst);
+        std::atomic<T*>* source = &m_buffer[index];
+        T* t = source->load(std::memory_order_seq_cst);
 
         if (nullptr != t)
         {
@@ -90,7 +86,7 @@ public:
     }
 
 private:
-    volatile std::atomic<T*>* m_buffer;
+    std::atomic<T*>* m_buffer;
     std::atomic<std::int64_t> m_head;
     std::atomic<std::int64_t> m_tail;
     std::int64_t m_mask;

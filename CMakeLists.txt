@@ -78,6 +78,7 @@ set(AERON_BINARY_DIR ${binary_dir})
 
 set(AERON_LIBS
     ${AERON_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}aeron_client${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${AERON_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}aeron_driver${CMAKE_SHARED_LIBRARY_SUFFIX}
 )
 
 ##########################################################
@@ -135,8 +136,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 # google benchmark
 include_directories(${GOOGLE_BENCHMARK_SOURCE_DIR}/include)
 include_directories(${AERON_SOURCE_DIR}/aeron-client/src/main/cpp)
-include_directories(${AERON_SOURCE_DIR}/aeron-client/src/main/cpp)
-include_directories(${AERON_SOURCE_DIR}/aeron-driver/src/main/cpp)
+include_directories(${AERON_SOURCE_DIR}/aeron-driver/src/main/c)
 
 include_directories(${CMAKE_SOURCE_DIR}/src/main/cpp)
 
