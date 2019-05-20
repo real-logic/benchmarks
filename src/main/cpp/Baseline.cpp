@@ -194,4 +194,61 @@ BENCHMARK(BM_SpscQueueThroughput)
     ->Arg(256 * 1024)
     ->UseRealTime();
 
+static void BM_C_SpscQueueThroughput(benchmark::State &state)
+{
+    int* i = new int{42};
+    aeron_spsc_concurrent_array_queue_t q;
+
+    if (aeron_spsc_concurrent_array_queue_init(&q, state.range(0)) < 0)
+    {
+        throw std::runtime_error("could not init q: " + std::string(aeron_errmsg()));
+    }
+
+    std::atomic<bool> start{false};
+    std::atomic<bool> running{true};
+    std::int64_t totalMsgs = 0;
+
+    std::thread t(
+        [&]()
+        {
+            start.store(true);
+
+            while (running)
+            {
+                if (nullptr == aeron_spsc_concurrent_array_queue_poll(&q))
+                {
+                    aeron::concurrent::atomic::cpu_pause();
+                }
+            }
+        });
+
+    while (!start)
+    {
+        ; // Spin
+    }
+
+    while (state.KeepRunning())
+    {
+        while (aeron_spsc_concurrent_array_queue_offer(&q, i) != AERON_OFFER_SUCCESS)
+        {
+            aeron::concurrent::atomic::cpu_pause();
+        }
+        totalMsgs++;
+    }
+
+    state.SetItemsProcessed(totalMsgs);
+    state.SetBytesProcessed(totalMsgs * sizeof(int));
+
+    running.store(false);
+
+    t.join();
+}
+
+BENCHMARK(BM_C_SpscQueueThroughput)
+    ->Arg(1024)
+    ->Arg(64 * 1024)
+    ->Arg(128 * 1024)
+    ->Arg(256 * 1024)
+    ->UseRealTime();
+
 BENCHMARK_MAIN();
