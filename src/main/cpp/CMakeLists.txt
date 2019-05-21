@@ -22,4 +22,4 @@ endfunction()
 
 benchmark(baseline Baseline.cpp)
 benchmark(timeBenchmark TimeBenchmark.cpp)
-
+benchmark(aeronIpcBenchmark AeronIpcBenchmark.cpp)
