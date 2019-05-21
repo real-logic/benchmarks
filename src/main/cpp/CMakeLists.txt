@@ -21,4 +21,5 @@ function(benchmark name file)
 endfunction()
 
 benchmark(baseline Baseline.cpp)
+benchmark(timeBenchmark TimeBenchmark.cpp)
 
