@@ -22,64 +22,12 @@
 #include <atomic>
 
 #include "concurrent/Atomic64.h"
-#include "SpscConcurrentArrayQueue.h"
 
 extern "C"
 {
 #include "concurrent/aeron_spsc_concurrent_array_queue.h"
 #include "util/aeron_error.h"
 }
-
-static void BM_SpscQueueLatency(benchmark::State &state)
-{
-    int* i = new int{42};
-    SpscConcurrentArrayQueue<int> qIn{1024};
-    SpscConcurrentArrayQueue<int> qOut{1024};
-    std::atomic<bool> start{false};
-    std::atomic<bool> running{true};
-
-    std::thread t(
-        [&]()
-        {
-            start.store(true);
-
-            while (running)
-            {
-                int* p = qIn.poll();
-                if (p != nullptr)
-                {
-                    qOut.offer(p);
-                }
-                else
-                {
-                    //aeron::concurrent::atomic::cpu_pause();
-                }
-            }
-        });
-
-    while (!start)
-    {
-        ; // Spin
-    }
-
-    while (state.KeepRunning())
-    {
-        qIn.offer(i);
-        while (qOut.poll() == nullptr)
-        {
-            ; // spin
-        }
-    }
-
-    state.SetItemsProcessed(state.iterations());
-    state.SetBytesProcessed(state.iterations() * sizeof(int));
-
-    running.store(false);
-
-    t.join();
-}
-
-BENCHMARK(BM_SpscQueueLatency)->UseRealTime();
 
 static void BM_C_SpscQueueLatency(benchmark::State &state)
 {
@@ -142,57 +90,6 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
 }
 
 BENCHMARK(BM_C_SpscQueueLatency)->UseRealTime();
-
-static void BM_SpscQueueThroughput(benchmark::State &state)
-{
-    int* i = new int{42};
-    SpscConcurrentArrayQueue<int> q{static_cast<int>(state.range(0))};
-    std::atomic<bool> start{false};
-    std::atomic<bool> running{true};
-    std::int64_t totalMsgs = 0;
-
-    std::thread t(
-        [&]()
-        {
-            start.store(true);
-
-            while (running)
-            {
-                if (nullptr == q.poll())
-                {
-                    aeron::concurrent::atomic::cpu_pause();
-                }
-            }
-        });
-
-    while (!start)
-    {
-        ; // Spin
-    }
-
-    while (state.KeepRunning())
-    {
-        while (!q.offer(i))
-        {
-            aeron::concurrent::atomic::cpu_pause();
-        }
-        totalMsgs++;
-    }
-
-    state.SetItemsProcessed(totalMsgs);
-    state.SetBytesProcessed(totalMsgs * sizeof(int));
-
-    running.store(false);
-
-    t.join();
-}
-
-BENCHMARK(BM_SpscQueueThroughput)
-    ->Arg(1024)
-    ->Arg(64 * 1024)
-    ->Arg(128 * 1024)
-    ->Arg(256 * 1024)
-    ->UseRealTime();
 
 static void BM_C_SpscQueueThroughput(benchmark::State &state)
 {

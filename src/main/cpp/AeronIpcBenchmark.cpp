@@ -105,14 +105,77 @@ private:
     aeron_spsc_concurrent_array_queue_t *m_responseQueue;
 };
 
-class SubscriberState
+class SharedState
 {
 public:
-    SubscriberState(std::shared_ptr<Subscription> subscription, aeron_spsc_concurrent_array_queue_t *responseQueues) :
-        m_subscription(std::move(subscription)),
-        m_running(true),
-        m_responseQueues(responseQueues)
+    SharedState() :
+        isSetup(false),
+        running(true)
     {
+        for (std::size_t i = 0; i < MAX_THREAD_COUNT; i++)
+        {
+            if (aeron_spsc_concurrent_array_queue_init(&responseQueues[i], 1024) < 0)
+            {
+                throw std::runtime_error("could not init responseQueue: " + std::string(aeron_errmsg()));
+            }
+        }
+    }
+
+    ~SharedState()
+    {
+        running = false;
+        subscribptionThread.join();
+
+        for (std::size_t i = 0; i < MAX_THREAD_COUNT; i++)
+        {
+            aeron_spsc_concurrent_array_queue_close(&responseQueues[i]);
+        }
+    }
+
+    void setup()
+    {
+        if (!isSetup)
+        {
+            aeron = Aeron::connect();
+
+            const std::int64_t publicationId = aeron->addPublication("aeron:ipc", STREAM_ID);
+            const std::int64_t subscriptionId = aeron->addSubscription("aeron:ipc", STREAM_ID);
+
+            publication = aeron->findPublication(publicationId);
+            subscription = aeron->findSubscription(subscriptionId);
+
+            while (!subscription)
+            {
+                std::this_thread::yield();
+                subscription = aeron->findSubscription(subscriptionId);
+            }
+
+            while (!publication)
+            {
+                std::this_thread::yield();
+                publication = aeron->findPublication(publicationId);
+            }
+
+            while (!publication->isConnected())
+            {
+                std::this_thread::yield();
+            }
+
+            subscribptionThread = std::thread([&]()
+                {
+                    subscriberLoop();
+                });;
+
+            isSetup = true;
+        }
+    }
+
+    void awaitSetup()
+    {
+        while (!isSetup)
+        {
+            std::this_thread::yield();
+        }
     }
 
     void operator()(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
@@ -120,97 +183,67 @@ public:
         const std::int32_t value = buffer.getInt32(offset);
         if (value >= 0)
         {
-            while (aeron_spsc_concurrent_array_queue_offer(&m_responseQueues[value], &SENTINEL) != AERON_OFFER_SUCCESS)
+            while (aeron_spsc_concurrent_array_queue_offer(&responseQueues[value], &SENTINEL) != AERON_OFFER_SUCCESS)
             {
-                m_idle.idle();
+                busySpinIdle.idle();
             }
         }
     }
 
-    void stop()
+    void subscriberLoop()
     {
-        m_running = false;
-    }
-
-    void operator()()
-    {
-        while (!m_subscription->isConnected())
+        while (!subscription->isConnected())
         {
             std::this_thread::yield();
         }
 
         while (true)
         {
-            const int fragmentCount = m_subscription->poll(*this, FRAGMENT_LIMIT);
+            const int fragmentCount = subscription->poll(*this, FRAGMENT_LIMIT);
             if (0 == fragmentCount)
             {
-                if (!m_running)
+                if (!running)
                 {
                     break;
                 }
 
-                m_idle.idle();
+                busySpinIdle.idle();
             }
         }
     }
 
-private:
-    std::shared_ptr<Subscription> m_subscription;
-    BusySpinIdleStrategy m_idle;
-    std::atomic<bool> m_running;
-    aeron_spsc_concurrent_array_queue_t *m_responseQueues;
+    aeron_spsc_concurrent_array_queue_t responseQueues[MAX_THREAD_COUNT];
+    std::shared_ptr<Aeron> aeron;
+    std::shared_ptr<Publication> publication;
+    std::shared_ptr<Subscription> subscription;
+    std::atomic<bool> isSetup;
+    std::atomic<bool> running;
+    BusySpinIdleStrategy busySpinIdle;
+    std::thread subscribptionThread;
 };
+
+SharedState sharedState;
 
 static void BM_AeronIpcBenchmark(benchmark::State &state)
 {
     const std::size_t burstLength = state.range(0);
-    std::shared_ptr<Aeron> aeron = Aeron::connect();
 
-    const std::int64_t publicationId = aeron->addPublication("aeron:ipc", STREAM_ID);
-    const std::int64_t subscriptionId = aeron->addSubscription("aeron:ipc", STREAM_ID);
-
-    std::shared_ptr<Publication> publication = aeron->findPublication(publicationId);
-    std::shared_ptr<Subscription> subscription = aeron->findSubscription(subscriptionId);
-
-    while (!subscription)
+    if (0 == state.thread_index)
     {
-        std::this_thread::yield();
-        subscription = aeron->findSubscription(subscriptionId);
+        sharedState.setup();
+    }
+    else
+    {
+        sharedState.awaitSetup();
     }
 
-    while (!publication)
-    {
-        std::this_thread::yield();
-        publication = aeron->findPublication(publicationId);
-    }
-
-    while (!publication->isConnected())
-    {
-        std::this_thread::yield();
-    }
-
-    aeron_spsc_concurrent_array_queue_t responseQueues[MAX_THREAD_COUNT];
-
-    if (aeron_spsc_concurrent_array_queue_init(&responseQueues[0], 1024) < 0)
-    {
-        throw std::runtime_error("could not init responseQueue: " + std::string(aeron_errmsg()));
-    }
-
-    SubscriberState subscriberThread(subscription, responseQueues);
-    PublicationState publicationThread(burstLength, state.thread_index, publication, &responseQueues[state.thread_index]);
-
-    std::thread t([&]()
-    {
-        subscriberThread();
-    });
+    PublicationState publicationState(
+        burstLength, state.thread_index, sharedState.publication, &sharedState.responseQueues[state.thread_index]);
 
     for (auto _ : state)
     {
-        publicationThread.sendBurst();
+        publicationState.sendBurst();
     }
-
-    subscriberThread.stop();
-    t.join();
 
     char label[256];
 
@@ -221,7 +254,19 @@ static void BM_AeronIpcBenchmark(benchmark::State &state)
 }
 
 BENCHMARK(BM_AeronIpcBenchmark)
-    ->RangeMultiplier(10)
+    ->RangeMultiplier(4)
+    ->Range(1, 100)
+    ->UseRealTime();
+
+BENCHMARK(BM_AeronIpcBenchmark)
+    ->RangeMultiplier(4)
+    ->Threads(2)
+    ->Range(1, 100)
+    ->UseRealTime();
+
+BENCHMARK(BM_AeronIpcBenchmark)
+    ->RangeMultiplier(4)
+    ->Threads(3)
     ->Range(1, 100)
     ->UseRealTime();
 
