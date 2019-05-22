@@ -59,7 +59,7 @@ set(
 
 # default is to use Aeron location one level up. Can be replaced with github (https://github.com/real-logic/Aeron.git)
 if(NOT AERON_GIT_URL)
-    set(AERON_GIT_URL "${CMAKE_SOURCE_DIR}/../Aeron" CACHE STRING "Location of the Aeron git repo" FORCE)
+    set(AERON_GIT_URL "https://github.com/real-logic/Aeron.git" CACHE STRING "Location of the Aeron git repo" FORCE)
 endif(NOT AERON_GIT_URL)
 
 ##########################################################
@@ -79,7 +79,7 @@ set(AERON_BINARY_DIR ${binary_dir})
 
 set(AERON_LIBS
     ${AERON_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}aeron_client${CMAKE_STATIC_LIBRARY_SUFFIX}
-    ${AERON_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}aeron_driver${CMAKE_SHARED_LIBRARY_SUFFIX}
+    ${AERON_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}aeron_driver_static${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
 ##########################################################
