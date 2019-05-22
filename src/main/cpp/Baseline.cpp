@@ -22,6 +22,7 @@
 #include <atomic>
 
 #include "concurrent/Atomic64.h"
+#include "concurrent/BusySpinIdleStrategy.h"
 
 extern "C"
 {
@@ -29,21 +30,33 @@ extern "C"
 #include "util/aeron_error.h"
 }
 
+using namespace aeron::concurrent;
+
+int SENTINEL = 1000;
+
 static void BM_C_SpscQueueLatency(benchmark::State &state)
 {
-    int* i = new int{42};
+    const std::size_t burstLength = state.range(0);
     aeron_spsc_concurrent_array_queue_t q_in;
     aeron_spsc_concurrent_array_queue_t q_out;
 
-    if (aeron_spsc_concurrent_array_queue_init(&q_in, 1024) < 0)
+    if (aeron_spsc_concurrent_array_queue_init(&q_in, 64 * 1024) < 0)
     {
         throw std::runtime_error("could not init q_in: " + std::string(aeron_errmsg()));
     }
 
-    if (aeron_spsc_concurrent_array_queue_init(&q_out, 1024) < 0)
+    if (aeron_spsc_concurrent_array_queue_init(&q_out, 128) < 0)
     {
         throw std::runtime_error("could not init q_out: " + std::string(aeron_errmsg()));
     }
+
+    std::int32_t *values = new std::int32_t[burstLength];
+    for (std::size_t i = 0; i < burstLength; i++)
+    {
+        values[i] = -(burstLength - i);
+    }
+
+    values[burstLength - 1] = 0;
 
     std::atomic<bool> start{false};
     std::atomic<bool> running{true};
@@ -51,6 +64,7 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
     std::thread t(
         [&]()
         {
+            BusySpinIdleStrategy idle;
             start.store(true);
 
             while (running)
@@ -58,27 +72,43 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
                 int* p = (int *)aeron_spsc_concurrent_array_queue_poll(&q_in);
                 if (p != nullptr)
                 {
-                    aeron_spsc_concurrent_array_queue_offer(&q_out, p);
+                    if (*p >= 0)
+                    {
+                        while (aeron_spsc_concurrent_array_queue_offer(&q_out, &SENTINEL) != AERON_OFFER_SUCCESS)
+                        {
+                            idle.idle();
+                        }
+                    }
                 }
                 else
                 {
-                    //aeron::concurrent::atomic::cpu_pause();
+                    idle.idle();
                 }
             }
         });
 
     while (!start)
     {
-        ; // Spin
+        std::this_thread::yield();
     }
+
+    BusySpinIdleStrategy burstIdle;
 
     while (state.KeepRunning())
     {
-        aeron_spsc_concurrent_array_queue_offer(&q_in, i);
+        for (std::size_t i = 0; i < burstLength; i++)
+        {
+            while (aeron_spsc_concurrent_array_queue_offer(&q_in, &values[i]) != AERON_OFFER_SUCCESS)
+            {
+                burstIdle.idle();
+            }
+        }
+
         while (aeron_spsc_concurrent_array_queue_poll(&q_out) == nullptr)
         {
-            ; // spin
+            burstIdle.idle();
         }
+
     }
 
     state.SetItemsProcessed(state.iterations());
@@ -87,9 +117,17 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
     running.store(false);
 
     t.join();
+
+    delete [] values;
+
+    aeron_spsc_concurrent_array_queue_close(&q_in);
+    aeron_spsc_concurrent_array_queue_close(&q_out);
 }
 
-BENCHMARK(BM_C_SpscQueueLatency)->UseRealTime();
+BENCHMARK(BM_C_SpscQueueLatency)
+    ->RangeMultiplier(4)
+    ->Range(1,100)
+    ->UseRealTime();
 
 static void BM_C_SpscQueueThroughput(benchmark::State &state)
 {
