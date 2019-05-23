@@ -57,7 +57,6 @@ set(
     ${GOOGLE_BENCHMARK_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
-# default is to use Aeron location one level up. Can be replaced with github (https://github.com/real-logic/aeron.git)
 if(NOT AERON_GIT_URL)
     set(AERON_GIT_URL "https://github.com/real-logic/aeron.git" CACHE STRING "Location of the Aeron git repo" FORCE)
 endif(NOT AERON_GIT_URL)
