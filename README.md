@@ -5,7 +5,7 @@ Set of latency benchmarks testing round trip time (RTT) between threads or proce
 To run the benchmarks execute the Gradle script in the base directory.
 
     $ ./gradlew
-    $ ./gradlew runBenchmarks
+    $ ./gradlew runJavaBenchmarks
 
 ## C++ Benchmarks
 
