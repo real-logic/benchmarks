@@ -46,10 +46,18 @@ shadowJar {
     manifest.attributes('Main-Class': 'org.openjdk.jmh.Main')
 }
 
-task runBenchmarks(type: Exec) {
+task runJavaBenchmarks(type: Exec) {
     commandLine 'java',
     '-Dagrona.disable.bounds.checks=true',
     '-jar', 'build/libs/benchmarks.jar',
+    '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
+}
+
+task runAeronJavaBenchmarks(type: Exec) {
+    commandLine 'java',
+    '-Dagrona.disable.bounds.checks=true',
+    '-jar', 'build/libs/benchmarks.jar',
+    'Aeron',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
 
