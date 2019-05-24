@@ -14,8 +14,10 @@
 # limitations under the License.
 #
 
+set(HEADERS EmbeddedAeronMediaDriver.h)
+
 function(benchmark name file)
-    add_executable(${name} ${file})
+    add_executable(${name} ${HEADERS} ${file})
     target_link_libraries(${name} ${AERON_LIBS} ${GOOGLE_BENCHMARK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_dependencies(${name} aeron google_benchmark)
 endfunction()

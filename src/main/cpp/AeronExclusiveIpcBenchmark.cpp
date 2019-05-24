@@ -15,6 +15,7 @@
  */
 
 #define DISABLE_BOUNDS_CHECKS 1
+#define EMBEDDED_MEDIA_DRIVER
 
 #include <string>
 #include <benchmark/benchmark.h>
@@ -24,6 +25,7 @@
 
 #include "Aeron.h"
 #include "concurrent/BusySpinIdleStrategy.h"
+#include "EmbeddedAeronMediaDriver.h"
 
 extern "C"
 {
@@ -130,12 +132,20 @@ public:
         {
             aeron_spsc_concurrent_array_queue_close(&responseQueues[i]);
         }
+
+#ifdef EMBEDDED_MEDIA_DRIVER
+        driver.stop();
+#endif
     }
 
     void setup()
     {
         if (!isSetup)
         {
+#ifdef EMBEDDED_MEDIA_DRIVER
+            driver.start();
+#endif
+
             aeron = Aeron::connect();
 
             const std::int64_t publicationId = aeron->addExclusivePublication("aeron:ipc", STREAM_ID);
@@ -220,6 +230,9 @@ public:
     std::atomic<bool> running;
     BusySpinIdleStrategy busySpinIdle;
     std::thread subscribptionThread;
+#ifdef EMBEDDED_MEDIA_DRIVER
+    EmbeddedMediaDriver driver;
+#endif
 };
 
 SharedState sharedState;
@@ -245,8 +258,8 @@ static void BM_AeronExclusiveIpcBenchmark(benchmark::State &state)
 }
 
 BENCHMARK(BM_AeronExclusiveIpcBenchmark)
-    ->RangeMultiplier(4)
-    ->Range(1,100)
+    ->Arg(1)
+    ->Arg(100)
     ->UseRealTime();
 
 BENCHMARK_MAIN();

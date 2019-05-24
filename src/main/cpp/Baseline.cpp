@@ -125,8 +125,8 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
 }
 
 BENCHMARK(BM_C_SpscQueueLatency)
-    ->RangeMultiplier(4)
-    ->Range(1,100)
+    ->Arg(1)
+    ->Arg(100)
     ->UseRealTime();
 
 static void BM_C_SpscQueueThroughput(benchmark::State &state)
