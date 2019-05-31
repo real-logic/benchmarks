@@ -21,6 +21,7 @@
 #include <benchmark/benchmark.h>
 #include <thread>
 #include <atomic>
+#include <array>
 #include <inttypes.h>
 
 #include "Aeron.h"
@@ -39,24 +40,30 @@ using namespace aeron;
 #define MAX_THREAD_COUNT (4)
 #define FRAGMENT_LIMIT (128)
 #define STREAM_ID (10)
+#define MAX_BURST_LENGTH (100)
+#define RESPONSE_QUEUE_CAPACITY (128)
+#define USE_TRY_CLAIM
 
 int SENTINEL = 0;
 
 typedef std::array<std::uint8_t, sizeof(std::int32_t)> src_buffer_t;
 
-class PublicationState
+template<typename P, typename IdleStrategy = BusySpinIdleStrategy>
+class Burster
 {
 public:
-    PublicationState(
+    Burster(
         std::size_t burstLength,
         int id,
-        std::shared_ptr<Publication> publication,
+        std::shared_ptr<P> publication,
         aeron_spsc_concurrent_array_queue_t *responseQueue) :
+        m_src(),
         m_srcBuffer(m_src, 0),
-        m_burstLength(burstLength),
-        m_publication(std::move(publication)),
-        m_values(new std::int32_t[burstLength]),
-        m_responseQueue(responseQueue)
+        m_savedPublication(std::move(publication)),
+        m_values(),
+        m_responseQueue(responseQueue),
+        m_publication(m_savedPublication.get()),
+        m_burstLength(burstLength)
     {
         m_src.fill(0);
 
@@ -68,60 +75,55 @@ public:
         m_values[burstLength - 1] = id;
     }
 
-    ~PublicationState()
+    inline void sendBurst()
     {
-        delete [] m_values;
+        auto iter = m_values.begin();
+
+        for (std::size_t i = 0; i < m_burstLength; ++iter, ++i)
+        {
+#ifdef USE_TRY_CLAIM
+            while (m_publication->tryClaim(sizeof(std::int32_t), m_bufferClaim) < 0)
+            {
+                IdleStrategy::pause();
+            }
+
+            m_bufferClaim.buffer().putInt32(m_bufferClaim.offset(), *iter);
+            m_bufferClaim.commit();
+#else
+            m_srcBuffer.putInt32(0, *iter);
+            while (m_publication->offer(m_srcBuffer, 0, sizeof(std::int32_t), DEFAULT_RESERVED_VALUE_SUPPLIER) < 0)
+            {
+                IdleStrategy::pause();
+            }
+#endif
+        }
     }
 
-    void sendBurst()
+    inline void awaitConfirm()
     {
-        for (std::size_t i = 0; i < m_burstLength; i++)
-        {
-            m_srcBuffer.putInt32(0, m_values[i]);
-            while (m_publication->offer(m_srcBuffer) < 0)
-            {
-                m_idle.idle();
-            }
-        }
-
         while (aeron_spsc_concurrent_array_queue_poll(m_responseQueue) == nullptr)
         {
-            m_idle.idle();
+            IdleStrategy::pause();
         }
-    }
-
-    void operator()()
-    {
-        sendBurst();
     }
 
 private:
     AERON_DECL_ALIGNED(src_buffer_t m_src, 16);
-
     AtomicBuffer m_srcBuffer;
-    BusySpinIdleStrategy m_idle;
+    BufferClaim m_bufferClaim;
 
-    const std::size_t m_burstLength;
-    std::shared_ptr<Publication> m_publication;
-    std::int32_t *m_values;
+    std::shared_ptr<P> m_savedPublication;
+    std::array<std::int32_t, MAX_BURST_LENGTH> m_values;
+
     aeron_spsc_concurrent_array_queue_t *m_responseQueue;
+    P *m_publication;
+    const std::size_t m_burstLength;
 };
 
 class SharedState
 {
 public:
-    SharedState() :
-        isSetup(false),
-        running(true)
-    {
-        for (std::size_t i = 0; i < MAX_THREAD_COUNT; i++)
-        {
-            if (aeron_spsc_concurrent_array_queue_init(&responseQueues[i], 1024) < 0)
-            {
-                throw std::runtime_error("could not init responseQueue: " + std::string(aeron_errmsg()));
-            }
-        }
-    }
+    SharedState() = default;
 
     ~SharedState()
     {
@@ -142,6 +144,15 @@ public:
     {
         if (!isSetup)
         {
+            for (std::size_t i = 0; i < MAX_THREAD_COUNT; i++)
+            {
+                if (aeron_spsc_concurrent_array_queue_init(&responseQueues[i], RESPONSE_QUEUE_CAPACITY) < 0)
+                {
+                    std::cerr << "could not init responseQueue: " << aeron_errmsg() << std::endl;
+                    std::exit(EXIT_FAILURE);
+                }
+            }
+
 #ifdef EMBEDDED_MEDIA_DRIVER
             driver.start();
 #endif
@@ -172,9 +183,9 @@ public:
             }
 
             subscribptionThread = std::thread([&]()
-                {
-                    subscriberLoop();
-                });;
+            {
+                subscriberLoop();
+            });
 
             isSetup = true;
         }
@@ -188,18 +199,6 @@ public:
         }
     }
 
-    void operator()(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
-    {
-        const std::int32_t value = buffer.getInt32(offset);
-        if (value >= 0)
-        {
-            while (aeron_spsc_concurrent_array_queue_offer(&responseQueues[value], &SENTINEL) != AERON_OFFER_SUCCESS)
-            {
-                busySpinIdle.idle();
-            }
-        }
-    }
-
     void subscriberLoop()
     {
         while (!subscription->isConnected())
@@ -207,28 +206,34 @@ public:
             std::this_thread::yield();
         }
 
-        while (true)
+        Image& image = subscription->imageAtIndex(0);
+        auto handler = [&](AtomicBuffer& buffer, util::index_t offset, util::index_t, Header&)
         {
-            const int fragmentCount = subscription->poll(*this, FRAGMENT_LIMIT);
-            if (0 == fragmentCount)
+            const std::int32_t value = buffer.getInt32(offset);
+            if (value >= 0)
             {
-                if (!running)
+                while (aeron_spsc_concurrent_array_queue_offer(&responseQueues[value], &SENTINEL) != AERON_OFFER_SUCCESS)
                 {
-                    break;
+                    BusySpinIdleStrategy::pause();
                 }
+            }
+        };
 
-                busySpinIdle.idle();
+        while (running)
+        {
+            if (image.poll(handler, FRAGMENT_LIMIT) == 0)
+            {
+                BusySpinIdleStrategy::pause();
             }
         }
     }
 
-    aeron_spsc_concurrent_array_queue_t responseQueues[MAX_THREAD_COUNT];
+    AERON_DECL_ALIGNED(aeron_spsc_concurrent_array_queue_t responseQueues[MAX_THREAD_COUNT], 16);
     std::shared_ptr<Aeron> aeron;
     std::shared_ptr<Publication> publication;
     std::shared_ptr<Subscription> subscription;
-    std::atomic<bool> isSetup;
-    std::atomic<bool> running;
-    BusySpinIdleStrategy busySpinIdle;
+    std::atomic<bool> isSetup = { false };
+    std::atomic<bool> running = { true };
     std::thread subscribptionThread;
 #ifdef EMBEDDED_MEDIA_DRIVER
     EmbeddedMediaDriver driver;
@@ -250,12 +255,13 @@ static void BM_AeronIpcBenchmark(benchmark::State &state)
         sharedState.awaitSetup();
     }
 
-    PublicationState publicationState(
+    Burster<Publication> burster(
         burstLength, state.thread_index, sharedState.publication, &sharedState.responseQueues[state.thread_index]);
 
     for (auto _ : state)
     {
-        publicationState.sendBurst();
+        burster.sendBurst();
+        burster.awaitConfirm();
     }
 
     char label[256];
@@ -268,18 +274,18 @@ static void BM_AeronIpcBenchmark(benchmark::State &state)
 
 BENCHMARK(BM_AeronIpcBenchmark)
     ->Arg(1)
-    ->Arg(100)
+    ->Arg(MAX_BURST_LENGTH)
     ->UseRealTime();
 
 BENCHMARK(BM_AeronIpcBenchmark)
     ->Arg(1)
-    ->Arg(100)
+    ->Arg(MAX_BURST_LENGTH)
     ->Threads(2)
     ->UseRealTime();
 
 BENCHMARK(BM_AeronIpcBenchmark)
     ->Arg(1)
-    ->Arg(100)
+    ->Arg(MAX_BURST_LENGTH)
     ->Threads(3)
     ->UseRealTime();
 

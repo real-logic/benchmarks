@@ -104,16 +104,17 @@ endif()
 
 # all UNIX-based platform compiler flags
 if(UNIX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fexceptions -m64")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DDISABLE_BOUNDS_CHECKS")
+    add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)
+#    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -DDISABLE_BOUNDS_CHECKS")
+
+    add_compile_options($<$<CONFIG:Release>:-Ofast>)
 endif()
 
 # platform specific flags
 if(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-compare")
+    add_compile_options(-Wsign-compare)
     add_definitions(-DDarwin)
-    add_definitions(-Wno-deprecated-register)
+    add_compile_options(-Wno-deprecated-register)
 elseif(CYGWIN)
     add_definitions(-DWIN32)
     #add_definitions(-DGTEST_HAS_PTHREAD)
