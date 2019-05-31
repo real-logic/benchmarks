@@ -9,7 +9,20 @@ To run the benchmarks execute the Gradle script in the base directory.
 
 ## C++ Benchmarks
 
-TBD
+To generate the benchmarks, execute the `cppbuild` script from the base directory.
+
+    $ cppbuild/cppbuild
+
+To run the benchmarks, execute the individual benchmarks.
+
+    $ cppbuild/Release/binaries/baseline
+    $ cppbuild/Release/binaries/aeronExclusiveIpcBenchmark
+    $ cppbuild/Release/binaries/aeronIpcBenchmark
+
+__NOTE__: On MacOS, it will be necessary to set `DYLD_LIBRARY_PATH` for the Aeron
+driver shared library. For example:
+
+    $ env DYLD_LIBRARY_PATH=cppbuild/Release/aeron-prefix/src/aeron-build/lib cppbuild/Release/binaries/aeronIpcBenchmark
 
 License (See LICENSE file for full license)
 -------------------------------------------
