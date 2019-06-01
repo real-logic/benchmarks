@@ -2,7 +2,9 @@
 
 Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures.
 
-To run the benchmarks execute the Gradle script in the base directory.
+## Java Benchmarks
+
+To run the Java benchmarks execute the Gradle script in the base directory.
 
     $ ./gradlew
     $ ./gradlew runJavaBenchmarks
