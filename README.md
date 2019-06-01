@@ -1,4 +1,4 @@
-# benchmarks
+# Benchmarks
 
 Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures.
 
@@ -12,7 +12,6 @@ To run the Java benchmarks execute the Gradle script in the base directory.
 ## C++ Benchmarks
 
 To generate the benchmarks, execute the `cppbuild` script from the base directory.
-
     $ cppbuild/cppbuild
 
 To run the benchmarks, execute the individual benchmarks.
