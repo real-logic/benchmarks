@@ -14,7 +14,9 @@
 # limitations under the License.
 #
 
-set(HEADERS EmbeddedAeronMediaDriver.h)
+set(HEADERS
+    EmbeddedAeronMediaDriver.h
+    NanoMark.h)
 
 function(benchmark name file)
     add_executable(${name} ${HEADERS} ${file})
@@ -26,3 +28,4 @@ benchmark(baseline Baseline.cpp)
 benchmark(timeBenchmark TimeBenchmark.cpp)
 benchmark(aeronIpcBenchmark AeronIpcBenchmark.cpp)
 benchmark(aeronExclusiveIpcBenchmark AeronExclusiveIpcBenchmark.cpp)
+benchmark(nanoMarkTest NanoMarkTest.cpp)
