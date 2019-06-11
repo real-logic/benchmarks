@@ -87,7 +87,7 @@ public:
     bool first = true;
 };
 
-NANOMARK(TestFixture, runTest)
+NANOMARK(TestFixture, runTest)(std::size_t id)
 {
     std::string someSillyString("my silly string");
 }

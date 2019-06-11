@@ -20,11 +20,18 @@ To run the benchmarks, execute the individual benchmarks.
     $ cppbuild/Release/binaries/baseline
     $ cppbuild/Release/binaries/aeronExclusiveIpcBenchmark
     $ cppbuild/Release/binaries/aeronIpcBenchmark
+    $ cppbuild/Release/binaries/aeronExclusiveIpcNanomark
+    $ cppbuild/Release/binaries/aeronIpcNanomark
 
 __NOTE__: On MacOS, it will be necessary to set `DYLD_LIBRARY_PATH` for the Aeron
 driver shared library. For example:
 
     $ env DYLD_LIBRARY_PATH=cppbuild/Release/aeron-prefix/src/aeron-build/lib cppbuild/Release/binaries/aeronIpcBenchmark
+
+The binaries with __Benchmark__ in the name use Google Benchmark and only displays average times.
+
+While the binaries with __Nanomark__ in the name use Nanomark (included in the source) and displays full histograms.
+
 
 License (See LICENSE file for full license)
 -------------------------------------------

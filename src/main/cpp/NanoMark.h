@@ -133,7 +133,7 @@ public:
     {
     }
 
-    virtual uint64_t run() = 0;
+    virtual uint64_t run(std::size_t id) = 0;
 
     void name(const char *name)
     {
@@ -264,6 +264,8 @@ public:
         std::size_t repetitions,
         std::uint64_t minRunLengthNs)
     {
+        std::cout << "Running " << nanomark->fixtureName() << "::" << nanomark->name() << std::endl;
+
         nanomark->numberOfMaxThreads(numThreads);
         nanomark->numberOfMaxRepetitions(repetitions);
         nanomark->setUp();
@@ -293,7 +295,7 @@ public:
 
                     while (running)
                     {
-                        std::uint64_t elapsedNs = nanomark->run();
+                        std::uint64_t elapsedNs = nanomark->run(id);
 
                         nanomark->recordRun(id, elapsedNs / nanomark->iterationsPerRun());
 
@@ -351,26 +353,26 @@ public:
 };
 
 template <typename C, size_t N>
-inline std::uint64_t runNanomark(C *obj)
+inline std::uint64_t runNanomark(C *obj, std::size_t id)
 {
     std::uint64_t start, end;
 
     start = nanoClock();
     for (int i = 0; i < N; i++)
     {
-        obj->nanomarkBody();
+        obj->nanomarkBody(id);
     }
     end = nanoClock();
     return end - start;
 }
 
 template <typename C>
-inline std::uint64_t runNanomark(C *obj)
+inline std::uint64_t runNanomark(C *obj, std::size_t id)
 {
     std::uint64_t start, end;
 
     start = nanoClock();
-    obj->nanomarkBody();
+    obj->nanomarkBody(id);
     end = nanoClock();
     return end - start;
 }
@@ -383,25 +385,25 @@ inline std::uint64_t runNanomark(C *obj)
     class NANOMARK_CLASS_NAME(c,r) : public c { \
     public: \
       NANOMARK_CLASS_NAME(c,r)() {}; \
-      virtual std::uint64_t run() { return ::nanomark::runNanomark<NANOMARK_CLASS_NAME(c,r),i>(this); }; \
-      void nanomarkBody(void); \
+      virtual std::uint64_t run(std::size_t id) { return ::nanomark::runNanomark<NANOMARK_CLASS_NAME(c,r),i>(this, id); }; \
+      void nanomarkBody(std::size_t id); \
     private: \
       static ::nanomark::Nanomark *m_instance; \
     };                            \
     ::nanomark::Nanomark *NANOMARK_CLASS_NAME(c,r)::m_instance = ::nanomark::NanomarkRunner::registerNanomark(#c, #r, 1, new NANOMARK_CLASS_NAME(c,r)()); \
-    inline void NANOMARK_CLASS_NAME(c,r)::nanomarkBody()
+    inline void NANOMARK_CLASS_NAME(c,r)::nanomarkBody
 
 #define NANOMARK(c,r) \
     class NANOMARK_CLASS_NAME(c,r) : public c { \
     public: \
       NANOMARK_CLASS_NAME(c,r)() {}; \
-      virtual std::uint64_t run() { return ::nanomark::runNanomark<NANOMARK_CLASS_NAME(c,r)>(this); }; \
-      void nanomarkBody(void); \
+      virtual std::uint64_t run(std::size_t id) { return ::nanomark::runNanomark<NANOMARK_CLASS_NAME(c,r)>(this, id); }; \
+      void nanomarkBody(std::size_t id); \
     private: \
       static ::nanomark::Nanomark *m_instance; \
     };                            \
     ::nanomark::Nanomark *NANOMARK_CLASS_NAME(c,r)::m_instance = ::nanomark::NanomarkRunner::registerNanomark(#c, #r, 1, new NANOMARK_CLASS_NAME(c,r)()); \
-    inline void NANOMARK_CLASS_NAME(c,r)::nanomarkBody()
+    inline void NANOMARK_CLASS_NAME(c,r)::nanomarkBody
 
 #define NANOMARK_MAIN() \
     int main(int argc, char **argv) \
