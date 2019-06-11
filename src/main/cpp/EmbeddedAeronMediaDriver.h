@@ -19,8 +19,12 @@
 #define DISABLE_BOUNDS_CHECKS 1
 
 #if defined(__linux__)
+#ifndef _BSD_SOURCE
 #define _BSD_SOURCE
+#endif
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #endif
 
 #include <string>
