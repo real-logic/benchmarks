@@ -46,13 +46,23 @@ extern "C"
 namespace nanomark
 {
 
-#if defined(__linux__) || defined(Darwin)
+#if defined(Darwin)
 
 static std::uint64_t nanoClock()
 {
     struct timespec ts = {0, 0};
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    return (ts.tv_sec * 1000000000) + ts.tv_nsec;
+}
+
+#elif defined(__linux__)
+
+static std::uint64_t nanoClock()
+{
+    struct timespec ts = {0, 0};
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
     return (ts.tv_sec * 1000000000) + ts.tv_nsec;
 }
 
