@@ -247,11 +247,12 @@ public:
     static Nanomark *registerNanomark(
         const char *fixtureName,
         const char *name,
-        std::size_t iterationsPer,
+        std::size_t iterationsPerRun,
         Nanomark *impl)
     {
         impl->fixtureName(fixtureName);
         impl->name(name);
+        impl->iterationsPerRun(iterationsPerRun);
 
         table().push_back(impl);
         std::cout << "Registering " << fixtureName << "::" << name << std::endl;
@@ -359,7 +360,7 @@ inline std::uint64_t runNanomark(C *obj, std::size_t id)
     std::uint64_t start, end;
 
     start = nanoClock();
-    for (int i = 0; i < N; i++)
+    for (std::size_t i = 0; i < N; i++)
     {
         obj->nanomarkBody(id);
     }
@@ -391,7 +392,7 @@ inline std::uint64_t runNanomark(C *obj, std::size_t id)
     private: \
       static ::nanomark::Nanomark *m_instance; \
     };                            \
-    ::nanomark::Nanomark *NANOMARK_CLASS_NAME(c,r)::m_instance = ::nanomark::NanomarkRunner::registerNanomark(#c, #r, 1, new NANOMARK_CLASS_NAME(c,r)()); \
+    ::nanomark::Nanomark *NANOMARK_CLASS_NAME(c,r)::m_instance = ::nanomark::NanomarkRunner::registerNanomark(#c, #r, i, new NANOMARK_CLASS_NAME(c,r)()); \
     inline void NANOMARK_CLASS_NAME(c,r)::nanomarkBody
 
 #define NANOMARK(c,r) \
