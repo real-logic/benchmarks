@@ -20,6 +20,7 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include <atomic>
 
 #include <stdio.h>
 #include <stdlib.h>
