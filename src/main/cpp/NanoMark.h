@@ -28,6 +28,7 @@
 #include <string.h>
 
 #if defined(__linux__) || defined(Darwin)
+#   include <unistd.h>
 #   include <time.h>
 #elif defined(WIN32)
 #   include <windows.h>
