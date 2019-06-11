@@ -20,8 +20,8 @@ set(HEADERS
 
 function(benchmark name file)
     add_executable(${name} ${HEADERS} ${file})
-    target_link_libraries(${name} ${AERON_LIBS} ${CMAKE_DL_LIBS} ${GOOGLE_BENCHMARK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-    add_dependencies(${name} aeron google_benchmark)
+    target_link_libraries(${name} ${AERON_LIBS} ${CMAKE_DL_LIBS} ${GOOGLE_BENCHMARK_LIBS} ${HDRHISTOGRAM_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    add_dependencies(${name} aeron google_benchmark hdr_histogram)
 endfunction()
 
 benchmark(baseline Baseline.cpp)

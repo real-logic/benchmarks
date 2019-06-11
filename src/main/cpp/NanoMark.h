@@ -37,6 +37,11 @@
 #define DEFAULT_REPETITIONS (1)
 #define DEFAULT_RUN_LENGTH_NS (1000 * 1000 * 1000L)
 
+extern "C"
+{
+#include "hdr_histogram.h"
+}
+
 namespace nanomark
 {
 
@@ -76,17 +81,55 @@ class Nanomark
 public:
     virtual void setUp()
     {
+        if (!m_histograms.empty())
+        {
+            for (auto histogram : m_histograms)
+            {
+                hdr_close(histogram);
+            }
+
+            m_histograms.clear();
+        }
+
+        if (nullptr != m_combinedHistogram)
+        {
+            hdr_close(m_combinedHistogram);
+            m_combinedHistogram = nullptr;
+        }
+
+        for (std::size_t i = 0; i < numberMaxThreads(); i++)
+        {
+            hdr_histogram *histogram = nullptr;
+
+            hdr_init(1, 10 * 1000 * 1000 * 1000LL, 3, &histogram);
+            m_histograms.push_back(histogram);
+        }
     }
 
     virtual void tearDown()
     {
+        hdr_histogram *combinedHistogram;
+
+        hdr_init(1, 10 * 1000 * 1000 * 1000LL, 3, &combinedHistogram);
+
+        for (std::size_t i = 0; i < numberMaxThreads(); i++)
+        {
+            hdr_histogram *histogram = m_histograms[i];
+
+            if (nullptr != histogram)
+            {
+                hdr_add(combinedHistogram, histogram);
+            }
+        }
+
+        m_combinedHistogram = combinedHistogram;
     }
 
-    virtual void perThreadSetUp(std::size_t id)
+    virtual void perThreadSetUp(std::size_t id, std::size_t repetition)
     {
     }
 
-    virtual void perThreadTearDown(std::size_t id)
+    virtual void perThreadTearDown(std::size_t id, std::size_t repetition)
     {
     }
 
@@ -132,12 +175,59 @@ public:
         return m_numberMaxThreads;
     }
 
+    void numberOfMaxRepetitions(std::size_t numberOfMaxRepetitions)
+    {
+        m_numberMaxRepetitions = numberOfMaxRepetitions;
+    }
+
+    std::size_t numberOfMaxRepetitions()
+    {
+        return m_numberMaxRepetitions;
+    }
+
     virtual void recordRun(std::size_t threadId, std::uint64_t measurementNs)
+    {
+        hdr_record_value(m_histograms[threadId], (std::int64_t)measurementNs);
+    }
+
+    virtual void recordRepetition(
+        std::size_t threadId, std::size_t repetition, std::uint64_t totalNs, std::size_t numberOfRuns)
     {
     }
 
-    virtual void recordRepetition(std::size_t threadId, std::uint64_t totalNs, std::size_t numberOfRuns)
+    hdr_histogram *histogram()
     {
+        return m_combinedHistogram;
+    }
+
+    hdr_histogram *histogram(std::size_t threadId)
+    {
+        return m_histograms[threadId];
+    }
+
+    void printFullHistogram()
+    {
+        if (nullptr != m_combinedHistogram)
+        {
+            hdr_percentiles_print(m_combinedHistogram, stdout, 5, 1.0, CLASSIC);
+            fflush(stdout);
+        }
+    }
+
+    static std::string histogramSummary(hdr_histogram *histogram)
+    {
+        std::ostringstream ostream;
+
+        ostream << "min/mean/max = " <<
+            std::to_string(hdr_min(histogram)) << "/" <<
+            std::to_string(hdr_mean(histogram)) << "/" <<
+            std::to_string(hdr_max(histogram)) << " ns, ";
+        ostream << "p0.50/p0.90/p0.99 = " <<
+            std::to_string(hdr_value_at_percentile(histogram, 50.0)) << "/" <<
+            std::to_string(hdr_value_at_percentile(histogram, 90.0)) << "/" <<
+            std::to_string(hdr_value_at_percentile(histogram, 99.0)) << " ns";
+
+        return ostream.str();
     }
 
 protected:
@@ -145,6 +235,9 @@ protected:
     const char *m_fixtureName = "";
     std::size_t m_iterationsPerRun = 1;
     std::size_t m_numberMaxThreads = 0;
+    std::size_t m_numberMaxRepetitions = 0;
+    std::vector<hdr_histogram*> m_histograms;
+    hdr_histogram *m_combinedHistogram = nullptr;
 };
 
 class NanomarkRunner
@@ -172,6 +265,7 @@ public:
         std::uint64_t minRunLengthNs)
     {
         nanomark->numberOfMaxThreads(numThreads);
+        nanomark->numberOfMaxRepetitions(repetitions);
         nanomark->setUp();
 
         for (std::size_t i = 0; i < repetitions; i++)
@@ -189,7 +283,7 @@ public:
                     std::uint64_t totalNs = 0, numberOfRuns = 0;
                     const std::size_t id = threadId.fetch_add(1);
 
-                    nanomark->perThreadSetUp(id);
+                    nanomark->perThreadSetUp(id, i);
 
                     countDown--;
                     while (countDown > 0)
@@ -207,8 +301,8 @@ public:
                         numberOfRuns++;
                     }
 
-                    nanomark->recordRepetition(id, totalNs, numberOfRuns);
-                    nanomark->perThreadTearDown(id);
+                    nanomark->recordRepetition(id, i, totalNs, numberOfRuns);
+                    nanomark->perThreadTearDown(id, i);
                 }));
             }
 

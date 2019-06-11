@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include <iostream>
+#include <sstream>
+
 #include "NanoMark.h"
 
 class TestFixture : public nanomark::Nanomark
@@ -21,39 +24,64 @@ class TestFixture : public nanomark::Nanomark
 public:
     void setUp() override
     {
+        Nanomark::setUp();
         std::cout << "SetUp" << std::endl;
     }
 
     void tearDown() override
     {
-        std::cout << "TearDown" << std::endl;
+        Nanomark::tearDown();
+        std::cout << "TearDown: " << histogramSummary(histogram()) << std::endl;
+
+        printFullHistogram();
     }
 
-    void perThreadSetUp(std::size_t id) override
+    void perThreadSetUp(std::size_t id, std::size_t repetition) override
     {
-        std::cout << "Thread SetUp " << std::to_string(id) << std::endl;
+        std::ostringstream stream;
+
+        stream << "Thread " << std::to_string(id) << " SetUp " <<
+            std::to_string(repetition + 1) << "/" << numberOfMaxRepetitions() << std::endl;
+        std::cout << stream.str();
     }
 
-    void perThreadTearDown(std::size_t id) override
+    void perThreadTearDown(std::size_t id, std::size_t repetition) override
     {
-        std::cout << "Thread TearDown " << std::to_string(id) << std::endl;
+        std::ostringstream stream;
+
+        stream << "Thread " << std::to_string(id) << " TearDown " <<
+            std::to_string(repetition + 1) << "/" << numberOfMaxRepetitions() <<
+            ": " << histogramSummary(histogram(id)) << std::endl;
+        std::cout << stream.str();
     }
 
     void recordRun(std::size_t id, std::uint64_t measurementNs) override
     {
+        Nanomark::recordRun(id, measurementNs);
+
         if (first)
         {
-            std::cout << "Measurement " << std::to_string(measurementNs) << std::endl;
+            std::ostringstream stream;
+
+            stream << "Thread " << std::to_string(id) << " First Measurement " <<
+                std::to_string(measurementNs) << std::endl;
+            std::cout << stream.str();
             first = false;
         }
     }
 
-    void recordRepetition(std::size_t id, std::uint64_t totalNs, std::size_t numberOfRuns) override
+    void recordRepetition(
+        std::size_t id, std::size_t repetition, std::uint64_t totalNs, std::size_t numberOfRuns) override
     {
-        std::cout << "Repetition " << std::to_string(id) << " " <<
-            std::to_string(totalNs) << " " <<
-            std::to_string(numberOfRuns) << std::endl;
-        std::cout << "nanos/op " << std::to_string((double)totalNs / (double)numberOfRuns) << std::endl;
+        std::ostringstream stream;
+
+        Nanomark::recordRepetition(id, repetition, totalNs, numberOfRuns);
+        stream << "Thread " << std::to_string(id) << " repetition " << std::to_string(repetition + 1) << ": " <<
+            "nanos/op " << std::to_string((double)totalNs / (double)numberOfRuns) << " " <<
+            histogramSummary(histogram(id));
+        stream << std::endl;
+
+        std::cout << stream.str();
     }
 
     bool first = true;
@@ -67,6 +95,6 @@ NANOMARK(TestFixture, runTest)
 int main(int argc, char **argv)
 {
     ::nanomark::NanomarkRunner::run(1);
-    ::nanomark::NanomarkRunner::run(2);
+    ::nanomark::NanomarkRunner::run(2, 5);
     return 0;
 }
