@@ -83,7 +83,7 @@ static std::uint64_t nanoClock()
 
     ::QueryPerformanceCounter(&counter);
 
-    return (1000000000 * counter.QuadPart)/freq.QuadPart;
+    return (1000000000 * counter.QuadPart) / freq.QuadPart;
 }
 
 #endif
@@ -234,6 +234,7 @@ public:
             std::to_string(hdr_min(histogram)) << "/" <<
             std::to_string(hdr_mean(histogram)) << "/" <<
             std::to_string(hdr_max(histogram)) << " ns, ";
+
         ostream << "p0.50/p0.90/p0.99 = " <<
             std::to_string(hdr_value_at_percentile(histogram, 50.0)) << "/" <<
             std::to_string(hdr_value_at_percentile(histogram, 90.0)) << "/" <<
@@ -387,6 +388,7 @@ inline std::uint64_t runNanomark(C *obj, std::size_t id)
     start = nanoClock();
     obj->nanomarkBody(id);
     end = nanoClock();
+
     return end - start;
 }
 

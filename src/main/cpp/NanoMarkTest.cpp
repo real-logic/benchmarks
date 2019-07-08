@@ -96,5 +96,6 @@ int main(int argc, char **argv)
 {
     ::nanomark::NanomarkRunner::run(1);
     ::nanomark::NanomarkRunner::run(2, 5);
+
     return 0;
 }

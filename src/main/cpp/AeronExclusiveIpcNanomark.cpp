@@ -131,7 +131,7 @@ public:
     ~SharedState()
     {
         running = false;
-        subscribptionThread.join();
+        subscriptionThread.join();
 
         for (std::size_t i = 0; i < MAX_THREAD_COUNT; i++)
         {
@@ -185,7 +185,7 @@ public:
                 std::this_thread::yield();
             }
 
-            subscribptionThread = std::thread([&]()
+            subscriptionThread = std::thread([&]()
             {
                 subscriberLoop();
             });
@@ -238,7 +238,7 @@ public:
     std::shared_ptr<Subscription> subscription;
     std::atomic<bool> isSetup = { false };
     std::atomic<bool> running = { true };
-    std::thread subscribptionThread;
+    std::thread subscriptionThread;
 #ifdef EMBEDDED_MEDIA_DRIVER
     EmbeddedMediaDriver driver;
 #endif
@@ -331,5 +331,6 @@ int main(int argc, char **argv)
     burstLength = 100;
     std::cout << "Burst Length = " << std::to_string(burstLength) << std::endl;
     ::nanomark::NanomarkRunner::run(1, 5);
+
     return 0;
 }
