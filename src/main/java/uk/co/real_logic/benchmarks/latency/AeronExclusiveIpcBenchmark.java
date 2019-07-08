@@ -157,9 +157,9 @@ public class AeronExclusiveIpcBenchmark
                     {
                         break;
                     }
-
-                    idleStrategy.idle();
                 }
+
+                idleStrategy.idle(frameCount);
             }
         }
 
