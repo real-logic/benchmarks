@@ -84,7 +84,7 @@ public class AeronExclusiveIpcBenchmark
                 .dirDeleteOnStart(true);
 
             mediaDriver = MediaDriver.launch(ctx);
-            aeron = Aeron.connect();
+            aeron = Aeron.connect(new Aeron.Context().preTouchMappedMemory(true));
             publication = aeron.addExclusivePublication(CommonContext.IPC_CHANNEL, STREAM_ID);
             subscription = aeron.addSubscription(CommonContext.IPC_CHANNEL, STREAM_ID);
 
