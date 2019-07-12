@@ -77,9 +77,9 @@ public:
         }
 
         m_thrd = std::thread([&]()
-        {
-            driverLoop();
-        });
+            {
+                driverLoop();
+            });
     }
 
 protected:

@@ -295,31 +295,31 @@ public:
             for (std::size_t j = 0; j < numThreads; j++)
             {
                 threads.emplace_back(std::thread([&]()
-                {
-                    std::uint64_t totalNs = 0, numberOfRuns = 0;
-                    const std::size_t id = threadId.fetch_add(1);
-
-                    nanomark->perThreadSetUp(id, i);
-
-                    countDown--;
-                    while (countDown > 0)
                     {
-                        std::this_thread::yield();
-                    }
+                        std::uint64_t totalNs = 0, numberOfRuns = 0;
+                        const std::size_t id = threadId.fetch_add(1);
 
-                    while (running)
-                    {
-                        std::uint64_t elapsedNs = nanomark->run(id);
+                        nanomark->perThreadSetUp(id, i);
 
-                        nanomark->recordRun(id, elapsedNs / nanomark->iterationsPerRun());
+                        countDown--;
+                        while (countDown > 0)
+                        {
+                            std::this_thread::yield();
+                        }
 
-                        totalNs += elapsedNs / nanomark->iterationsPerRun();
-                        numberOfRuns++;
-                    }
+                        while (running)
+                        {
+                            std::uint64_t elapsedNs = nanomark->run(id);
 
-                    nanomark->recordRepetition(id, i, totalNs, numberOfRuns);
-                    nanomark->perThreadTearDown(id, i);
-                }));
+                            nanomark->recordRun(id, elapsedNs / nanomark->iterationsPerRun());
+
+                            totalNs += elapsedNs / nanomark->iterationsPerRun();
+                            numberOfRuns++;
+                        }
+
+                        nanomark->recordRepetition(id, i, totalNs, numberOfRuns);
+                        nanomark->perThreadTearDown(id, i);
+                    }));
             }
 
             // wait for threads to get setup
@@ -377,6 +377,7 @@ inline std::uint64_t runNanomark(C *obj, std::size_t id)
         obj->nanomarkBody(id);
     }
     end = nanoClock();
+
     return end - start;
 }
 

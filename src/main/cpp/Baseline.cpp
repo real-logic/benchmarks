@@ -168,6 +168,7 @@ static void BM_C_SpscQueueThroughput(benchmark::State &state)
         {
             aeron::concurrent::atomic::cpu_pause();
         }
+
         totalMsgs++;
     }
 

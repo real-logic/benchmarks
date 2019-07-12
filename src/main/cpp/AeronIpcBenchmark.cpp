@@ -157,7 +157,10 @@ public:
             driver.start();
 #endif
 
-            aeron = Aeron::connect();
+            Context context;
+            context.preTouchMappedMemory(true);
+
+            aeron = Aeron::connect(context);
 
             const std::int64_t publicationId = aeron->addPublication("aeron:ipc", STREAM_ID);
             const std::int64_t subscriptionId = aeron->addSubscription("aeron:ipc", STREAM_ID);
@@ -183,9 +186,9 @@ public:
             }
 
             subscriptionThread = std::thread([&]()
-            {
-                subscriberLoop();
-            });
+                {
+                    subscriberLoop();
+                });
 
             isSetup = true;
         }
@@ -208,16 +211,16 @@ public:
 
         Image& image = subscription->imageAtIndex(0);
         auto handler = [&](AtomicBuffer& buffer, util::index_t offset, util::index_t, Header&)
-        {
-            const std::int32_t value = buffer.getInt32(offset);
-            if (value >= 0)
             {
-                while (aeron_spsc_concurrent_array_queue_offer(&responseQueues[value], &SENTINEL) != AERON_OFFER_SUCCESS)
+                const std::int32_t value = buffer.getInt32(offset);
+                if (value >= 0)
                 {
-                    BusySpinIdleStrategy::pause();
+                    while (aeron_spsc_concurrent_array_queue_offer(&responseQueues[value], &SENTINEL) != AERON_OFFER_SUCCESS)
+                    {
+                        BusySpinIdleStrategy::pause();
+                    }
                 }
-            }
-        };
+            };
 
         while (running)
         {
@@ -269,6 +272,7 @@ static void BM_AeronIpcBenchmark(benchmark::State &state)
     std::snprintf(label, sizeof(label) - 1, "Threads: %" PRIu32", Burst Length: %" PRIu64,
         static_cast<std::uint32_t>(state.threads),
         static_cast<std::uint64_t>(burstLength));
+
     state.SetLabel(label);
 }
 
