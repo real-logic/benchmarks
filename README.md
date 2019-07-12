@@ -7,7 +7,12 @@ Set of latency benchmarks testing round trip time (RTT) between threads or proce
 To run the Java benchmarks execute the Gradle script in the base directory.
 
     $ ./gradlew
+    
     $ ./gradlew runJavaBenchmarks
+
+or just the Aeron benchmarks
+
+    $ ./gradlew runAeronJavaBenchmarks
 
 ## C++ Benchmarks
 
