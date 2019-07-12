@@ -209,7 +209,8 @@ public:
             std::this_thread::yield();
         }
 
-        Image& image = subscription->imageAtIndex(0);
+        std::shared_ptr<Image> imageSharedPtr = subscription->imageByIndex(0);
+        Image& image = *imageSharedPtr;
         aeron_spsc_concurrent_array_queue_t *q = &responseQueues[0];
         auto handler = [q](AtomicBuffer& buffer, util::index_t offset, util::index_t, Header&)
             {
