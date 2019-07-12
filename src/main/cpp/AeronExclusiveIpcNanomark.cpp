@@ -189,9 +189,9 @@ public:
             }
 
             subscriptionThread = std::thread([&]()
-            {
-                subscriberLoop();
-            });
+                {
+                    subscriberLoop();
+                });
 
             isSetup = true;
         }

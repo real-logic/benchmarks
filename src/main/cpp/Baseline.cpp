@@ -108,7 +108,6 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
         {
             burstIdle.idle();
         }
-
     }
 
     state.SetItemsProcessed(state.iterations());
