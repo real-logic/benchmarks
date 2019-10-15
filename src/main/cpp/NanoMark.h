@@ -294,7 +294,8 @@ public:
 
             for (std::size_t j = 0; j < numThreads; j++)
             {
-                threads.emplace_back(std::thread([&]()
+                threads.emplace_back(std::thread(
+                    [&]()
                     {
                         std::uint64_t totalNs = 0, numberOfRuns = 0;
                         const std::size_t id = threadId.fetch_add(1);

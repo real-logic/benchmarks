@@ -188,7 +188,8 @@ public:
                 std::this_thread::yield();
             }
 
-            subscriptionThread = std::thread([&]()
+            subscriptionThread = std::thread(
+                [&]()
                 {
                     subscriberLoop();
                 });
@@ -214,7 +215,8 @@ public:
 
         std::shared_ptr<Image> imageSharedPtr = subscription->imageByIndex(0);
         Image& image = *imageSharedPtr;
-        auto handler = [&](AtomicBuffer& buffer, util::index_t offset, util::index_t, Header&)
+        auto handler =
+            [&](AtomicBuffer& buffer, util::index_t offset, util::index_t, Header&)
             {
                 const std::int32_t value = buffer.getInt32(offset);
                 if (value >= 0)

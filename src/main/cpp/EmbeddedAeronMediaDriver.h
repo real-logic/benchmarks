@@ -66,7 +66,7 @@ public:
     void stop()
     {
         m_running = false;
-        m_thrd.join();
+        m_thread.join();
     }
 
     void start()
@@ -76,7 +76,8 @@ public:
             throw std::runtime_error("could not initialize");
         }
 
-        m_thrd = std::thread([&]()
+        m_thread = std::thread(
+            [&]()
             {
                 driverLoop();
             });
@@ -113,7 +114,7 @@ protected:
 
 private:
     std::atomic<bool> m_running;
-    std::thread m_thrd;
+    std::thread m_thread;
     aeron_driver_context_t *m_context;
     aeron_driver_t *m_driver;
 };
