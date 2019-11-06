@@ -37,7 +37,7 @@ repositories {
 dependencies {
     annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.22'
     implementation 'org.openjdk.jmh:jmh-core:1.22'
-    implementation 'io.aeron:aeron-all:1.23.0'
+    implementation 'io.aeron:aeron-all:1.23.1'
     implementation 'com.lmax:disruptor:3.4.2'
 }
 
