@@ -44,15 +44,15 @@ shadowJar {
 
 task runJavaBenchmarks(type: Exec) {
     commandLine 'java',
-    '-Dagrona.disable.bounds.checks=true',
     '-jar', 'build/libs/benchmarks.jar',
+    '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
 
 task runAeronJavaBenchmarks(type: Exec) {
     commandLine 'java',
-    '-Dagrona.disable.bounds.checks=true',
     '-jar', 'build/libs/benchmarks.jar',
+    '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
     'Aeron',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
