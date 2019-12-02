@@ -249,7 +249,7 @@ public:
 #endif
 };
 
-static std::size_t burstLength = 1;
+static std::size_t benchmarkBurstLength = 1;
 
 class AeronIpcNanomark : public nanomark::Nanomark
 {
@@ -263,7 +263,7 @@ public:
         for (std::size_t i = 0; i < MAX_THREAD_COUNT; i++)
         {
             bursters[i].reset(new Burster<Publication>(
-                burstLength, i, sharedState.publication, &sharedState.responseQueues[i]));
+                benchmarkBurstLength, i, sharedState.publication, &sharedState.responseQueues[i]));
         }
     }
 
@@ -298,8 +298,8 @@ public:
         std::cout << stream.str();
     }
 
-    void recordRepetition(
-        std::size_t id, std::size_t repetition, std::uint64_t totalNs, std::size_t numberOfRuns) override
+    void recordRepetition(std::size_t id, std::size_t repetition, std::uint64_t totalNs, std::size_t numberOfRuns)
+        override
     {
         std::ostringstream stream;
 
@@ -330,14 +330,14 @@ int main(int argc, char **argv)
 {
     for (std::size_t threads = 1; threads < MAX_THREAD_COUNT; threads++)
     {
-        burstLength = 1;
-        std::cout << "Burst Length = " << std::to_string(burstLength) <<
+        benchmarkBurstLength = 1;
+        std::cout << "Burst Length = " << std::to_string(benchmarkBurstLength) <<
             " Threads = " << std::to_string(threads) << std::endl;
         ::nanomark::NanomarkRunner::run(threads, 5);
         std::cout << std::endl;
 
-        burstLength = 100;
-        std::cout << "Burst Length = " << std::to_string(burstLength) <<
+        benchmarkBurstLength = 100;
+        std::cout << "Burst Length = " << std::to_string(benchmarkBurstLength) <<
             " Threads = " << std::to_string(threads) << std::endl;
         ::nanomark::NanomarkRunner::run(threads, 5);
     }
