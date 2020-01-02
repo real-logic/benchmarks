@@ -42,7 +42,7 @@ the specific tag in Aeron used. For example, GIT_TAG "1.22.0" will use Aeron 1.2
 
 License (See LICENSE file for full license)
 -------------------------------------------
-Copyright 2015-2019 Real Logic Limited
+Copyright 2015-2020 Real Logic Limited
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
