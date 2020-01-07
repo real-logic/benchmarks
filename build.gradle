@@ -37,7 +37,10 @@ dependencies {
     implementation 'com.lmax:disruptor:3.4.2'
 }
 
+jar.enabled = false
+
 shadowJar {
+    mustRunAfter jar
     archiveFileName = 'benchmarks.jar'
     manifest.attributes('Main-Class': 'org.openjdk.jmh.Main')
 }
