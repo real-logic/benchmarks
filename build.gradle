@@ -15,15 +15,13 @@
  */
 
 plugins {
+    id 'java-library'
     id 'idea'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'com.github.ben-manes.versions' version '0.27.0'
 }
 
-defaultTasks 'clean', 'build', 'shadowJar'
-
-apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: 'com.github.johnrengelman.shadow'
+defaultTasks 'clean', 'build'
 
 repositories {
     mavenLocal()
