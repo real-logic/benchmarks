@@ -28,7 +28,7 @@ To run the benchmarks, execute the individual benchmarks.
     $ cppbuild/Release/binaries/aeronExclusiveIpcNanomark
     $ cppbuild/Release/binaries/aeronIpcNanomark
 
-__NOTE__: On MacOS, it will be necessary to set `DYLD_LIBRARY_PATH` for the Aeron
+**Note**: On MacOS, it will be necessary to set `DYLD_LIBRARY_PATH` for the Aeron
 driver shared library. For example:
 
     $ env DYLD_LIBRARY_PATH=cppbuild/Release/aeron-prefix/src/aeron-build/lib cppbuild/Release/binaries/aeronIpcBenchmark
