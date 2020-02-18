@@ -70,8 +70,8 @@ jobs:
       - name: Install compiler
         run: |
          sudo apt-get update
-         
-         sudo apt-get install -y g++-${{ matrix.version }}
+
+         sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild
 
@@ -106,6 +106,6 @@ jobs:
 
           sudo apt-get update
 
-          sudo apt-get install -y clang-${{ matrix.version }}
+          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild
