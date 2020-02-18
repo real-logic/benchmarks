@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2019 Real Logic Limited.
+# Copyright 2015-2020 Real Logic Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,11 @@
 # limitations under the License.
 #
 
-set(HEADERS
+set(
+    HEADERS
     EmbeddedAeronMediaDriver.h
-    NanoMark.h)
+    NanoMark.h
+)
 
 function(benchmark name file)
     add_executable(${name} ${HEADERS} ${file})
