@@ -90,7 +90,7 @@ endif (NOT AERON_GIT_URL)
 ExternalProject_Add(
     aeron
     GIT_REPOSITORY ${AERON_GIT_URL}
-    GIT_TAG "origin/HEAD"
+    GIT_TAG "1.22.0"
     CMAKE_ARGS "-DAERON_TESTS=OFF" "-DCMAKE_BUILD_TYPE=Release"
     INSTALL_COMMAND ""
 )
