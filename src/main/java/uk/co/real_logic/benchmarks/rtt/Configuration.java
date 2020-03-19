@@ -15,10 +15,18 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
+import org.agrona.AsciiEncoding;
+import org.agrona.AsciiNumberFormatException;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.util.Map;
+
 import static java.util.Objects.requireNonNull;
+import static joptsimple.internal.Strings.isNullOrEmpty;
 
 /**
  * {@code Configuration} contains configuration values for the harness.
@@ -59,12 +67,80 @@ public final class Configuration
      */
     public static final int MIN_MESSAGE_SIZE = 8;
 
+    /**
+     * Name of the system property to configure warm up iterations. Default value is {@link #DEFAULT_WARM_UP_ITERATIONS}.
+     *
+     * @see #warmUpIterations()
+     */
+    public static final String WARM_UP_ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.warmup.iterations";
+
+    /**
+     * Name of the system property to configure number of the messages to be sent during warm up. Default value is
+     * {@link #DEFAULT_WARM_UP_NUMBER_OF_MESSAGES}.
+     *
+     * @see #warmUpNumberOfMessages()
+     */
+    public static final String WARM_UP_MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.warmup.messages";
+
+    /**
+     * Name of the system property to configure number of the measurement iterations. Default value is
+     * {@link #DEFAULT_ITERATIONS}.
+     *
+     * @see #iterations()
+     */
+    public static final String ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.iterations";
+
+    /**
+     * Name of the required system property to configure number of the messages to be sent during measurement iterations.
+     *
+     * @see #numberOfMessages()
+     */
+    public static final String MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.messages";
+
+    /**
+     * Name of the system property to configure burst size, i.e. number of messages to be sent in a single batch.
+     * Default value is {@link #DEFAULT_BURST_SIZE}.
+     *
+     * @see #burstSize()
+     */
+    public static final String BURST_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.burst_size";
+
+    /**
+     * Name of the system property to configure message size in bytes. Default value is {@link #MIN_MESSAGE_SIZE}.
+     *
+     * @see #messageSize()
+     */
+    public static final String MESSAGE_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.message_size";
+
+    /**
+     * Name of the system property to configure {@link IdleStrategy} for the sender. Must be a fully qualified class
+     * name. Default value is {@link BusySpinIdleStrategy}.
+     *
+     * @see #senderIdleStrategy()
+     */
+    public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.sender.idle_strategy";
+
+    /**
+     * Name of the system property to configure {@link IdleStrategy} for the receiver. Must be a fully qualified class
+     * name. Default value is {@link BusySpinIdleStrategy}.
+     *
+     * @see #receiverIdleStrategy()
+     */
+    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.receiver.idle_strategy";
+
+    /**
+     * Name of the required system property to configure {@link MessageProvider} class to be used for the benchmark.
+     * Must be a fully qualified class name.
+     */
+    public static final String MESSAGE_PROVIDER_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.message_provider";
+
     private final int warmUpIterations;
-    private final int iterations;
     private final int warmUpNumberOfMessages;
+    private final int iterations;
     private final int numberOfMessages;
     private final int burstSize;
     private final int messageSize;
+    private final Class<? extends MessageProvider> messageProviderClass;
     private final IdleStrategy senderIdleStrategy;
     private final IdleStrategy receiverIdleStrategy;
 
@@ -76,6 +152,7 @@ public final class Configuration
         this.numberOfMessages = checkMinValue(builder.numberOfMessages, 1, "Number of messages");
         this.burstSize = checkMinValue(builder.burstSize, 1, "Burst size");
         this.messageSize = checkMinValue(builder.messageSize, MIN_MESSAGE_SIZE, "Message size");
+        this.messageProviderClass = validateMessageProviderClass(builder.messageProviderClass);
         this.senderIdleStrategy = requireNonNull(builder.senderIdleStrategy, "Sender IdleStrategy cannot be null");
         this.receiverIdleStrategy = requireNonNull(builder.receiverIdleStrategy, "Receiver IdleStrategy cannot be null");
     }
@@ -149,6 +226,16 @@ public final class Configuration
     }
 
     /**
+     * {@link MessageProvider} class to use for the benchmark.
+     *
+     * @return {@link MessageProvider} class.
+     */
+    public Class<? extends MessageProvider> messageProviderClass()
+    {
+        return messageProviderClass;
+    }
+
+    /**
      * {@link IdleStrategy} to use when sending messages.
      *
      * @return sender {@link IdleStrategy}, defaults to {@link BusySpinIdleStrategy}.
@@ -176,6 +263,7 @@ public final class Configuration
             ", numberOfMessages=" + numberOfMessages +
             ", burstSize=" + burstSize +
             ", messageSize=" + messageSize +
+            ", messageProviderClass=" + messageProviderClass.getName() +
             ", senderIdleStrategy=" + senderIdleStrategy +
             ", receiverIdleStrategy=" + receiverIdleStrategy;
     }
@@ -191,6 +279,7 @@ public final class Configuration
         private int numberOfMessages;
         private int burstSize = DEFAULT_BURST_SIZE;
         private int messageSize = MIN_MESSAGE_SIZE;
+        private Class<? extends MessageProvider> messageProviderClass;
         private IdleStrategy senderIdleStrategy = BusySpinIdleStrategy.INSTANCE;
         private IdleStrategy receiverIdleStrategy = BusySpinIdleStrategy.INSTANCE;
 
@@ -268,6 +357,18 @@ public final class Configuration
         }
 
         /**
+         * Set the {@link MessageProvider} class.
+         *
+         * @param messageProviderClass class.
+         * @return this for a fluent API.
+         */
+        public Builder messageProviderClass(final Class<? extends MessageProvider> messageProviderClass)
+        {
+            this.messageProviderClass = messageProviderClass;
+            return this;
+        }
+
+        /**
          * Set the {@link IdleStrategy} to use when sending messages.
          *
          * @param senderIdleStrategy idle strategy to use for sending messages.
@@ -302,6 +403,55 @@ public final class Configuration
         }
     }
 
+    /**
+     * Create a {@link Configuration} instance based on the provided system properties.
+     *
+     * @param properties system properties.
+     * @return a {@link Configuration} instance.
+     * @throws NullPointerException if {@code properties == null}
+     */
+    public static Configuration fromProperties(final Map<String, String> properties)
+    {
+        requireNonNull(properties);
+
+        final Builder builder = new Builder();
+        if (isPropertyProvided(properties, WARM_UP_ITERATIONS_PROP_NAME))
+        {
+            builder.warmUpIterations(parseInt(properties, WARM_UP_ITERATIONS_PROP_NAME));
+        }
+        if (isPropertyProvided(properties, WARM_UP_MESSAGES_PROP_NAME))
+        {
+            builder.warmUpNumberOfMessages(parseInt(properties, WARM_UP_MESSAGES_PROP_NAME));
+        }
+        if (isPropertyProvided(properties, WARM_UP_MESSAGES_PROP_NAME))
+        {
+            builder.warmUpNumberOfMessages(parseInt(properties, WARM_UP_MESSAGES_PROP_NAME));
+        }
+        if (isPropertyProvided(properties, ITERATIONS_PROP_NAME))
+        {
+            builder.iterations(parseInt(properties, ITERATIONS_PROP_NAME));
+        }
+        if (isPropertyProvided(properties, BURST_SIZE_PROP_NAME))
+        {
+            builder.burstSize(parseInt(properties, BURST_SIZE_PROP_NAME));
+        }
+        if (isPropertyProvided(properties, MESSAGE_SIZE_PROP_NAME))
+        {
+            builder.messageSize(parseInt(properties, MESSAGE_SIZE_PROP_NAME));
+        }
+        if (isPropertyProvided(properties, SENDER_IDLE_STRATEGY_PROP_NAME))
+        {
+            builder.senderIdleStrategy(parseIdleStrategy(properties, SENDER_IDLE_STRATEGY_PROP_NAME));
+        }
+        if (isPropertyProvided(properties, RECEIVER_IDLE_STRATEGY_PROP_NAME))
+        {
+            builder.receiverIdleStrategy(parseIdleStrategy(properties, RECEIVER_IDLE_STRATEGY_PROP_NAME));
+        }
+        builder.numberOfMessages(parseInt(properties, MESSAGES_PROP_NAME));
+        builder.messageProviderClass(parseClass(properties, MESSAGE_PROVIDER_PROP_NAME, MessageProvider.class));
+        return builder.build();
+    }
+
     private static int checkMinValue(final int value, final int minValue, final String prefix)
     {
         if (value < minValue)
@@ -309,5 +459,85 @@ public final class Configuration
             throw new IllegalArgumentException(prefix + " cannot be less than " + minValue + ", got: " + value);
         }
         return value;
+    }
+
+    private static Class<? extends MessageProvider> validateMessageProviderClass(
+        final Class<? extends MessageProvider> klass)
+    {
+        requireNonNull(klass, "MessageProvider class cannot be null");
+        if (klass.isInterface() || Modifier.isAbstract(klass.getModifiers()))
+        {
+            throw new IllegalArgumentException("MessageProvider class must be a concrete class");
+        }
+        try
+        {
+            final Constructor<? extends MessageProvider> constructor = klass.getConstructor();
+            if (Modifier.isPublic(constructor.getModifiers()))
+            {
+                return klass;
+            }
+        }
+        catch (NoSuchMethodException e)
+        {
+        }
+        throw new IllegalArgumentException("MessageProvider class must have a public no-arg constructor");
+    }
+
+    private static boolean isPropertyProvided(final Map<String, String> properties, final String propName)
+    {
+        final String value = properties.get(propName);
+        return !isNullOrEmpty(value);
+    }
+
+    private static int parseInt(final Map<String, String> properties, final String propName)
+    {
+        try
+        {
+            final String value = getValue(properties, propName);
+            return AsciiEncoding.parseIntAscii(value, 0, value.length());
+        }
+        catch (final AsciiNumberFormatException ex)
+        {
+            throw new IllegalArgumentException("Non-integer value for property '" + propName + "', cause: " +
+                ex.getMessage());
+        }
+    }
+
+    private static String getValue(final Map<String, String> properties, final String propName)
+    {
+        final String value = properties.get(propName);
+        if (isNullOrEmpty(value))
+        {
+            throw new IllegalArgumentException("Property '" + propName + "' is required!");
+        }
+        return value;
+    }
+
+    private static <T> Class<? extends T> parseClass(final Map<String, String> properties, final String propName, final Class<T> parentClass)
+    {
+        try
+        {
+            final Class<?> klass = Class.forName(getValue(properties, propName));
+            return klass.asSubclass(parentClass);
+        }
+        catch (final ClassNotFoundException | ClassCastException ex)
+        {
+            throw new IllegalArgumentException("Invalid class value for property '" + propName + "', cause: " +
+                ex.getMessage());
+        }
+    }
+
+    private static IdleStrategy parseIdleStrategy(final Map<String, String> properties, String propName)
+    {
+        final Class<? extends IdleStrategy> klass = parseClass(properties, propName, IdleStrategy.class);
+        try
+        {
+            return klass.getDeclaredConstructor().newInstance();
+        }
+        catch (final InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException ex)
+        {
+            throw new IllegalArgumentException("Invalid IdleStrategy property '" + propName + "', cause: " +
+                ex.getMessage());
+        }
     }
 }
