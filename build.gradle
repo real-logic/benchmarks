@@ -28,17 +28,23 @@ repositories {
     mavenCentral()
 }
 
+def agronaVersion = '1.4.0'
 def aeronVersion = '1.26.0'
 def jmhVersion = '1.23'
+def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.2'
 def junitVersion = '5.6.0'
 def mockitoVersion = '3.3.3'
 
 dependencies {
+    api "org.agrona:agrona:${agronaVersion}"
+    
     annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
     implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
-    implementation "io.aeron:aeron-all:${aeronVersion}"
+    implementation "io.aeron:aeron-archive:${aeronVersion}"
+    implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     implementation "com.lmax:disruptor:${disruptorVersion}"
+
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"

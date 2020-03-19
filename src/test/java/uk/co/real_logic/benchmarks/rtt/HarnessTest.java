@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
-import io.aeron.shadow.org.HdrHistogram.Histogram;
+import org.HdrHistogram.Histogram;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.Test;
