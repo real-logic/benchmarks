@@ -46,6 +46,7 @@ class HarnessTest
         .warmUpNumberOfMessages(1)
         .iterations(1)
         .numberOfMessages(1)
+        .messageProviderClass(SampleMessageProvider.class)
         .senderIdleStrategy(senderIdleStrategy)
         .receiverIdleStrategy(receiverIdleStrategy)
         .build();
@@ -194,6 +195,7 @@ class HarnessTest
             .senderIdleStrategy(senderIdleStrategy)
             .burstSize(15)
             .messageSize(24)
+            .messageProviderClass(SampleMessageProvider.class)
             .build();
         final Harness harness = new Harness(configuration, messageProvider, clock, out);
 
@@ -206,7 +208,7 @@ class HarnessTest
         verify(sender).send(15, 24, MILLISECONDS.toNanos(1600));
         verify(sender).send(15, 24, MILLISECONDS.toNanos(2200));
         verify(sender).send(5, 24, MILLISECONDS.toNanos(2800));
-        verify(out).format("Send rate %,d msg/sec%n", 45L);
+        verify(out).format("Send rate %,d msg/sec%n", 30L);
         verify(out).format("Send rate %,d msg/sec%n", 25L);
         verifyNoMoreInteractions(out, clock, senderIdleStrategy, sender);
     }
@@ -228,6 +230,7 @@ class HarnessTest
             .senderIdleStrategy(senderIdleStrategy)
             .burstSize(30)
             .messageSize(100)
+            .messageProviderClass(SampleMessageProvider.class)
             .build();
         final Harness harness = new Harness(configuration, messageProvider, clock, out);
 
@@ -244,7 +247,7 @@ class HarnessTest
         {
             verify(sender).send(30, 100, MILLISECONDS.toNanos(time));
         }
-        verify(out).format("Send rate %,d msg/sec%n", 10L);
+        verify(out).format("Send rate %,d msg/sec%n", 5L);
         verifyNoMoreInteractions(out, clock, senderIdleStrategy, sender);
     }
 }

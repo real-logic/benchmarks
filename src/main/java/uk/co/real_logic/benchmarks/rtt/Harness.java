@@ -16,11 +16,13 @@
 package uk.co.real_logic.benchmarks.rtt;
 
 import org.HdrHistogram.Histogram;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -28,6 +30,7 @@ import static java.lang.Math.*;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * {@code Harness} class is the core of the RTT benchmark. It is responsible for running benchmark against provided
@@ -166,6 +169,12 @@ public final class Harness
 
         while (true)
         {
+            if (nowNs >= nextReportTimeNs)
+            {
+                final int elapsedSeconds = reportProgress(startTimeNs, nowNs, sentMessages);
+                nextReportTimeNs += elapsedSeconds * NANOS_PER_SECOND;
+            }
+
             final int batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
             int sent = sender.send(batchSize, messageSize, timestamp);
             if (sent < batchSize)
@@ -181,12 +190,6 @@ public final class Harness
             {
                 reportProgress(startTimeNs, nowNs, sentMessages);
                 break;
-            }
-
-            if (nowNs >= nextReportTimeNs)
-            {
-                final int elapsedSeconds = reportProgress(startTimeNs, nowNs, sentMessages);
-                nextReportTimeNs += elapsedSeconds * NANOS_PER_SECOND;
             }
 
             timestamp += intervalNs;
@@ -218,13 +221,15 @@ public final class Harness
 
     public static void main(String[] args) throws Exception
     {
-        final Configuration configuration = new Configuration.Builder()
-            .iterations(10)
-            .numberOfMessages(1_000_000)
-            .burstSize(1)
-            .build();
-        final Harness harness = new Harness(configuration, new SampleMessageProvider());
+        SystemUtil.loadPropertiesFiles(args);
 
-        harness.run();
+        final Map<String, String> properties = System.getProperties().entrySet().stream()
+            .collect(toMap(e -> (String)e.getKey(), e -> (String)e.getValue()));
+        final Configuration configuration = Configuration.fromProperties(properties);
+
+        final Class<? extends MessageProvider> messageProviderClass = configuration.messageProviderClass();
+        final MessageProvider messageProvider = messageProviderClass.getConstructor().newInstance();
+
+        new Harness(configuration, messageProvider).run();
     }
 }
