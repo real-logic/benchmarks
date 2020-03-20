@@ -172,7 +172,7 @@ public final class Harness
             if (nowNs >= nextReportTimeNs)
             {
                 final int elapsedSeconds = reportProgress(startTimeNs, nowNs, sentMessages);
-                nextReportTimeNs += elapsedSeconds * NANOS_PER_SECOND;
+                nextReportTimeNs = startTimeNs + (elapsedSeconds + 1) * NANOS_PER_SECOND;
             }
 
             final int batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);

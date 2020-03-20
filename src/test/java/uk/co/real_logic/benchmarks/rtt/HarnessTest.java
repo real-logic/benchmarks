@@ -223,6 +223,7 @@ class HarnessTest
             MILLISECONDS.toNanos(500),
             MILLISECONDS.toNanos(777),
             MILLISECONDS.toNanos(6750),
+            MILLISECONDS.toNanos(9200),
             MILLISECONDS.toNanos(12000)
         ).thenThrow(new IllegalStateException("Unexpected call!"));
         final Configuration configuration = new Configuration.Builder()
@@ -236,18 +237,19 @@ class HarnessTest
 
         final long messages = harness.send(10, 100, sender);
 
-        assertEquals(630, messages);
-        verify(clock, times(4)).nanoTime();
-        verify(senderIdleStrategy, times(3)).reset();
+        assertEquals(900, messages);
+        verify(clock, times(5)).nanoTime();
+        verify(senderIdleStrategy, times(4)).reset();
         verify(senderIdleStrategy, times(2)).idle();
         verify(sender).send(30, 100, MILLISECONDS.toNanos(500));
         verify(sender).send(15, 100, MILLISECONDS.toNanos(500));
         verify(sender).send(5, 100, MILLISECONDS.toNanos(500));
-        for (int time = 800; time <= 6500; time += 300)
+        for (int time = 800; time <= 9200; time += 300)
         {
             verify(sender).send(30, 100, MILLISECONDS.toNanos(time));
         }
         verify(out).format("Send rate %,d msg/sec%n", 5L);
+        verify(out).format("Send rate %,d msg/sec%n", 70L);
         verifyNoMoreInteractions(out, clock, senderIdleStrategy, sender);
     }
 }
