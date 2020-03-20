@@ -92,6 +92,6 @@ public final class SampleMessageProvider implements MessageProvider
 
     private static long offset(final long index)
     {
-        return ((index * PADDING & MASK) << SHIFT) + Unsafe.ARRAY_LONG_BASE_OFFSET;
+        return (((index + PADDING) & MASK) << SHIFT) + Unsafe.ARRAY_LONG_BASE_OFFSET;
     }
 }
