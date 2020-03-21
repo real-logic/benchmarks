@@ -54,6 +54,17 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
 }
 
+tasks.withType(JavaCompile) {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
+    }
+    options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
+    options.fork = true
+    options.forkOptions.javaHome = file("${System.env.JAVA_HOME}")
+    options.encoding = 'UTF-8'
+    options.deprecation = true
+}
+
 test {
     useJUnitPlatform()
 }
