@@ -31,14 +31,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.benchmarks.rtt.MessageProvider.Receiver;
-import static uk.co.real_logic.benchmarks.rtt.MessageProvider.Sender;
+import static uk.co.real_logic.benchmarks.rtt.MessagePump.Receiver;
+import static uk.co.real_logic.benchmarks.rtt.MessagePump.Sender;
 
-class HarnessTest
+class LoadTestRigTest
 {
     private final IdleStrategy senderIdleStrategy = mock(IdleStrategy.class);
     private final IdleStrategy receiverIdleStrategy = mock(IdleStrategy.class);
-    private final MessageProvider messageProvider = mock(MessageProvider.class);
+    private final MessagePump messagePump = mock(MessagePump.class);
     private final NanoClock clock = mock(NanoClock.class);
     private final PrintStream out = mock(PrintStream.class);
     private final Configuration configuration = new Configuration.Builder()
@@ -46,7 +46,7 @@ class HarnessTest
         .warmUpNumberOfMessages(1)
         .iterations(1)
         .numberOfMessages(1)
-        .messageProviderClass(SampleMessageProvider.class)
+        .messagePumpClass(SampleMessagePump.class)
         .senderIdleStrategy(senderIdleStrategy)
         .receiverIdleStrategy(receiverIdleStrategy)
         .build();
@@ -54,53 +54,53 @@ class HarnessTest
     @Test
     void constructorThrowsNullPointerExceptionIfConfigurationIsNull()
     {
-        assertThrows(NullPointerException.class, () -> new Harness(null, messageProvider, clock, out));
+        assertThrows(NullPointerException.class, () -> new LoadTestRig(null, messagePump, clock, out));
     }
 
     @Test
     void constructorThrowsNullPointerExceptionIfMessageProviderIsNull()
     {
-        assertThrows(NullPointerException.class, () -> new Harness(configuration, null, clock, out));
+        assertThrows(NullPointerException.class, () -> new LoadTestRig(configuration, null, clock, out));
     }
 
     @Test
     void constructorThrowsNullPointerExceptionIfNanoClockIsNull()
     {
-        assertThrows(NullPointerException.class, () -> new Harness(configuration, messageProvider, null, out));
+        assertThrows(NullPointerException.class, () -> new LoadTestRig(configuration, messagePump, null, out));
     }
 
     @Test
     void constructorThrowsNullPointerExceptionIfPrintStreamIsNull()
     {
-        assertThrows(NullPointerException.class, () -> new Harness(configuration, messageProvider, clock, null));
+        assertThrows(NullPointerException.class, () -> new LoadTestRig(configuration, messagePump, clock, null));
     }
 
     @Test
     void runThrowsNullPointerExceptionIfSenderIsNull() throws Exception
     {
-        final Harness harness = new Harness(configuration, messageProvider, clock, out);
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
 
-        assertThrows(NullPointerException.class, harness::run);
+        assertThrows(NullPointerException.class, loadTestRig::run);
 
-        final InOrder inOrder = inOrder(messageProvider);
-        inOrder.verify(messageProvider).init(configuration);
-        inOrder.verify(messageProvider).sender();
-        inOrder.verify(messageProvider).destroy();
+        final InOrder inOrder = inOrder(messagePump);
+        inOrder.verify(messagePump).init(configuration);
+        inOrder.verify(messagePump).sender();
+        inOrder.verify(messagePump).destroy();
     }
 
     @Test
     void runThrowsNullPointerExceptionIfReceiverIsNull() throws Exception
     {
-        final Harness harness = new Harness(configuration, messageProvider, clock, out);
-        when(messageProvider.sender()).thenReturn(mock(Sender.class));
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
+        when(messagePump.sender()).thenReturn(mock(Sender.class));
 
-        assertThrows(NullPointerException.class, harness::run);
+        assertThrows(NullPointerException.class, loadTestRig::run);
 
-        final InOrder inOrder = inOrder(messageProvider);
-        inOrder.verify(messageProvider).init(configuration);
-        inOrder.verify(messageProvider).sender();
-        inOrder.verify(messageProvider).receiver();
-        inOrder.verify(messageProvider).destroy();
+        final InOrder inOrder = inOrder(messagePump);
+        inOrder.verify(messagePump).init(configuration);
+        inOrder.verify(messagePump).sender();
+        inOrder.verify(messagePump).receiver();
+        inOrder.verify(messagePump).destroy();
     }
 
     @Test
@@ -108,7 +108,7 @@ class HarnessTest
     {
         final long nanoTime = SECONDS.toNanos(123);
         final NanoClock clock = () -> nanoTime;
-        final Harness harness = new Harness(configuration, messageProvider, clock, out);
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
         final Sender sender = mock(Sender.class);
         final AtomicInteger count = new AtomicInteger();
         when(sender.send(anyInt(), anyInt(), anyLong()))
@@ -128,31 +128,31 @@ class HarnessTest
             count.decrementAndGet();
             return nanoTime - 100;
         });
-        when(messageProvider.sender()).thenReturn(sender);
-        when(messageProvider.receiver()).thenReturn(receiver);
+        when(messagePump.sender()).thenReturn(sender);
+        when(messagePump.receiver()).thenReturn(receiver);
 
-        harness.run();
+        loadTestRig.run();
 
-        final InOrder inOrder = inOrder(messageProvider, sender, out);
-        inOrder.verify(messageProvider).init(configuration);
-        inOrder.verify(messageProvider).sender();
-        inOrder.verify(messageProvider).receiver();
+        final InOrder inOrder = inOrder(messagePump, sender, out);
+        inOrder.verify(messagePump).init(configuration);
+        inOrder.verify(messagePump).sender();
+        inOrder.verify(messagePump).receiver();
         inOrder.verify(out)
             .printf("Running warm up for %,d iterations of %,d messages with burst size of %,d...%n",
                 configuration.warmUpIterations(),
                 configuration.warmUpNumberOfMessages(),
-                configuration.burstSize());
-        inOrder.verify(sender).send(1, configuration.messageSize(), nanoTime);
+                configuration.batchSize());
+        inOrder.verify(sender).send(1, configuration.messageLength(), nanoTime);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(out)
             .printf("%nRunning measurement for %,d iterations of %,d messages with burst size of %,d...%n",
                 configuration.iterations(),
                 configuration.numberOfMessages(),
-                configuration.burstSize());
-        inOrder.verify(sender).send(1, configuration.messageSize(), nanoTime);
+                configuration.batchSize());
+        inOrder.verify(sender).send(1, configuration.messageLength(), nanoTime);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(out).println("Histogram of RTT latencies in microseconds.");
-        inOrder.verify(messageProvider).destroy();
+        inOrder.verify(messagePump).destroy();
     }
 
     @Test
@@ -160,13 +160,13 @@ class HarnessTest
     {
         final Receiver receiver = mock(Receiver.class);
         when(receiver.receive()).thenReturn(1L, 0L, 2L, 3L);
-        when(messageProvider.receiver()).thenReturn(receiver);
+        when(messagePump.receiver()).thenReturn(receiver);
         when(clock.nanoTime()).thenReturn(10L, 20L, 30L);
         final AtomicLong sentMessages = new AtomicLong(2);
         final Histogram histogram = mock(Histogram.class);
-        final Harness harness = new Harness(configuration, messageProvider, clock, out);
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
 
-        harness.receive(receiver, sentMessages, histogram);
+        loadTestRig.receive(receiver, sentMessages, histogram);
 
         verify(receiver, times(3)).receive();
         verify(clock, times(2)).nanoTime();
@@ -183,7 +183,7 @@ class HarnessTest
         final Sender sender = mock(Sender.class);
         when(sender.send(anyInt(), anyInt(), anyLong()))
             .thenAnswer((Answer<Integer>)invocation -> (int)invocation.getArgument(0));
-        when(messageProvider.sender()).thenReturn(sender);
+        when(messagePump.sender()).thenReturn(sender);
         when(clock.nanoTime()).thenReturn(
             MILLISECONDS.toNanos(1000),
             MILLISECONDS.toNanos(1750),
@@ -193,13 +193,13 @@ class HarnessTest
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
             .senderIdleStrategy(senderIdleStrategy)
-            .burstSize(15)
-            .messageSize(24)
-            .messageProviderClass(SampleMessageProvider.class)
+            .batchSize(15)
+            .messageLength(24)
+            .messagePumpClass(SampleMessagePump.class)
             .build();
-        final Harness harness = new Harness(configuration, messageProvider, clock, out);
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
 
-        final long messages = harness.send(2, 25, sender);
+        final long messages = loadTestRig.send(2, 25, sender);
 
         assertEquals(50, messages);
         verify(clock, times(4)).nanoTime();
@@ -218,7 +218,7 @@ class HarnessTest
     {
         final Sender sender = mock(Sender.class);
         when(sender.send(anyInt(), anyInt(), anyLong())).thenReturn(15, 10, 5, 30);
-        when(messageProvider.sender()).thenReturn(sender);
+        when(messagePump.sender()).thenReturn(sender);
         when(clock.nanoTime()).thenReturn(
             MILLISECONDS.toNanos(500),
             MILLISECONDS.toNanos(777),
@@ -229,13 +229,13 @@ class HarnessTest
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
             .senderIdleStrategy(senderIdleStrategy)
-            .burstSize(30)
-            .messageSize(100)
-            .messageProviderClass(SampleMessageProvider.class)
+            .batchSize(30)
+            .messageLength(100)
+            .messagePumpClass(SampleMessagePump.class)
             .build();
-        final Harness harness = new Harness(configuration, messageProvider, clock, out);
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
 
-        final long messages = harness.send(10, 100, sender);
+        final long messages = loadTestRig.send(10, 100, sender);
 
         assertEquals(900, messages);
         verify(clock, times(5)).nanoTime();

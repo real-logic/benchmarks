@@ -22,9 +22,10 @@ import org.agrona.concurrent.IdleStrategy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.util.Map;
 
+import static java.lang.reflect.Modifier.isAbstract;
+import static java.lang.reflect.Modifier.isPublic;
 import static java.util.Objects.requireNonNull;
 import static joptsimple.internal.Strings.isNullOrEmpty;
 
@@ -43,39 +44,40 @@ import static joptsimple.internal.Strings.isNullOrEmpty;
 public final class Configuration
 {
     /**
-     * Default number of the warm-up iterations.
+     * Default number of the warm up iterations.
      */
     public static final int DEFAULT_WARM_UP_ITERATIONS = 5;
 
     /**
-     * Default number of the messages per single warm-up iteration.
+     * Default number of messages per single warm up iteration.
      */
     public static final int DEFAULT_WARM_UP_NUMBER_OF_MESSAGES = 1_000;
 
     /**
-     * Default number of the measurement iterations.
+     * Default number of measurement iterations.
      */
     public static final int DEFAULT_ITERATIONS = 30;
 
     /**
-     * Default number of messages in a batch.
+     * Default number of messages in a single batch.
      */
-    public static final int DEFAULT_BURST_SIZE = 1;
+    public static final int DEFAULT_BATCH_SIZE = 1;
 
     /**
-     * Minimal message size in bytes, includes enough space to hold the {@code timestamp} payload.
+     * Minimal length in bytes of a single message. Contains enough space to hold the {@code timestamp} payload.
      */
-    public static final int MIN_MESSAGE_SIZE = 8;
+    public static final int MIN_MESSAGE_LENGTH = 8;
 
     /**
-     * Name of the system property to configure warm up iterations. Default value is {@link #DEFAULT_WARM_UP_ITERATIONS}.
+     * Name of the system property to configure the number of warm up iterations. Default value is
+     * {@link #DEFAULT_WARM_UP_ITERATIONS}.
      *
      * @see #warmUpIterations()
      */
     public static final String WARM_UP_ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.warmup.iterations";
 
     /**
-     * Name of the system property to configure number of the messages to be sent during warm up. Default value is
+     * Name of the system property to configure the number of messages to be sent during warm up. Default value is
      * {@link #DEFAULT_WARM_UP_NUMBER_OF_MESSAGES}.
      *
      * @see #warmUpNumberOfMessages()
@@ -83,7 +85,7 @@ public final class Configuration
     public static final String WARM_UP_MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.warmup.messages";
 
     /**
-     * Name of the system property to configure number of the measurement iterations. Default value is
+     * Name of the system property to configure the number of measurement iterations. Default value is
      * {@link #DEFAULT_ITERATIONS}.
      *
      * @see #iterations()
@@ -91,29 +93,30 @@ public final class Configuration
     public static final String ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.iterations";
 
     /**
-     * Name of the required system property to configure number of the messages to be sent during measurement iterations.
+     * Name of the required system property to configure the number of messages to be sent during the measurement
+     * iterations.
      *
      * @see #numberOfMessages()
      */
     public static final String MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.messages";
 
     /**
-     * Name of the system property to configure burst size, i.e. number of messages to be sent in a single batch.
-     * Default value is {@link #DEFAULT_BURST_SIZE}.
+     * Name of the system property to configure the batch size, i.e. number of messages to be sent in a single burst.
+     * Default value is {@link #DEFAULT_BATCH_SIZE}.
      *
-     * @see #burstSize()
+     * @see #batchSize()
      */
-    public static final String BURST_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.burst_size";
+    public static final String BATCH_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.batch_size";
 
     /**
-     * Name of the system property to configure message size in bytes. Default value is {@link #MIN_MESSAGE_SIZE}.
+     * Name of the system property to configure the message size in bytes. Default value is {@link #MIN_MESSAGE_LENGTH}.
      *
-     * @see #messageSize()
+     * @see #messageLength()
      */
-    public static final String MESSAGE_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.message_size";
+    public static final String MESSAGE_LENGTH_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.message_length";
 
     /**
-     * Name of the system property to configure {@link IdleStrategy} for the sender. Must be a fully qualified class
+     * Name of the system property to configure the {@link IdleStrategy} for the sender. Must be a fully qualified class
      * name. Default value is {@link BusySpinIdleStrategy}.
      *
      * @see #senderIdleStrategy()
@@ -121,26 +124,26 @@ public final class Configuration
     public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.sender.idle_strategy";
 
     /**
-     * Name of the system property to configure {@link IdleStrategy} for the receiver. Must be a fully qualified class
-     * name. Default value is {@link BusySpinIdleStrategy}.
+     * Name of the system property to configure the {@link IdleStrategy} for the receiver. Must be a fully qualified
+     * class name. Default value is {@link BusySpinIdleStrategy}.
      *
      * @see #receiverIdleStrategy()
      */
     public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.receiver.idle_strategy";
 
     /**
-     * Name of the required system property to configure {@link MessageProvider} class to be used for the benchmark.
-     * Must be a fully qualified class name.
+     * Name of the required system property to configure the {@link MessagePump} class (i.e. system under test) to be
+     * used for the benchmark. Must be a fully qualified class name.
      */
-    public static final String MESSAGE_PROVIDER_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.message_provider";
+    public static final String MESSAGE_PUMP_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.message_pump";
 
     private final int warmUpIterations;
     private final int warmUpNumberOfMessages;
     private final int iterations;
     private final int numberOfMessages;
-    private final int burstSize;
-    private final int messageSize;
-    private final Class<? extends MessageProvider> messageProviderClass;
+    private final int batchSize;
+    private final int messageLength;
+    private final Class<? extends MessagePump> messagePumpClass;
     private final IdleStrategy senderIdleStrategy;
     private final IdleStrategy receiverIdleStrategy;
 
@@ -150,18 +153,18 @@ public final class Configuration
         this.warmUpNumberOfMessages = checkMinValue(builder.warmUpNumberOfMessages, warmUpIterations > 0 ? 1 : 0, "Warm-up number of messages");
         this.iterations = checkMinValue(builder.iterations, 1, "Iterations");
         this.numberOfMessages = checkMinValue(builder.numberOfMessages, 1, "Number of messages");
-        this.burstSize = checkMinValue(builder.burstSize, 1, "Burst size");
-        this.messageSize = checkMinValue(builder.messageSize, MIN_MESSAGE_SIZE, "Message size");
-        this.messageProviderClass = validateMessageProviderClass(builder.messageProviderClass);
+        this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
+        this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
+        this.messagePumpClass = validateMessagePumpClass(builder.messagePumpClass);
         this.senderIdleStrategy = requireNonNull(builder.senderIdleStrategy, "Sender IdleStrategy cannot be null");
         this.receiverIdleStrategy = requireNonNull(builder.receiverIdleStrategy, "Receiver IdleStrategy cannot be null");
     }
 
     /**
-     * Number of the warm-up iterations, where each iteration has a duration of one second. Warm-up iterations results
+     * Number of the warm up iterations, where each iteration has a duration of one second. Warm up iterations results
      * will be discarded.
      *
-     * @return number of the warm-up iterations, defaults to {@link #DEFAULT_WARM_UP_ITERATIONS}.
+     * @return number of the warm up iterations, defaults to {@link #DEFAULT_WARM_UP_ITERATIONS}.
      */
     public int warmUpIterations()
     {
@@ -169,12 +172,11 @@ public final class Configuration
     }
 
     /**
-     * Number of messages that must be sent every iteration during warm-up.
+     * Number of messages per warm up iteration.
      *
-     * @return number of messages to be sent every warm-up iteration, defaults to
-     * {@link #DEFAULT_WARM_UP_NUMBER_OF_MESSAGES}.
-     * @implNote Actual number of messages sent can be less than this if the underlying implementation is not capable
-     * of achieving this rate.
+     * @return number of messages per warm up iteration, defaults to {@link #DEFAULT_WARM_UP_NUMBER_OF_MESSAGES}.
+     * @implNote Actual number of messages sent can be less than this number if the underlying system is not capable
+     * of achieving the target send rate.
      */
     public int warmUpNumberOfMessages()
     {
@@ -192,11 +194,11 @@ public final class Configuration
     }
 
     /**
-     * Number of messages that must be sent every iteration during measurement.
+     * Number of messages per measurement iteration.
      *
-     * @return number of messages to be sent every measurement iteration
-     * @implNote Actual number of messages sent can be less than this if the underlying implementation is not capable
-     * of achieving this rate.
+     * @return number of messages per measurement iteration.
+     * @implNote Actual number of messages sent can be less than this number if the underlying system is not capable
+     * of achieving the target send rate.
      */
     public int numberOfMessages()
     {
@@ -204,35 +206,38 @@ public final class Configuration
     }
 
     /**
-     * Number of messages to be sent at once. For example given {@link #warmUpNumberOfMessages()} of {@code 1000} and a
-     * {@link #burstSize()} of {code 1} there will be one message sent every millisecond. However if the
-     * {@link #burstSize()} is {@code 5} then there will be a batch of five messages sent every five milliseconds.
+     * Size of the batch, i.e. number of messages to be sent in a single burst.
+     * <p>
+     * For example if the number of messages is {@code 1000} and the batch size is {code 1} then a single message will
+     * be sent every millisecond. However if the batch size is {@code 5} then a batch of five messages will be sent
+     * every five milliseconds.
+     * </p>
      *
-     * @return number of messages to be sent at once, defaults to {@link #DEFAULT_BURST_SIZE}.
+     * @return number of messages to be sent in a single burst, defaults to {@link #DEFAULT_BATCH_SIZE}.
      */
-    public int burstSize()
+    public int batchSize()
     {
-        return burstSize;
+        return batchSize;
     }
 
     /**
-     * Size of message in bytes.
+     * Length in bytes of a single message.
      *
-     * @return size of message in bytes, defaults to {@link #MIN_MESSAGE_SIZE}.
+     * @return length in bytes of a single message, defaults to {@link #MIN_MESSAGE_LENGTH}.
      */
-    public int messageSize()
+    public int messageLength()
     {
-        return messageSize;
+        return messageLength;
     }
 
     /**
-     * {@link MessageProvider} class to use for the benchmark.
+     * {@link MessagePump} class to use for the benchmark.
      *
-     * @return {@link MessageProvider} class.
+     * @return {@link MessagePump} class.
      */
-    public Class<? extends MessageProvider> messageProviderClass()
+    public Class<? extends MessagePump> messagePumpClass()
     {
-        return messageProviderClass;
+        return messagePumpClass;
     }
 
     /**
@@ -261,9 +266,9 @@ public final class Configuration
             ", warmUpNumberOfMessages=" + warmUpNumberOfMessages +
             ", iterations=" + iterations +
             ", numberOfMessages=" + numberOfMessages +
-            ", burstSize=" + burstSize +
-            ", messageSize=" + messageSize +
-            ", messageProviderClass=" + messageProviderClass.getName() +
+            ", batchSize=" + batchSize +
+            ", messageLength=" + messageLength +
+            ", messagePumpClass=" + messagePumpClass.getName() +
             ", senderIdleStrategy=" + senderIdleStrategy +
             ", receiverIdleStrategy=" + receiverIdleStrategy;
     }
@@ -277,40 +282,40 @@ public final class Configuration
         private int warmUpNumberOfMessages = DEFAULT_WARM_UP_NUMBER_OF_MESSAGES;
         private int iterations = DEFAULT_ITERATIONS;
         private int numberOfMessages;
-        private int burstSize = DEFAULT_BURST_SIZE;
-        private int messageSize = MIN_MESSAGE_SIZE;
-        private Class<? extends MessageProvider> messageProviderClass;
+        private int batchSize = DEFAULT_BATCH_SIZE;
+        private int messageLength = MIN_MESSAGE_LENGTH;
+        private Class<? extends MessagePump> messagePumpClass;
         private IdleStrategy senderIdleStrategy = BusySpinIdleStrategy.INSTANCE;
         private IdleStrategy receiverIdleStrategy = BusySpinIdleStrategy.INSTANCE;
 
         /**
-         * Set number of the warm-up iterations.
+         * Set the number of warm up iterations.
          *
-         * @param warmUpIterations number of the warm-up iterations.
+         * @param iterations number of warm up iterations.
          * @return this for a fluent API.
          */
-        public Builder warmUpIterations(final int warmUpIterations)
+        public Builder warmUpIterations(final int iterations)
         {
-            this.warmUpIterations = warmUpIterations;
+            this.warmUpIterations = iterations;
             return this;
         }
 
         /**
-         * Set number of messages to be sent every warm-up iteration.
+         * Set the number of messages per warm up iteration.
          *
-         * @param warmUpNumberOfMessages number of messages to be sent every warm-up iteration.
+         * @param numberOfMessages per warm up iteration.
          * @return this for a fluent API.
          */
-        public Builder warmUpNumberOfMessages(final int warmUpNumberOfMessages)
+        public Builder warmUpNumberOfMessages(final int numberOfMessages)
         {
-            this.warmUpNumberOfMessages = warmUpNumberOfMessages;
+            this.warmUpNumberOfMessages = numberOfMessages;
             return this;
         }
 
         /**
-         * Set number of the measurement iterations.
+         * Set the number of measurement iterations.
          *
-         * @param iterations number of the measurement iterations.
+         * @param iterations number of measurement iterations.
          * @return this for a fluent API.
          */
         public Builder iterations(final int iterations)
@@ -320,9 +325,9 @@ public final class Configuration
         }
 
         /**
-         * Set number of messages to be sent every warm-up iteration.
+         * Set the number of messages per measurement iteration.
          *
-         * @param numberOfMessages number of messages to be sent every warm-up iteration.
+         * @param numberOfMessages per measurement iteration.
          * @return this for a fluent API.
          */
         public Builder numberOfMessages(final int numberOfMessages)
@@ -332,46 +337,46 @@ public final class Configuration
         }
 
         /**
-         * Set number of messages to be sent at once in a single burst.
+         * Set the batch size, i.e. number of messages to be sent at once in a single burst.
          *
-         * @param burstSize number of messages to be sent at once in a single burst.
+         * @param size of a single batch of messages.
          * @return this for a fluent API.
          */
-        public Builder burstSize(final int burstSize)
+        public Builder batchSize(final int size)
         {
-            this.burstSize = burstSize;
+            this.batchSize = size;
             return this;
         }
 
         /**
-         * Set size of message in bytes. Must be at least {@link #MIN_MESSAGE_SIZE} bytes, because every message must
-         * contain a {@code timestamp} payload.
+         * Set the length of a single message in bytes. Must be at least {@link #MIN_MESSAGE_LENGTH} bytes long, since
+         * every message must contain a {@code timestamp} payload.
          *
-         * @param messageSize size of message in bytes.
+         * @param length of a single message in bytes.
          * @return this for a fluent API.
          */
-        public Builder messageSize(final int messageSize)
+        public Builder messageLength(final int length)
         {
-            this.messageSize = messageSize;
+            this.messageLength = length;
             return this;
         }
 
         /**
-         * Set the {@link MessageProvider} class.
+         * Set the {@link MessagePump} class.
          *
-         * @param messageProviderClass class.
+         * @param klass class.
          * @return this for a fluent API.
          */
-        public Builder messageProviderClass(final Class<? extends MessageProvider> messageProviderClass)
+        public Builder messagePumpClass(final Class<? extends MessagePump> klass)
         {
-            this.messageProviderClass = messageProviderClass;
+            this.messagePumpClass = klass;
             return this;
         }
 
         /**
-         * Set the {@link IdleStrategy} to use when sending messages.
+         * Set the {@link IdleStrategy} for the sender.
          *
-         * @param senderIdleStrategy idle strategy to use for sending messages.
+         * @param senderIdleStrategy idle strategy for the sender.
          * @return this for a fluent API.
          */
         public Builder senderIdleStrategy(final IdleStrategy senderIdleStrategy)
@@ -381,9 +386,9 @@ public final class Configuration
         }
 
         /**
-         * Set the {@link IdleStrategy} to use when receiving messages.
+         * Set the {@link IdleStrategy} for the receiver.
          *
-         * @param receiverIdleStrategy idle strategy to use for receiving messages.
+         * @param receiverIdleStrategy idle strategy for the receiver.
          * @return this for a fluent API.
          */
         public Builder receiverIdleStrategy(final IdleStrategy receiverIdleStrategy)
@@ -393,7 +398,7 @@ public final class Configuration
         }
 
         /**
-         * Create a new instance of {@link Configuration} class from this builder.
+         * Create a new instance of the {@link Configuration} class from this builder.
          *
          * @return a {@link Configuration} instance
          */
@@ -419,36 +424,41 @@ public final class Configuration
         {
             builder.warmUpIterations(parseInt(properties, WARM_UP_ITERATIONS_PROP_NAME));
         }
+
         if (isPropertyProvided(properties, WARM_UP_MESSAGES_PROP_NAME))
         {
             builder.warmUpNumberOfMessages(parseInt(properties, WARM_UP_MESSAGES_PROP_NAME));
         }
-        if (isPropertyProvided(properties, WARM_UP_MESSAGES_PROP_NAME))
-        {
-            builder.warmUpNumberOfMessages(parseInt(properties, WARM_UP_MESSAGES_PROP_NAME));
-        }
+
         if (isPropertyProvided(properties, ITERATIONS_PROP_NAME))
         {
             builder.iterations(parseInt(properties, ITERATIONS_PROP_NAME));
         }
-        if (isPropertyProvided(properties, BURST_SIZE_PROP_NAME))
+
+        if (isPropertyProvided(properties, BATCH_SIZE_PROP_NAME))
         {
-            builder.burstSize(parseInt(properties, BURST_SIZE_PROP_NAME));
+            builder.batchSize(parseInt(properties, BATCH_SIZE_PROP_NAME));
         }
-        if (isPropertyProvided(properties, MESSAGE_SIZE_PROP_NAME))
+
+        if (isPropertyProvided(properties, MESSAGE_LENGTH_PROP_NAME))
         {
-            builder.messageSize(parseInt(properties, MESSAGE_SIZE_PROP_NAME));
+            builder.messageLength(parseInt(properties, MESSAGE_LENGTH_PROP_NAME));
         }
+
         if (isPropertyProvided(properties, SENDER_IDLE_STRATEGY_PROP_NAME))
         {
             builder.senderIdleStrategy(parseIdleStrategy(properties, SENDER_IDLE_STRATEGY_PROP_NAME));
         }
+
         if (isPropertyProvided(properties, RECEIVER_IDLE_STRATEGY_PROP_NAME))
         {
             builder.receiverIdleStrategy(parseIdleStrategy(properties, RECEIVER_IDLE_STRATEGY_PROP_NAME));
         }
+
         builder.numberOfMessages(parseInt(properties, MESSAGES_PROP_NAME));
-        builder.messageProviderClass(parseClass(properties, MESSAGE_PROVIDER_PROP_NAME, MessageProvider.class));
+
+        builder.messagePumpClass(parseClass(properties, MESSAGE_PUMP_PROP_NAME, MessagePump.class));
+
         return builder.build();
     }
 
@@ -461,32 +471,31 @@ public final class Configuration
         return value;
     }
 
-    private static Class<? extends MessageProvider> validateMessageProviderClass(
-        final Class<? extends MessageProvider> klass)
+    private static Class<? extends MessagePump> validateMessagePumpClass(
+        final Class<? extends MessagePump> klass)
     {
-        requireNonNull(klass, "MessageProvider class cannot be null");
-        if (klass.isInterface() || Modifier.isAbstract(klass.getModifiers()))
+        requireNonNull(klass, "MessagePump class cannot be null");
+        if (klass.isInterface() || isAbstract(klass.getModifiers()))
         {
-            throw new IllegalArgumentException("MessageProvider class must be a concrete class");
+            throw new IllegalArgumentException("MessagePump class must be a concrete class");
         }
         try
         {
-            final Constructor<? extends MessageProvider> constructor = klass.getConstructor();
-            if (Modifier.isPublic(constructor.getModifiers()))
+            final Constructor<? extends MessagePump> constructor = klass.getConstructor();
+            if (isPublic(constructor.getModifiers()))
             {
                 return klass;
             }
         }
-        catch (NoSuchMethodException e)
+        catch (final NoSuchMethodException e)
         {
         }
-        throw new IllegalArgumentException("MessageProvider class must have a public no-arg constructor");
+        throw new IllegalArgumentException("MessagePump class must have a public no-arg constructor");
     }
 
     private static boolean isPropertyProvided(final Map<String, String> properties, final String propName)
     {
-        final String value = properties.get(propName);
-        return !isNullOrEmpty(value);
+        return !isNullOrEmpty(properties.get(propName));
     }
 
     private static int parseInt(final Map<String, String> properties, final String propName)

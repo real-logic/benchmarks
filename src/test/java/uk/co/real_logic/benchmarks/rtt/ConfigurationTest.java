@@ -68,7 +68,7 @@ class ConfigurationTest
             .warmUpIterations(0)
             .warmUpNumberOfMessages(0)
             .numberOfMessages(1_000)
-            .messageProviderClass(SampleMessageProvider.class)
+            .messagePumpClass(SampleMessagePump.class)
             .build();
 
         assertEquals(0, configuration.warmUpIterations());
@@ -104,82 +104,82 @@ class ConfigurationTest
 
     @ParameterizedTest
     @ValueSource(ints = { Integer.MIN_VALUE, 0 })
-    void throwsIllegalArgumentExceptionIfBurstSizeIsInvalid(final int burstSize)
+    void throwsIllegalArgumentExceptionIfBatchSizeIsInvalid(final int size)
     {
         final Builder builder = new Builder()
             .numberOfMessages(1000)
-            .burstSize(burstSize);
+            .batchSize(size);
 
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("Burst size cannot be less than 1, got: " + burstSize, ex.getMessage());
+        assertEquals("Batch size cannot be less than 1, got: " + size, ex.getMessage());
     }
 
     @ParameterizedTest
     @MethodSource("messageSizes")
-    void throwsIllegalArgumentExceptionIfMessageSizeIsLessThanMinimumSize(final int messageSize)
+    void throwsIllegalArgumentExceptionIfMessageLengthIsLessThanMinimumSize(final int length)
     {
         final Builder builder = new Builder()
             .numberOfMessages(200)
-            .messageSize(messageSize);
+            .messageLength(length);
 
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("Message size cannot be less than " + MIN_MESSAGE_SIZE + ", got: " + messageSize, ex.getMessage());
+        assertEquals("Message length cannot be less than " + MIN_MESSAGE_LENGTH + ", got: " + length,
+            ex.getMessage());
     }
 
     @Test
-    void throwsNullPointerExceptionIfMessageProviderClassIsNull()
+    void throwsNullPointerExceptionIfMessagePumpClassIsNull()
     {
         final Builder builder = new Builder()
-            .numberOfMessages(10)
-            .messageProviderClass(null);
+            .numberOfMessages(10);
 
         final NullPointerException ex =
             assertThrows(NullPointerException.class, () -> builder.build());
 
-        assertEquals("MessageProvider class cannot be null", ex.getMessage());
+        assertEquals("MessagePump class cannot be null", ex.getMessage());
     }
 
     @Test
-    void throwsIllegalArgumentExceptionIfMessageProviderClassIsAnInterface()
+    void throwsIllegalArgumentExceptionIfMessagePumpClassIsAnInterface()
     {
         final Builder builder = new Builder()
             .numberOfMessages(10)
-            .messageProviderClass(TestMessageProvider.class);
+            .messagePumpClass(TestMessagePump.class);
 
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("MessageProvider class must be a concrete class", ex.getMessage());
+        assertEquals("MessagePump class must be a concrete class", ex.getMessage());
     }
 
     @Test
-    void throwsIllegalArgumentExceptionIfMessageProviderClassIsAnAbstractClass()
+    void throwsIllegalArgumentExceptionIfMessagePumpClassIsAnAbstractClass()
     {
         final Builder builder = new Builder()
             .numberOfMessages(10)
-            .messageProviderClass(TestAbstractMessageProvider.class);
+            .messagePumpClass(TestAbstractMessagePump.class);
 
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("MessageProvider class must be a concrete class", ex.getMessage());
+        assertEquals("MessagePump class must be a concrete class", ex.getMessage());
     }
 
     @Test
-    void throwsIllegalArgumentExceptionIfMessageProviderClassHasNoPublicConstructor()
+    void throwsIllegalArgumentExceptionIfMessagePumpClassHasNoPublicConstructor()
     {
         final Builder builder = new Builder()
             .numberOfMessages(10)
-            .messageProviderClass(TestNoPublicConstructorMessageProvider.class);
+            .messagePumpClass(TestNoPublicConstructorMessagePump.class);
 
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("MessageProvider class must have a public no-arg constructor", ex.getMessage());
+        assertEquals("MessagePump class must have a public no-arg constructor", ex.getMessage());
     }
 
     @Test
@@ -187,7 +187,7 @@ class ConfigurationTest
     {
         final Builder builder = new Builder()
             .numberOfMessages(4)
-            .messageProviderClass(SampleMessageProvider.class)
+            .messagePumpClass(SampleMessagePump.class)
             .senderIdleStrategy(null);
 
         final NullPointerException ex =
@@ -201,7 +201,7 @@ class ConfigurationTest
     {
         final Builder builder = new Builder()
             .numberOfMessages(4)
-            .messageProviderClass(SampleMessageProvider.class)
+            .messagePumpClass(SampleMessagePump.class)
             .receiverIdleStrategy(null);
 
         final NullPointerException ex =
@@ -215,16 +215,16 @@ class ConfigurationTest
     {
         final Configuration configuration = new Builder()
             .numberOfMessages(123)
-            .messageProviderClass(SampleMessageProvider.class)
+            .messagePumpClass(SampleMessagePump.class)
             .build();
 
         assertEquals(123, configuration.numberOfMessages());
         assertEquals(DEFAULT_WARM_UP_NUMBER_OF_MESSAGES, configuration.warmUpNumberOfMessages());
         assertEquals(DEFAULT_WARM_UP_ITERATIONS, configuration.warmUpIterations());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
-        assertEquals(DEFAULT_BURST_SIZE, configuration.burstSize());
-        assertEquals(MIN_MESSAGE_SIZE, configuration.messageSize());
-        assertSame(SampleMessageProvider.class, configuration.messageProviderClass());
+        assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
+        assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
+        assertSame(SampleMessagePump.class, configuration.messagePumpClass());
         assertSame(BusySpinIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
         assertSame(BusySpinIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
     }
@@ -237,9 +237,9 @@ class ConfigurationTest
             .warmUpIterations(3)
             .iterations(11)
             .numberOfMessages(666)
-            .burstSize(4)
-            .messageSize(119)
-            .messageProviderClass(SampleMessageProvider.class)
+            .batchSize(4)
+            .messageLength(119)
+            .messagePumpClass(SampleMessagePump.class)
             .senderIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiverIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .build();
@@ -248,9 +248,9 @@ class ConfigurationTest
         assertEquals(222, configuration.warmUpNumberOfMessages());
         assertEquals(11, configuration.iterations());
         assertEquals(666, configuration.numberOfMessages());
-        assertEquals(4, configuration.burstSize());
-        assertEquals(119, configuration.messageSize());
-        assertSame(SampleMessageProvider.class, configuration.messageProviderClass());
+        assertEquals(4, configuration.batchSize());
+        assertEquals(119, configuration.messageLength());
+        assertSame(SampleMessagePump.class, configuration.messagePumpClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
         assertSame(YieldingIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
     }
@@ -263,16 +263,16 @@ class ConfigurationTest
             .warmUpNumberOfMessages(3)
             .iterations(10)
             .numberOfMessages(777)
-            .burstSize(2)
-            .messageSize(64)
-            .messageProviderClass(SampleMessageProvider.class)
+            .batchSize(2)
+            .messageLength(64)
+            .messagePumpClass(SampleMessagePump.class)
             .senderIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiverIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .build();
 
         assertEquals("warmUpIterations=4, warmUpNumberOfMessages=3, iterations=10, numberOfMessages=777, " +
-                "burstSize=2, messageSize=64, " +
-                "messageProviderClass=uk.co.real_logic.benchmarks.rtt.SampleMessageProvider, " +
+                "batchSize=2, messageLength=64, " +
+                "messagePumpClass=uk.co.real_logic.benchmarks.rtt.SampleMessagePump, " +
                 "senderIdleStrategy=NoOpIdleStrategy{}, receiverIdleStrategy=YieldingIdleStrategy{}",
             configuration.toString());
     }
@@ -303,25 +303,25 @@ class ConfigurationTest
     }
 
     @Test
-    void fromPropertiesThrowsIllegalArgumentExceptionIfMessageProviderPropertyIsNotConfigured()
+    void fromPropertiesThrowsIllegalArgumentExceptionIfMessagePumpPropertyIsNotConfigured()
     {
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () -> fromProperties(singletonMap(MESSAGES_PROP_NAME, "100")));
 
-        assertEquals("Property '" + MESSAGE_PROVIDER_PROP_NAME + "' is required!", ex.getMessage());
+        assertEquals("Property '" + MESSAGE_PUMP_PROP_NAME + "' is required!", ex.getMessage());
     }
 
     @Test
-    void fromPropertiesThrowsIllegalArgumentExceptionIfMessageProviderHasInvalidValue()
+    void fromPropertiesThrowsIllegalArgumentExceptionIfMessagePumpHasInvalidValue()
     {
         final Map<String, String> properties = new HashMap<>();
         properties.put(MESSAGES_PROP_NAME, "20");
-        properties.put(MESSAGE_PROVIDER_PROP_NAME, Integer.class.getName());
+        properties.put(MESSAGE_PUMP_PROP_NAME, Integer.class.getName());
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () -> fromProperties(properties));
 
-        assertEquals("Invalid class value for property '" + MESSAGE_PROVIDER_PROP_NAME +
+        assertEquals("Invalid class value for property '" + MESSAGE_PUMP_PROP_NAME +
             "', cause: class java.lang.Integer", ex.getMessage());
     }
 
@@ -330,7 +330,7 @@ class ConfigurationTest
     {
         final Map<String, String> properties = new HashMap<>();
         properties.put(MESSAGES_PROP_NAME, "42");
-        properties.put(MESSAGE_PROVIDER_PROP_NAME, SampleMessageProvider.class.getName());
+        properties.put(MESSAGE_PUMP_PROP_NAME, SampleMessagePump.class.getName());
 
         final Configuration configuration = fromProperties(properties);
 
@@ -338,9 +338,9 @@ class ConfigurationTest
         assertEquals(DEFAULT_WARM_UP_NUMBER_OF_MESSAGES, configuration.warmUpNumberOfMessages());
         assertEquals(DEFAULT_WARM_UP_ITERATIONS, configuration.warmUpIterations());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
-        assertEquals(DEFAULT_BURST_SIZE, configuration.burstSize());
-        assertEquals(MIN_MESSAGE_SIZE, configuration.messageSize());
-        assertSame(SampleMessageProvider.class, configuration.messageProviderClass());
+        assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
+        assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
+        assertSame(SampleMessagePump.class, configuration.messagePumpClass());
         assertSame(BusySpinIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
         assertSame(BusySpinIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
     }
@@ -353,9 +353,9 @@ class ConfigurationTest
         properties.put(WARM_UP_MESSAGES_PROP_NAME, "10");
         properties.put(ITERATIONS_PROP_NAME, "4");
         properties.put(MESSAGES_PROP_NAME, "200");
-        properties.put(BURST_SIZE_PROP_NAME, "3");
-        properties.put(MESSAGE_SIZE_PROP_NAME, "24");
-        properties.put(MESSAGE_PROVIDER_PROP_NAME, SampleMessageProvider.class.getName());
+        properties.put(BATCH_SIZE_PROP_NAME, "3");
+        properties.put(MESSAGE_LENGTH_PROP_NAME, "24");
+        properties.put(MESSAGE_PUMP_PROP_NAME, SampleMessagePump.class.getName());
         properties.put(SENDER_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
         properties.put(RECEIVER_IDLE_STRATEGY_PROP_NAME, NoOpIdleStrategy.class.getName());
 
@@ -365,29 +365,29 @@ class ConfigurationTest
         assertEquals(10, configuration.warmUpNumberOfMessages());
         assertEquals(4, configuration.iterations());
         assertEquals(200, configuration.numberOfMessages());
-        assertEquals(3, configuration.burstSize());
-        assertEquals(24, configuration.messageSize());
-        assertSame(SampleMessageProvider.class, configuration.messageProviderClass());
+        assertEquals(3, configuration.batchSize());
+        assertEquals(24, configuration.messageLength());
+        assertSame(SampleMessagePump.class, configuration.messagePumpClass());
         assertTrue(YieldingIdleStrategy.class.isInstance(configuration.senderIdleStrategy()));
         assertTrue(NoOpIdleStrategy.class.isInstance(configuration.receiverIdleStrategy()));
     }
 
     private static IntStream messageSizes()
     {
-        return IntStream.range(-1, MIN_MESSAGE_SIZE);
+        return IntStream.range(-1, MIN_MESSAGE_LENGTH);
     }
 
-    private interface TestMessageProvider extends MessageProvider
+    private interface TestMessagePump extends MessagePump
     {
     }
 
-    private abstract class TestAbstractMessageProvider implements MessageProvider
+    private abstract class TestAbstractMessagePump implements MessagePump
     {
     }
 
-    private class TestNoPublicConstructorMessageProvider implements MessageProvider
+    private class TestNoPublicConstructorMessagePump implements MessagePump
     {
-        private TestNoPublicConstructorMessageProvider()
+        private TestNoPublicConstructorMessagePump()
         {
         }
 

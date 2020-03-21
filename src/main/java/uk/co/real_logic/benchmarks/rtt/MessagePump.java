@@ -15,7 +15,11 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
-public interface MessageProvider
+/**
+ * {@code MessagePump} is an SPI to be implemented by the system under test in order to for it to be used in the
+ * {@link LoadTestRig}.
+ */
+public interface MessagePump
 {
     /**
      * Initialize state and establish all necessary connections.
@@ -53,20 +57,20 @@ public interface MessageProvider
     interface Sender
     {
         /**
-         * Sends specified number of {@code messages} with the given {@code size} and a {@code timestamp} as payload.
+         * Sends specified number of {@code messages} with the given {@code length} and a {@code timestamp} as payload.
          *
-         * @param numberOfMessages number of messages to be sent
-         * @param size             in bytes of a single message
-         * @param timestamp        to be included as the part of the message payload
+         * @param numberOfMessages number of messages to be sent.
+         * @param length           in bytes of a single message.
+         * @param timestamp        to be included as the part of the message payload.
          * @return actual number of messages sent
-         * @implSpec {@code Sender} must send a message with the payload that is at least {@code size} bytes long and
+         * @implSpec {@code Sender} must send a message with the payload that is at least {@code length} bytes long and
          * <em>must</em> include given {@code timestamp} in it. Any header added by the sender <em>may not</em> be
-         * counted towards the {@code size}.
+         * counted towards the {@code length}.
          * @implNote The implementation can re-try actual send operation multiple times if needed but it should not block
          * forever since harness also has a re-try mechanism for the entire batch, e.g. if a first call sends {code 3} out
-         * of {code 5} messages then harness will perform second call with the batch size ({@code messages}) of {code 2}.
+         * of {code 5} messages then harness will perform second call with the batch length ({@code messages}) of {code 2}.
          */
-        int send(int numberOfMessages, int size, long timestamp);
+        int send(int numberOfMessages, int length, long timestamp);
     }
 
     /**

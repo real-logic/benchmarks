@@ -33,26 +33,26 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * {@code Harness} class is the core of the RTT benchmark. It is responsible for running benchmark against provided
- * {@link MessageProvider} instance using given {@link Configuration}.
+ * {@code LoadTestRig} class is the core of the RTT benchmark. It is responsible for running benchmark against provided
+ * {@link MessagePump} instance using given {@link Configuration}.
  */
-public final class Harness
+public final class LoadTestRig
 {
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
     private final Configuration configuration;
-    private final MessageProvider messageProvider;
+    private final MessagePump messagePump;
     private final NanoClock clock;
     private final PrintStream out;
 
-    public Harness(final Configuration configuration, final MessageProvider messageProvider)
+    public LoadTestRig(final Configuration configuration, final MessagePump messagePump)
     {
-        this(configuration, messageProvider, SystemNanoClock.INSTANCE, System.out);
+        this(configuration, messagePump, SystemNanoClock.INSTANCE, System.out);
     }
 
-    Harness(final Configuration configuration, final MessageProvider messageProvider, final NanoClock clock, final PrintStream out)
+    LoadTestRig(final Configuration configuration, final MessagePump messagePump, final NanoClock clock, final PrintStream out)
     {
         this.configuration = requireNonNull(configuration);
-        this.messageProvider = requireNonNull(messageProvider);
+        this.messagePump = requireNonNull(messagePump);
         this.clock = requireNonNull(clock);
         this.out = requireNonNull(out);
     }
@@ -60,15 +60,15 @@ public final class Harness
     /**
      * Run the benchmark and print histogram of the RTT values at the end.
      *
-     * @throws Exception in case of any error from the {@link MessageProvider}
+     * @throws Exception in case of any error from the {@link MessagePump}
      */
     public void run() throws Exception
     {
-        messageProvider.init(configuration);
+        messagePump.init(configuration);
         try
         {
-            final MessageProvider.Sender sender = requireNonNull(messageProvider.sender());
-            final MessageProvider.Receiver receiver = requireNonNull(messageProvider.receiver());
+            final MessagePump.Sender sender = requireNonNull(messagePump.sender());
+            final MessagePump.Receiver receiver = requireNonNull(messagePump.receiver());
             final AtomicLong sentMessages = new AtomicLong();
             final Histogram histogram = new Histogram(
                 max(configuration.iterations(), configuration.warmUpIterations()) * NANOS_PER_SECOND, 3);
@@ -79,7 +79,7 @@ public final class Harness
                 out.printf("Running warm up for %,d iterations of %,d messages with burst size of %,d...%n",
                     configuration.warmUpIterations(),
                     configuration.warmUpNumberOfMessages(),
-                    configuration.burstSize());
+                    configuration.batchSize());
                 doRun(configuration.warmUpIterations(), configuration.warmUpNumberOfMessages(), sender, receiver,
                     sentMessages, histogram);
 
@@ -91,7 +91,7 @@ public final class Harness
             out.printf("%nRunning measurement for %,d iterations of %,d messages with burst size of %,d...%n",
                 configuration.iterations(),
                 configuration.numberOfMessages(),
-                configuration.burstSize());
+                configuration.batchSize());
             doRun(configuration.iterations(), configuration.numberOfMessages(), sender, receiver, sentMessages,
                 histogram);
 
@@ -100,15 +100,15 @@ public final class Harness
         }
         finally
         {
-            messageProvider.destroy();
+            messagePump.destroy();
         }
     }
 
     private void doRun(
         final int iterations,
         final int messages,
-        final MessageProvider.Sender sender,
-        final MessageProvider.Receiver receiver,
+        final MessagePump.Sender sender,
+        final MessagePump.Receiver receiver,
         final AtomicLong sentMessages,
         final Histogram histogram)
     {
@@ -117,7 +117,7 @@ public final class Harness
         receiverTask.join();
     }
 
-    void receive(final MessageProvider.Receiver receiver, final AtomicLong sentMessages, final Histogram histogram)
+    void receive(final MessagePump.Receiver receiver, final AtomicLong sentMessages, final Histogram histogram)
     {
         final NanoClock clock = this.clock;
         final IdleStrategy idleStrategy = configuration.receiverIdleStrategy();
@@ -150,12 +150,12 @@ public final class Harness
         }
     }
 
-    long send(final int iterations, final int numberOfMessages, final MessageProvider.Sender sender)
+    long send(final int iterations, final int numberOfMessages, final MessagePump.Sender sender)
     {
         final NanoClock clock = this.clock;
         final PrintStream out = this.out;
-        final int burstSize = configuration.burstSize();
-        final int messageSize = configuration.messageSize();
+        final int burstSize = configuration.batchSize();
+        final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.senderIdleStrategy();
         final long intervalNs = NANOS_PER_SECOND * burstSize / numberOfMessages;
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
@@ -227,9 +227,9 @@ public final class Harness
             .collect(toMap(e -> (String)e.getKey(), e -> (String)e.getValue()));
         final Configuration configuration = Configuration.fromProperties(properties);
 
-        final Class<? extends MessageProvider> messageProviderClass = configuration.messageProviderClass();
-        final MessageProvider messageProvider = messageProviderClass.getConstructor().newInstance();
+        final Class<? extends MessagePump> messagePumpClass = configuration.messagePumpClass();
+        final MessagePump messagePump = messagePumpClass.getConstructor().newInstance();
 
-        new Harness(configuration, messageProvider).run();
+        new LoadTestRig(configuration, messagePump).run();
     }
 }

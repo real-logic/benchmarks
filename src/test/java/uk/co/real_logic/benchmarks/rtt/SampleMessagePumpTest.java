@@ -21,32 +21,32 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static uk.co.real_logic.benchmarks.rtt.MessageProvider.Receiver;
-import static uk.co.real_logic.benchmarks.rtt.MessageProvider.Sender;
+import static uk.co.real_logic.benchmarks.rtt.MessagePump.Receiver;
+import static uk.co.real_logic.benchmarks.rtt.MessagePump.Sender;
 
-class SampleMessageProviderTest
+class SampleMessagePumpTest
 {
-    private final SampleMessageProvider provider = new SampleMessageProvider();
+    private final SampleMessagePump messagePump = new SampleMessagePump();
 
     @Test
     void senderCreatesNewInstanceUponEachInvocation()
     {
-        final Sender sender = provider.sender();
-        assertNotSame(sender, provider.sender());
+        final Sender sender = messagePump.sender();
+        assertNotSame(sender, messagePump.sender());
     }
 
     @Test
     void receiverCreatesNewInstanceUponEachInvocation()
     {
-        final Receiver receiver = provider.receiver();
-        assertNotSame(receiver, provider.receiver());
+        final Receiver receiver = messagePump.receiver();
+        assertNotSame(receiver, messagePump.receiver());
     }
 
     @Test
     void sendASingleMessage()
     {
-        final Sender sender = provider.sender();
-        final Receiver receiver = provider.receiver();
+        final Sender sender = messagePump.sender();
+        final Receiver receiver = messagePump.receiver();
 
         final int result = sender.send(1, 16, 123);
 
@@ -57,8 +57,8 @@ class SampleMessageProviderTest
     @Test
     void sendMultipleMessages()
     {
-        final Sender sender = provider.sender();
-        final Receiver receiver = provider.receiver();
+        final Sender sender = messagePump.sender();
+        final Receiver receiver = messagePump.receiver();
 
         final int result = sender.send(4, 64, 800);
 
@@ -72,14 +72,14 @@ class SampleMessageProviderTest
     @Test
     void sendReturnsZeroIfItCantFitAnEntireBatch()
     {
-        final Sender sender = provider.sender();
-        final Receiver receiver = provider.receiver();
-        sender.send(SampleMessageProvider.SIZE, 8, 777);
+        final Sender sender = messagePump.sender();
+        final Receiver receiver = messagePump.receiver();
+        sender.send(SampleMessagePump.SIZE, 8, 777);
 
         final int result = sender.send(1, 100, 555);
 
         assertEquals(0, result);
-        for (int i = 0; i < SampleMessageProvider.SIZE; i++)
+        for (int i = 0; i < SampleMessagePump.SIZE; i++)
         {
             assertEquals(777, receiver.receive());
         }
@@ -88,7 +88,7 @@ class SampleMessageProviderTest
     @Test
     void receiveReturnsZeroIfNothingWasWritten()
     {
-        final Receiver receiver = provider.receiver();
+        final Receiver receiver = messagePump.receiver();
 
         assertEquals(0L, receiver.receive());
     }
@@ -96,8 +96,8 @@ class SampleMessageProviderTest
     @Test
     void receiveReturnsZeroAfterAllMessagesConsumed()
     {
-        final Sender sender = provider.sender();
-        final Receiver receiver = provider.receiver();
+        final Sender sender = messagePump.sender();
+        final Receiver receiver = messagePump.receiver();
         sender.send(5, 128, 1111);
 
         for (int i = 0; i < 5; i++)
@@ -119,8 +119,8 @@ class SampleMessageProviderTest
 
     private void testConcurrentSendAndReceive(final int messages) throws InterruptedException
     {
-        final Sender sender = provider.sender();
-        final Receiver receiver = provider.receiver();
+        final Sender sender = messagePump.sender();
+        final Receiver receiver = messagePump.receiver();
         final long[] timestamps = ThreadLocalRandom.current().longs(messages, 1, Long.MAX_VALUE).toArray();
         final Phaser phaser = new Phaser(3);
 

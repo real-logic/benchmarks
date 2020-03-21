@@ -23,7 +23,7 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-public final class SampleMessageProvider implements MessageProvider
+public final class SampleMessagePump implements MessagePump
 {
     static final int SIZE = 4096;
     private static final int MASK = SIZE - 1;
@@ -47,9 +47,9 @@ public final class SampleMessageProvider implements MessageProvider
         {
             private long index = 0;
 
-            public int send(final int numberOfMessages, final int size, final long timestamp)
+            public int send(final int numberOfMessages, final int length, final long timestamp)
             {
-                final long[] messages = SampleMessageProvider.this.messages;
+                final long[] messages = SampleMessagePump.this.messages;
                 final long index = this.index;
                 if (0L != UNSAFE.getLongVolatile(messages, offset(index + numberOfMessages - 1)))
                 {
@@ -77,7 +77,7 @@ public final class SampleMessageProvider implements MessageProvider
             public long receive()
             {
                 final long offset = offset(index);
-                final long[] messages = SampleMessageProvider.this.messages;
+                final long[] messages = SampleMessagePump.this.messages;
                 final long timestamp = UNSAFE.getLongVolatile(messages, offset);
                 if (0L != timestamp)
                 {
