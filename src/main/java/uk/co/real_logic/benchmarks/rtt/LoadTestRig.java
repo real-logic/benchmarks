@@ -180,10 +180,11 @@ public final class LoadTestRig
             if (sent < batchSize)
             {
                 idleStrategy.reset();
-                while ((sent += sender.send(batchSize - sent, messageSize, timestamp)) < batchSize)
+                do
                 {
                     idleStrategy.idle();
                 }
+                while ((sent += sender.send(batchSize - sent, messageSize, timestamp)) < batchSize);
             }
             sentMessages += batchSize;
             if (totalNumberOfMessages == sentMessages)

@@ -240,7 +240,7 @@ class LoadTestRigTest
         assertEquals(900, messages);
         verify(clock, times(5)).nanoTime();
         verify(senderIdleStrategy, times(4)).reset();
-        verify(senderIdleStrategy, times(2)).idle();
+        verify(senderIdleStrategy, times(3)).idle();
         verify(sender).send(30, 100, MILLISECONDS.toNanos(500));
         verify(sender).send(15, 100, MILLISECONDS.toNanos(500));
         verify(sender).send(5, 100, MILLISECONDS.toNanos(500));
