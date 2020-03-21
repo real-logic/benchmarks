@@ -17,6 +17,7 @@
 plugins {
     id 'java-library'
     id 'idea'
+    id 'checkstyle'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
     id 'com.github.ben-manes.versions' version '0.28.0'
 }
@@ -35,6 +36,9 @@ def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.2'
 def junitVersion = '5.6.0'
 def mockitoVersion = '3.3.3'
+def checkstyleVersion = '8.28'
+
+checkstyle.toolVersion = "${checkstyleVersion}"
 
 dependencies {
     api "org.agrona:agrona:${agronaVersion}"

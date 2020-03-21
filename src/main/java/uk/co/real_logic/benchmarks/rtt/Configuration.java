@@ -129,7 +129,8 @@ public final class Configuration
      *
      * @see #receiverIdleStrategy()
      */
-    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.receiver.idle_strategy";
+    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME =
+        "uk.co.real_logic.benchmarks.rtt.receiver.idle_strategy";
 
     /**
      * Name of the required system property to configure the {@link MessagePump} class (i.e. system under test) to be
@@ -150,14 +151,17 @@ public final class Configuration
     private Configuration(final Builder builder)
     {
         this.warmUpIterations = checkMinValue(builder.warmUpIterations, 0, "Warm-up iterations");
-        this.warmUpNumberOfMessages = checkMinValue(builder.warmUpNumberOfMessages, warmUpIterations > 0 ? 1 : 0, "Warm-up number of messages");
+        this.warmUpNumberOfMessages =
+            checkMinValue(builder.warmUpNumberOfMessages, warmUpIterations > 0 ? 1 : 0, "Warm-up number of messages");
         this.iterations = checkMinValue(builder.iterations, 1, "Iterations");
         this.numberOfMessages = checkMinValue(builder.numberOfMessages, 1, "Number of messages");
         this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
         this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
         this.messagePumpClass = validateMessagePumpClass(builder.messagePumpClass);
-        this.senderIdleStrategy = requireNonNull(builder.senderIdleStrategy, "Sender IdleStrategy cannot be null");
-        this.receiverIdleStrategy = requireNonNull(builder.receiverIdleStrategy, "Receiver IdleStrategy cannot be null");
+        this.senderIdleStrategy =
+            requireNonNull(builder.senderIdleStrategy, "Sender IdleStrategy cannot be null");
+        this.receiverIdleStrategy =
+            requireNonNull(builder.receiverIdleStrategy, "Receiver IdleStrategy cannot be null");
     }
 
     /**
@@ -522,7 +526,8 @@ public final class Configuration
         return value;
     }
 
-    private static <T> Class<? extends T> parseClass(final Map<String, String> properties, final String propName, final Class<T> parentClass)
+    private static <T> Class<? extends T> parseClass(
+        final Map<String, String> properties, final String propName, final Class<T> parentClass)
     {
         try
         {
@@ -536,17 +541,22 @@ public final class Configuration
         }
     }
 
-    private static IdleStrategy parseIdleStrategy(final Map<String, String> properties, String propName)
+    private static IdleStrategy parseIdleStrategy(final Map<String, String> properties, final String propName)
     {
         final Class<? extends IdleStrategy> klass = parseClass(properties, propName, IdleStrategy.class);
         try
         {
             return klass.getDeclaredConstructor().newInstance();
         }
-        catch (final InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException ex)
+        catch (final InstantiationException | IllegalAccessException | NoSuchMethodException ex)
         {
             throw new IllegalArgumentException("Invalid IdleStrategy property '" + propName + "', cause: " +
                 ex.getMessage());
+        }
+        catch (final InvocationTargetException ex)
+        {
+            throw new IllegalArgumentException("Invalid IdleStrategy property '" + propName + "', cause: " +
+                ex.getCause().getMessage());
         }
     }
 }

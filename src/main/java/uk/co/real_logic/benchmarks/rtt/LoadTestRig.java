@@ -49,7 +49,8 @@ public final class LoadTestRig
         this(configuration, messagePump, SystemNanoClock.INSTANCE, System.out);
     }
 
-    LoadTestRig(final Configuration configuration, final MessagePump messagePump, final NanoClock clock, final PrintStream out)
+    LoadTestRig(
+        final Configuration configuration, final MessagePump messagePump, final NanoClock clock, final PrintStream out)
     {
         this.configuration = requireNonNull(configuration);
         this.messagePump = requireNonNull(messagePump);
@@ -112,7 +113,7 @@ public final class LoadTestRig
         final AtomicLong sentMessages,
         final Histogram histogram)
     {
-        CompletableFuture<?> receiverTask = runAsync(() -> receive(receiver, sentMessages, histogram));
+        final CompletableFuture<?> receiverTask = runAsync(() -> receive(receiver, sentMessages, histogram));
         sentMessages.set(send(iterations, messages, sender));
         receiverTask.join();
     }
@@ -214,13 +215,13 @@ public final class LoadTestRig
 
     private int reportProgress(final long startTimeNs, final long nowNs, final long sentMessages)
     {
-        int seconds = (int)round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
-        final long sendRate = 0 == seconds ? sentMessages : sentMessages / seconds;
+        final int elapsedSeconds = (int)round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
+        final long sendRate = 0 == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
         out.format("Send rate %,d msg/sec%n", sendRate);
-        return seconds;
+        return elapsedSeconds;
     }
 
-    public static void main(String[] args) throws Exception
+    public static void main(final String[] args) throws Exception
     {
         SystemUtil.loadPropertiesFiles(args);
 

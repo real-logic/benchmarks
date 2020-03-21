@@ -59,16 +59,17 @@ public interface MessagePump
         /**
          * Sends specified number of {@code messages} with the given {@code length} and a {@code timestamp} as payload.
          *
-         * @param numberOfMessages number of messages to be sent.
+         * @param numberOfMessages to be sent.
          * @param length           in bytes of a single message.
-         * @param timestamp        to be included as the part of the message payload.
+         * @param timestamp        to be included in the message payload.
          * @return actual number of messages sent
          * @implSpec {@code Sender} must send a message with the payload that is at least {@code length} bytes long and
          * <em>must</em> include given {@code timestamp} in it. Any header added by the sender <em>may not</em> be
          * counted towards the {@code length}.
-         * @implNote The implementation can re-try actual send operation multiple times if needed but it should not block
-         * forever since harness also has a re-try mechanism for the entire batch, e.g. if a first call sends {code 3} out
-         * of {code 5} messages then harness will perform second call with the batch length ({@code messages}) of {code 2}.
+         * @implNote The implementation can re-try actual send operation multiple times if needed but it
+         * <em>should not</em> block forever since test rig will re-try sending the batch, e.g. if a first call sends
+         * only {code 3} out of {code 5} messages then there will be a second call with the batch length of {code 2}.
+         * only {code 3} out of {code 5} messages then there will be a second call with the batch length of {code 2}.
          */
         int send(int numberOfMessages, int length, long timestamp);
     }

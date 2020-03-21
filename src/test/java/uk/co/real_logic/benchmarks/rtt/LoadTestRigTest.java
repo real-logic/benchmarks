@@ -139,16 +139,16 @@ class LoadTestRigTest
         inOrder.verify(messagePump).receiver();
         inOrder.verify(out)
             .printf("Running warm up for %,d iterations of %,d messages with burst size of %,d...%n",
-                configuration.warmUpIterations(),
-                configuration.warmUpNumberOfMessages(),
-                configuration.batchSize());
+            configuration.warmUpIterations(),
+            configuration.warmUpNumberOfMessages(),
+            configuration.batchSize());
         inOrder.verify(sender).send(1, configuration.messageLength(), nanoTime);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(out)
             .printf("%nRunning measurement for %,d iterations of %,d messages with burst size of %,d...%n",
-                configuration.iterations(),
-                configuration.numberOfMessages(),
-                configuration.batchSize());
+            configuration.iterations(),
+            configuration.numberOfMessages(),
+            configuration.batchSize());
         inOrder.verify(sender).send(1, configuration.messageLength(), nanoTime);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(out).println("Histogram of RTT latencies in microseconds.");
