@@ -17,8 +17,8 @@ package uk.co.real_logic.benchmarks.rtt;
 
 import org.agrona.AsciiEncoding;
 import org.agrona.AsciiNumberFormatException;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -117,7 +117,7 @@ public final class Configuration
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} for the sender. Must be a fully qualified class
-     * name. Default value is {@link BusySpinIdleStrategy}.
+     * name. Default value is {@link NoOpIdleStrategy}.
      *
      * @see #senderIdleStrategy()
      */
@@ -125,7 +125,7 @@ public final class Configuration
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} for the receiver. Must be a fully qualified
-     * class name. Default value is {@link BusySpinIdleStrategy}.
+     * class name. Default value is {@link NoOpIdleStrategy}.
      *
      * @see #receiverIdleStrategy()
      */
@@ -247,7 +247,7 @@ public final class Configuration
     /**
      * {@link IdleStrategy} to use when sending messages.
      *
-     * @return sender {@link IdleStrategy}, defaults to {@link BusySpinIdleStrategy}.
+     * @return sender {@link IdleStrategy}, defaults to {@link NoOpIdleStrategy}.
      */
     public IdleStrategy senderIdleStrategy()
     {
@@ -257,7 +257,7 @@ public final class Configuration
     /**
      * {@link IdleStrategy} to use when receiving messages.
      *
-     * @return receiver {@link IdleStrategy}, defaults to {@link BusySpinIdleStrategy}.
+     * @return receiver {@link IdleStrategy}, defaults to {@link NoOpIdleStrategy}.
      */
     public IdleStrategy receiverIdleStrategy()
     {
@@ -289,8 +289,8 @@ public final class Configuration
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
         private Class<? extends MessagePump> messagePumpClass;
-        private IdleStrategy senderIdleStrategy = BusySpinIdleStrategy.INSTANCE;
-        private IdleStrategy receiverIdleStrategy = BusySpinIdleStrategy.INSTANCE;
+        private IdleStrategy senderIdleStrategy = NoOpIdleStrategy.INSTANCE;
+        private IdleStrategy receiverIdleStrategy = NoOpIdleStrategy.INSTANCE;
 
         /**
          * Set the number of warm up iterations.

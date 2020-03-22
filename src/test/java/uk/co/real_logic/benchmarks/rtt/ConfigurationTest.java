@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.Test;
@@ -225,8 +224,8 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(SampleMessagePump.class, configuration.messagePumpClass());
-        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
-        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
     }
 
     @Test
@@ -341,8 +340,8 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(SampleMessagePump.class, configuration.messagePumpClass());
-        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
-        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
     }
 
     @Test
