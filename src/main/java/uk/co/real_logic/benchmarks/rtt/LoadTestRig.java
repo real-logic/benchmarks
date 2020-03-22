@@ -127,13 +127,13 @@ public final class LoadTestRig
         long received = 0;
         while (true)
         {
-            final long timestampNs = receiver.receive();
-            if (0 != timestampNs)
+            final long timestamp = receiver.receive();
+            if (0 != timestamp)
             {
                 received++;
-                final long nowNs = clock.nanoTime();
-                final long durationNs = nowNs - timestampNs;
-                histogram.recordValue(durationNs);
+                final long now = clock.nanoTime();
+                final long duration = now - timestamp;
+                histogram.recordValue(duration);
                 idleStrategy.reset();
             }
             else
@@ -154,28 +154,21 @@ public final class LoadTestRig
     long send(final int iterations, final int numberOfMessages, final MessagePump.Sender sender)
     {
         final NanoClock clock = this.clock;
-        final PrintStream out = this.out;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.senderIdleStrategy();
-        final long intervalNs = NANOS_PER_SECOND * burstSize / numberOfMessages;
+        final long sendInterval = NANOS_PER_SECOND * burstSize / numberOfMessages;
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
 
-        final long startTimeNs = clock.nanoTime();
-        final long endTimeNs = startTimeNs + iterations * NANOS_PER_SECOND;
+        final long startTime = clock.nanoTime();
+        final long endTime = startTime + iterations * NANOS_PER_SECOND;
         long sentMessages = 0;
-        long timestamp = startTimeNs;
-        long nowNs = startTimeNs;
-        long nextReportTimeNs = startTimeNs + NANOS_PER_SECOND;
+        long timestamp = startTime;
+        long now = startTime;
+        long nextReportTime = startTime + NANOS_PER_SECOND;
 
         while (true)
         {
-            if (nowNs >= nextReportTimeNs)
-            {
-                final int elapsedSeconds = reportProgress(startTimeNs, nowNs, sentMessages);
-                nextReportTimeNs = startTimeNs + (elapsedSeconds + 1) * NANOS_PER_SECOND;
-            }
-
             final int batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
             int sent = sender.send(batchSize, messageSize, timestamp);
             if (sent < batchSize)
@@ -190,32 +183,38 @@ public final class LoadTestRig
             sentMessages += batchSize;
             if (totalNumberOfMessages == sentMessages)
             {
-                reportProgress(startTimeNs, nowNs, sentMessages);
+                reportProgress(startTime, now, sentMessages);
                 break;
             }
 
-            timestamp += intervalNs;
+            timestamp += sendInterval;
 
-            if (nowNs < timestamp)
+            if (now < timestamp)
             {
                 idleStrategy.reset();
-                while ((nowNs = clock.nanoTime()) < timestamp && nowNs < endTimeNs)
+                while ((now = clock.nanoTime()) < timestamp && now < endTime)
                 {
                     idleStrategy.idle();
                 }
-                if (nowNs >= endTimeNs)
+                if (now >= endTime)
                 {
                     break;
                 }
+            }
+
+            if (now >= nextReportTime)
+            {
+                final int elapsedSeconds = reportProgress(startTime, now, sentMessages);
+                nextReportTime = startTime + (elapsedSeconds + 1) * NANOS_PER_SECOND;
             }
         }
 
         return sentMessages;
     }
 
-    private int reportProgress(final long startTimeNs, final long nowNs, final long sentMessages)
+    private int reportProgress(final long startTime, final long now, final long sentMessages)
     {
-        final int elapsedSeconds = (int)round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
+        final int elapsedSeconds = (int)round((double)(now - startTime) / NANOS_PER_SECOND);
         final long sendRate = 0 == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
         out.format("Send rate %,d msg/sec%n", sendRate);
         return elapsedSeconds;
