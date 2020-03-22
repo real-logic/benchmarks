@@ -96,7 +96,7 @@ public final class LoadTestRig
             doRun(configuration.iterations(), configuration.numberOfMessages(), sender, receiver, sentMessages,
                 histogram);
 
-            out.println("Histogram of RTT latencies in microseconds.");
+            out.printf("%nHistogram of RTT latencies in microseconds.%n");
             histogram.outputPercentileDistribution(out, 1000.0);
         }
         finally
