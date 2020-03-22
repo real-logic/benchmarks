@@ -151,7 +151,7 @@ class LoadTestRigTest
             configuration.batchSize());
         inOrder.verify(sender).send(1, configuration.messageLength(), nanoTime);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
-        inOrder.verify(out).println("Histogram of RTT latencies in microseconds.");
+        inOrder.verify(out).printf("%nHistogram of RTT latencies in microseconds.%n");
         inOrder.verify(messagePump).destroy();
     }
 
