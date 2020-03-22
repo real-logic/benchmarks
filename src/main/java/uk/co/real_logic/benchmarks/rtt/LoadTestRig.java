@@ -22,7 +22,6 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,7 +29,6 @@ import static java.lang.Math.*;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * {@code LoadTestRig} class is the core of the RTT benchmark. It is responsible for running benchmark against provided
@@ -224,12 +222,8 @@ public final class LoadTestRig
     {
         SystemUtil.loadPropertiesFiles(args);
 
-        final Map<String, String> properties = System.getProperties().entrySet().stream()
-            .collect(toMap(e -> (String)e.getKey(), e -> (String)e.getValue()));
-        final Configuration configuration = Configuration.fromProperties(properties);
-
-        final Class<? extends MessagePump> messagePumpClass = configuration.messagePumpClass();
-        final MessagePump messagePump = messagePumpClass.getConstructor().newInstance();
+        final Configuration configuration = Configuration.fromSystemProperties();
+        final MessagePump messagePump = configuration.messagePumpClass().getConstructor().newInstance();
 
         new LoadTestRig(configuration, messagePump).run();
     }

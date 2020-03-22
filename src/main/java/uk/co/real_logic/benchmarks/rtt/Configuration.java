@@ -22,7 +22,6 @@ import org.agrona.concurrent.NoOpIdleStrategy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isPublic;
@@ -415,53 +414,49 @@ public final class Configuration
     /**
      * Create a {@link Configuration} instance based on the provided system properties.
      *
-     * @param properties system properties.
      * @return a {@link Configuration} instance.
-     * @throws NullPointerException if {@code properties == null}
      */
-    public static Configuration fromProperties(final Map<String, String> properties)
+    public static Configuration fromSystemProperties()
     {
-        requireNonNull(properties);
-
         final Builder builder = new Builder();
-        if (isPropertyProvided(properties, WARM_UP_ITERATIONS_PROP_NAME))
+        if (isPropertyProvided(WARM_UP_ITERATIONS_PROP_NAME))
         {
-            builder.warmUpIterations(parseInt(properties, WARM_UP_ITERATIONS_PROP_NAME));
+            builder.warmUpIterations(intProperty(WARM_UP_ITERATIONS_PROP_NAME));
         }
 
-        if (isPropertyProvided(properties, WARM_UP_MESSAGES_PROP_NAME))
+        if (isPropertyProvided(WARM_UP_MESSAGES_PROP_NAME))
         {
-            builder.warmUpNumberOfMessages(parseInt(properties, WARM_UP_MESSAGES_PROP_NAME));
+            builder.warmUpNumberOfMessages(intProperty(WARM_UP_MESSAGES_PROP_NAME));
         }
 
-        if (isPropertyProvided(properties, ITERATIONS_PROP_NAME))
+        if (isPropertyProvided(ITERATIONS_PROP_NAME))
         {
-            builder.iterations(parseInt(properties, ITERATIONS_PROP_NAME));
+            builder.iterations(intProperty(ITERATIONS_PROP_NAME));
         }
 
-        if (isPropertyProvided(properties, BATCH_SIZE_PROP_NAME))
+        if (isPropertyProvided(BATCH_SIZE_PROP_NAME))
         {
-            builder.batchSize(parseInt(properties, BATCH_SIZE_PROP_NAME));
+            builder.batchSize(intProperty(BATCH_SIZE_PROP_NAME));
         }
 
-        if (isPropertyProvided(properties, MESSAGE_LENGTH_PROP_NAME))
+        if (isPropertyProvided(MESSAGE_LENGTH_PROP_NAME))
         {
-            builder.messageLength(parseInt(properties, MESSAGE_LENGTH_PROP_NAME));
+            builder.messageLength(intProperty(MESSAGE_LENGTH_PROP_NAME));
         }
 
-        if (isPropertyProvided(properties, SENDER_IDLE_STRATEGY_PROP_NAME))
+        if (isPropertyProvided(SENDER_IDLE_STRATEGY_PROP_NAME))
         {
-            builder.senderIdleStrategy(parseIdleStrategy(properties, SENDER_IDLE_STRATEGY_PROP_NAME));
+            builder.senderIdleStrategy(idleStrategyProperty(SENDER_IDLE_STRATEGY_PROP_NAME));
         }
 
-        if (isPropertyProvided(properties, RECEIVER_IDLE_STRATEGY_PROP_NAME))
+        if (isPropertyProvided(RECEIVER_IDLE_STRATEGY_PROP_NAME))
         {
-            builder.receiverIdleStrategy(parseIdleStrategy(properties, RECEIVER_IDLE_STRATEGY_PROP_NAME));
+            builder.receiverIdleStrategy(idleStrategyProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME));
         }
 
-        builder.numberOfMessages(parseInt(properties, MESSAGES_PROP_NAME));
+        builder.numberOfMessages(intProperty(MESSAGES_PROP_NAME));
 
-        builder.messagePumpClass(parseClass(properties, MESSAGE_PUMP_PROP_NAME, MessagePump.class));
+        builder.messagePumpClass(classProperty(MESSAGE_PUMP_PROP_NAME, MessagePump.class));
 
         return builder.build();
     }
@@ -497,16 +492,16 @@ public final class Configuration
         throw new IllegalArgumentException("MessagePump class must have a public no-arg constructor");
     }
 
-    private static boolean isPropertyProvided(final Map<String, String> properties, final String propName)
+    private static boolean isPropertyProvided(final String propName)
     {
-        return !isNullOrEmpty(properties.get(propName));
+        return !isNullOrEmpty(System.getProperty(propName));
     }
 
-    private static int parseInt(final Map<String, String> properties, final String propName)
+    private static int intProperty(final String propName)
     {
         try
         {
-            final String value = getValue(properties, propName);
+            final String value = getPropertyValue(propName);
             return AsciiEncoding.parseIntAscii(value, 0, value.length());
         }
         catch (final AsciiNumberFormatException ex)
@@ -516,9 +511,9 @@ public final class Configuration
         }
     }
 
-    private static String getValue(final Map<String, String> properties, final String propName)
+    private static String getPropertyValue(final String propName)
     {
-        final String value = properties.get(propName);
+        final String value = System.getProperty(propName);
         if (isNullOrEmpty(value))
         {
             throw new IllegalArgumentException("Property '" + propName + "' is required!");
@@ -526,12 +521,12 @@ public final class Configuration
         return value;
     }
 
-    private static <T> Class<? extends T> parseClass(
-        final Map<String, String> properties, final String propName, final Class<T> parentClass)
+    private static <T> Class<? extends T> classProperty(
+        final String propName, final Class<T> parentClass)
     {
         try
         {
-            final Class<?> klass = Class.forName(getValue(properties, propName));
+            final Class<?> klass = Class.forName(getPropertyValue(propName));
             return klass.asSubclass(parentClass);
         }
         catch (final ClassNotFoundException | ClassCastException ex)
@@ -541,12 +536,12 @@ public final class Configuration
         }
     }
 
-    private static IdleStrategy parseIdleStrategy(final Map<String, String> properties, final String propName)
+    private static IdleStrategy idleStrategyProperty(final String propName)
     {
-        final Class<? extends IdleStrategy> klass = parseClass(properties, propName, IdleStrategy.class);
+        final Class<? extends IdleStrategy> klass = classProperty(propName, IdleStrategy.class);
         try
         {
-            return klass.getDeclaredConstructor().newInstance();
+            return klass.getConstructor().newInstance();
         }
         catch (final InstantiationException | IllegalAccessException | NoSuchMethodException ex)
         {

@@ -17,22 +17,33 @@ package uk.co.real_logic.benchmarks.rtt;
 
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.real_logic.benchmarks.rtt.Configuration.*;
 
 class ConfigurationTest
 {
+    @BeforeEach
+    void before()
+    {
+        clearConfigProperties();
+    }
+
+    @AfterEach
+    void after()
+    {
+        clearConfigProperties();
+    }
+
     @Test
     void throwsIllegalArgumentExceptionIfWarmUpIterationsIsANegativeNumber()
     {
@@ -277,61 +288,57 @@ class ConfigurationTest
     }
 
     @Test
-    void fromPropertiesThrowsNullPointerExceptionIfPropertiesMapIsNull()
-    {
-        assertThrows(NullPointerException.class, () -> fromProperties(null));
-    }
-
-    @Test
-    void fromPropertiesThrowsIllegalArgumentExceptionIfNumberOfMessagesIsNotConfigured()
+    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfNumberOfMessagesIsNotConfigured()
     {
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> fromProperties(emptyMap()));
+            () -> fromSystemProperties());
 
         assertEquals("Property '" + MESSAGES_PROP_NAME + "' is required!", ex.getMessage());
     }
 
     @Test
-    void fromPropertiesThrowsIllegalArgumentExceptionIfNumberOfMessagesHasInvalidValue()
+    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfNumberOfMessagesHasInvalidValue()
     {
+        System.setProperty(MESSAGES_PROP_NAME, "100x000");
+
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> fromProperties(singletonMap(MESSAGES_PROP_NAME, "100x000")));
+            () -> fromSystemProperties());
 
         assertEquals("Non-integer value for property '" + MESSAGES_PROP_NAME +
             "', cause: 'x' is not a valid digit @ 3", ex.getMessage());
     }
 
     @Test
-    void fromPropertiesThrowsIllegalArgumentExceptionIfMessagePumpPropertyIsNotConfigured()
+    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessagePumpPropertyIsNotConfigured()
     {
+        System.setProperty(MESSAGES_PROP_NAME, "100");
+
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> fromProperties(singletonMap(MESSAGES_PROP_NAME, "100")));
+            () -> fromSystemProperties());
 
         assertEquals("Property '" + MESSAGE_PUMP_PROP_NAME + "' is required!", ex.getMessage());
     }
 
     @Test
-    void fromPropertiesThrowsIllegalArgumentExceptionIfMessagePumpHasInvalidValue()
+    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessagePumpHasInvalidValue()
     {
-        final Map<String, String> properties = new HashMap<>();
-        properties.put(MESSAGES_PROP_NAME, "20");
-        properties.put(MESSAGE_PUMP_PROP_NAME, Integer.class.getName());
+        System.setProperty(MESSAGES_PROP_NAME, "20");
+        System.setProperty(MESSAGE_PUMP_PROP_NAME, Integer.class.getName());
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> fromProperties(properties));
+            () -> fromSystemProperties());
 
         assertEquals("Invalid class value for property '" + MESSAGE_PUMP_PROP_NAME +
             "', cause: class java.lang.Integer", ex.getMessage());
     }
 
     @Test
-    void fromPropertiesDefaults()
+    void fromSystemPropertiesDefaults()
     {
-        final Map<String, String> properties = new HashMap<>();
-        properties.put(MESSAGES_PROP_NAME, "42");
-        properties.put(MESSAGE_PUMP_PROP_NAME, SampleMessagePump.class.getName());
+        System.setProperty(MESSAGES_PROP_NAME, "42");
+        System.setProperty(MESSAGE_PUMP_PROP_NAME, SampleMessagePump.class.getName());
 
-        final Configuration configuration = fromProperties(properties);
+        final Configuration configuration = fromSystemProperties();
 
         assertEquals(42, configuration.numberOfMessages());
         assertEquals(DEFAULT_WARM_UP_NUMBER_OF_MESSAGES, configuration.warmUpNumberOfMessages());
@@ -345,20 +352,19 @@ class ConfigurationTest
     }
 
     @Test
-    void fromPropertiesOverrideAll()
+    void fromSystemPropertiesOverrideAll()
     {
-        final Map<String, String> properties = new HashMap<>();
-        properties.put(WARM_UP_ITERATIONS_PROP_NAME, "2");
-        properties.put(WARM_UP_MESSAGES_PROP_NAME, "10");
-        properties.put(ITERATIONS_PROP_NAME, "4");
-        properties.put(MESSAGES_PROP_NAME, "200");
-        properties.put(BATCH_SIZE_PROP_NAME, "3");
-        properties.put(MESSAGE_LENGTH_PROP_NAME, "24");
-        properties.put(MESSAGE_PUMP_PROP_NAME, SampleMessagePump.class.getName());
-        properties.put(SENDER_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
-        properties.put(RECEIVER_IDLE_STRATEGY_PROP_NAME, NoOpIdleStrategy.class.getName());
+        System.setProperty(WARM_UP_ITERATIONS_PROP_NAME, "2");
+        System.setProperty(WARM_UP_MESSAGES_PROP_NAME, "10");
+        System.setProperty(ITERATIONS_PROP_NAME, "4");
+        System.setProperty(MESSAGES_PROP_NAME, "200");
+        System.setProperty(BATCH_SIZE_PROP_NAME, "3");
+        System.setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
+        System.setProperty(MESSAGE_PUMP_PROP_NAME, SampleMessagePump.class.getName());
+        System.setProperty(SENDER_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
+        System.setProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME, NoOpIdleStrategy.class.getName());
 
-        final Configuration configuration = fromProperties(properties);
+        final Configuration configuration = fromSystemProperties();
 
         assertEquals(2, configuration.warmUpIterations());
         assertEquals(10, configuration.warmUpNumberOfMessages());
@@ -369,6 +375,21 @@ class ConfigurationTest
         assertSame(SampleMessagePump.class, configuration.messagePumpClass());
         assertTrue(YieldingIdleStrategy.class.isInstance(configuration.senderIdleStrategy()));
         assertTrue(NoOpIdleStrategy.class.isInstance(configuration.receiverIdleStrategy()));
+    }
+
+    private void clearConfigProperties()
+    {
+        Stream.of(
+            WARM_UP_ITERATIONS_PROP_NAME,
+            WARM_UP_MESSAGES_PROP_NAME,
+            ITERATIONS_PROP_NAME,
+            MESSAGES_PROP_NAME,
+            BATCH_SIZE_PROP_NAME,
+            MESSAGE_LENGTH_PROP_NAME,
+            MESSAGE_PUMP_PROP_NAME,
+            SENDER_IDLE_STRATEGY_PROP_NAME,
+            RECEIVER_IDLE_STRATEGY_PROP_NAME
+        ).forEach(System::clearProperty);
     }
 
     private static IntStream messageSizes()
