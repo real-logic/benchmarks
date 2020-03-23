@@ -73,7 +73,7 @@ public final class Configuration
      *
      * @see #warmUpIterations()
      */
-    public static final String WARM_UP_ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.warmup.iterations";
+    public static final String WARM_UP_ITERATIONS_PROP_NAME = "aeron.benchmarks.rtt.warmup.iterations";
 
     /**
      * Name of the system property to configure the number of messages to be sent during warm up. Default value is
@@ -81,7 +81,7 @@ public final class Configuration
      *
      * @see #warmUpNumberOfMessages()
      */
-    public static final String WARM_UP_MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.warmup.messages";
+    public static final String WARM_UP_MESSAGES_PROP_NAME = "aeron.benchmarks.rtt.warmup.messages";
 
     /**
      * Name of the system property to configure the number of measurement iterations. Default value is
@@ -89,7 +89,7 @@ public final class Configuration
      *
      * @see #iterations()
      */
-    public static final String ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.iterations";
+    public static final String ITERATIONS_PROP_NAME = "aeron.benchmarks.rtt.iterations";
 
     /**
      * Name of the required system property to configure the number of messages to be sent during the measurement
@@ -97,7 +97,7 @@ public final class Configuration
      *
      * @see #numberOfMessages()
      */
-    public static final String MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.messages";
+    public static final String MESSAGES_PROP_NAME = "aeron.benchmarks.rtt.messages";
 
     /**
      * Name of the system property to configure the batch size, i.e. number of messages to be sent in a single burst.
@@ -105,14 +105,14 @@ public final class Configuration
      *
      * @see #batchSize()
      */
-    public static final String BATCH_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.batch_size";
+    public static final String BATCH_SIZE_PROP_NAME = "aeron.benchmarks.rtt.batchSize";
 
     /**
      * Name of the system property to configure the message size in bytes. Default value is {@link #MIN_MESSAGE_LENGTH}.
      *
      * @see #messageLength()
      */
-    public static final String MESSAGE_LENGTH_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.message_length";
+    public static final String MESSAGE_LENGTH_PROP_NAME = "aeron.benchmarks.rtt.messageLength";
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} for the sender. Must be a fully qualified class
@@ -120,7 +120,7 @@ public final class Configuration
      *
      * @see #senderIdleStrategy()
      */
-    public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.sender.idle_strategy";
+    public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.benchmarks.rtt.sender.idleStrategy";
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} for the receiver. Must be a fully qualified
@@ -129,13 +129,13 @@ public final class Configuration
      * @see #receiverIdleStrategy()
      */
     public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME =
-        "uk.co.real_logic.benchmarks.rtt.receiver.idle_strategy";
+        "aeron.benchmarks.rtt.receiver.idle_strategy";
 
     /**
      * Name of the required system property to configure the {@link MessagePump} class (i.e. system under test) to be
      * used for the benchmark. Must be a fully qualified class name.
      */
-    public static final String MESSAGE_PUMP_PROP_NAME = "uk.co.real_logic.benchmarks.rtt.message_pump";
+    public static final String MESSAGE_PUMP_PROP_NAME = "aeron.benchmarks.rtt.messagePump";
 
     private final int warmUpIterations;
     private final int warmUpNumberOfMessages;
