@@ -474,13 +474,13 @@ public final class Configuration
         final Class<? extends MessagePump> klass)
     {
         requireNonNull(klass, "MessagePump class cannot be null");
-        if (klass.isInterface() || isAbstract(klass.getModifiers()))
+        if (isAbstract(klass.getModifiers()))
         {
             throw new IllegalArgumentException("MessagePump class must be a concrete class");
         }
         try
         {
-            final Constructor<? extends MessagePump> constructor = klass.getConstructor();
+            final Constructor<? extends MessagePump> constructor = klass.getConstructor(MessageRecorder.class);
             if (isPublic(constructor.getModifiers()))
             {
                 return klass;
@@ -489,7 +489,8 @@ public final class Configuration
         catch (final NoSuchMethodException e)
         {
         }
-        throw new IllegalArgumentException("MessagePump class must have a public no-arg constructor");
+        throw new IllegalArgumentException(
+            "MessagePump class must have a public constructor with MessageRecorder as a single parameter");
     }
 
     private static boolean isPropertyProvided(final String propName)

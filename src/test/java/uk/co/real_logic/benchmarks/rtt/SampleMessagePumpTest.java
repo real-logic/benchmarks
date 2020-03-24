@@ -20,92 +20,71 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static uk.co.real_logic.benchmarks.rtt.MessagePump.Receiver;
-import static uk.co.real_logic.benchmarks.rtt.MessagePump.Sender;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
 
 class SampleMessagePumpTest
 {
-    private final SampleMessagePump messagePump = new SampleMessagePump();
-
-    @Test
-    void senderCreatesNewInstanceUponEachInvocation()
-    {
-        final Sender sender = messagePump.sender();
-        assertNotSame(sender, messagePump.sender());
-    }
-
-    @Test
-    void receiverCreatesNewInstanceUponEachInvocation()
-    {
-        final Receiver receiver = messagePump.receiver();
-        assertNotSame(receiver, messagePump.receiver());
-    }
+    private final MessageRecorder messageRecorder = mock(MessageRecorder.class);
+    private final SampleMessagePump messagePump = new SampleMessagePump(messageRecorder);
 
     @Test
     void sendASingleMessage()
     {
-        final Sender sender = messagePump.sender();
-        final Receiver receiver = messagePump.receiver();
-
-        final int result = sender.send(1, 16, 123);
+        final int result = messagePump.send(1, 16, 123);
 
         assertEquals(1, result);
-        assertEquals(123, receiver.receive());
+        assertEquals(1, messagePump.receive());
+        verify(messageRecorder).record(123);
     }
 
     @Test
     void sendMultipleMessages()
     {
-        final Sender sender = messagePump.sender();
-        final Receiver receiver = messagePump.receiver();
-
-        final int result = sender.send(4, 64, 800);
+        final int result = messagePump.send(4, 64, 800);
 
         assertEquals(4, result);
         for (int i = 0; i < result; i++)
         {
-            assertEquals(800, receiver.receive());
+            assertEquals(1, messagePump.receive());
         }
+        verify(messageRecorder, times(4)).record(800);
     }
 
     @Test
     void sendReturnsZeroIfItCantFitAnEntireBatch()
     {
-        final Sender sender = messagePump.sender();
-        final Receiver receiver = messagePump.receiver();
-        sender.send(SampleMessagePump.SIZE, 8, 777);
+        messagePump.send(SampleMessagePump.SIZE, 8, 777);
 
-        final int result = sender.send(1, 100, 555);
+        final int result = messagePump.send(1, 100, 555);
 
         assertEquals(0, result);
         for (int i = 0; i < SampleMessagePump.SIZE; i++)
         {
-            assertEquals(777, receiver.receive());
+            assertEquals(1, messagePump.receive());
         }
+        verify(messageRecorder, times(SampleMessagePump.SIZE)).record(777);
     }
 
     @Test
     void receiveReturnsZeroIfNothingWasWritten()
     {
-        final Receiver receiver = messagePump.receiver();
-
-        assertEquals(0L, receiver.receive());
+        assertEquals(0L, messagePump.receive());
     }
 
     @Test
     void receiveReturnsZeroAfterAllMessagesConsumed()
     {
-        final Sender sender = messagePump.sender();
-        final Receiver receiver = messagePump.receiver();
-        sender.send(5, 128, 1111);
+        messagePump.send(5, 128, 1111);
 
         for (int i = 0; i < 5; i++)
         {
-            assertEquals(1111L, receiver.receive());
+            assertEquals(1, messagePump.receive());
         }
+        assertEquals(0L, messagePump.receive());
 
-        assertEquals(0L, receiver.receive());
+        verify(messageRecorder, times(5)).record(1111);
     }
 
     @Test
@@ -119,10 +98,23 @@ class SampleMessagePumpTest
 
     private void testConcurrentSendAndReceive(final int messages) throws InterruptedException
     {
-        final Sender sender = messagePump.sender();
-        final Receiver receiver = messagePump.receiver();
         final long[] timestamps = ThreadLocalRandom.current().longs(messages, 1, Long.MAX_VALUE).toArray();
         final Phaser phaser = new Phaser(3);
+
+        final long[] receivedTimestamps = new long[timestamps.length];
+        final MessagePump messagePump = new SampleMessagePump(new MessageRecorder()
+        {
+            private int index;
+
+            public void record(final long timestamp)
+            {
+                receivedTimestamps[index++] = timestamp;
+            }
+
+            public void reset()
+            {
+            }
+        });
 
         final Thread senderThread = new Thread(
             () ->
@@ -131,13 +123,12 @@ class SampleMessagePumpTest
 
                 for (int i = 0, size = timestamps.length; i < size; i++)
                 {
-                    while (0 == sender.send(1, 24, timestamps[i]))
+                    while (0 == messagePump.send(1, 24, timestamps[i]))
                     {
                     }
                 }
             });
 
-        final long[] receivedTimestamps = new long[timestamps.length];
         final Thread receiverThread = new Thread(
             () ->
             {
@@ -147,11 +138,7 @@ class SampleMessagePumpTest
                 int received = 0;
                 while (received < size)
                 {
-                    final long timestamp = receiver.receive();
-                    if (0 != timestamp)
-                    {
-                        receivedTimestamps[received++] = timestamp;
-                    }
+                    received += messagePump.receive();
                 }
             }
         );

@@ -16,6 +16,7 @@
 package uk.co.real_logic.benchmarks.rtt;
 
 import org.HdrHistogram.Histogram;
+import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
@@ -41,19 +42,62 @@ public final class LoadTestRig
     private final MessagePump messagePump;
     private final NanoClock clock;
     private final PrintStream out;
+    private final Histogram histogram;
+    private final MessageRecorder messageRecorder;
 
-    public LoadTestRig(final Configuration configuration, final MessagePump messagePump)
+    public LoadTestRig(final Configuration configuration, final Class<? extends MessagePump> messagePumpClass)
     {
-        this(configuration, messagePump, SystemNanoClock.INSTANCE, System.out);
+        this.configuration = requireNonNull(configuration);
+        requireNonNull(messagePumpClass);
+        this.clock = SystemNanoClock.INSTANCE;
+        this.out = System.out;
+        histogram = new Histogram(
+            max(configuration.iterations(), configuration.warmUpIterations()) * NANOS_PER_SECOND, 3);
+        messageRecorder = new MessageRecorder()
+        {
+            private long time;
+
+            public void record(final long timestamp)
+            {
+                long time = this.time;
+                if (0 == time)
+                {
+                    this.time = time = clock.nanoTime();
+                }
+                histogram.recordValue(time - timestamp);
+            }
+
+            public void reset()
+            {
+                time = 0;
+            }
+        };
+        try
+        {
+            this.messagePump = messagePumpClass.getConstructor(MessageRecorder.class)
+                .newInstance(messageRecorder);
+        }
+        catch (final ReflectiveOperationException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+            throw new Error();
+        }
     }
 
     LoadTestRig(
-        final Configuration configuration, final MessagePump messagePump, final NanoClock clock, final PrintStream out)
+        final Configuration configuration,
+        final NanoClock clock,
+        final PrintStream out,
+        final Histogram histogram,
+        final MessageRecorder messageRecorder,
+        final MessagePump messagePump)
     {
-        this.configuration = requireNonNull(configuration);
-        this.messagePump = requireNonNull(messagePump);
-        this.clock = requireNonNull(clock);
-        this.out = requireNonNull(out);
+        this.configuration = configuration;
+        this.clock = clock;
+        this.out = out;
+        this.histogram = histogram;
+        this.messageRecorder = messageRecorder;
+        this.messagePump = messagePump;
     }
 
     /**
@@ -66,11 +110,7 @@ public final class LoadTestRig
         messagePump.init(configuration);
         try
         {
-            final MessagePump.Sender sender = requireNonNull(messagePump.sender());
-            final MessagePump.Receiver receiver = requireNonNull(messagePump.receiver());
             final AtomicLong sentMessages = new AtomicLong();
-            final Histogram histogram = new Histogram(
-                max(configuration.iterations(), configuration.warmUpIterations()) * NANOS_PER_SECOND, 3);
 
             // Warm up
             if (configuration.warmUpIterations() > 0)
@@ -79,8 +119,7 @@ public final class LoadTestRig
                     configuration.warmUpIterations(),
                     configuration.warmUpNumberOfMessages(),
                     configuration.batchSize());
-                doRun(configuration.warmUpIterations(), configuration.warmUpNumberOfMessages(), sender, receiver,
-                    sentMessages, histogram);
+                doRun(configuration.warmUpIterations(), configuration.warmUpNumberOfMessages(), sentMessages);
 
                 histogram.reset();
                 sentMessages.set(0);
@@ -91,8 +130,7 @@ public final class LoadTestRig
                 configuration.iterations(),
                 configuration.numberOfMessages(),
                 configuration.batchSize());
-            doRun(configuration.iterations(), configuration.numberOfMessages(), sender, receiver, sentMessages,
-                histogram);
+            doRun(configuration.iterations(), configuration.numberOfMessages(), sentMessages);
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
             histogram.outputPercentileDistribution(out, 1000.0);
@@ -106,32 +144,28 @@ public final class LoadTestRig
     private void doRun(
         final int iterations,
         final int messages,
-        final MessagePump.Sender sender,
-        final MessagePump.Receiver receiver,
-        final AtomicLong sentMessages,
-        final Histogram histogram)
+        final AtomicLong sentMessages)
     {
-        final CompletableFuture<?> receiverTask = runAsync(() -> receive(receiver, sentMessages, histogram));
-        sentMessages.set(send(iterations, messages, sender));
+        final CompletableFuture<?> receiverTask = runAsync(() -> receive(sentMessages));
+        sentMessages.set(send(iterations, messages));
         receiverTask.join();
     }
 
-    void receive(final MessagePump.Receiver receiver, final AtomicLong sentMessages, final Histogram histogram)
+    void receive(final AtomicLong sentMessages)
     {
-        final NanoClock clock = this.clock;
+        final MessageRecorder messageRecorder = this.messageRecorder;
+        final MessagePump messagePump = this.messagePump;
         final IdleStrategy idleStrategy = configuration.receiverIdleStrategy();
 
         long sent = 0;
         long received = 0;
         while (true)
         {
-            final long timestamp = receiver.receive();
-            if (0 != timestamp)
+            messageRecorder.reset();
+            final int count = messagePump.receive();
+            if (count > 0)
             {
-                received++;
-                final long now = clock.nanoTime();
-                final long duration = now - timestamp;
-                histogram.recordValue(duration);
+                received += count;
                 idleStrategy.reset();
             }
             else
@@ -142,15 +176,16 @@ public final class LoadTestRig
             {
                 sent = sentMessages.get();
             }
-            if (0 != sent && received == sent)
+            if (0 != sent && received >= sent)
             {
                 break;
             }
         }
     }
 
-    long send(final int iterations, final int numberOfMessages, final MessagePump.Sender sender)
+    long send(final int iterations, final int numberOfMessages)
     {
+        final MessagePump messagePump = this.messagePump;
         final NanoClock clock = this.clock;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
@@ -168,7 +203,7 @@ public final class LoadTestRig
         while (true)
         {
             final int batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
-            int sent = sender.send(batchSize, messageSize, timestamp);
+            int sent = messagePump.send(batchSize, messageSize, timestamp);
             if (sent < batchSize)
             {
                 idleStrategy.reset();
@@ -176,7 +211,7 @@ public final class LoadTestRig
                 {
                     idleStrategy.idle();
                 }
-                while ((sent += sender.send(batchSize - sent, messageSize, timestamp)) < batchSize);
+                while ((sent += messagePump.send(batchSize - sent, messageSize, timestamp)) < batchSize);
             }
             sentMessages += batchSize;
             if (totalNumberOfMessages == sentMessages)
@@ -223,8 +258,6 @@ public final class LoadTestRig
         SystemUtil.loadPropertiesFiles(args);
 
         final Configuration configuration = Configuration.fromSystemProperties();
-        final MessagePump messagePump = configuration.messagePumpClass().getConstructor().newInstance();
-
-        new LoadTestRig(configuration, messagePump).run();
+        new LoadTestRig(configuration, configuration.messagePumpClass()).run();
     }
 }

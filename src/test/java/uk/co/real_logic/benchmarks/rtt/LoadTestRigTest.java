@@ -23,7 +23,6 @@ import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 
 import java.io.PrintStream;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -31,14 +30,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.benchmarks.rtt.MessagePump.Receiver;
-import static uk.co.real_logic.benchmarks.rtt.MessagePump.Sender;
 
 class LoadTestRigTest
 {
     private final IdleStrategy senderIdleStrategy = mock(IdleStrategy.class);
     private final IdleStrategy receiverIdleStrategy = mock(IdleStrategy.class);
-    private final MessagePump messagePump = mock(MessagePump.class);
     private final NanoClock clock = mock(NanoClock.class);
     private final PrintStream out = mock(PrintStream.class);
     private final Configuration configuration = new Configuration.Builder()
@@ -50,57 +46,26 @@ class LoadTestRigTest
         .senderIdleStrategy(senderIdleStrategy)
         .receiverIdleStrategy(receiverIdleStrategy)
         .build();
+    private Histogram histogram = mock(Histogram.class);
+    private MessageRecorder messageRecorder = mock(MessageRecorder.class);
+    private MessagePump messagePump = mock(MessagePump.class);
 
     @Test
     void constructorThrowsNullPointerExceptionIfConfigurationIsNull()
     {
-        assertThrows(NullPointerException.class, () -> new LoadTestRig(null, messagePump, clock, out));
+        assertThrows(NullPointerException.class, () -> new LoadTestRig(null, MessagePump.class));
     }
 
     @Test
-    void constructorThrowsNullPointerExceptionIfMessageProviderIsNull()
+    void constructorThrowsNullPointerExceptionIfMessagePumpClassIsNull()
     {
-        assertThrows(NullPointerException.class, () -> new LoadTestRig(configuration, null, clock, out));
+        assertThrows(NullPointerException.class, () -> new LoadTestRig(configuration, null));
     }
 
     @Test
-    void constructorThrowsNullPointerExceptionIfNanoClockIsNull()
+    void constructorThrowsExceptionIfMessagePumpCannotBeCreated()
     {
-        assertThrows(NullPointerException.class, () -> new LoadTestRig(configuration, messagePump, null, out));
-    }
-
-    @Test
-    void constructorThrowsNullPointerExceptionIfPrintStreamIsNull()
-    {
-        assertThrows(NullPointerException.class, () -> new LoadTestRig(configuration, messagePump, clock, null));
-    }
-
-    @Test
-    void runThrowsNullPointerExceptionIfSenderIsNull() throws Exception
-    {
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
-
-        assertThrows(NullPointerException.class, loadTestRig::run);
-
-        final InOrder inOrder = inOrder(messagePump);
-        inOrder.verify(messagePump).init(configuration);
-        inOrder.verify(messagePump).sender();
-        inOrder.verify(messagePump).destroy();
-    }
-
-    @Test
-    void runThrowsNullPointerExceptionIfReceiverIsNull() throws Exception
-    {
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
-        when(messagePump.sender()).thenReturn(mock(Sender.class));
-
-        assertThrows(NullPointerException.class, loadTestRig::run);
-
-        final InOrder inOrder = inOrder(messagePump);
-        inOrder.verify(messagePump).init(configuration);
-        inOrder.verify(messagePump).sender();
-        inOrder.verify(messagePump).receiver();
-        inOrder.verify(messagePump).destroy();
+        assertThrows(InstantiationException.class, () -> new LoadTestRig(configuration, MessagePump.class));
     }
 
     @Test
@@ -108,48 +73,28 @@ class LoadTestRigTest
     {
         final long nanoTime = SECONDS.toNanos(123);
         final NanoClock clock = () -> nanoTime;
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
-        final Sender sender = mock(Sender.class);
-        final AtomicInteger count = new AtomicInteger();
-        when(sender.send(anyInt(), anyInt(), anyLong()))
-            .thenAnswer((Answer<Integer>)invocation ->
-            {
-                final int numberOfMessages = (int)invocation.getArgument(0);
-                count.getAndAdd(numberOfMessages);
-                return numberOfMessages;
-            });
-        final Receiver receiver = mock(Receiver.class);
-        when(receiver.receive()).thenAnswer((Answer<Long>)invocation ->
-        {
-            if (count.get() == 0)
-            {
-                return 0L;
-            }
-            count.decrementAndGet();
-            return nanoTime - 100;
-        });
-        when(messagePump.sender()).thenReturn(sender);
-        when(messagePump.receiver()).thenReturn(receiver);
+        when(messagePump.send(anyInt(), anyInt(), anyLong())).thenReturn(1);
+        when(messagePump.receive()).thenReturn(1000);
+        final LoadTestRig loadTestRig =
+            new LoadTestRig(configuration, clock, out, histogram, messageRecorder, messagePump);
 
         loadTestRig.run();
 
-        final InOrder inOrder = inOrder(messagePump, sender, out);
+        final InOrder inOrder = inOrder(messagePump, out);
         inOrder.verify(messagePump).init(configuration);
-        inOrder.verify(messagePump).sender();
-        inOrder.verify(messagePump).receiver();
         inOrder.verify(out)
             .printf("Running warm up for %,d iterations of %,d messages with burst size of %,d...%n",
             configuration.warmUpIterations(),
             configuration.warmUpNumberOfMessages(),
             configuration.batchSize());
-        inOrder.verify(sender).send(1, configuration.messageLength(), nanoTime);
+        inOrder.verify(messagePump).send(1, configuration.messageLength(), nanoTime);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(out)
             .printf("%nRunning measurement for %,d iterations of %,d messages with burst size of %,d...%n",
             configuration.iterations(),
             configuration.numberOfMessages(),
             configuration.batchSize());
-        inOrder.verify(sender).send(1, configuration.messageLength(), nanoTime);
+        inOrder.verify(messagePump).send(1, configuration.messageLength(), nanoTime);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(out).printf("%nHistogram of RTT latencies in microseconds.%n");
         inOrder.verify(messagePump).destroy();
@@ -158,32 +103,25 @@ class LoadTestRigTest
     @Test
     void receiveShouldKeepReceivingMessagesUpToTheSentMessagesLimit()
     {
-        final Receiver receiver = mock(Receiver.class);
-        when(receiver.receive()).thenReturn(1L, 0L, 2L, 3L);
-        when(messagePump.receiver()).thenReturn(receiver);
-        when(clock.nanoTime()).thenReturn(10L, 20L, 30L);
+        when(messagePump.receive()).thenReturn(1, 0, 2).thenThrow();
         final AtomicLong sentMessages = new AtomicLong(2);
-        final Histogram histogram = mock(Histogram.class);
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
+        final LoadTestRig loadTestRig =
+            new LoadTestRig(configuration, clock, out, histogram, messageRecorder, messagePump);
 
-        loadTestRig.receive(receiver, sentMessages, histogram);
+        loadTestRig.receive(sentMessages);
 
-        verify(receiver, times(3)).receive();
-        verify(clock, times(2)).nanoTime();
-        verify(histogram).recordValue(9L);
-        verify(histogram).recordValue(18L);
+        verify(messageRecorder, times(3)).reset();
+        verify(messagePump, times(3)).receive();
         verify(receiverIdleStrategy, times(2)).reset();
         verify(receiverIdleStrategy).idle();
-        verifyNoMoreInteractions(receiver, histogram, clock, receiverIdleStrategy);
+        verifyNoMoreInteractions(messagePump, receiverIdleStrategy);
     }
 
     @Test
     void sendStopsWhenTotalNumberOfMessagesIsReached()
     {
-        final Sender sender = mock(Sender.class);
-        when(sender.send(anyInt(), anyInt(), anyLong()))
+        when(messagePump.send(anyInt(), anyInt(), anyLong()))
             .thenAnswer((Answer<Integer>)invocation -> (int)invocation.getArgument(0));
-        when(messagePump.sender()).thenReturn(sender);
         when(clock.nanoTime()).thenReturn(
             MILLISECONDS.toNanos(1000),
             MILLISECONDS.toNanos(1750),
@@ -197,28 +135,27 @@ class LoadTestRigTest
             .messageLength(24)
             .messagePumpClass(SampleMessagePump.class)
             .build();
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
+        final LoadTestRig loadTestRig =
+            new LoadTestRig(configuration, clock, out, histogram, messageRecorder, messagePump);
 
-        final long messages = loadTestRig.send(2, 25, sender);
+        final long messages = loadTestRig.send(2, 25);
 
         assertEquals(50, messages);
         verify(clock, times(4)).nanoTime();
         verify(senderIdleStrategy, times(3)).reset();
-        verify(sender).send(15, 24, MILLISECONDS.toNanos(1000));
-        verify(sender).send(15, 24, MILLISECONDS.toNanos(1600));
-        verify(sender).send(15, 24, MILLISECONDS.toNanos(2200));
-        verify(sender).send(5, 24, MILLISECONDS.toNanos(2800));
+        verify(messagePump).send(15, 24, MILLISECONDS.toNanos(1000));
+        verify(messagePump).send(15, 24, MILLISECONDS.toNanos(1600));
+        verify(messagePump).send(15, 24, MILLISECONDS.toNanos(2200));
+        verify(messagePump).send(5, 24, MILLISECONDS.toNanos(2800));
         verify(out).format("Send rate %,d msg/sec%n", 30L);
         verify(out).format("Send rate %,d msg/sec%n", 25L);
-        verifyNoMoreInteractions(out, clock, senderIdleStrategy, sender);
+        verifyNoMoreInteractions(out, clock, senderIdleStrategy, messagePump);
     }
 
     @Test
     void sendStopsIfTimeElapsesBeforeTargetNumberOfMessagesIsReached()
     {
-        final Sender sender = mock(Sender.class);
-        when(sender.send(anyInt(), anyInt(), anyLong())).thenReturn(15, 10, 5, 30);
-        when(messagePump.sender()).thenReturn(sender);
+        when(messagePump.send(anyInt(), anyInt(), anyLong())).thenReturn(15, 10, 5, 30);
         when(clock.nanoTime()).thenReturn(
             MILLISECONDS.toNanos(500),
             MILLISECONDS.toNanos(777),
@@ -233,23 +170,24 @@ class LoadTestRigTest
             .messageLength(100)
             .messagePumpClass(SampleMessagePump.class)
             .build();
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messagePump, clock, out);
+        final LoadTestRig loadTestRig =
+            new LoadTestRig(configuration, clock, out, histogram, messageRecorder, messagePump);
 
-        final long messages = loadTestRig.send(10, 100, sender);
+        final long messages = loadTestRig.send(10, 100);
 
         assertEquals(900, messages);
         verify(clock, times(5)).nanoTime();
         verify(senderIdleStrategy, times(4)).reset();
         verify(senderIdleStrategy, times(3)).idle();
-        verify(sender).send(30, 100, MILLISECONDS.toNanos(500));
-        verify(sender).send(15, 100, MILLISECONDS.toNanos(500));
-        verify(sender).send(5, 100, MILLISECONDS.toNanos(500));
+        verify(messagePump).send(30, 100, MILLISECONDS.toNanos(500));
+        verify(messagePump).send(15, 100, MILLISECONDS.toNanos(500));
+        verify(messagePump).send(5, 100, MILLISECONDS.toNanos(500));
         for (int time = 800; time <= 9200; time += 300)
         {
-            verify(sender).send(30, 100, MILLISECONDS.toNanos(time));
+            verify(messagePump).send(30, 100, MILLISECONDS.toNanos(time));
         }
         verify(out).format("Send rate %,d msg/sec%n", 5L);
         verify(out).format("Send rate %,d msg/sec%n", 70L);
-        verifyNoMoreInteractions(out, clock, senderIdleStrategy, sender);
+        verifyNoMoreInteractions(out, clock, senderIdleStrategy, messagePump);
     }
 }

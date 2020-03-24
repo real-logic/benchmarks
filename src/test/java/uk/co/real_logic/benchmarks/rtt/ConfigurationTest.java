@@ -154,24 +154,11 @@ class ConfigurationTest
     }
 
     @Test
-    void throwsIllegalArgumentExceptionIfMessagePumpClassIsAnInterface()
-    {
-        final Builder builder = new Builder()
-            .numberOfMessages(10)
-            .messagePumpClass(TestMessagePump.class);
-
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
-
-        assertEquals("MessagePump class must be a concrete class", ex.getMessage());
-    }
-
-    @Test
     void throwsIllegalArgumentExceptionIfMessagePumpClassIsAnAbstractClass()
     {
         final Builder builder = new Builder()
             .numberOfMessages(10)
-            .messagePumpClass(TestAbstractMessagePump.class);
+            .messagePumpClass(MessagePump.class);
 
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
@@ -189,7 +176,8 @@ class ConfigurationTest
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("MessagePump class must have a public no-arg constructor", ex.getMessage());
+        assertEquals("MessagePump class must have a public constructor with MessageRecorder as a single parameter",
+            ex.getMessage());
     }
 
     @Test
@@ -397,18 +385,11 @@ class ConfigurationTest
         return IntStream.range(-1, MIN_MESSAGE_LENGTH);
     }
 
-    private interface TestMessagePump extends MessagePump
+    public final class TestNoPublicConstructorMessagePump extends MessagePump
     {
-    }
-
-    private abstract class TestAbstractMessagePump implements MessagePump
-    {
-    }
-
-    private final class TestNoPublicConstructorMessagePump implements MessagePump
-    {
-        private TestNoPublicConstructorMessagePump()
+        private TestNoPublicConstructorMessagePump(final MessageRecorder messageRecorder)
         {
+            super(messageRecorder);
         }
 
         public void init(final Configuration configuration) throws Exception
@@ -419,14 +400,14 @@ class ConfigurationTest
         {
         }
 
-        public Sender sender()
+        public int send(final int numberOfMessages, final int length, final long timestamp)
         {
-            return null;
+            return 0;
         }
 
-        public Receiver receiver()
+        public int receive()
         {
-            return null;
+            return 0;
         }
     }
 }
