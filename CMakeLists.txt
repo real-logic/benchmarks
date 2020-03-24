@@ -163,6 +163,7 @@ include_directories(${GOOGLE_BENCHMARK_SOURCE_DIR}/include)
 # Hdr Histogram
 include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
 include_directories(${AERON_SOURCE_DIR}/aeron-client/src/main/cpp)
+include_directories(${AERON_SOURCE_DIR}/aeron-client/src/main/c)
 include_directories(${AERON_SOURCE_DIR}/aeron-driver/src/main/c)
 
 include_directories(${CMAKE_SOURCE_DIR}/src/main/cpp)
