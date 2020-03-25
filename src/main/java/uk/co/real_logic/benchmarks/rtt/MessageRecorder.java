@@ -18,6 +18,7 @@ package uk.co.real_logic.benchmarks.rtt;
 /**
  * A recorder for the received messages.
  */
+@FunctionalInterface
 public interface MessageRecorder
 {
     /**
@@ -26,9 +27,4 @@ public interface MessageRecorder
      * @param timestamp payload of the message.
      */
     void record(long timestamp);
-
-    /**
-     * Reset internal state.
-     */
-    void reset();
 }

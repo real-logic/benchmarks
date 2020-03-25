@@ -47,7 +47,6 @@ class LoadTestRigTest
         .receiverIdleStrategy(receiverIdleStrategy)
         .build();
     private Histogram histogram = mock(Histogram.class);
-    private MessageRecorder messageRecorder = mock(MessageRecorder.class);
     private MessagePump messagePump = mock(MessagePump.class);
 
     @Test
@@ -76,7 +75,7 @@ class LoadTestRigTest
         when(messagePump.send(anyInt(), anyInt(), anyLong())).thenReturn(1);
         when(messagePump.receive()).thenReturn(1000);
         final LoadTestRig loadTestRig =
-            new LoadTestRig(configuration, clock, out, histogram, messageRecorder, messagePump);
+            new LoadTestRig(configuration, clock, out, histogram, messagePump);
 
         loadTestRig.run();
 
@@ -106,11 +105,10 @@ class LoadTestRigTest
         when(messagePump.receive()).thenReturn(1, 0, 2).thenThrow();
         final AtomicLong sentMessages = new AtomicLong(2);
         final LoadTestRig loadTestRig =
-            new LoadTestRig(configuration, clock, out, histogram, messageRecorder, messagePump);
+            new LoadTestRig(configuration, clock, out, histogram, messagePump);
 
         loadTestRig.receive(sentMessages);
 
-        verify(messageRecorder, times(3)).reset();
         verify(messagePump, times(3)).receive();
         verify(receiverIdleStrategy, times(2)).reset();
         verify(receiverIdleStrategy).idle();
@@ -136,7 +134,7 @@ class LoadTestRigTest
             .messagePumpClass(SampleMessagePump.class)
             .build();
         final LoadTestRig loadTestRig =
-            new LoadTestRig(configuration, clock, out, histogram, messageRecorder, messagePump);
+            new LoadTestRig(configuration, clock, out, histogram, messagePump);
 
         final long messages = loadTestRig.send(2, 25);
 
@@ -171,7 +169,7 @@ class LoadTestRigTest
             .messagePumpClass(SampleMessagePump.class)
             .build();
         final LoadTestRig loadTestRig =
-            new LoadTestRig(configuration, clock, out, histogram, messageRecorder, messagePump);
+            new LoadTestRig(configuration, clock, out, histogram, messagePump);
 
         final long messages = loadTestRig.send(10, 100);
 

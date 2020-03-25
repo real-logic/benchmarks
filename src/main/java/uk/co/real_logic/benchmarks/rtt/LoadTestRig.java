@@ -43,7 +43,6 @@ public final class LoadTestRig
     private final NanoClock clock;
     private final PrintStream out;
     private final Histogram histogram;
-    private final MessageRecorder messageRecorder;
 
     public LoadTestRig(final Configuration configuration, final Class<? extends MessagePump> messagePumpClass)
     {
@@ -53,29 +52,10 @@ public final class LoadTestRig
         this.out = System.out;
         histogram = new Histogram(
             max(configuration.iterations(), configuration.warmUpIterations()) * NANOS_PER_SECOND, 3);
-        messageRecorder = new MessageRecorder()
-        {
-            private long time;
-
-            public void record(final long timestamp)
-            {
-                long time = this.time;
-                if (0 == time)
-                {
-                    this.time = time = clock.nanoTime();
-                }
-                histogram.recordValue(time - timestamp);
-            }
-
-            public void reset()
-            {
-                time = 0;
-            }
-        };
         try
         {
             this.messagePump = messagePumpClass.getConstructor(MessageRecorder.class)
-                .newInstance(messageRecorder);
+                .newInstance((MessageRecorder)timestamp -> histogram.recordValue(clock.nanoTime() - timestamp));
         }
         catch (final ReflectiveOperationException ex)
         {
@@ -89,14 +69,12 @@ public final class LoadTestRig
         final NanoClock clock,
         final PrintStream out,
         final Histogram histogram,
-        final MessageRecorder messageRecorder,
         final MessagePump messagePump)
     {
         this.configuration = configuration;
         this.clock = clock;
         this.out = out;
         this.histogram = histogram;
-        this.messageRecorder = messageRecorder;
         this.messagePump = messagePump;
     }
 
@@ -153,7 +131,6 @@ public final class LoadTestRig
 
     void receive(final AtomicLong sentMessages)
     {
-        final MessageRecorder messageRecorder = this.messageRecorder;
         final MessagePump messagePump = this.messagePump;
         final IdleStrategy idleStrategy = configuration.receiverIdleStrategy();
 
@@ -161,7 +138,6 @@ public final class LoadTestRig
         long received = 0;
         while (true)
         {
-            messageRecorder.reset();
             final int count = messagePump.receive();
             if (count > 0)
             {
