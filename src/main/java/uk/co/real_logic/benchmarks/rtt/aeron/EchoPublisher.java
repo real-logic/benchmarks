@@ -17,22 +17,15 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
-import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.exceptions.AeronException;
-import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.RawBlockHandler;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Publication.*;
-import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.align;
 import static org.agrona.CloseHelper.closeAll;
 
 public final class EchoPublisher implements AutoCloseable
@@ -74,41 +67,24 @@ public final class EchoPublisher implements AutoCloseable
 
     public void run()
     {
+        final AtomicBoolean running = this.running;
+        final Subscription subscription = this.subscription;
         final ExclusivePublication publication = this.publication;
-        final BufferClaim bufferClaim = new BufferClaim();
-        final RawBlockHandler blockHandler =
-            (fileChannel, fileOffset, termBuffer, termOffset, length, sessionId, termId) ->
+        final int frameCountLimit = driver.configuration().frameCountLimit;
+
+        final FragmentHandler dataHandler =
+            (buffer, offset, length, header) ->
             {
-                int frameOffset = termOffset;
-                final int endOffset = termOffset + length;
-                while (frameOffset < endOffset)
+                long result;
+                while ((result = publication.offer(buffer, offset, length)) < 0L)
                 {
-                    if (isPaddingFrame(termBuffer, frameOffset))
-                    {
-                        break;
-                    }
-                    final int frameLength = frameLength(termBuffer, frameOffset);
-                    final int dataLength = frameLength - HEADER_LENGTH;
-                    long result;
-                    while ((result = publication.tryClaim(dataLength, bufferClaim)) < 0)
-                    {
-                        checkResult(result);
-                    }
-                    bufferClaim
-                        .flags(frameFlags(termBuffer, frameOffset))
-                        .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
-                        .putBytes(termBuffer, frameOffset + HEADER_LENGTH, dataLength)
-                        .commit();
-                    frameOffset += align(frameLength, FRAME_ALIGNMENT);
+                    checkResult(result);
                 }
             };
 
-        final Image image = this.subscription.imageAtIndex(0);
-        final AtomicBoolean running = this.running;
-        final int termBufferLength = publication.termBufferLength();
         while (running.get())
         {
-            image.rawPoll(blockHandler, termBufferLength);
+            subscription.poll(dataHandler, frameCountLimit);
         }
     }
 
