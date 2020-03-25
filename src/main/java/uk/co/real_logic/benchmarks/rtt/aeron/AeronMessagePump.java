@@ -41,7 +41,7 @@ public final class AeronMessagePump extends MessagePump
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
-            onMessageReceived(buffer.getLong(0, LITTLE_ENDIAN));
+            onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN));
             messagesReceived++;
         });
 

@@ -16,7 +16,7 @@
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import org.agrona.LangUtil;
-import org.agrona.collections.MutableInteger;
+import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -25,10 +25,11 @@ import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.LongStream;
 
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static uk.co.real_logic.benchmarks.rtt.aeron.MessagePumpConfiguration.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
 class AeronMessagePumpTest
@@ -77,16 +78,12 @@ class AeronMessagePumpTest
         echoPublisher.setDaemon(true);
         echoPublisher.start();
 
-        final MutableInteger notifiedReceived = new MutableInteger();
+        final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
         final AeronMessagePump messagePump = new AeronMessagePump(driver, new MessageRecorder()
         {
             public void record(final long timestamp)
             {
-                notifiedReceived.increment();
-            }
-
-            public void reset()
-            {
+                timestamps.addLong(timestamp);
             }
         });
 
@@ -118,8 +115,14 @@ class AeronMessagePumpTest
             receiver.start();
 
             int sent = 0;
-            while ((sent += messagePump.send(messages - sent, configuration.messageLength(), 1_000_000_000)) < messages)
+            long timestamp = 1_000;
+            while (sent < messages)
             {
+                if (messagePump.send(1, configuration.messageLength(), timestamp) == 1)
+                {
+                    sent++;
+                    timestamp++;
+                }
             }
 
             receiver.join();
@@ -135,6 +138,6 @@ class AeronMessagePumpTest
         {
             LangUtil.rethrowUnchecked(error.get());
         }
-        assertEquals(messages, notifiedReceived.intValue());
+        assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
     }
 }
