@@ -49,7 +49,7 @@ class AeronMessagePumpTest
     @Test
     void pumpMessagesViaEchoPublisher() throws Exception
     {
-        final int messages = 50_000;
+        final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
             .messagePumpClass(AeronMessagePump.class)

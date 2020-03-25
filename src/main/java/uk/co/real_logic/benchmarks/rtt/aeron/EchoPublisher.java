@@ -89,20 +89,16 @@ public final class EchoPublisher implements AutoCloseable
                     }
                     final int frameLength = frameLength(termBuffer, frameOffset);
                     final int dataLength = frameLength - HEADER_LENGTH;
-                    final long result = publication.tryClaim(dataLength, bufferClaim);
-                    if (result > 0)
-                    {
-                        bufferClaim
-                            .flags(frameFlags(termBuffer, frameOffset))
-                            .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
-                            .putBytes(termBuffer, frameOffset + HEADER_LENGTH, dataLength)
-                            .commit();
-                    }
-                    else
+                    long result;
+                    while ((result = publication.tryClaim(dataLength, bufferClaim)) < 0)
                     {
                         checkResult(result);
-                        break;
                     }
+                    bufferClaim
+                        .flags(frameFlags(termBuffer, frameOffset))
+                        .reservedValue(termBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                        .putBytes(termBuffer, frameOffset + HEADER_LENGTH, dataLength)
+                        .commit();
                     frameOffset += align(frameLength, FRAME_ALIGNMENT);
                 }
             };
