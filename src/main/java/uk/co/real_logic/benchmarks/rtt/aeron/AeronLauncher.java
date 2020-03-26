@@ -16,9 +16,13 @@
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.Aeron;
+import io.aeron.archive.Archive;
+import io.aeron.archive.ArchivingMediaDriver;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
+import org.agrona.LangUtil;
 
-import static java.lang.Boolean.getBoolean;
+import static java.lang.Class.forName;
 import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
 import static org.agrona.CloseHelper.closeAll;
@@ -29,28 +33,61 @@ final class AeronLauncher implements AutoCloseable
     static final String SENDER_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.sender.streamId";
     static final String RECEIVER_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.receiver.channel";
     static final String RECEIVER_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.receiver.streamId";
-    static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME = "aeron.benchmarks.rtt.aeron.embeddedMediaDriver";
+    static final String MEDIA_DRIVER_PROP_NAME = "aeron.benchmarks.rtt.aeron.mediaDriver";
     static final String FRAME_COUNT_LIMIT_PROP_NAME = "aeron.benchmarks.rtt.aeron.frameCountLimit";
 
-    private final MediaDriver mediaDriver;
+    private final AutoCloseable mediaDriver;
     private final Aeron aeron;
+    private final AeronArchive aeronArchive;
 
     AeronLauncher()
     {
-        if (embeddedMediaDriver())
+        this(mediaDriverClass());
+    }
+
+    AeronLauncher(final Class<? extends AutoCloseable> mediaDriverClass)
+    {
+        if (null != mediaDriverClass)
         {
-            mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
+            final MediaDriver.Context context = new MediaDriver.Context()
+                .dirDeleteOnStart(true)
+                .spiesSimulateConnection(true);
+            if (MediaDriver.class.equals(mediaDriverClass))
+            {
+                mediaDriver = MediaDriver.launch(context);
+                aeron = Aeron.connect();
+                aeronArchive = null;
+            }
+            else if (ArchivingMediaDriver.class.equals(mediaDriverClass))
+            {
+                mediaDriver = ArchivingMediaDriver.launch(
+                    context,
+                    new Archive.Context().recordingEventsEnabled(false));
+
+                aeron = Aeron.connect();
+
+                aeronArchive = AeronArchive.connect(
+                    new AeronArchive.Context()
+                        .aeron(aeron));
+            }
+            else
+            {
+                throw new IllegalArgumentException("Unknown MediaDriver option: " + mediaDriverClass.getName());
+            }
         }
         else
         {
             mediaDriver = null;
+            aeron = Aeron.connect();
+            aeronArchive = null;
         }
-        aeron = Aeron.connect();
     }
 
-    MediaDriver mediaDriver()
+    AeronLauncher(final AutoCloseable mediaDriver, final Aeron aeron, final AeronArchive aeronArchive)
     {
-        return mediaDriver;
+        this.mediaDriver = mediaDriver;
+        this.aeron = aeron;
+        this.aeronArchive = aeronArchive;
     }
 
     Aeron aeron()
@@ -58,9 +95,14 @@ final class AeronLauncher implements AutoCloseable
         return aeron;
     }
 
+    AeronArchive aeronArchive()
+    {
+        return aeronArchive;
+    }
+
     public void close()
     {
-        closeAll(aeron, mediaDriver);
+        closeAll(aeronArchive, aeron, mediaDriver);
     }
 
     static String senderChannel()
@@ -83,9 +125,21 @@ final class AeronLauncher implements AutoCloseable
         return getInteger(RECEIVER_STREAM_ID_PROP_NAME, 101011);
     }
 
-    static boolean embeddedMediaDriver()
+    static Class<? extends AutoCloseable> mediaDriverClass()
     {
-        return getBoolean(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
+        final String className = getProperty(MEDIA_DRIVER_PROP_NAME);
+        if (null != className)
+        {
+            try
+            {
+                return forName(className).asSubclass(AutoCloseable.class);
+            }
+            catch (final ClassNotFoundException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+        return null;
     }
 
     static int frameCountLimit()

@@ -15,37 +15,20 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
+import io.aeron.driver.MediaDriver;
 import org.agrona.LangUtil;
 import org.agrona.collections.LongArrayList;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
-import static java.lang.System.clearProperty;
-import static java.lang.System.setProperty;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
-class AeronMessagePumpTest
+class EchoPublisherTest
 {
-    @BeforeAll
-    static void before()
-    {
-        setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
-    }
-
-    @AfterAll
-    static void after()
-    {
-        clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
-    }
-
     @Test
     @SuppressWarnings("MethodLength")
     void pumpMessagesViaEchoPublisher() throws Exception
@@ -56,14 +39,14 @@ class AeronMessagePumpTest
             .messagePumpClass(AeronMessagePump.class)
             .build();
 
-        final AeronLauncher driver = new AeronLauncher();
+        final AeronLauncher launcher = new AeronLauncher(MediaDriver.class);
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
 
         final Thread echoPublisher = new Thread(
             () ->
             {
-                try (EchoPublisher publisher = new EchoPublisher(running, driver))
+                try (EchoPublisher publisher = new EchoPublisher(running, launcher, false))
                 {
                     publisher.run();
                 }
@@ -80,13 +63,7 @@ class AeronMessagePumpTest
         echoPublisher.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final AeronMessagePump messagePump = new AeronMessagePump(driver, new MessageRecorder()
-        {
-            public void record(final long timestamp)
-            {
-                timestamps.addLong(timestamp);
-            }
-        });
+        final AeronMessagePump messagePump = new AeronMessagePump(launcher, timestamp -> timestamps.addLong(timestamp));
 
         messagePump.init(configuration);
         try

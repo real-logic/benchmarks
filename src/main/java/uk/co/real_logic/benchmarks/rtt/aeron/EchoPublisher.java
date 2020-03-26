@@ -35,26 +35,21 @@ public final class EchoPublisher implements AutoCloseable
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
-    private final AeronLauncher driver;
-    private final boolean ownsDriver;
+    private final AeronLauncher launcher;
+    private final boolean ownsLauncher;
 
     EchoPublisher(final AtomicBoolean running)
     {
         this(running, new AeronLauncher(), true);
     }
 
-    EchoPublisher(final AtomicBoolean running, final AeronLauncher driver)
-    {
-        this(running, driver, false);
-    }
-
-    private EchoPublisher(final AtomicBoolean running, final AeronLauncher driver, final boolean ownsDriver)
+    EchoPublisher(final AtomicBoolean running, final AeronLauncher launcher, final boolean ownsLauncher)
     {
         this.running = running;
-        this.driver = driver;
-        this.ownsDriver = ownsDriver;
+        this.launcher = launcher;
+        this.ownsLauncher = ownsLauncher;
 
-        final Aeron aeron = driver.aeron();
+        final Aeron aeron = launcher.aeron();
 
         publication = aeron.addExclusivePublication(receiverChannel(), receiverStreamId());
 
@@ -87,7 +82,7 @@ public final class EchoPublisher implements AutoCloseable
             final int fragments = image.poll(dataHandler, frameCountLimit);
             if (0 == fragments && image.isClosed())
             {
-                throw new IllegalStateException("image closed unexpectedly");
+                throw new IllegalStateException("image closed");
             }
         }
     }
@@ -96,9 +91,9 @@ public final class EchoPublisher implements AutoCloseable
     {
         closeAll(subscription, publication);
 
-        if (ownsDriver)
+        if (ownsLauncher)
         {
-            driver.close();
+            launcher.close();
         }
     }
 
