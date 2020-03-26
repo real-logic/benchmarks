@@ -108,7 +108,12 @@ public final class AeronMessagePump extends MessagePump
     public int receive()
     {
         messagesReceived = 0;
-        image.poll(dataHandler, frameCountLimit);
+        final Image image = this.image;
+        final int fragments = image.poll(dataHandler, frameCountLimit);
+        if (0 == fragments && image.isClosed())
+        {
+            throw new IllegalStateException("image closed unexpectedly");
+        }
         return messagesReceived;
     }
 

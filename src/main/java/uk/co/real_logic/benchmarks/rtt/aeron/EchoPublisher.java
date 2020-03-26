@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
+import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.FragmentHandler;
@@ -67,11 +68,7 @@ public final class EchoPublisher implements AutoCloseable
 
     public void run()
     {
-        final AtomicBoolean running = this.running;
-        final Subscription subscription = this.subscription;
         final ExclusivePublication publication = this.publication;
-        final int frameCountLimit = driver.configuration().frameCountLimit;
-
         final FragmentHandler dataHandler =
             (buffer, offset, length, header) ->
             {
@@ -82,9 +79,16 @@ public final class EchoPublisher implements AutoCloseable
                 }
             };
 
+        final AtomicBoolean running = this.running;
+        final Image image = subscription.imageAtIndex(0);
+        final int frameCountLimit = driver.configuration().frameCountLimit;
         while (running.get())
         {
-            subscription.poll(dataHandler, frameCountLimit);
+            final int fragments = image.poll(dataHandler, frameCountLimit);
+            if (0 == fragments && image.isClosed())
+            {
+                throw new IllegalStateException("image closed unexpectedly");
+            }
         }
     }
 

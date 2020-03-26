@@ -47,6 +47,7 @@ class AeronMessagePumpTest
     }
 
     @Test
+    @SuppressWarnings("MethodLength")
     void pumpMessagesViaEchoPublisher() throws Exception
     {
         final int messages = 1_000_000;
@@ -98,7 +99,12 @@ class AeronMessagePumpTest
                     {
                         try
                         {
-                            received += messagePump.receive();
+                            final int count = messagePump.receive();
+                            if (0 == count && null != error.get())
+                            {
+                                LangUtil.rethrowUnchecked(error.get());
+                            }
+                            received += count;
                         }
                         catch (final Throwable t)
                         {
@@ -110,22 +116,32 @@ class AeronMessagePumpTest
                         }
                     }
                 });
-            receiver.setName("receiver");
+            receiver.setName("message-receiver");
             receiver.setDaemon(true);
             receiver.start();
 
-            int sent = 0;
-            long timestamp = 1_000;
-            while (sent < messages)
+            try
             {
-                if (messagePump.send(1, configuration.messageLength(), timestamp) == 1)
+                Thread.currentThread().setName("message-sender");
+                int sent = 0;
+                long timestamp = 1_000;
+                while (sent < messages)
                 {
-                    sent++;
-                    timestamp++;
+                    if (messagePump.send(1, configuration.messageLength(), timestamp) == 1)
+                    {
+                        sent++;
+                        timestamp++;
+                    }
+                    else if (null != error.get())
+                    {
+                        LangUtil.rethrowUnchecked(error.get());
+                    }
                 }
             }
-
-            receiver.join();
+            finally
+            {
+                receiver.join();
+            }
         }
         finally
         {
