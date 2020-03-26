@@ -28,37 +28,37 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Publication.*;
 import static org.agrona.CloseHelper.closeAll;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
 
 public final class EchoPublisher implements AutoCloseable
 {
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
-    private final MessagePumpDriver driver;
+    private final AeronLauncher driver;
     private final boolean ownsDriver;
 
     EchoPublisher(final AtomicBoolean running)
     {
-        this(running, new MessagePumpDriver(), true);
+        this(running, new AeronLauncher(), true);
     }
 
-    EchoPublisher(final AtomicBoolean running, final MessagePumpDriver driver)
+    EchoPublisher(final AtomicBoolean running, final AeronLauncher driver)
     {
         this(running, driver, false);
     }
 
-    private EchoPublisher(final AtomicBoolean running, final MessagePumpDriver driver, final boolean ownsDriver)
+    private EchoPublisher(final AtomicBoolean running, final AeronLauncher driver, final boolean ownsDriver)
     {
         this.running = running;
         this.driver = driver;
         this.ownsDriver = ownsDriver;
 
         final Aeron aeron = driver.aeron();
-        final MessagePumpConfiguration configuration = driver.configuration();
 
-        publication = aeron.addExclusivePublication(configuration.receiverChannel, configuration.receiverStreamId);
+        publication = aeron.addExclusivePublication(receiverChannel(), receiverStreamId());
 
-        subscription = aeron.addSubscription(configuration.senderChannel, configuration.senderStreamId);
+        subscription = aeron.addSubscription(senderChannel(), senderStreamId());
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
@@ -81,7 +81,7 @@ public final class EchoPublisher implements AutoCloseable
 
         final AtomicBoolean running = this.running;
         final Image image = subscription.imageAtIndex(0);
-        final int frameCountLimit = driver.configuration().frameCountLimit;
+        final int frameCountLimit = frameCountLimit();
         while (running.get())
         {
             final int fragments = image.poll(dataHandler, frameCountLimit);

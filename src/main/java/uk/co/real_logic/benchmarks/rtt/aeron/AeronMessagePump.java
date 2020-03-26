@@ -27,10 +27,11 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
 
 public final class AeronMessagePump extends MessagePump
 {
-    private final MessagePumpDriver driver;
+    private final AeronLauncher launcher;
     private final int frameCountLimit;
     private ExclusivePublication publication;
     private UnsafeBuffer offerBuffer;
@@ -47,27 +48,24 @@ public final class AeronMessagePump extends MessagePump
 
     public AeronMessagePump(final MessageRecorder messageRecorder)
     {
-        this(new MessagePumpDriver(), messageRecorder);
+        this(new AeronLauncher(), messageRecorder);
     }
 
-    AeronMessagePump(final MessagePumpDriver driver, final MessageRecorder messageRecorder)
+    AeronMessagePump(final AeronLauncher launcher, final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
-        this.driver = driver;
-        frameCountLimit = driver.configuration().frameCountLimit;
+        this.launcher = launcher;
+        frameCountLimit = frameCountLimit();
     }
 
     public void init(final Configuration configuration) throws Exception
     {
-        final Aeron aeron = driver.aeron();
-        final MessagePumpConfiguration messagePumpConfiguration = driver.configuration();
+        final Aeron aeron = launcher.aeron();
 
-        final ExclusivePublication publication = aeron.addExclusivePublication(
-            messagePumpConfiguration.senderChannel, messagePumpConfiguration.senderStreamId);
+        final ExclusivePublication publication = aeron.addExclusivePublication(senderChannel(), senderStreamId());
         this.publication = publication;
 
-        final Subscription subscription = aeron.addSubscription(
-            messagePumpConfiguration.receiverChannel, messagePumpConfiguration.receiverStreamId);
+        final Subscription subscription = aeron.addSubscription(receiverChannel(), receiverStreamId());
         this.subscription = subscription;
 
         while (!subscription.isConnected() || !publication.isConnected())
@@ -83,7 +81,7 @@ public final class AeronMessagePump extends MessagePump
 
     public void destroy() throws Exception
     {
-        closeAll(publication, subscription, driver);
+        closeAll(publication, subscription, launcher);
     }
 
     public int send(final int numberOfMessages, final int length, final long timestamp)

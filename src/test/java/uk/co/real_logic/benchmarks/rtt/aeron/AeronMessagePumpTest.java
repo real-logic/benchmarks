@@ -30,7 +30,7 @@ import java.util.stream.LongStream;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static uk.co.real_logic.benchmarks.rtt.aeron.MessagePumpConfiguration.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
 class AeronMessagePumpTest
 {
@@ -56,7 +56,7 @@ class AeronMessagePumpTest
             .messagePumpClass(AeronMessagePump.class)
             .build();
 
-        final MessagePumpDriver driver = new MessagePumpDriver();
+        final AeronLauncher driver = new AeronLauncher();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
 

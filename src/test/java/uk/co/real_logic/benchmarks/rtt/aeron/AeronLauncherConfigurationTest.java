@@ -22,21 +22,19 @@ import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static uk.co.real_logic.benchmarks.rtt.aeron.MessagePumpConfiguration.*;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
 
-class MessagePumpConfigurationTest
+class AeronLauncherConfigurationTest
 {
     @Test
     void defaultValues()
     {
-        final MessagePumpConfiguration configuration = new MessagePumpConfiguration();
-
-        assertEquals("aeron:udp?endpoint=localhost:33333", configuration.senderChannel);
-        assertEquals(101010, configuration.senderStreamId);
-        assertEquals("aeron:udp?endpoint=localhost:33334", configuration.receiverChannel);
-        assertEquals(101011, configuration.receiverStreamId);
-        assertFalse(configuration.embeddedMediaDriver);
-        assertEquals(10, configuration.frameCountLimit);
+        assertEquals("aeron:udp?endpoint=localhost:33333", senderChannel());
+        assertEquals(101010, senderStreamId());
+        assertEquals("aeron:udp?endpoint=localhost:33334", receiverChannel());
+        assertEquals(101011, receiverStreamId());
+        assertFalse(embeddedMediaDriver());
+        assertEquals(10, frameCountLimit());
     }
 
     @Test
@@ -57,14 +55,12 @@ class MessagePumpConfigurationTest
         setProperty(FRAME_COUNT_LIMIT_PROP_NAME, valueOf(frameCountLimit));
         try
         {
-            final MessagePumpConfiguration configuration = new MessagePumpConfiguration();
-
-            assertEquals(senderChannel, configuration.senderChannel);
-            assertEquals(senderStreamId, configuration.senderStreamId);
-            assertEquals(receiverChannel, configuration.receiverChannel);
-            assertEquals(receiverStreamId, configuration.receiverStreamId);
-            assertEquals(embeddedMediaDriver, configuration.embeddedMediaDriver);
-            assertEquals(frameCountLimit, configuration.frameCountLimit);
+            assertEquals(senderChannel, senderChannel());
+            assertEquals(senderStreamId, senderStreamId());
+            assertEquals(receiverChannel, receiverChannel());
+            assertEquals(receiverStreamId, receiverStreamId());
+            assertEquals(embeddedMediaDriver, embeddedMediaDriver());
+            assertEquals(frameCountLimit, frameCountLimit());
         }
         finally
         {
