@@ -117,8 +117,8 @@ public final class SampleMessagePump extends SampleMessagePump2
         final long timestamp = UNSAFE.getLongVolatile(messages, offset);
         if (0L != timestamp)
         {
-            UNSAFE.putOrderedLong(messages, offset, 0L);
             onMessageReceived(timestamp);
+            UNSAFE.putOrderedLong(messages, offset, 0L);
             receiveIndex++;
             return 1;
         }
