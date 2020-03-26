@@ -265,15 +265,17 @@ public final class Configuration
 
     public String toString()
     {
-        return "warmUpIterations=" + warmUpIterations +
-            ", warmUpNumberOfMessages=" + warmUpNumberOfMessages +
-            ", iterations=" + iterations +
-            ", numberOfMessages=" + numberOfMessages +
-            ", batchSize=" + batchSize +
-            ", messageLength=" + messageLength +
-            ", messagePumpClass=" + messagePumpClass.getName() +
-            ", senderIdleStrategy=" + senderIdleStrategy +
-            ", receiverIdleStrategy=" + receiverIdleStrategy;
+        return "Configuration{" +
+            "\n    warmUpIterations=" + warmUpIterations +
+            "\n    warmUpNumberOfMessages=" + warmUpNumberOfMessages +
+            "\n    iterations=" + iterations +
+            "\n    numberOfMessages=" + numberOfMessages +
+            "\n    batchSize=" + batchSize +
+            "\n    messageLength=" + messageLength +
+            "\n    messagePumpClass=" + messagePumpClass.getName() +
+            "\n    senderIdleStrategy=" + senderIdleStrategy +
+            "\n    receiverIdleStrategy=" + receiverIdleStrategy +
+            "\n}";
     }
 
     /**

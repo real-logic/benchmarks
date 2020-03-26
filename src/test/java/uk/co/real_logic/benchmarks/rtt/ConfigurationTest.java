@@ -268,10 +268,17 @@ class ConfigurationTest
             .receiverIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .build();
 
-        assertEquals("warmUpIterations=4, warmUpNumberOfMessages=3, iterations=10, numberOfMessages=777, " +
-            "batchSize=2, messageLength=64, " +
-            "messagePumpClass=uk.co.real_logic.benchmarks.rtt.SampleMessagePump, " +
-            "senderIdleStrategy=NoOpIdleStrategy{}, receiverIdleStrategy=YieldingIdleStrategy{}",
+        assertEquals("Configuration{" +
+            "\n    warmUpIterations=4" +
+            "\n    warmUpNumberOfMessages=3" +
+            "\n    iterations=10" +
+            "\n    numberOfMessages=777" +
+            "\n    batchSize=2" +
+            "\n    messageLength=64" +
+            "\n    messagePumpClass=uk.co.real_logic.benchmarks.rtt.SampleMessagePump" +
+            "\n    senderIdleStrategy=NoOpIdleStrategy{}" +
+            "\n    receiverIdleStrategy=YieldingIdleStrategy{}" +
+            "\n}",
             configuration.toString());
     }
 

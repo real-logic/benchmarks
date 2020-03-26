@@ -80,9 +80,11 @@ class LoadTestRigTest
         loadTestRig.run();
 
         final InOrder inOrder = inOrder(messagePump, out);
+        inOrder.verify(out)
+            .printf("Starting latency benchmark using the following configuration:%n%s%n", configuration);
         inOrder.verify(messagePump).init(configuration);
         inOrder.verify(out)
-            .printf("Running warm up for %,d iterations of %,d messages with burst size of %,d...%n",
+            .printf("%nRunning warm up for %,d iterations of %,d messages with burst size of %,d...%n",
             configuration.warmUpIterations(),
             configuration.warmUpNumberOfMessages(),
             configuration.batchSize());
