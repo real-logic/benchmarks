@@ -68,6 +68,7 @@ class RecordedPublisherTest
             new ReplayedMessagePump(launcher, timestamp -> timestamps.addLong(timestamp));
 
         publisherStarted.await();
+
         messagePump.init(configuration);
         try
         {

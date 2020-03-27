@@ -21,6 +21,7 @@ import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.Test;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
@@ -30,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 class BasicPublisherTest
 {
     @Test
-    @SuppressWarnings("MethodLength")
     void test() throws Exception
     {
         final int messages = 1_000_000;
@@ -42,82 +42,53 @@ class BasicPublisherTest
         final AeronLauncher launcher = new AeronLauncher(MediaDriver.class);
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
+        final CountDownLatch publisherStarted = new CountDownLatch(1);
 
         final Thread echoPublisher = new Thread(
             () ->
             {
+                publisherStarted.countDown();
+
                 try (BasicPublisher publisher = new BasicPublisher(running, launcher, false))
                 {
                     publisher.run();
                 }
                 catch (final Throwable t)
                 {
-                    if (!error.compareAndSet(null, t))
-                    {
-                        error.get().addSuppressed(t);
-                    }
+                    error.set(t);
                 }
             });
-        echoPublisher.setName("echo-publisher");
+        echoPublisher.setName("basic-publisher");
         echoPublisher.setDaemon(true);
         echoPublisher.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
         final BasicMessagePump messagePump = new BasicMessagePump(launcher, timestamp -> timestamps.addLong(timestamp));
 
+        publisherStarted.await();
+
         messagePump.init(configuration);
         try
         {
-            final Thread receiver = new Thread(
-                () ->
-                {
-                    int received = 0;
-                    while (received < messages)
-                    {
-                        try
-                        {
-                            final int count = messagePump.receive();
-                            if (0 == count && null != error.get())
-                            {
-                                LangUtil.rethrowUnchecked(error.get());
-                            }
-                            received += count;
-                        }
-                        catch (final Throwable t)
-                        {
-                            if (!error.compareAndSet(null, t))
-                            {
-                                error.get().addSuppressed(t);
-                            }
-                            break;
-                        }
-                    }
-                });
-            receiver.setName("message-receiver");
-            receiver.setDaemon(true);
-            receiver.start();
-
-            try
+            Thread.currentThread().setName("basic-message-pump");
+            int sent = 0;
+            int received = 0;
+            long timestamp = 1_000;
+            while (sent < messages || received < messages)
             {
-                Thread.currentThread().setName("message-sender");
-                int sent = 0;
-                long timestamp = 1_000;
-                while (sent < messages)
+                if (sent < messages && messagePump.send(1, configuration.messageLength(), timestamp) == 1)
                 {
-                    if (messagePump.send(1, configuration.messageLength(), timestamp) == 1)
-                    {
-                        sent++;
-                        timestamp++;
-                    }
-                    else if (null != error.get())
-                    {
-                        LangUtil.rethrowUnchecked(error.get());
-                    }
+                    sent++;
+                    timestamp++;
                 }
-            }
-            finally
-            {
-                receiver.join();
+                if (received < messages)
+                {
+                    received += messagePump.receive();
+                }
+                if (null != error.get())
+                {
+                    LangUtil.rethrowUnchecked(error.get());
+                }
             }
         }
         finally
