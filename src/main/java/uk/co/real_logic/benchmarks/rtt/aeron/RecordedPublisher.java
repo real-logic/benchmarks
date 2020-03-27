@@ -15,7 +15,13 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
+import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
+import io.aeron.Image;
+import io.aeron.Subscription;
+import io.aeron.archive.ArchivingMediaDriver;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
@@ -25,50 +31,99 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
+import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.receiverChannel;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.receiverStreamId;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
-public final class RecordedPublisher extends BasicPublisher
+public final class RecordedPublisher implements AutoCloseable
 {
-    private long recordingSubscriptionId;
+    private final AtomicBoolean running;
+    private final ArchivingMediaDriver archivingMediaDriver;
+    private final AeronArchive aeronArchive;
+    private final boolean ownsDriver;
+    private final ExclusivePublication publication;
+    private final Subscription subscription;
+    private final long recordingSubscriptionId;
 
     RecordedPublisher(final AtomicBoolean running)
     {
-        this(running, new AeronLauncher(), true);
+        this(running, createArchivingMediaDriver(), archiveClient(), true);
     }
 
-    RecordedPublisher(final AtomicBoolean running, final AeronLauncher launcher, final boolean ownsLauncher)
+    RecordedPublisher(
+        final AtomicBoolean running,
+        final ArchivingMediaDriver archivingMediaDriver,
+        final AeronArchive aeronArchive,
+        final boolean ownsDriver)
     {
-        super(running, launcher, ownsLauncher);
-    }
+        this.running = running;
+        this.archivingMediaDriver = archivingMediaDriver;
+        this.aeronArchive = aeronArchive;
+        this.ownsDriver = ownsDriver;
 
-    ExclusivePublication createPublication()
-    {
-        final ExclusivePublication publication = launcher.aeron()
-            .addExclusivePublication(receiverChannel(), receiverStreamId());
+        final Aeron aeron = aeronArchive.context().aeron();
+
+        final String receiverChannel = receiverChannel();
+        final int receiverStreamId = receiverStreamId();
+        publication = aeron.addExclusivePublication(receiverChannel, receiverStreamId);
 
         final int publicationSessionId = publication.sessionId();
-        final String recordingChannel = addSessionId(receiverChannel(), publicationSessionId);
-        recordingSubscriptionId = launcher.aeronArchive().startRecording(recordingChannel, receiverStreamId(), LOCAL);
+        final String recordingChannel = addSessionId(receiverChannel, publicationSessionId);
+        recordingSubscriptionId = aeronArchive.startRecording(recordingChannel, receiverStreamId, LOCAL);
+
+        subscription = aeron.addSubscription(senderChannel(), senderStreamId());
+
+        while (!subscription.isConnected() || !publication.isConnected())
+        {
+            Thread.yield();
+        }
 
         // Wait for recording to have started before publishing.
-        final CountersReader counters = launcher.aeron().countersReader();
+        final CountersReader counters = aeron.countersReader();
         int counterId;
         do
         {
             counterId = findCounterIdBySession(counters, publicationSessionId);
         }
         while (NULL_COUNTER_ID == counterId);
+    }
 
-        return publication;
+    public void run()
+    {
+        final ExclusivePublication publication = this.publication;
+        final FragmentHandler dataHandler =
+            (buffer, offset, length, header) ->
+            {
+                long result;
+                while ((result = publication.offer(buffer, offset, length)) < 0L)
+                {
+                    checkPublicationResult(result);
+                }
+            };
+
+        final AtomicBoolean running = this.running;
+        final Image image = subscription.imageAtIndex(0);
+        final int frameCountLimit = frameCountLimit();
+        while (running.get())
+        {
+            final int fragments = image.poll(dataHandler, frameCountLimit);
+            if (0 == fragments && image.isClosed())
+            {
+                throw new IllegalStateException("sender image closed");
+            }
+        }
     }
 
     public void close()
     {
-        launcher.aeronArchive().stopRecording(recordingSubscriptionId);
+        aeronArchive.stopRecording(recordingSubscriptionId);
 
-        super.close();
+        closeAll(publication, subscription);
+
+        if (ownsDriver)
+        {
+            closeAll(aeronArchive, archivingMediaDriver);
+        }
     }
 
     public static void main(final String[] args)

@@ -15,9 +15,11 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
+import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
@@ -25,41 +27,38 @@ import org.agrona.concurrent.SigInt;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.agrona.CloseHelper.closeAll;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
-import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessagePump.checkPublicationResult;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
-public class BasicPublisher implements AutoCloseable
+public final class BasicPublisher implements AutoCloseable
 {
-    final AeronLauncher launcher;
-    final ExclusivePublication publication;
-    private final AtomicBoolean running;
-    private final boolean ownsLauncher;
+    private final ExclusivePublication publication;
     private final Subscription subscription;
+    private final AtomicBoolean running;
+    private final MediaDriver mediaDriver;
+    private final Aeron aeron;
+    private final boolean ownsDriver;
 
     BasicPublisher(final AtomicBoolean running)
     {
-        this(running, new AeronLauncher(), true);
+        this(running, createEmbeddedMediaDriver(), aeronClient(), true);
     }
 
-    BasicPublisher(final AtomicBoolean running, final AeronLauncher launcher, final boolean ownsLauncher)
+    BasicPublisher(
+        final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron, final boolean ownsDriver)
     {
         this.running = running;
-        this.launcher = launcher;
-        this.ownsLauncher = ownsLauncher;
+        this.mediaDriver = mediaDriver;
+        this.aeron = aeron;
+        this.ownsDriver = ownsDriver;
 
-        publication = createPublication();
+        publication = aeron.addExclusivePublication(receiverChannel(), receiverStreamId());
 
-        subscription = launcher.aeron().addSubscription(senderChannel(), senderStreamId());
+        subscription = aeron.addSubscription(senderChannel(), senderStreamId());
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
             Thread.yield();
         }
-    }
-
-    ExclusivePublication createPublication()
-    {
-        return launcher.aeron().addExclusivePublication(receiverChannel(), receiverStreamId());
     }
 
     public void run()
@@ -92,9 +91,9 @@ public class BasicPublisher implements AutoCloseable
     {
         closeAll(subscription, publication);
 
-        if (ownsLauncher)
+        if (ownsDriver)
         {
-            launcher.close();
+            closeAll(aeron, mediaDriver);
         }
     }
 

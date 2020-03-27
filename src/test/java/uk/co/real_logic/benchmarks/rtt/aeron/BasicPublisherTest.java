@@ -15,9 +15,12 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
+import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import org.agrona.LangUtil;
 import org.agrona.collections.LongArrayList;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
 
@@ -26,10 +29,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
+import static java.lang.System.clearProperty;
+import static java.lang.System.setProperty;
+import static org.agrona.CloseHelper.closeAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
 class BasicPublisherTest
 {
+    @BeforeAll
+    static void before()
+    {
+        setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
+    }
+
+    @AfterAll
+    static void after()
+    {
+        clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
+    }
+
     @Test
     void test() throws Exception
     {
@@ -39,7 +58,8 @@ class BasicPublisherTest
             .messagePumpClass(BasicMessagePump.class)
             .build();
 
-        final AeronLauncher launcher = new AeronLauncher(MediaDriver.class);
+        final MediaDriver mediaDriver = createEmbeddedMediaDriver();
+        final Aeron aeron = aeronClient();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);
@@ -49,7 +69,7 @@ class BasicPublisherTest
             {
                 publisherStarted.countDown();
 
-                try (BasicPublisher publisher = new BasicPublisher(running, launcher, false))
+                try (BasicPublisher publisher = new BasicPublisher(running, mediaDriver, aeron, false))
                 {
                     publisher.run();
                 }
@@ -63,7 +83,11 @@ class BasicPublisherTest
         echoPublisher.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final BasicMessagePump messagePump = new BasicMessagePump(launcher, timestamp -> timestamps.addLong(timestamp));
+        final BasicMessagePump messagePump = new BasicMessagePump(
+            mediaDriver,
+            aeron,
+            false,
+            timestamp -> timestamps.addLong(timestamp));
 
         publisherStarted.await();
 
@@ -96,6 +120,7 @@ class BasicPublisherTest
             running.set(false);
             echoPublisher.join();
             messagePump.destroy();
+            closeAll(aeron, mediaDriver);
         }
 
         if (null != error.get())

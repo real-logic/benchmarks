@@ -16,6 +16,8 @@
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.archive.ArchivingMediaDriver;
+import io.aeron.archive.client.AeronArchive;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,8 @@ import java.util.stream.LongStream;
 
 import static java.lang.Long.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.archiveClient;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.createArchivingMediaDriver;
 
 class RecordedPublisherTest
 {
@@ -40,7 +44,8 @@ class RecordedPublisherTest
             .messagePumpClass(BasicMessagePump.class)
             .build();
 
-        final AeronLauncher launcher = new AeronLauncher(ArchivingMediaDriver.class);
+        final ArchivingMediaDriver archivingMediaDriver = createArchivingMediaDriver();
+        final AeronArchive aeronArchive = archiveClient();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);
@@ -50,7 +55,8 @@ class RecordedPublisherTest
             {
                 publisherStarted.countDown();
 
-                try (RecordedPublisher publisher = new RecordedPublisher(running, launcher, false))
+                try (RecordedPublisher publisher =
+                    new RecordedPublisher(running, archivingMediaDriver, aeronArchive, false))
                 {
                     publisher.run();
                 }
@@ -64,8 +70,11 @@ class RecordedPublisherTest
         archivingPublisher.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, MIN_VALUE);
-        final ReplayedMessagePump messagePump =
-            new ReplayedMessagePump(launcher, timestamp -> timestamps.addLong(timestamp));
+        final ReplayedMessagePump messagePump = new ReplayedMessagePump(
+            archivingMediaDriver.mediaDriver(),
+            aeronArchive,
+            false,
+            timestamp -> timestamps.addLong(timestamp));
 
         publisherStarted.await();
 
@@ -98,6 +107,7 @@ class RecordedPublisherTest
             running.set(false);
             archivingPublisher.join();
             messagePump.destroy();
+            CloseHelper.closeAll(aeronArchive, archivingMediaDriver);
         }
 
         assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
