@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
@@ -27,15 +26,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
-import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessagePump.checkResult;
+import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessagePump.checkPublicationResult;
 
-public final class BasicPublisher implements AutoCloseable
+public class BasicPublisher implements AutoCloseable
 {
-    private final ExclusivePublication publication;
-    private final Subscription subscription;
+    final AeronLauncher launcher;
+    final ExclusivePublication publication;
     private final AtomicBoolean running;
-    private final AeronLauncher launcher;
     private final boolean ownsLauncher;
+    private final Subscription subscription;
 
     BasicPublisher(final AtomicBoolean running)
     {
@@ -48,16 +47,19 @@ public final class BasicPublisher implements AutoCloseable
         this.launcher = launcher;
         this.ownsLauncher = ownsLauncher;
 
-        final Aeron aeron = launcher.aeron();
+        publication = createPublication();
 
-        publication = aeron.addExclusivePublication(receiverChannel(), receiverStreamId());
-
-        subscription = aeron.addSubscription(senderChannel(), senderStreamId());
+        subscription = launcher.aeron().addSubscription(senderChannel(), senderStreamId());
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
             Thread.yield();
         }
+    }
+
+    ExclusivePublication createPublication()
+    {
+        return launcher.aeron().addExclusivePublication(receiverChannel(), receiverStreamId());
     }
 
     public void run()
@@ -69,7 +71,7 @@ public final class BasicPublisher implements AutoCloseable
                 long result;
                 while ((result = publication.offer(buffer, offset, length)) < 0L)
                 {
-                    checkResult(result);
+                    checkPublicationResult(result);
                 }
             };
 

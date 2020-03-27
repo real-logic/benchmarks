@@ -21,6 +21,7 @@ import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.Test;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
@@ -42,10 +43,13 @@ class RecordedPublisherTest
         final AeronLauncher launcher = new AeronLauncher(ArchivingMediaDriver.class);
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
+        final CountDownLatch publisherStarted = new CountDownLatch(1);
 
         final Thread archivingPublisher = new Thread(
             () ->
             {
+                publisherStarted.countDown();
+
                 try (RecordedPublisher publisher = new RecordedPublisher(running, launcher, false))
                 {
                     publisher.run();
@@ -63,6 +67,7 @@ class RecordedPublisherTest
         final ReplayedMessagePump messagePump =
             new ReplayedMessagePump(launcher, timestamp -> timestamps.addLong(timestamp));
 
+        publisherStarted.await();
         messagePump.init(configuration);
         try
         {

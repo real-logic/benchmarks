@@ -15,7 +15,10 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.*;
+import io.aeron.ExclusivePublication;
+import io.aeron.FragmentAssembler;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.exceptions.AeronException;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
@@ -29,9 +32,9 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
 
-public final class BasicMessagePump extends MessagePump
+public class BasicMessagePump extends MessagePump
 {
-    private final AeronLauncher launcher;
+    final AeronLauncher launcher;
     private final int frameCountLimit;
     private ExclusivePublication publication;
     private UnsafeBuffer offerBuffer;
@@ -60,12 +63,12 @@ public final class BasicMessagePump extends MessagePump
 
     public void init(final Configuration configuration) throws Exception
     {
-        final Aeron aeron = launcher.aeron();
 
-        final ExclusivePublication publication = aeron.addExclusivePublication(senderChannel(), senderStreamId());
+        final ExclusivePublication publication =
+            launcher.aeron().addExclusivePublication(senderChannel(), senderStreamId());
         this.publication = publication;
 
-        final Subscription subscription = aeron.addSubscription(receiverChannel(), receiverStreamId());
+        final Subscription subscription = createSubscription();
         this.subscription = subscription;
 
         while (!subscription.isConnected() || !publication.isConnected())
@@ -77,6 +80,11 @@ public final class BasicMessagePump extends MessagePump
             allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
         image = subscription.imageAtIndex(0);
+    }
+
+    Subscription createSubscription()
+    {
+        return launcher.aeron().addSubscription(receiverChannel(), receiverStreamId());
     }
 
     public void destroy() throws Exception
@@ -95,7 +103,7 @@ public final class BasicMessagePump extends MessagePump
             final long result = publication.offer(offerBuffer, 0, length);
             if (result < 0)
             {
-                checkResult(result);
+                checkPublicationResult(result);
                 break;
             }
             count++;
@@ -115,7 +123,7 @@ public final class BasicMessagePump extends MessagePump
         return messagesReceived;
     }
 
-    static void checkResult(final long result)
+    static void checkPublicationResult(final long result)
     {
         if (result == CLOSED ||
             result == NOT_CONNECTED ||

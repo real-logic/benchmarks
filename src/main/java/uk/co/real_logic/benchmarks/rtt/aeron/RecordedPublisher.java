@@ -15,12 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
-import io.aeron.Image;
-import io.aeron.Subscription;
-import io.aeron.archive.client.AeronArchive;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
@@ -30,19 +25,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
-import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
-import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessagePump.checkResult;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.receiverChannel;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.receiverStreamId;
 
-public final class RecordedPublisher implements AutoCloseable
+public final class RecordedPublisher extends BasicPublisher
 {
-    private final ExclusivePublication publication;
-    private final Subscription subscription;
-    private final AtomicBoolean running;
-    private final AeronLauncher launcher;
-    private final boolean ownsLauncher;
-    private final long recordingSubscriptionId;
+    private long recordingSubscriptionId;
 
     RecordedPublisher(final AtomicBoolean running)
     {
@@ -51,74 +40,35 @@ public final class RecordedPublisher implements AutoCloseable
 
     RecordedPublisher(final AtomicBoolean running, final AeronLauncher launcher, final boolean ownsLauncher)
     {
-        this.running = running;
-        this.launcher = launcher;
-        this.ownsLauncher = ownsLauncher;
+        super(running, launcher, ownsLauncher);
+    }
 
-        final Aeron aeron = launcher.aeron();
-        final AeronArchive aeronArchive = launcher.aeronArchive();
-
-        final String receiverChannel = receiverChannel();
-        final int receiverStreamId = receiverStreamId();
-        publication = aeron.addExclusivePublication(receiverChannel, receiverStreamId);
+    ExclusivePublication createPublication()
+    {
+        final ExclusivePublication publication = launcher.aeron()
+            .addExclusivePublication(receiverChannel(), receiverStreamId());
 
         final int publicationSessionId = publication.sessionId();
-        final String recordingChannel = addSessionId(receiverChannel, publicationSessionId);
-        recordingSubscriptionId = aeronArchive.startRecording(recordingChannel, receiverStreamId, LOCAL);
-
-        subscription = aeron.addSubscription(senderChannel(), senderStreamId());
-
-        while (!subscription.isConnected() || !publication.isConnected())
-        {
-            Thread.yield();
-        }
+        final String recordingChannel = addSessionId(receiverChannel(), publicationSessionId);
+        recordingSubscriptionId = launcher.aeronArchive().startRecording(recordingChannel, receiverStreamId(), LOCAL);
 
         // Wait for recording to have started before publishing.
-        final CountersReader counters = aeron.countersReader();
+        final CountersReader counters = launcher.aeron().countersReader();
         int counterId;
         do
         {
             counterId = findCounterIdBySession(counters, publicationSessionId);
         }
         while (NULL_COUNTER_ID == counterId);
-    }
 
-    public void run()
-    {
-        final ExclusivePublication publication = this.publication;
-        final FragmentHandler dataHandler =
-            (buffer, offset, length, header) ->
-            {
-                long result;
-                while ((result = publication.offer(buffer, offset, length)) < 0L)
-                {
-                    checkResult(result);
-                }
-            };
-
-        final AtomicBoolean running = this.running;
-        final Image image = subscription.imageAtIndex(0);
-        final int frameCountLimit = frameCountLimit();
-        while (running.get())
-        {
-            final int fragments = image.poll(dataHandler, frameCountLimit);
-            if (0 == fragments && image.isClosed())
-            {
-                throw new IllegalStateException("sender image closed");
-            }
-        }
+        return publication;
     }
 
     public void close()
     {
         launcher.aeronArchive().stopRecording(recordingSubscriptionId);
 
-        closeAll(publication, subscription);
-
-        if (ownsLauncher)
-        {
-            launcher.close();
-        }
+        super.close();
     }
 
     public static void main(final String[] args)
