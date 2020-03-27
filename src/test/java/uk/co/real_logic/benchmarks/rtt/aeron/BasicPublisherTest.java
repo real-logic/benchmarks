@@ -27,16 +27,16 @@ import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-class EchoPublisherTest
+class BasicPublisherTest
 {
     @Test
     @SuppressWarnings("MethodLength")
-    void pumpMessagesViaEchoPublisher() throws Exception
+    void test() throws Exception
     {
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messagePumpClass(AeronMessagePump.class)
+            .messagePumpClass(BasicMessagePump.class)
             .build();
 
         final AeronLauncher launcher = new AeronLauncher(MediaDriver.class);
@@ -46,7 +46,7 @@ class EchoPublisherTest
         final Thread echoPublisher = new Thread(
             () ->
             {
-                try (EchoPublisher publisher = new EchoPublisher(running, launcher, false))
+                try (BasicPublisher publisher = new BasicPublisher(running, launcher, false))
                 {
                     publisher.run();
                 }
@@ -63,7 +63,7 @@ class EchoPublisherTest
         echoPublisher.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final AeronMessagePump messagePump = new AeronMessagePump(launcher, timestamp -> timestamps.addLong(timestamp));
+        final BasicMessagePump messagePump = new BasicMessagePump(launcher, timestamp -> timestamps.addLong(timestamp));
 
         messagePump.init(configuration);
         try

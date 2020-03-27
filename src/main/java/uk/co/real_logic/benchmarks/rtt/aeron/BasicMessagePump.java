@@ -29,7 +29,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
 
-public final class AeronMessagePump extends MessagePump
+public final class BasicMessagePump extends MessagePump
 {
     private final AeronLauncher launcher;
     private final int frameCountLimit;
@@ -46,12 +46,12 @@ public final class AeronMessagePump extends MessagePump
             messagesReceived++;
         });
 
-    public AeronMessagePump(final MessageRecorder messageRecorder)
+    public BasicMessagePump(final MessageRecorder messageRecorder)
     {
         this(new AeronLauncher(), messageRecorder);
     }
 
-    AeronMessagePump(final AeronLauncher launcher, final MessageRecorder messageRecorder)
+    BasicMessagePump(final AeronLauncher launcher, final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
         this.launcher = launcher;

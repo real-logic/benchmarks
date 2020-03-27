@@ -30,7 +30,7 @@ import static io.aeron.Publication.*;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
 
-public final class EchoPublisher implements AutoCloseable
+public final class BasicPublisher implements AutoCloseable
 {
     private final ExclusivePublication publication;
     private final Subscription subscription;
@@ -38,12 +38,12 @@ public final class EchoPublisher implements AutoCloseable
     private final AeronLauncher launcher;
     private final boolean ownsLauncher;
 
-    EchoPublisher(final AtomicBoolean running)
+    BasicPublisher(final AtomicBoolean running)
     {
         this(running, new AeronLauncher(), true);
     }
 
-    EchoPublisher(final AtomicBoolean running, final AeronLauncher launcher, final boolean ownsLauncher)
+    BasicPublisher(final AtomicBoolean running, final AeronLauncher launcher, final boolean ownsLauncher)
     {
         this.running = running;
         this.launcher = launcher;
@@ -106,7 +106,7 @@ public final class EchoPublisher implements AutoCloseable
         // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
 
-        try (EchoPublisher server = new EchoPublisher(running))
+        try (BasicPublisher server = new BasicPublisher(running))
         {
             server.run();
         }
