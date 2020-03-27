@@ -17,15 +17,18 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.archive.Archive;
+import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.driver.MediaDriver;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import static java.lang.String.valueOf;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
 
 class AeronLauncherTest
@@ -34,9 +37,10 @@ class AeronLauncherTest
     void defaultConfigurationValues()
     {
         assertEquals("aeron:udp?endpoint=localhost:33333", senderChannel());
-        assertEquals(101010, senderStreamId());
+        assertEquals(1_000_000_000, senderStreamId());
         assertEquals("aeron:udp?endpoint=localhost:33334", receiverChannel());
-        assertEquals(101011, receiverStreamId());
+        assertEquals(1_000_000_001, receiverStreamId());
+        assertEquals(1_000_000_002, replayStreamId());
         assertNull(mediaDriverClass());
         assertEquals(10, frameCountLimit());
     }
@@ -48,6 +52,7 @@ class AeronLauncherTest
         final int senderStreamId = Integer.MIN_VALUE;
         final String receiverChannel = "receiver";
         final int receiverStreamId = Integer.MAX_VALUE;
+        final int replayStreamId = 10;
         final Class<Publication> mediaDriver = Publication.class;
         final int frameCountLimit = 111;
 
@@ -55,6 +60,7 @@ class AeronLauncherTest
         setProperty(SENDER_STREAM_ID_PROP_NAME, valueOf(senderStreamId));
         setProperty(RECEIVER_CHANNEL_PROP_NAME, receiverChannel);
         setProperty(RECEIVER_STREAM_ID_PROP_NAME, valueOf(receiverStreamId));
+        setProperty(REPLAY_STREAM_ID_PROP_NAME, valueOf(replayStreamId));
         setProperty(MEDIA_DRIVER_PROP_NAME, mediaDriver.getName());
         setProperty(FRAME_COUNT_LIMIT_PROP_NAME, valueOf(frameCountLimit));
         try
@@ -72,6 +78,7 @@ class AeronLauncherTest
             clearProperty(SENDER_STREAM_ID_PROP_NAME);
             clearProperty(RECEIVER_CHANNEL_PROP_NAME);
             clearProperty(RECEIVER_STREAM_ID_PROP_NAME);
+            clearProperty(REPLAY_STREAM_ID_PROP_NAME);
             clearProperty(MEDIA_DRIVER_PROP_NAME);
             clearProperty(FRAME_COUNT_LIMIT_PROP_NAME);
         }
@@ -134,6 +141,47 @@ class AeronLauncherTest
         assertSame(aeronArchiveCloseError, exception);
         assertSame(aeronCloseError, exception.getSuppressed()[0]);
         assertSame(driverCloseError, exception.getSuppressed()[1]);
+    }
+
+    @Test
+    void deleteAeronDirectoryUponClose()
+    {
+        final MediaDriver mediaDriver = mock(MediaDriver.class);
+        final MediaDriver.Context context = mock(MediaDriver.Context.class);
+        when(mediaDriver.context()).thenReturn(context);
+        final AeronLauncher launcher = new AeronLauncher(mediaDriver, null, null);
+
+        launcher.close();
+
+        final InOrder inOrder = inOrder(mediaDriver, context);
+        inOrder.verify(mediaDriver).close();
+        inOrder.verify(context).deleteAeronDirectory();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void deleteArchiveDirectoryUponClose()
+    {
+        final ArchivingMediaDriver archivingMediaDriver = mock(ArchivingMediaDriver.class);
+        final Archive archive = mock(Archive.class);
+        final Archive.Context archiveContext = mock(Archive.Context.class);
+        when(archive.context()).thenReturn(archiveContext);
+        when(archivingMediaDriver.archive()).thenReturn(archive);
+
+        final MediaDriver mediaDriver = mock(MediaDriver.class);
+        final MediaDriver.Context mediaDriverContext = mock(MediaDriver.Context.class);
+        when(mediaDriver.context()).thenReturn(mediaDriverContext);
+        when(archivingMediaDriver.mediaDriver()).thenReturn(mediaDriver);
+
+        final AeronLauncher launcher = new AeronLauncher(archivingMediaDriver, null, null);
+
+        launcher.close();
+
+        final InOrder inOrder = inOrder(archivingMediaDriver, mediaDriverContext, archiveContext);
+        inOrder.verify(archivingMediaDriver).close();
+        inOrder.verify(mediaDriverContext).deleteAeronDirectory();
+        inOrder.verify(archiveContext).deleteDirectory();
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test

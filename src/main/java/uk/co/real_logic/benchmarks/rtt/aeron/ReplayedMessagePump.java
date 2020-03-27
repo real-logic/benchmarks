@@ -16,29 +16,31 @@
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.*;
-import io.aeron.exceptions.AeronException;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
 import uk.co.real_logic.benchmarks.rtt.MessagePump;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 
-import static io.aeron.Publication.*;
+import static java.lang.Long.MAX_VALUE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
+import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessagePump.checkResult;
 
-public final class BasicMessagePump extends MessagePump
+public final class ReplayedMessagePump extends MessagePump
 {
     private final AeronLauncher launcher;
-    private final int frameCountLimit;
     private ExclusivePublication publication;
     private UnsafeBuffer offerBuffer;
 
     private Subscription subscription;
     private Image image;
-    private int messagesReceived = 0;
+    private int messagesReceived;
+    private int frameCountLimit;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
@@ -46,16 +48,15 @@ public final class BasicMessagePump extends MessagePump
             messagesReceived++;
         });
 
-    public BasicMessagePump(final MessageRecorder messageRecorder)
+    public ReplayedMessagePump(final MessageRecorder messageRecorder)
     {
         this(new AeronLauncher(), messageRecorder);
     }
 
-    BasicMessagePump(final AeronLauncher launcher, final MessageRecorder messageRecorder)
+    ReplayedMessagePump(final AeronLauncher launcher, final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
         this.launcher = launcher;
-        frameCountLimit = frameCountLimit();
     }
 
     public void init(final Configuration configuration) throws Exception
@@ -65,7 +66,16 @@ public final class BasicMessagePump extends MessagePump
         final ExclusivePublication publication = aeron.addExclusivePublication(senderChannel(), senderStreamId());
         this.publication = publication;
 
-        final Subscription subscription = aeron.addSubscription(receiverChannel(), receiverStreamId());
+        final String receiverChannel = receiverChannel();
+        final int receiverStreamId = receiverStreamId();
+        final int replayStreamId = replayStreamId();
+        final long recordingId = findLatestRecording(receiverChannel, receiverStreamId);
+
+        final long sessionId = launcher.aeronArchive()
+            .startReplay(recordingId, 0, MAX_VALUE, receiverChannel, replayStreamId);
+        final String channel = ChannelUri.addSessionId(receiverChannel, (int)sessionId);
+
+        final Subscription subscription = aeron.addSubscription(channel, replayStreamId);
         this.subscription = subscription;
 
         while (!subscription.isConnected() || !publication.isConnected())
@@ -77,6 +87,7 @@ public final class BasicMessagePump extends MessagePump
             allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
         image = subscription.imageAtIndex(0);
+        frameCountLimit = frameCountLimit();
     }
 
     public void destroy() throws Exception
@@ -115,13 +126,37 @@ public final class BasicMessagePump extends MessagePump
         return messagesReceived;
     }
 
-    static void checkResult(final long result)
+    private long findLatestRecording(final String recordingChannel, final int recordingStreamId)
     {
-        if (result == CLOSED ||
-            result == NOT_CONNECTED ||
-            result == MAX_POSITION_EXCEEDED)
+        final MutableLong lastRecordingId = new MutableLong();
+
+        final RecordingDescriptorConsumer consumer =
+            (controlSessionId,
+            correlationId,
+            recordingId,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            stopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) -> lastRecordingId.set(recordingId);
+
+        final int foundCount = launcher.aeronArchive()
+            .listRecordingsForUri(0, 1, recordingChannel, recordingStreamId, consumer);
+
+        if (foundCount == 0)
         {
-            throw new AeronException("Publication error: " + result);
+            throw new IllegalStateException("no recordings found");
         }
+
+        return lastRecordingId.get();
     }
+
 }

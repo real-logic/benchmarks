@@ -19,38 +19,52 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.aeron.ChannelUri.addSessionId;
+import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
 import static org.agrona.CloseHelper.closeAll;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronLauncher.*;
 import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessagePump.checkResult;
 
-public final class BasicPublisher implements AutoCloseable
+public final class RecordedPublisher implements AutoCloseable
 {
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
     private final AeronLauncher launcher;
     private final boolean ownsLauncher;
+    private final long recordingSubscriptionId;
 
-    BasicPublisher(final AtomicBoolean running)
+    RecordedPublisher(final AtomicBoolean running)
     {
         this(running, new AeronLauncher(), true);
     }
 
-    BasicPublisher(final AtomicBoolean running, final AeronLauncher launcher, final boolean ownsLauncher)
+    RecordedPublisher(final AtomicBoolean running, final AeronLauncher launcher, final boolean ownsLauncher)
     {
         this.running = running;
         this.launcher = launcher;
         this.ownsLauncher = ownsLauncher;
 
         final Aeron aeron = launcher.aeron();
+        final AeronArchive aeronArchive = launcher.aeronArchive();
 
-        publication = aeron.addExclusivePublication(receiverChannel(), receiverStreamId());
+        final String receiverChannel = receiverChannel();
+        final int receiverStreamId = receiverStreamId();
+        publication = aeron.addExclusivePublication(receiverChannel, receiverStreamId);
+
+        final int publicationSessionId = publication.sessionId();
+        final String recordingChannel = addSessionId(receiverChannel, publicationSessionId);
+        recordingSubscriptionId = aeronArchive.startRecording(recordingChannel, receiverStreamId, LOCAL);
 
         subscription = aeron.addSubscription(senderChannel(), senderStreamId());
 
@@ -58,6 +72,15 @@ public final class BasicPublisher implements AutoCloseable
         {
             Thread.yield();
         }
+
+        // Wait for recording to have started before publishing.
+        final CountersReader counters = aeron.countersReader();
+        int counterId;
+        do
+        {
+            counterId = findCounterIdBySession(counters, publicationSessionId);
+        }
+        while (NULL_COUNTER_ID == counterId);
     }
 
     public void run()
@@ -81,14 +104,16 @@ public final class BasicPublisher implements AutoCloseable
             final int fragments = image.poll(dataHandler, frameCountLimit);
             if (0 == fragments && image.isClosed())
             {
-                throw new IllegalStateException("image closed");
+                throw new IllegalStateException("sender image closed");
             }
         }
     }
 
     public void close()
     {
-        closeAll(subscription, publication);
+        launcher.aeronArchive().stopRecording(recordingSubscriptionId);
+
+        closeAll(publication, subscription);
 
         if (ownsLauncher)
         {
@@ -105,7 +130,7 @@ public final class BasicPublisher implements AutoCloseable
         // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
 
-        try (BasicPublisher server = new BasicPublisher(running))
+        try (RecordedPublisher server = new RecordedPublisher(running))
         {
             server.run();
         }

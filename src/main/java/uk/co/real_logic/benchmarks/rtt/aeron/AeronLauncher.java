@@ -33,6 +33,7 @@ final class AeronLauncher implements AutoCloseable
     static final String SENDER_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.sender.streamId";
     static final String RECEIVER_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.receiver.channel";
     static final String RECEIVER_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.receiver.streamId";
+    static final String REPLAY_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.streamId";
     static final String MEDIA_DRIVER_PROP_NAME = "aeron.benchmarks.rtt.aeron.mediaDriver";
     static final String FRAME_COUNT_LIMIT_PROP_NAME = "aeron.benchmarks.rtt.aeron.frameCountLimit";
 
@@ -62,7 +63,9 @@ final class AeronLauncher implements AutoCloseable
             {
                 mediaDriver = ArchivingMediaDriver.launch(
                     context,
-                    new Archive.Context().recordingEventsEnabled(false));
+                    new Archive.Context()
+                        .recordingEventsEnabled(false)
+                        .deleteArchiveOnStart(true));
 
                 aeron = Aeron.connect();
 
@@ -103,6 +106,17 @@ final class AeronLauncher implements AutoCloseable
     public void close()
     {
         closeAll(aeronArchive, aeron, mediaDriver);
+
+        if (mediaDriver instanceof ArchivingMediaDriver)
+        {
+            final ArchivingMediaDriver archivingMediaDriver = (ArchivingMediaDriver)this.mediaDriver;
+            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
+            archivingMediaDriver.archive().context().deleteDirectory();
+        }
+        else
+        {
+            ((MediaDriver)mediaDriver).context().deleteAeronDirectory();
+        }
     }
 
     static String senderChannel()
@@ -112,7 +126,7 @@ final class AeronLauncher implements AutoCloseable
 
     static int senderStreamId()
     {
-        return getInteger(SENDER_STREAM_ID_PROP_NAME, 101010);
+        return getInteger(SENDER_STREAM_ID_PROP_NAME, 1_000_000_000);
     }
 
     static String receiverChannel()
@@ -122,7 +136,12 @@ final class AeronLauncher implements AutoCloseable
 
     static int receiverStreamId()
     {
-        return getInteger(RECEIVER_STREAM_ID_PROP_NAME, 101011);
+        return getInteger(RECEIVER_STREAM_ID_PROP_NAME, 1_000_000_001);
+    }
+
+    static int replayStreamId()
+    {
+        return getInteger(REPLAY_STREAM_ID_PROP_NAME, 1_000_000_002);
     }
 
     static Class<? extends AutoCloseable> mediaDriverClass()

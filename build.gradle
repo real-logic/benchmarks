@@ -50,6 +50,7 @@ dependencies {
     implementation "com.lmax:disruptor:${disruptorVersion}"
 
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
 }
