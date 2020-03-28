@@ -33,6 +33,7 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessagePump.sendMessages;
 
 public final class ReplayedMessagePump extends MessagePump
 {
@@ -110,21 +111,7 @@ public final class ReplayedMessagePump extends MessagePump
 
     public int send(final int numberOfMessages, final int length, final long timestamp)
     {
-        int count = 0;
-        final UnsafeBuffer offerBuffer = this.offerBuffer;
-        final ExclusivePublication publication = this.publication;
-        for (int i = 0; i < numberOfMessages; i++)
-        {
-            offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
-            final long result = publication.offer(offerBuffer, 0, length);
-            if (result < 0)
-            {
-                checkPublicationResult(result);
-                break;
-            }
-            count++;
-        }
-        return count;
+        return sendMessages(publication, offerBuffer, numberOfMessages, length, timestamp);
     }
 
     public int receive()

@@ -95,21 +95,7 @@ public final class BasicMessagePump extends MessagePump
 
     public int send(final int numberOfMessages, final int length, final long timestamp)
     {
-        int count = 0;
-        final UnsafeBuffer offerBuffer = this.offerBuffer;
-        final ExclusivePublication publication = this.publication;
-        for (int i = 0; i < numberOfMessages; i++)
-        {
-            offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
-            final long result = publication.offer(offerBuffer, 0, length);
-            if (result < 0)
-            {
-                checkPublicationResult(result);
-                break;
-            }
-            count++;
-        }
-        return count;
+        return sendMessages(publication, offerBuffer, numberOfMessages, length, timestamp);
     }
 
     public int receive()
@@ -124,4 +110,25 @@ public final class BasicMessagePump extends MessagePump
         return messagesReceived;
     }
 
+    static int sendMessages(
+        final ExclusivePublication publication,
+        final UnsafeBuffer offerBuffer,
+        final int numberOfMessages,
+        final int length,
+        final long timestamp)
+    {
+        int count = 0;
+        for (int i = 0; i < numberOfMessages; i++)
+        {
+            offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
+            final long result = publication.offer(offerBuffer, 0, length);
+            if (result < 0)
+            {
+                checkPublicationResult(result);
+                break;
+            }
+            count++;
+        }
+        return count;
+    }
 }

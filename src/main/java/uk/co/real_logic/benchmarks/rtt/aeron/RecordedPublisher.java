@@ -17,11 +17,9 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
-import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
@@ -35,6 +33,7 @@ import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.rtt.aeron.BasicPublisher.publishLoop;
 
 public final class RecordedPublisher implements AutoCloseable
 {
@@ -91,29 +90,9 @@ public final class RecordedPublisher implements AutoCloseable
 
     public void run()
     {
-        final ExclusivePublication publication = this.publication;
-        final FragmentHandler dataHandler =
-            (buffer, offset, length, header) ->
-            {
-                long result;
-                while ((result = publication.offer(buffer, offset, length)) < 0L)
-                {
-                    checkPublicationResult(result);
-                }
-            };
-
-        final AtomicBoolean running = this.running;
-        final Image image = subscription.imageAtIndex(0);
-        final int frameCountLimit = frameCountLimit();
-        while (running.get())
-        {
-            final int fragments = image.poll(dataHandler, frameCountLimit);
-            if (0 == fragments && image.isClosed())
-            {
-                throw new IllegalStateException("sender image closed");
-            }
-        }
+        publishLoop(publication, subscription, running);
     }
+
 
     public void close()
     {

@@ -64,28 +64,7 @@ public final class BasicPublisher implements AutoCloseable
 
     public void run()
     {
-        final ExclusivePublication publication = this.publication;
-        final FragmentHandler dataHandler =
-            (buffer, offset, length, header) ->
-            {
-                long result;
-                while ((result = publication.offer(buffer, offset, length)) < 0L)
-                {
-                    checkPublicationResult(result);
-                }
-            };
-
-        final AtomicBoolean running = this.running;
-        final Image image = subscription.imageAtIndex(0);
-        final int frameCountLimit = frameCountLimit();
-        while (running.get())
-        {
-            final int fragments = image.poll(dataHandler, frameCountLimit);
-            if (0 == fragments && image.isClosed())
-            {
-                throw new IllegalStateException("image closed");
-            }
-        }
+        publishLoop(publication, subscription, running);
     }
 
     public void close()
@@ -111,6 +90,31 @@ public final class BasicPublisher implements AutoCloseable
         try (BasicPublisher server = new BasicPublisher(running))
         {
             server.run();
+        }
+    }
+
+    static void publishLoop(
+        final ExclusivePublication publication, final Subscription subscription, final AtomicBoolean running)
+    {
+        final FragmentHandler dataHandler =
+            (buffer, offset, length, header) ->
+            {
+                long result;
+                while ((result = publication.offer(buffer, offset, length)) < 0L)
+                {
+                    checkPublicationResult(result);
+                }
+            };
+
+        final Image image = subscription.imageAtIndex(0);
+        final int frameCountLimit = frameCountLimit();
+        while (running.get())
+        {
+            final int fragments = image.poll(dataHandler, frameCountLimit);
+            if (0 == fragments && image.isClosed())
+            {
+                throw new IllegalStateException("image closed");
+            }
         }
     }
 }
