@@ -22,8 +22,8 @@ import io.aeron.driver.MediaDriver;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
+import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
@@ -39,10 +39,11 @@ public final class ReplayedMessageTransceiver extends MessageTransceiver
 {
     private final MediaDriver mediaDriver;
     private final AeronArchive aeronArchive;
-    private final boolean ownsDriver;
+    private final boolean ownsArchiveClient;
     private ExclusivePublication publication;
     private UnsafeBuffer offerBuffer;
 
+    private long replaySessionId;
     private Subscription subscription;
     private Image image;
     private int messagesReceived;
@@ -62,13 +63,13 @@ public final class ReplayedMessageTransceiver extends MessageTransceiver
     ReplayedMessageTransceiver(
         final MediaDriver mediaDriver,
         final AeronArchive aeronArchive,
-        final boolean ownsDriver,
+        final boolean ownsArchiveClient,
         final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
         this.mediaDriver = mediaDriver;
         this.aeronArchive = aeronArchive;
-        this.ownsDriver = ownsDriver;
+        this.ownsArchiveClient = ownsArchiveClient;
     }
 
     public void init(final Configuration configuration) throws Exception
@@ -82,8 +83,8 @@ public final class ReplayedMessageTransceiver extends MessageTransceiver
         final int replayStreamId = replayStreamId();
         final long recordingId = findLatestRecording(receiverChannel, receiverStreamId);
 
-        final long sessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, receiverChannel, replayStreamId);
-        final String channel = addSessionId(receiverChannel, (int)sessionId);
+        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, receiverChannel, replayStreamId);
+        final String channel = addSessionId(receiverChannel, (int)replaySessionId);
 
         subscription = aeron.addSubscription(channel, replayStreamId);
 
@@ -101,9 +102,11 @@ public final class ReplayedMessageTransceiver extends MessageTransceiver
 
     public void destroy() throws Exception
     {
+        aeronArchive.stopReplay(replaySessionId);
+
         closeAll(publication, subscription);
 
-        if (ownsDriver)
+        if (ownsArchiveClient)
         {
             closeAll(aeronArchive, mediaDriver);
         }
