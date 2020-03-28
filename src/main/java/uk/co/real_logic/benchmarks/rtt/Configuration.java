@@ -492,7 +492,7 @@ public final class Configuration
         {
         }
         throw new IllegalArgumentException(
-            "MessageTransceiver class must have a public constructor with the MessageRecorder as a single parameter");
+            "MessageTransceiver class must have a public constructor with a MessageRecorder parameter");
     }
 
     private static boolean isPropertyProvided(final String propName)

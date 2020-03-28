@@ -176,8 +176,7 @@ class ConfigurationTest
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals(
-            "MessageTransceiver class must have a public constructor with MessageRecorder as a single parameter",
+        assertEquals("MessageTransceiver class must have a public constructor with a MessageRecorder parameter",
             ex.getMessage());
     }
 
@@ -276,7 +275,7 @@ class ConfigurationTest
             "\n    numberOfMessages=777" +
             "\n    batchSize=2" +
             "\n    messageLength=64" +
-            "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.rtt.SampleMessageTransceiver" +
+            "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.rtt.InMemoryMessageTransceiver" +
             "\n    senderIdleStrategy=NoOpIdleStrategy{}" +
             "\n    receiverIdleStrategy=YieldingIdleStrategy{}" +
             "\n}",
