@@ -23,7 +23,7 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 import static sun.misc.Unsafe.ARRAY_LONG_BASE_OFFSET;
 import static sun.misc.Unsafe.ARRAY_LONG_INDEX_SCALE;
 
-abstract class SampleMessagePump1 extends MessagePump
+abstract class InMemoryMessageTransceiver1 extends MessageTransceiver
 {
     static final int SIZE = 4096;
     private static final int MASK = SIZE - 1;
@@ -41,7 +41,7 @@ abstract class SampleMessagePump1 extends MessagePump
     boolean p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
     boolean p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 
-    SampleMessagePump1(final MessageRecorder messageRecorder)
+    InMemoryMessageTransceiver1(final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
     }
@@ -52,7 +52,7 @@ abstract class SampleMessagePump1 extends MessagePump
     }
 }
 
-abstract class SampleMessagePump2 extends SampleMessagePump1
+abstract class InMemoryMessageTransceiver2 extends InMemoryMessageTransceiver1
 {
     long sendIndex = 0;
 
@@ -66,17 +66,17 @@ abstract class SampleMessagePump2 extends SampleMessagePump1
     boolean p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
     boolean p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 
-    SampleMessagePump2(final MessageRecorder messageRecorder)
+    InMemoryMessageTransceiver2(final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
     }
 }
 
-public final class SampleMessagePump extends SampleMessagePump2
+public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver2
 {
     private long receiveIndex = 0;
 
-    public SampleMessagePump(final MessageRecorder messageRecorder)
+    public InMemoryMessageTransceiver(final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
     }

@@ -18,14 +18,14 @@ package uk.co.real_logic.benchmarks.rtt;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@code MessagePump} is an SPI to be implemented by the system under test.
+ * {@code MessageTransceiver} is an SPI to be implemented by the system under test.
  */
-public abstract class MessagePump
+public abstract class MessageTransceiver
 {
 
     private final MessageRecorder messageRecorder;
 
-    public MessagePump(final MessageRecorder messageRecorder)
+    public MessageTransceiver(final MessageRecorder messageRecorder)
     {
         this.messageRecorder = requireNonNull(messageRecorder);
     }

@@ -33,28 +33,28 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * {@code LoadTestRig} class is the core of the RTT benchmark. It is responsible for running benchmark against provided
- * {@link MessagePump} instance using given {@link Configuration}.
+ * {@link MessageTransceiver} instance using given {@link Configuration}.
  */
 public final class LoadTestRig
 {
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
     private final Configuration configuration;
-    private final MessagePump messagePump;
+    private final MessageTransceiver messageTransceiver;
     private final NanoClock clock;
     private final PrintStream out;
     private final Histogram histogram;
 
-    public LoadTestRig(final Configuration configuration, final Class<? extends MessagePump> messagePumpClass)
+    public LoadTestRig(final Configuration configuration, final Class<? extends MessageTransceiver> messageTransceiverClass)
     {
         this.configuration = requireNonNull(configuration);
-        requireNonNull(messagePumpClass);
+        requireNonNull(messageTransceiverClass);
         this.clock = SystemNanoClock.INSTANCE;
         this.out = System.out;
         histogram = new Histogram(
             max(configuration.iterations(), configuration.warmUpIterations()) * NANOS_PER_SECOND, 3);
         try
         {
-            this.messagePump = messagePumpClass.getConstructor(MessageRecorder.class)
+            this.messageTransceiver = messageTransceiverClass.getConstructor(MessageRecorder.class)
                 .newInstance((MessageRecorder)timestamp -> histogram.recordValue(clock.nanoTime() - timestamp));
         }
         catch (final ReflectiveOperationException ex)
@@ -69,24 +69,24 @@ public final class LoadTestRig
         final NanoClock clock,
         final PrintStream out,
         final Histogram histogram,
-        final MessagePump messagePump)
+        final MessageTransceiver messageTransceiver)
     {
         this.configuration = configuration;
         this.clock = clock;
         this.out = out;
         this.histogram = histogram;
-        this.messagePump = messagePump;
+        this.messageTransceiver = messageTransceiver;
     }
 
     /**
      * Run the benchmark and print histogram of the RTT values at the end.
      *
-     * @throws Exception in case of any error from the {@link MessagePump}
+     * @throws Exception in case of any error from the {@link MessageTransceiver}
      */
     public void run() throws Exception
     {
         out.printf("Starting latency benchmark using the following configuration:%n%s%n", configuration);
-        messagePump.init(configuration);
+        messageTransceiver.init(configuration);
         try
         {
             final AtomicLong sentMessages = new AtomicLong();
@@ -116,7 +116,7 @@ public final class LoadTestRig
         }
         finally
         {
-            messagePump.destroy();
+            messageTransceiver.destroy();
         }
     }
 
@@ -132,14 +132,14 @@ public final class LoadTestRig
 
     void receive(final AtomicLong sentMessages)
     {
-        final MessagePump messagePump = this.messagePump;
+        final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final IdleStrategy idleStrategy = configuration.receiverIdleStrategy();
 
         long sent = 0;
         long received = 0;
         while (true)
         {
-            final int count = messagePump.receive();
+            final int count = messageTransceiver.receive();
             if (count > 0)
             {
                 received += count;
@@ -162,7 +162,7 @@ public final class LoadTestRig
 
     long send(final int iterations, final int numberOfMessages)
     {
-        final MessagePump messagePump = this.messagePump;
+        final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final NanoClock clock = this.clock;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
@@ -180,7 +180,7 @@ public final class LoadTestRig
         while (true)
         {
             final int batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
-            int sent = messagePump.send(batchSize, messageSize, timestamp);
+            int sent = messageTransceiver.send(batchSize, messageSize, timestamp);
             if (sent < batchSize)
             {
                 idleStrategy.reset();
@@ -188,7 +188,7 @@ public final class LoadTestRig
                 {
                     idleStrategy.idle();
                 }
-                while ((sent += messagePump.send(batchSize - sent, messageSize, timestamp)) < batchSize);
+                while ((sent += messageTransceiver.send(batchSize - sent, messageSize, timestamp)) < batchSize);
             }
             sentMessages += batchSize;
             if (totalNumberOfMessages == sentMessages)
@@ -235,6 +235,6 @@ public final class LoadTestRig
         SystemUtil.loadPropertiesFiles(args);
 
         final Configuration configuration = Configuration.fromSystemProperties();
-        new LoadTestRig(configuration, configuration.messagePumpClass()).run();
+        new LoadTestRig(configuration, configuration.messageTransceiverClass()).run();
     }
 }

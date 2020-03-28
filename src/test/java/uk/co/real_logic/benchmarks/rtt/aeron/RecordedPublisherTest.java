@@ -41,7 +41,7 @@ class RecordedPublisherTest
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messagePumpClass(BasicMessagePump.class)
+            .messageTransceiverClass(BasicMessageTransceiver.class)
             .build();
 
         final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver();
@@ -70,7 +70,7 @@ class RecordedPublisherTest
         archivingPublisher.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, MIN_VALUE);
-        final ReplayedMessagePump messagePump = new ReplayedMessagePump(
+        final ReplayedMessageTransceiver messageTransceiver = new ReplayedMessageTransceiver(
             archivingMediaDriver.mediaDriver(),
             aeronArchive,
             false,
@@ -78,7 +78,7 @@ class RecordedPublisherTest
 
         publisherStarted.await();
 
-        messagePump.init(configuration);
+        messageTransceiver.init(configuration);
         try
         {
             Thread.currentThread().setName("replayed-message-pump");
@@ -87,14 +87,14 @@ class RecordedPublisherTest
             long timestamp = 1_000;
             while (sent < messages || received < messages)
             {
-                if (sent < messages && messagePump.send(1, configuration.messageLength(), timestamp) == 1)
+                if (sent < messages && messageTransceiver.send(1, configuration.messageLength(), timestamp) == 1)
                 {
                     sent++;
                     timestamp++;
                 }
                 if (received < messages)
                 {
-                    received += messagePump.receive();
+                    received += messageTransceiver.receive();
                 }
                 if (null != error.get())
                 {
@@ -106,7 +106,7 @@ class RecordedPublisherTest
         {
             running.set(false);
             archivingPublisher.join();
-            messagePump.destroy();
+            messageTransceiver.destroy();
             CloseHelper.closeAll(aeronArchive, archivingMediaDriver);
             archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
             archivingMediaDriver.archive().context().deleteDirectory();

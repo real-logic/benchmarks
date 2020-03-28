@@ -132,10 +132,10 @@ public final class Configuration
         "aeron.benchmarks.rtt.receiver.idle_strategy";
 
     /**
-     * Name of the required system property to configure the {@link MessagePump} class (i.e. system under test) to be
+     * Name of the required system property to configure the {@link MessageTransceiver} class (i.e. system under test) to be
      * used for the benchmark. Must be a fully qualified class name.
      */
-    public static final String MESSAGE_PUMP_PROP_NAME = "aeron.benchmarks.rtt.messagePump";
+    public static final String MESSAGE_PUMP_PROP_NAME = "aeron.benchmarks.rtt.messageTransceiver";
 
     private final int warmUpIterations;
     private final int warmUpNumberOfMessages;
@@ -143,7 +143,7 @@ public final class Configuration
     private final int numberOfMessages;
     private final int batchSize;
     private final int messageLength;
-    private final Class<? extends MessagePump> messagePumpClass;
+    private final Class<? extends MessageTransceiver> messageTransceiverClass;
     private final IdleStrategy senderIdleStrategy;
     private final IdleStrategy receiverIdleStrategy;
 
@@ -156,7 +156,7 @@ public final class Configuration
         this.numberOfMessages = checkMinValue(builder.numberOfMessages, 1, "Number of messages");
         this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
         this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
-        this.messagePumpClass = validateMessagePumpClass(builder.messagePumpClass);
+        this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
         this.senderIdleStrategy =
             requireNonNull(builder.senderIdleStrategy, "Sender IdleStrategy cannot be null");
         this.receiverIdleStrategy =
@@ -234,13 +234,13 @@ public final class Configuration
     }
 
     /**
-     * {@link MessagePump} class to use for the benchmark.
+     * {@link MessageTransceiver} class to use for the benchmark.
      *
-     * @return {@link MessagePump} class.
+     * @return {@link MessageTransceiver} class.
      */
-    public Class<? extends MessagePump> messagePumpClass()
+    public Class<? extends MessageTransceiver> messageTransceiverClass()
     {
-        return messagePumpClass;
+        return messageTransceiverClass;
     }
 
     /**
@@ -272,7 +272,7 @@ public final class Configuration
             "\n    numberOfMessages=" + numberOfMessages +
             "\n    batchSize=" + batchSize +
             "\n    messageLength=" + messageLength +
-            "\n    messagePumpClass=" + messagePumpClass.getName() +
+            "\n    messageTransceiverClass=" + messageTransceiverClass.getName() +
             "\n    senderIdleStrategy=" + senderIdleStrategy +
             "\n    receiverIdleStrategy=" + receiverIdleStrategy +
             "\n}";
@@ -289,7 +289,7 @@ public final class Configuration
         private int numberOfMessages;
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
-        private Class<? extends MessagePump> messagePumpClass;
+        private Class<? extends MessageTransceiver> messageTransceiverClass;
         private IdleStrategy senderIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private IdleStrategy receiverIdleStrategy = NoOpIdleStrategy.INSTANCE;
 
@@ -367,14 +367,14 @@ public final class Configuration
         }
 
         /**
-         * Set the {@link MessagePump} class.
+         * Set the {@link MessageTransceiver} class.
          *
          * @param klass class.
          * @return this for a fluent API.
          */
-        public Builder messagePumpClass(final Class<? extends MessagePump> klass)
+        public Builder messageTransceiverClass(final Class<? extends MessageTransceiver> klass)
         {
-            this.messagePumpClass = klass;
+            this.messageTransceiverClass = klass;
             return this;
         }
 
@@ -458,7 +458,7 @@ public final class Configuration
 
         builder.numberOfMessages(intProperty(MESSAGES_PROP_NAME));
 
-        builder.messagePumpClass(classProperty(MESSAGE_PUMP_PROP_NAME, MessagePump.class));
+        builder.messageTransceiverClass(classProperty(MESSAGE_PUMP_PROP_NAME, MessageTransceiver.class));
 
         return builder.build();
     }
@@ -472,17 +472,17 @@ public final class Configuration
         return value;
     }
 
-    private static Class<? extends MessagePump> validateMessagePumpClass(
-        final Class<? extends MessagePump> klass)
+    private static Class<? extends MessageTransceiver> validateMessageTransceiverClass(
+        final Class<? extends MessageTransceiver> klass)
     {
-        requireNonNull(klass, "MessagePump class cannot be null");
+        requireNonNull(klass, "MessageTransceiver class cannot be null");
         if (isAbstract(klass.getModifiers()))
         {
-            throw new IllegalArgumentException("MessagePump class must be a concrete class");
+            throw new IllegalArgumentException("MessageTransceiver class must be a concrete class");
         }
         try
         {
-            final Constructor<? extends MessagePump> constructor = klass.getConstructor(MessageRecorder.class);
+            final Constructor<? extends MessageTransceiver> constructor = klass.getConstructor(MessageRecorder.class);
             if (isPublic(constructor.getModifiers()))
             {
                 return klass;
@@ -492,7 +492,7 @@ public final class Configuration
         {
         }
         throw new IllegalArgumentException(
-            "MessagePump class must have a public constructor with MessageRecorder as a single parameter");
+            "MessageTransceiver class must have a public constructor with the MessageRecorder as a single parameter");
     }
 
     private static boolean isPropertyProvided(final String propName)

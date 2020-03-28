@@ -57,7 +57,7 @@ class BasicPublisherTest
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messagePumpClass(BasicMessagePump.class)
+            .messageTransceiverClass(BasicMessageTransceiver.class)
             .build();
 
         final MediaDriver mediaDriver = launchEmbeddedMediaDriverIfConfigured();
@@ -85,7 +85,7 @@ class BasicPublisherTest
         echoPublisher.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final BasicMessagePump messagePump = new BasicMessagePump(
+        final BasicMessageTransceiver messageTransceiver = new BasicMessageTransceiver(
             mediaDriver,
             aeron,
             false,
@@ -93,7 +93,7 @@ class BasicPublisherTest
 
         publisherStarted.await();
 
-        messagePump.init(configuration);
+        messageTransceiver.init(configuration);
         try
         {
             Thread.currentThread().setName("basic-message-pump");
@@ -102,14 +102,14 @@ class BasicPublisherTest
             long timestamp = 1_000;
             while (sent < messages || received < messages)
             {
-                if (sent < messages && messagePump.send(1, configuration.messageLength(), timestamp) == 1)
+                if (sent < messages && messageTransceiver.send(1, configuration.messageLength(), timestamp) == 1)
                 {
                     sent++;
                     timestamp++;
                 }
                 if (received < messages)
                 {
-                    received += messagePump.receive();
+                    received += messageTransceiver.receive();
                 }
                 if (null != error.get())
                 {
@@ -121,7 +121,7 @@ class BasicPublisherTest
         {
             running.set(false);
             echoPublisher.join();
-            messagePump.destroy();
+            messageTransceiver.destroy();
             closeAll(aeron, mediaDriver);
             mediaDriver.context().deleteAeronDirectory();
         }

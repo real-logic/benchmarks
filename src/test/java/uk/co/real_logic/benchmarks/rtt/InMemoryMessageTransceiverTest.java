@@ -24,30 +24,30 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-class SampleMessagePumpTest
+class InMemoryMessageTransceiverTest
 {
     private final MessageRecorder messageRecorder = mock(MessageRecorder.class);
-    private final SampleMessagePump messagePump = new SampleMessagePump(messageRecorder);
+    private final InMemoryMessageTransceiver messageTransceiver = new InMemoryMessageTransceiver(messageRecorder);
 
     @Test
     void sendASingleMessage()
     {
-        final int result = messagePump.send(1, 16, 123);
+        final int result = messageTransceiver.send(1, 16, 123);
 
         assertEquals(1, result);
-        assertEquals(1, messagePump.receive());
+        assertEquals(1, messageTransceiver.receive());
         verify(messageRecorder).record(123);
     }
 
     @Test
     void sendMultipleMessages()
     {
-        final int result = messagePump.send(4, 64, 800);
+        final int result = messageTransceiver.send(4, 64, 800);
 
         assertEquals(4, result);
         for (int i = 0; i < result; i++)
         {
-            assertEquals(1, messagePump.receive());
+            assertEquals(1, messageTransceiver.receive());
         }
         verify(messageRecorder, times(4)).record(800);
     }
@@ -55,34 +55,34 @@ class SampleMessagePumpTest
     @Test
     void sendReturnsZeroIfItCantFitAnEntireBatch()
     {
-        messagePump.send(SampleMessagePump.SIZE, 8, 777);
+        messageTransceiver.send(InMemoryMessageTransceiver.SIZE, 8, 777);
 
-        final int result = messagePump.send(1, 100, 555);
+        final int result = messageTransceiver.send(1, 100, 555);
 
         assertEquals(0, result);
-        for (int i = 0; i < SampleMessagePump.SIZE; i++)
+        for (int i = 0; i < InMemoryMessageTransceiver.SIZE; i++)
         {
-            assertEquals(1, messagePump.receive());
+            assertEquals(1, messageTransceiver.receive());
         }
-        verify(messageRecorder, times(SampleMessagePump.SIZE)).record(777);
+        verify(messageRecorder, times(InMemoryMessageTransceiver.SIZE)).record(777);
     }
 
     @Test
     void receiveReturnsZeroIfNothingWasWritten()
     {
-        assertEquals(0L, messagePump.receive());
+        assertEquals(0L, messageTransceiver.receive());
     }
 
     @Test
     void receiveReturnsZeroAfterAllMessagesConsumed()
     {
-        messagePump.send(5, 128, 1111);
+        messageTransceiver.send(5, 128, 1111);
 
         for (int i = 0; i < 5; i++)
         {
-            assertEquals(1, messagePump.receive());
+            assertEquals(1, messageTransceiver.receive());
         }
-        assertEquals(0L, messagePump.receive());
+        assertEquals(0L, messageTransceiver.receive());
 
         verify(messageRecorder, times(5)).record(1111);
     }
@@ -102,17 +102,13 @@ class SampleMessagePumpTest
         final Phaser phaser = new Phaser(3);
 
         final long[] receivedTimestamps = new long[timestamps.length];
-        final MessagePump messagePump = new SampleMessagePump(new MessageRecorder()
+        final MessageTransceiver messageTransceiver = new InMemoryMessageTransceiver(new MessageRecorder()
         {
             private int index;
 
             public void record(final long timestamp)
             {
                 receivedTimestamps[index++] = timestamp;
-            }
-
-            public void reset()
-            {
             }
         });
 
@@ -123,7 +119,7 @@ class SampleMessagePumpTest
 
                 for (int i = 0, size = timestamps.length; i < size; i++)
                 {
-                    while (0 == messagePump.send(1, 24, timestamps[i]))
+                    while (0 == messageTransceiver.send(1, 24, timestamps[i]))
                     {
                     }
                 }
@@ -138,7 +134,7 @@ class SampleMessagePumpTest
                 int received = 0;
                 while (received < size)
                 {
-                    received += messagePump.receive();
+                    received += messageTransceiver.receive();
                 }
             }
         );

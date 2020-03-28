@@ -78,7 +78,7 @@ class ConfigurationTest
             .warmUpIterations(0)
             .warmUpNumberOfMessages(0)
             .numberOfMessages(1_000)
-            .messagePumpClass(SampleMessagePump.class)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .build();
 
         assertEquals(0, configuration.warmUpIterations());
@@ -142,7 +142,7 @@ class ConfigurationTest
     }
 
     @Test
-    void throwsNullPointerExceptionIfMessagePumpClassIsNull()
+    void throwsNullPointerExceptionIfMessageTransceiverClassIsNull()
     {
         final Builder builder = new Builder()
             .numberOfMessages(10);
@@ -150,33 +150,33 @@ class ConfigurationTest
         final NullPointerException ex =
             assertThrows(NullPointerException.class, () -> builder.build());
 
-        assertEquals("MessagePump class cannot be null", ex.getMessage());
+        assertEquals("MessageTransceiver class cannot be null", ex.getMessage());
     }
 
     @Test
-    void throwsIllegalArgumentExceptionIfMessagePumpClassIsAnAbstractClass()
+    void throwsIllegalArgumentExceptionIfMessageTransceiverClassIsAnAbstractClass()
     {
         final Builder builder = new Builder()
             .numberOfMessages(10)
-            .messagePumpClass(MessagePump.class);
+            .messageTransceiverClass(MessageTransceiver.class);
 
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("MessagePump class must be a concrete class", ex.getMessage());
+        assertEquals("MessageTransceiver class must be a concrete class", ex.getMessage());
     }
 
     @Test
-    void throwsIllegalArgumentExceptionIfMessagePumpClassHasNoPublicConstructor()
+    void throwsIllegalArgumentExceptionIfMessageTransceiverClassHasNoPublicConstructor()
     {
         final Builder builder = new Builder()
             .numberOfMessages(10)
-            .messagePumpClass(TestNoPublicConstructorMessagePump.class);
+            .messageTransceiverClass(TestNoPublicConstructorMessageTransceiver.class);
 
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("MessagePump class must have a public constructor with MessageRecorder as a single parameter",
+        assertEquals("MessageTransceiver class must have a public constructor with MessageRecorder as a single parameter",
             ex.getMessage());
     }
 
@@ -185,7 +185,7 @@ class ConfigurationTest
     {
         final Builder builder = new Builder()
             .numberOfMessages(4)
-            .messagePumpClass(SampleMessagePump.class)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .senderIdleStrategy(null);
 
         final NullPointerException ex =
@@ -199,7 +199,7 @@ class ConfigurationTest
     {
         final Builder builder = new Builder()
             .numberOfMessages(4)
-            .messagePumpClass(SampleMessagePump.class)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .receiverIdleStrategy(null);
 
         final NullPointerException ex =
@@ -213,7 +213,7 @@ class ConfigurationTest
     {
         final Configuration configuration = new Builder()
             .numberOfMessages(123)
-            .messagePumpClass(SampleMessagePump.class)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .build();
 
         assertEquals(123, configuration.numberOfMessages());
@@ -222,7 +222,7 @@ class ConfigurationTest
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
-        assertSame(SampleMessagePump.class, configuration.messagePumpClass());
+        assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
     }
@@ -237,7 +237,7 @@ class ConfigurationTest
             .numberOfMessages(666)
             .batchSize(4)
             .messageLength(119)
-            .messagePumpClass(SampleMessagePump.class)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .senderIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiverIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .build();
@@ -248,7 +248,7 @@ class ConfigurationTest
         assertEquals(666, configuration.numberOfMessages());
         assertEquals(4, configuration.batchSize());
         assertEquals(119, configuration.messageLength());
-        assertSame(SampleMessagePump.class, configuration.messagePumpClass());
+        assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
         assertSame(YieldingIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
     }
@@ -263,7 +263,7 @@ class ConfigurationTest
             .numberOfMessages(777)
             .batchSize(2)
             .messageLength(64)
-            .messagePumpClass(SampleMessagePump.class)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .senderIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiverIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .build();
@@ -275,7 +275,7 @@ class ConfigurationTest
             "\n    numberOfMessages=777" +
             "\n    batchSize=2" +
             "\n    messageLength=64" +
-            "\n    messagePumpClass=uk.co.real_logic.benchmarks.rtt.SampleMessagePump" +
+            "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.rtt.SampleMessageTransceiver" +
             "\n    senderIdleStrategy=NoOpIdleStrategy{}" +
             "\n    receiverIdleStrategy=YieldingIdleStrategy{}" +
             "\n}",
@@ -304,7 +304,7 @@ class ConfigurationTest
     }
 
     @Test
-    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessagePumpPropertyIsNotConfigured()
+    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessageTransceiverPropertyIsNotConfigured()
     {
         System.setProperty(MESSAGES_PROP_NAME, "100");
 
@@ -315,7 +315,7 @@ class ConfigurationTest
     }
 
     @Test
-    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessagePumpHasInvalidValue()
+    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessageTransceiverHasInvalidValue()
     {
         System.setProperty(MESSAGES_PROP_NAME, "20");
         System.setProperty(MESSAGE_PUMP_PROP_NAME, Integer.class.getName());
@@ -331,7 +331,7 @@ class ConfigurationTest
     void fromSystemPropertiesDefaults()
     {
         System.setProperty(MESSAGES_PROP_NAME, "42");
-        System.setProperty(MESSAGE_PUMP_PROP_NAME, SampleMessagePump.class.getName());
+        System.setProperty(MESSAGE_PUMP_PROP_NAME, InMemoryMessageTransceiver.class.getName());
 
         final Configuration configuration = fromSystemProperties();
 
@@ -341,7 +341,7 @@ class ConfigurationTest
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
-        assertSame(SampleMessagePump.class, configuration.messagePumpClass());
+        assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
     }
@@ -355,7 +355,7 @@ class ConfigurationTest
         System.setProperty(MESSAGES_PROP_NAME, "200");
         System.setProperty(BATCH_SIZE_PROP_NAME, "3");
         System.setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
-        System.setProperty(MESSAGE_PUMP_PROP_NAME, SampleMessagePump.class.getName());
+        System.setProperty(MESSAGE_PUMP_PROP_NAME, InMemoryMessageTransceiver.class.getName());
         System.setProperty(SENDER_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
         System.setProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME, NoOpIdleStrategy.class.getName());
 
@@ -367,7 +367,7 @@ class ConfigurationTest
         assertEquals(200, configuration.numberOfMessages());
         assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
-        assertSame(SampleMessagePump.class, configuration.messagePumpClass());
+        assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertTrue(YieldingIdleStrategy.class.isInstance(configuration.senderIdleStrategy()));
         assertTrue(NoOpIdleStrategy.class.isInstance(configuration.receiverIdleStrategy()));
     }
@@ -392,9 +392,9 @@ class ConfigurationTest
         return IntStream.range(-1, MIN_MESSAGE_LENGTH);
     }
 
-    public final class TestNoPublicConstructorMessagePump extends MessagePump
+    public final class TestNoPublicConstructorMessageTransceiver extends MessageTransceiver
     {
-        private TestNoPublicConstructorMessagePump(final MessageRecorder messageRecorder)
+        private TestNoPublicConstructorMessageTransceiver(final MessageRecorder messageRecorder)
         {
             super(messageRecorder);
         }

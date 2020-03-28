@@ -19,7 +19,7 @@ import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessagePump;
+import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 
 import static io.aeron.Aeron.connect;
@@ -29,7 +29,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
-public final class BasicMessagePump extends MessagePump
+public final class BasicMessageTransceiver extends MessageTransceiver
 {
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
@@ -48,12 +48,12 @@ public final class BasicMessagePump extends MessagePump
             messagesReceived++;
         });
 
-    public BasicMessagePump(final MessageRecorder messageRecorder)
+    public BasicMessageTransceiver(final MessageRecorder messageRecorder)
     {
         this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
     }
 
-    BasicMessagePump(
+    BasicMessageTransceiver(
         final MediaDriver mediaDriver,
         final Aeron aeron,
         final boolean ownsDriver,

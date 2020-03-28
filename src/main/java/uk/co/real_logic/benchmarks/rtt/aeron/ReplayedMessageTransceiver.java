@@ -22,7 +22,7 @@ import io.aeron.driver.MediaDriver;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessagePump;
+import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 
 import static io.aeron.ChannelUri.addSessionId;
@@ -33,9 +33,9 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
-import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessagePump.sendMessages;
+import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessageTransceiver.sendMessages;
 
-public final class ReplayedMessagePump extends MessagePump
+public final class ReplayedMessageTransceiver extends MessageTransceiver
 {
     private final MediaDriver mediaDriver;
     private final AeronArchive aeronArchive;
@@ -54,12 +54,12 @@ public final class ReplayedMessagePump extends MessagePump
             messagesReceived++;
         });
 
-    public ReplayedMessagePump(final MessageRecorder messageRecorder)
+    public ReplayedMessageTransceiver(final MessageRecorder messageRecorder)
     {
         this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
     }
 
-    ReplayedMessagePump(
+    ReplayedMessageTransceiver(
         final MediaDriver mediaDriver,
         final AeronArchive aeronArchive,
         final boolean ownsDriver,
