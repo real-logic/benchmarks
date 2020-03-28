@@ -124,6 +124,8 @@ public final class RecordedPublisher implements AutoCloseable
         if (ownsDriver)
         {
             closeAll(aeronArchive, archivingMediaDriver);
+            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
+            archivingMediaDriver.archive().context().deleteDirectory();
         }
     }
 

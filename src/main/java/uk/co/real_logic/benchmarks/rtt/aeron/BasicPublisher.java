@@ -95,6 +95,7 @@ public final class BasicPublisher implements AutoCloseable
         if (ownsDriver)
         {
             closeAll(aeron, mediaDriver);
+            mediaDriver.context().deleteAeronDirectory();
         }
     }
 

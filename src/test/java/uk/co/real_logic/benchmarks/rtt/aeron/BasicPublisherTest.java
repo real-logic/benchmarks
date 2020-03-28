@@ -123,6 +123,7 @@ class BasicPublisherTest
             echoPublisher.join();
             messagePump.destroy();
             closeAll(aeron, mediaDriver);
+            mediaDriver.context().deleteAeronDirectory();
         }
 
         if (null != error.get())

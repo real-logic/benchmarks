@@ -108,6 +108,8 @@ class RecordedPublisherTest
             archivingPublisher.join();
             messagePump.destroy();
             CloseHelper.closeAll(aeronArchive, archivingMediaDriver);
+            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
+            archivingMediaDriver.archive().context().deleteDirectory();
         }
 
         assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
