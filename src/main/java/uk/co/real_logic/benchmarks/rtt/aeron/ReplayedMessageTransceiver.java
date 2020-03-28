@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import org.agrona.collections.MutableLong;
@@ -102,7 +103,14 @@ public final class ReplayedMessageTransceiver extends MessageTransceiver
 
     public void destroy() throws Exception
     {
-        aeronArchive.stopReplay(replaySessionId);
+        try
+        {
+            aeronArchive.stopReplay(replaySessionId);
+        }
+        catch (final ArchiveException ex)
+        {
+            System.out.println("WARN: " + ex.toString());
+        }
 
         closeAll(publication, subscription);
 
