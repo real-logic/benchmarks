@@ -44,7 +44,8 @@ public final class LoadTestRig
     private final PrintStream out;
     private final Histogram histogram;
 
-    public LoadTestRig(final Configuration configuration, final Class<? extends MessageTransceiver> messageTransceiverClass)
+    public LoadTestRig(
+        final Configuration configuration, final Class<? extends MessageTransceiver> messageTransceiverClass)
     {
         this.configuration = requireNonNull(configuration);
         requireNonNull(messageTransceiverClass);

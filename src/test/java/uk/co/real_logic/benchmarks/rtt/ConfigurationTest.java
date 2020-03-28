@@ -176,7 +176,8 @@ class ConfigurationTest
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> builder.build());
 
-        assertEquals("MessageTransceiver class must have a public constructor with MessageRecorder as a single parameter",
+        assertEquals(
+            "MessageTransceiver class must have a public constructor with MessageRecorder as a single parameter",
             ex.getMessage());
     }
 
