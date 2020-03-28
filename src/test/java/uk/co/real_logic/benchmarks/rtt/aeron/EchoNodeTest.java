@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
 
-class BasicPublisherTest
+class EchoNodeTest
 {
     @BeforeAll
     static void before()
@@ -66,12 +66,12 @@ class BasicPublisherTest
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);
 
-        final Thread echoPublisher = new Thread(
+        final Thread echoNode = new Thread(
             () ->
             {
                 publisherStarted.countDown();
 
-                try (BasicPublisher publisher = new BasicPublisher(running, mediaDriver, aeron, false))
+                try (EchoNode publisher = new EchoNode(running, mediaDriver, aeron, false))
                 {
                     publisher.run();
                 }
@@ -80,9 +80,9 @@ class BasicPublisherTest
                     error.set(t);
                 }
             });
-        echoPublisher.setName("basic-publisher");
-        echoPublisher.setDaemon(true);
-        echoPublisher.start();
+        echoNode.setName("echo-node");
+        echoNode.setDaemon(true);
+        echoNode.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
         final BasicMessageTransceiver messageTransceiver = new BasicMessageTransceiver(
@@ -120,7 +120,7 @@ class BasicPublisherTest
         finally
         {
             running.set(false);
-            echoPublisher.join();
+            echoNode.join();
             messageTransceiver.destroy();
             closeAll(aeron, mediaDriver);
             mediaDriver.context().deleteAeronDirectory();

@@ -33,33 +33,36 @@ import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
-import static uk.co.real_logic.benchmarks.rtt.aeron.BasicPublisher.publishLoop;
+import static uk.co.real_logic.benchmarks.rtt.aeron.EchoNode.publishLoop;
 
-public final class RecordedPublisher implements AutoCloseable
+/**
+ * Remote node which archives received messages and replays persisted messages back to the sender.
+ */
+public final class ArchiveNode implements AutoCloseable
 {
     private final AtomicBoolean running;
     private final ArchivingMediaDriver archivingMediaDriver;
     private final AeronArchive aeronArchive;
-    private final boolean ownsDriver;
+    private final boolean ownsArchiveClient;
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final long recordingSubscriptionId;
 
-    RecordedPublisher(final AtomicBoolean running)
+    ArchiveNode(final AtomicBoolean running)
     {
         this(running, launchArchivingMediaDriver(), connect(), true);
     }
 
-    RecordedPublisher(
+    ArchiveNode(
         final AtomicBoolean running,
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
-        final boolean ownsDriver)
+        final boolean ownsArchiveClient)
     {
         this.running = running;
         this.archivingMediaDriver = archivingMediaDriver;
         this.aeronArchive = aeronArchive;
-        this.ownsDriver = ownsDriver;
+        this.ownsArchiveClient = ownsArchiveClient;
 
         final Aeron aeron = aeronArchive.context().aeron();
 
@@ -100,7 +103,7 @@ public final class RecordedPublisher implements AutoCloseable
 
         closeAll(publication, subscription);
 
-        if (ownsDriver)
+        if (ownsArchiveClient)
         {
             closeAll(aeronArchive, archivingMediaDriver);
             archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
@@ -117,7 +120,7 @@ public final class RecordedPublisher implements AutoCloseable
         // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
 
-        try (RecordedPublisher server = new RecordedPublisher(running))
+        try (ArchiveNode server = new ArchiveNode(running))
         {
             server.run();
         }

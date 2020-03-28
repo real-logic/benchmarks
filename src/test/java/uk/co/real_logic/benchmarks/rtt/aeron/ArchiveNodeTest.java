@@ -33,7 +33,7 @@ import static java.lang.Long.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
 
-class RecordedPublisherTest
+class ArchiveNodeTest
 {
     @Test
     void test() throws Exception
@@ -50,13 +50,13 @@ class RecordedPublisherTest
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);
 
-        final Thread archivingPublisher = new Thread(
+        final Thread archiveNode = new Thread(
             () ->
             {
                 publisherStarted.countDown();
 
-                try (RecordedPublisher publisher =
-                    new RecordedPublisher(running, archivingMediaDriver, aeronArchive, false))
+                try (ArchiveNode publisher =
+                    new ArchiveNode(running, archivingMediaDriver, aeronArchive, false))
                 {
                     publisher.run();
                 }
@@ -65,9 +65,9 @@ class RecordedPublisherTest
                     error.set(t);
                 }
             });
-        archivingPublisher.setName("recorded-publisher");
-        archivingPublisher.setDaemon(true);
-        archivingPublisher.start();
+        archiveNode.setName("archive-node");
+        archiveNode.setDaemon(true);
+        archiveNode.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, MIN_VALUE);
         final ReplayedMessageTransceiver messageTransceiver = new ReplayedMessageTransceiver(
@@ -105,7 +105,7 @@ class RecordedPublisherTest
         finally
         {
             running.set(false);
-            archivingPublisher.join();
+            archiveNode.join();
             messageTransceiver.destroy();
             CloseHelper.closeAll(aeronArchive, archivingMediaDriver);
             archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();

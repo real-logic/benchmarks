@@ -30,27 +30,30 @@ import static io.aeron.Aeron.connect;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
-public final class BasicPublisher implements AutoCloseable
+/**
+ * Remote node which echoes original messages back to the sender.
+ */
+public final class EchoNode implements AutoCloseable
 {
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
-    private final boolean ownsDriver;
+    private final boolean ownsAeronClient;
 
-    BasicPublisher(final AtomicBoolean running)
+    EchoNode(final AtomicBoolean running)
     {
         this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true);
     }
 
-    BasicPublisher(
-        final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron, final boolean ownsDriver)
+    EchoNode(
+        final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron, final boolean ownsAeronClient)
     {
         this.running = running;
         this.mediaDriver = mediaDriver;
         this.aeron = aeron;
-        this.ownsDriver = ownsDriver;
+        this.ownsAeronClient = ownsAeronClient;
 
         publication = aeron.addExclusivePublication(receiverChannel(), receiverStreamId());
 
@@ -71,7 +74,7 @@ public final class BasicPublisher implements AutoCloseable
     {
         closeAll(subscription, publication);
 
-        if (ownsDriver)
+        if (ownsAeronClient)
         {
             closeAll(aeron, mediaDriver);
             mediaDriver.context().deleteAeronDirectory();
@@ -87,7 +90,7 @@ public final class BasicPublisher implements AutoCloseable
         // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
 
-        try (BasicPublisher server = new BasicPublisher(running))
+        try (EchoNode server = new EchoNode(running))
         {
             server.run();
         }
