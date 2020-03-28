@@ -33,7 +33,7 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
-import static uk.co.real_logic.benchmarks.rtt.aeron.BasicMessageTransceiver.sendMessages;
+import static uk.co.real_logic.benchmarks.rtt.aeron.PlainMessageTransceiver.sendMessages;
 
 public final class ReplayedMessageTransceiver extends MessageTransceiver
 {

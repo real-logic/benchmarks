@@ -41,7 +41,7 @@ class ArchiveNodeTest
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messageTransceiverClass(BasicMessageTransceiver.class)
+            .messageTransceiverClass(ReplayedMessageTransceiver.class)
             .build();
 
         final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver();

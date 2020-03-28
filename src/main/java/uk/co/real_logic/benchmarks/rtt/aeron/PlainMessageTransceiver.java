@@ -19,8 +19,8 @@ import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
+import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
 import static io.aeron.Aeron.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -29,11 +29,11 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
-public final class BasicMessageTransceiver extends MessageTransceiver
+public final class PlainMessageTransceiver extends MessageTransceiver
 {
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
-    private final boolean ownsDriver;
+    private final boolean ownsAeronClient;
     private int frameCountLimit;
     private ExclusivePublication publication;
     private UnsafeBuffer offerBuffer;
@@ -48,21 +48,21 @@ public final class BasicMessageTransceiver extends MessageTransceiver
             messagesReceived++;
         });
 
-    public BasicMessageTransceiver(final MessageRecorder messageRecorder)
+    public PlainMessageTransceiver(final MessageRecorder messageRecorder)
     {
         this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
     }
 
-    BasicMessageTransceiver(
+    PlainMessageTransceiver(
         final MediaDriver mediaDriver,
         final Aeron aeron,
-        final boolean ownsDriver,
+        final boolean ownsAeronClient,
         final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
         this.mediaDriver = mediaDriver;
         this.aeron = aeron;
-        this.ownsDriver = ownsDriver;
+        this.ownsAeronClient = ownsAeronClient;
     }
 
     public void init(final Configuration configuration) throws Exception
@@ -87,7 +87,7 @@ public final class BasicMessageTransceiver extends MessageTransceiver
     {
         closeAll(publication, subscription);
 
-        if (ownsDriver)
+        if (ownsAeronClient)
         {
             closeAll(aeron, mediaDriver);
         }

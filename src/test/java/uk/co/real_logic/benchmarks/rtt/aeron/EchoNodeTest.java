@@ -57,7 +57,7 @@ class EchoNodeTest
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messageTransceiverClass(BasicMessageTransceiver.class)
+            .messageTransceiverClass(PlainMessageTransceiver.class)
             .build();
 
         final MediaDriver mediaDriver = launchEmbeddedMediaDriverIfConfigured();
@@ -85,7 +85,7 @@ class EchoNodeTest
         echoNode.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final BasicMessageTransceiver messageTransceiver = new BasicMessageTransceiver(
+        final PlainMessageTransceiver messageTransceiver = new PlainMessageTransceiver(
             mediaDriver,
             aeron,
             false,
