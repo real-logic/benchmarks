@@ -29,6 +29,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.ChannelUri.addSessionId;
+import static io.aeron.archive.client.AeronArchive.connect;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
 import static org.agrona.CloseHelper.closeAll;
@@ -47,7 +48,7 @@ public final class RecordedPublisher implements AutoCloseable
 
     RecordedPublisher(final AtomicBoolean running)
     {
-        this(running, createArchivingMediaDriver(), archiveClient(), true);
+        this(running, launchArchivingMediaDriver(), connect(), true);
     }
 
     RecordedPublisher(

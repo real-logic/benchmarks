@@ -26,6 +26,7 @@ import org.agrona.concurrent.SigInt;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.aeron.Aeron.connect;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
@@ -40,7 +41,7 @@ public final class BasicPublisher implements AutoCloseable
 
     BasicPublisher(final AtomicBoolean running)
     {
-        this(running, createEmbeddedMediaDriver(), aeronClient(), true);
+        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true);
     }
 
     BasicPublisher(

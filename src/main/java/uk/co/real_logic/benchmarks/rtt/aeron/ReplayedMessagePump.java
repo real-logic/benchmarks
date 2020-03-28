@@ -26,6 +26,7 @@ import uk.co.real_logic.benchmarks.rtt.MessagePump;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 
 import static io.aeron.ChannelUri.addSessionId;
+import static io.aeron.archive.client.AeronArchive.connect;
 import static java.lang.Long.MAX_VALUE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
@@ -54,7 +55,7 @@ public final class ReplayedMessagePump extends MessagePump
 
     public ReplayedMessagePump(final MessageRecorder messageRecorder)
     {
-        this(createEmbeddedMediaDriver(), archiveClient(), true, messageRecorder);
+        this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
     }
 
     ReplayedMessagePump(

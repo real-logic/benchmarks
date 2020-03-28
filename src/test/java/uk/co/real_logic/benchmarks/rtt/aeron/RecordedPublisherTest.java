@@ -28,10 +28,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
+import static io.aeron.archive.client.AeronArchive.connect;
 import static java.lang.Long.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.archiveClient;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.createArchivingMediaDriver;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
 
 class RecordedPublisherTest
 {
@@ -44,8 +44,8 @@ class RecordedPublisherTest
             .messagePumpClass(BasicMessagePump.class)
             .build();
 
-        final ArchivingMediaDriver archivingMediaDriver = createArchivingMediaDriver();
-        final AeronArchive aeronArchive = archiveClient();
+        final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver();
+        final AeronArchive aeronArchive = connect();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);

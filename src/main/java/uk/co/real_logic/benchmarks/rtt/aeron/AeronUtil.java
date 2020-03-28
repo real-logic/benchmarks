@@ -15,10 +15,8 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.Aeron;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 
@@ -76,7 +74,7 @@ final class AeronUtil
         return getInteger(FRAME_COUNT_LIMIT_PROP_NAME, 10);
     }
 
-    static MediaDriver createEmbeddedMediaDriver()
+    static MediaDriver launchEmbeddedMediaDriverIfConfigured()
     {
         if (embeddedMediaDriver())
         {
@@ -88,27 +86,18 @@ final class AeronUtil
         return null;
     }
 
-    static Aeron aeronClient()
+    static ArchivingMediaDriver launchArchivingMediaDriver()
     {
-        return Aeron.connect();
-    }
-
-    static ArchivingMediaDriver createArchivingMediaDriver()
-    {
-        final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
+        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .spiesSimulateConnection(true);
+        final Archive.Context archiveCtx = new Archive.Context()
+            .aeronDirectoryName(mediaDriverCtx.aeronDirectoryName())
+            .recordingEventsEnabled(false)
+            .deleteArchiveOnStart(true);
         return ArchivingMediaDriver.launch(
-            mediaDriverContext,
-            new Archive.Context()
-                .recordingEventsEnabled(false)
-                .deleteArchiveOnStart(true));
-    }
-
-    static AeronArchive archiveClient()
-    {
-        final Aeron aeron = aeronClient();
-        return AeronArchive.connect(new AeronArchive.Context().aeron(aeron).ownsAeronClient(true));
+            mediaDriverCtx,
+            archiveCtx);
     }
 
     static void checkPublicationResult(final long result)

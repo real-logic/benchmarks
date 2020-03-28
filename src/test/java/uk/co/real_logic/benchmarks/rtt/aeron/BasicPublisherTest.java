@@ -29,11 +29,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
+import static io.aeron.Aeron.connect;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.CloseHelper.closeAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
 
 class BasicPublisherTest
 {
@@ -58,8 +60,8 @@ class BasicPublisherTest
             .messagePumpClass(BasicMessagePump.class)
             .build();
 
-        final MediaDriver mediaDriver = createEmbeddedMediaDriver();
-        final Aeron aeron = aeronClient();
+        final MediaDriver mediaDriver = launchEmbeddedMediaDriverIfConfigured();
+        final Aeron aeron = connect();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);

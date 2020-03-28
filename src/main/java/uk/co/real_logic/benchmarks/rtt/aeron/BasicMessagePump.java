@@ -22,6 +22,7 @@ import uk.co.real_logic.benchmarks.rtt.Configuration;
 import uk.co.real_logic.benchmarks.rtt.MessagePump;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 
+import static io.aeron.Aeron.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
@@ -49,7 +50,7 @@ public final class BasicMessagePump extends MessagePump
 
     public BasicMessagePump(final MessageRecorder messageRecorder)
     {
-        this(createEmbeddedMediaDriver(), aeronClient(), true, messageRecorder);
+        this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
     }
 
     BasicMessagePump(
