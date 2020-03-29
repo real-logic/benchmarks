@@ -93,14 +93,14 @@ final class AeronUtil
         return null;
     }
 
-    static ArchivingMediaDriver launchArchivingMediaDriver()
+    static ArchivingMediaDriver launchArchivingMediaDriver(final boolean recordingEventsEnabled)
     {
         final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .spiesSimulateConnection(true);
         final Archive.Context archiveCtx = new Archive.Context()
             .aeronDirectoryName(mediaDriverCtx.aeronDirectoryName())
-            .recordingEventsEnabled(false)
+            .recordingEventsEnabled(recordingEventsEnabled)
             .deleteArchiveOnStart(true);
         return ArchivingMediaDriver.launch(
             mediaDriverCtx,

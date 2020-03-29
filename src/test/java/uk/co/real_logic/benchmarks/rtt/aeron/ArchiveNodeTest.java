@@ -41,10 +41,10 @@ class ArchiveNodeTest
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messageTransceiverClass(ReplayedMessageTransceiver.class)
+            .messageTransceiverClass(LiveReplayMessageTransceiver.class)
             .build();
 
-        final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver();
+        final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver(false);
         final AeronArchive aeronArchive = connect();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
@@ -70,7 +70,7 @@ class ArchiveNodeTest
         archiveNode.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, MIN_VALUE);
-        final ReplayedMessageTransceiver messageTransceiver = new ReplayedMessageTransceiver(
+        final LiveReplayMessageTransceiver messageTransceiver = new LiveReplayMessageTransceiver(
             archivingMediaDriver.mediaDriver(),
             aeronArchive,
             false,

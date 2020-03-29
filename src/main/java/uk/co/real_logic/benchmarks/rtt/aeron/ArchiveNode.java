@@ -50,7 +50,7 @@ public final class ArchiveNode implements AutoCloseable
 
     ArchiveNode(final AtomicBoolean running)
     {
-        this(running, launchArchivingMediaDriver(), connect(), true);
+        this(running, launchArchivingMediaDriver(false), connect(), true);
     }
 
     ArchiveNode(

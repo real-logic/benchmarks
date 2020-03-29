@@ -36,7 +36,7 @@ import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 import static uk.co.real_logic.benchmarks.rtt.aeron.PlainMessageTransceiver.sendMessages;
 
-public final class ReplayedMessageTransceiver extends MessageTransceiver
+public final class LiveReplayMessageTransceiver extends MessageTransceiver
 {
     private final MediaDriver mediaDriver;
     private final AeronArchive aeronArchive;
@@ -56,12 +56,12 @@ public final class ReplayedMessageTransceiver extends MessageTransceiver
             messagesReceived++;
         });
 
-    public ReplayedMessageTransceiver(final MessageRecorder messageRecorder)
+    public LiveReplayMessageTransceiver(final MessageRecorder messageRecorder)
     {
         this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
     }
 
-    ReplayedMessageTransceiver(
+    LiveReplayMessageTransceiver(
         final MediaDriver mediaDriver,
         final AeronArchive aeronArchive,
         final boolean ownsArchiveClient,
