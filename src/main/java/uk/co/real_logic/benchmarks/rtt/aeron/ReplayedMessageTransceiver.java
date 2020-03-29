@@ -79,15 +79,14 @@ public final class ReplayedMessageTransceiver extends MessageTransceiver
 
         publication = aeron.addExclusivePublication(senderChannel(), senderStreamId());
 
+        final long recordingId = findLatestRecording(archiveChannel(), archiveStreamId());
+
         final String receiverChannel = receiverChannel();
         final int receiverStreamId = receiverStreamId();
-        final int replayStreamId = replayStreamId();
-        final long recordingId = findLatestRecording(receiverChannel, receiverStreamId);
+        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, receiverChannel, receiverStreamId);
 
-        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, receiverChannel, replayStreamId);
         final String channel = addSessionId(receiverChannel, (int)replaySessionId);
-
-        subscription = aeron.addSubscription(channel, replayStreamId);
+        subscription = aeron.addSubscription(channel, receiverStreamId);
 
         while (!subscription.isConnected() || !publication.isConnected())
         {

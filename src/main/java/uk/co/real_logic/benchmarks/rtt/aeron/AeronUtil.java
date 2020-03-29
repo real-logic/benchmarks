@@ -20,6 +20,7 @@ import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 
+import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.Publication.*;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Integer.getInteger;
@@ -31,7 +32,8 @@ final class AeronUtil
     static final String SENDER_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.sender.streamId";
     static final String RECEIVER_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.receiver.channel";
     static final String RECEIVER_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.receiver.streamId";
-    static final String REPLAY_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.streamId";
+    static final String ARCHIVE_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.channel";
+    static final String ARCHIVE_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.streamId";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME = "aeron.benchmarks.rtt.aeron.embeddedMediaDriver";
     static final String FRAME_COUNT_LIMIT_PROP_NAME = "aeron.benchmarks.rtt.aeron.frameCountLimit";
 
@@ -59,9 +61,14 @@ final class AeronUtil
         return getInteger(RECEIVER_STREAM_ID_PROP_NAME, 1_000_000_001);
     }
 
-    static int replayStreamId()
+    static String archiveChannel()
     {
-        return getInteger(REPLAY_STREAM_ID_PROP_NAME, 1_000_000_002);
+        return getProperty(ARCHIVE_CHANNEL_PROP_NAME, IPC_CHANNEL);
+    }
+
+    static int archiveStreamId()
+    {
+        return getInteger(ARCHIVE_STREAM_ID_PROP_NAME, 1_000_000_002);
     }
 
     static boolean embeddedMediaDriver()

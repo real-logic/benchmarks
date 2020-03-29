@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import org.junit.jupiter.api.Test;
 
+import static io.aeron.CommonContext.IPC_CHANNEL;
 import static java.lang.String.valueOf;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
@@ -33,7 +34,8 @@ class AeronUtilTest
         assertEquals(1_000_000_000, senderStreamId());
         assertEquals("aeron:udp?endpoint=localhost:33334", receiverChannel());
         assertEquals(1_000_000_001, receiverStreamId());
-        assertEquals(1_000_000_002, replayStreamId());
+        assertEquals(IPC_CHANNEL, archiveChannel());
+        assertEquals(1_000_000_002, archiveStreamId());
         assertFalse(embeddedMediaDriver());
         assertEquals(10, frameCountLimit());
     }
@@ -45,7 +47,8 @@ class AeronUtilTest
         final int senderStreamId = Integer.MIN_VALUE;
         final String receiverChannel = "receiver";
         final int receiverStreamId = Integer.MAX_VALUE;
-        final int replayStreamId = 10;
+        final String archiveChannel = "archive";
+        final int archiveStreamId = 777;
         final boolean embeddedMediaDriver = true;
         final int frameCountLimit = 111;
 
@@ -53,7 +56,8 @@ class AeronUtilTest
         setProperty(SENDER_STREAM_ID_PROP_NAME, valueOf(senderStreamId));
         setProperty(RECEIVER_CHANNEL_PROP_NAME, receiverChannel);
         setProperty(RECEIVER_STREAM_ID_PROP_NAME, valueOf(receiverStreamId));
-        setProperty(REPLAY_STREAM_ID_PROP_NAME, valueOf(replayStreamId));
+        setProperty(ARCHIVE_CHANNEL_PROP_NAME, archiveChannel);
+        setProperty(ARCHIVE_STREAM_ID_PROP_NAME, valueOf(archiveStreamId));
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
         setProperty(FRAME_COUNT_LIMIT_PROP_NAME, valueOf(frameCountLimit));
         try
@@ -71,7 +75,8 @@ class AeronUtilTest
             clearProperty(SENDER_STREAM_ID_PROP_NAME);
             clearProperty(RECEIVER_CHANNEL_PROP_NAME);
             clearProperty(RECEIVER_STREAM_ID_PROP_NAME);
-            clearProperty(REPLAY_STREAM_ID_PROP_NAME);
+            clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
+            clearProperty(ARCHIVE_STREAM_ID_PROP_NAME);
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
             clearProperty(FRAME_COUNT_LIMIT_PROP_NAME);
         }
