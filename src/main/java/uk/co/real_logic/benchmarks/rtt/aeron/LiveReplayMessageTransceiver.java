@@ -74,12 +74,12 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
     {
         final Aeron aeron = aeronArchive.context().aeron();
 
-        publication = aeron.addExclusivePublication(senderChannel(), senderStreamId());
+        publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
 
         final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
 
-        final String replayChannel = receiverChannel();
-        final int replayStreamId = receiverStreamId();
+        final String replayChannel = receiveChannel();
+        final int replayStreamId = receiveStreamId();
         replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);

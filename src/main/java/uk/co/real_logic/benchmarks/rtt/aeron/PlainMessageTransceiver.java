@@ -67,9 +67,9 @@ public final class PlainMessageTransceiver extends MessageTransceiver
 
     public void init(final Configuration configuration) throws Exception
     {
-        this.publication = aeron.addExclusivePublication(senderChannel(), senderStreamId());
+        this.publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
 
-        this.subscription = aeron.addSubscription(receiverChannel(), receiverStreamId());
+        this.subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
 
         while (!subscription.isConnected() || !publication.isConnected())
         {

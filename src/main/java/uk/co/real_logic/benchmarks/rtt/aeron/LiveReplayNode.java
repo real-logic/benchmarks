@@ -62,12 +62,12 @@ public final class LiveReplayNode implements AutoCloseable
 
         final Aeron aeron = aeronArchive.context().aeron();
 
-        publication = aeron.addExclusivePublication(receiverChannel(), receiverStreamId());
+        publication = aeron.addExclusivePublication(receiveChannel(), receiveStreamId());
 
         final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
 
-        final String replayChannel = senderChannel();
-        final int replayStreamId = senderStreamId();
+        final String replayChannel = sendChannel();
+        final int replayStreamId = sendStreamId();
         replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);

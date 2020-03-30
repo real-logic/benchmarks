@@ -43,10 +43,10 @@ import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 final class AeronUtil
 {
-    static final String SENDER_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.sender.channel";
-    static final String SENDER_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.sender.streamId";
-    static final String RECEIVER_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.receiver.channel";
-    static final String RECEIVER_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.receiver.streamId";
+    static final String SEND_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.send.channel";
+    static final String SEND_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.send.streamId";
+    static final String RECEIVE_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.receive.channel";
+    static final String RECEIVE_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.receive.streamId";
     static final String ARCHIVE_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.channel";
     static final String ARCHIVE_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.streamId";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME = "aeron.benchmarks.rtt.aeron.embeddedMediaDriver";
@@ -56,24 +56,24 @@ final class AeronUtil
     {
     }
 
-    static String senderChannel()
+    static String sendChannel()
     {
-        return getProperty(SENDER_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:33333");
+        return getProperty(SEND_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:33333");
     }
 
-    static int senderStreamId()
+    static int sendStreamId()
     {
-        return getInteger(SENDER_STREAM_ID_PROP_NAME, 1_000_000_000);
+        return getInteger(SEND_STREAM_ID_PROP_NAME, 1_000_000_000);
     }
 
-    static String receiverChannel()
+    static String receiveChannel()
     {
-        return getProperty(RECEIVER_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:33334");
+        return getProperty(RECEIVE_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:33334");
     }
 
-    static int receiverStreamId()
+    static int receiveStreamId()
     {
-        return getInteger(RECEIVER_STREAM_ID_PROP_NAME, 1_000_000_001);
+        return getInteger(RECEIVE_STREAM_ID_PROP_NAME, 1_000_000_001);
     }
 
     static String archiveChannel()

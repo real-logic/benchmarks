@@ -84,7 +84,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
 
         awaitRecordingStart(aeron, publicationSessionId);
 
-        this.subscription = aeron.addSubscription(receiverChannel(), receiverStreamId());
+        this.subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
 
         while (!subscription.isConnected() || !publication.isConnected())
         {

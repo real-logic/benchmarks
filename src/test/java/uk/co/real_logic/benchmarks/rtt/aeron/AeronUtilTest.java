@@ -30,10 +30,10 @@ class AeronUtilTest
     @Test
     void defaultConfigurationValues()
     {
-        assertEquals("aeron:udp?endpoint=localhost:33333", senderChannel());
-        assertEquals(1_000_000_000, senderStreamId());
-        assertEquals("aeron:udp?endpoint=localhost:33334", receiverChannel());
-        assertEquals(1_000_000_001, receiverStreamId());
+        assertEquals("aeron:udp?endpoint=localhost:33333", sendChannel());
+        assertEquals(1_000_000_000, sendStreamId());
+        assertEquals("aeron:udp?endpoint=localhost:33334", receiveChannel());
+        assertEquals(1_000_000_001, receiveStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_000_002, archiveStreamId());
         assertFalse(embeddedMediaDriver());
@@ -52,29 +52,29 @@ class AeronUtilTest
         final boolean embeddedMediaDriver = true;
         final int frameCountLimit = 111;
 
-        setProperty(SENDER_CHANNEL_PROP_NAME, senderChannel);
-        setProperty(SENDER_STREAM_ID_PROP_NAME, valueOf(senderStreamId));
-        setProperty(RECEIVER_CHANNEL_PROP_NAME, receiverChannel);
-        setProperty(RECEIVER_STREAM_ID_PROP_NAME, valueOf(receiverStreamId));
+        setProperty(SEND_CHANNEL_PROP_NAME, senderChannel);
+        setProperty(SEND_STREAM_ID_PROP_NAME, valueOf(senderStreamId));
+        setProperty(RECEIVE_CHANNEL_PROP_NAME, receiverChannel);
+        setProperty(RECEIVE_STREAM_ID_PROP_NAME, valueOf(receiverStreamId));
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, archiveChannel);
         setProperty(ARCHIVE_STREAM_ID_PROP_NAME, valueOf(archiveStreamId));
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
         setProperty(FRAME_COUNT_LIMIT_PROP_NAME, valueOf(frameCountLimit));
         try
         {
-            assertEquals(senderChannel, senderChannel());
-            assertEquals(senderStreamId, senderStreamId());
-            assertEquals(receiverChannel, receiverChannel());
-            assertEquals(receiverStreamId, receiverStreamId());
+            assertEquals(senderChannel, sendChannel());
+            assertEquals(senderStreamId, sendStreamId());
+            assertEquals(receiverChannel, receiveChannel());
+            assertEquals(receiverStreamId, receiveStreamId());
             assertEquals(embeddedMediaDriver, embeddedMediaDriver());
             assertEquals(frameCountLimit, frameCountLimit());
         }
         finally
         {
-            clearProperty(SENDER_CHANNEL_PROP_NAME);
-            clearProperty(SENDER_STREAM_ID_PROP_NAME);
-            clearProperty(RECEIVER_CHANNEL_PROP_NAME);
-            clearProperty(RECEIVER_STREAM_ID_PROP_NAME);
+            clearProperty(SEND_CHANNEL_PROP_NAME);
+            clearProperty(SEND_STREAM_ID_PROP_NAME);
+            clearProperty(RECEIVE_CHANNEL_PROP_NAME);
+            clearProperty(RECEIVE_STREAM_ID_PROP_NAME);
             clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
             clearProperty(ARCHIVE_STREAM_ID_PROP_NAME);
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
