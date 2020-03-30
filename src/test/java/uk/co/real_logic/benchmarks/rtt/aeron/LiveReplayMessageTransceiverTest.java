@@ -81,7 +81,7 @@ class LiveReplayMessageTransceiverTest
         messageTransceiver.init(configuration);
         try
         {
-            Thread.currentThread().setName("live-replay-message-transceiver");
+            Thread.currentThread().setName("message-transceiver");
             int sent = 0;
             int received = 0;
             long timestamp = 1_000;

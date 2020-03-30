@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.driver.MediaDriver;
 import org.agrona.LangUtil;
 import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.Test;
@@ -25,37 +26,40 @@ import uk.co.real_logic.benchmarks.rtt.Configuration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.LongStream;
 
 import static io.aeron.archive.client.AeronArchive.connect;
 import static java.lang.Long.MIN_VALUE;
+import static java.util.stream.LongStream.range;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
 
-class ArchiveMessageTransceiverTest
+class LiveRecordingMessageTransceiverTest
 {
     @Test
     void test() throws Exception
     {
+
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messageTransceiverClass(ArchiveMessageTransceiver.class)
+            .messageTransceiverClass(LiveRecordingMessageTransceiver.class)
             .build();
 
-        final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver(false);
+        final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver(true);
+        final MediaDriver mediaDriver = archivingMediaDriver.mediaDriver();
         final AeronArchive aeronArchive = connect();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);
 
-        final Thread archiveNode = new Thread(
+
+        final Thread echoNode = new Thread(
             () ->
             {
                 publisherStarted.countDown();
 
-                try (LiveReplayNode node =
-                    new LiveReplayNode(running, archivingMediaDriver.mediaDriver(), aeronArchive, false))
+                try (EchoNode node =
+                    new EchoNode(running, mediaDriver, aeronArchive.context().aeron(), false))
                 {
                     node.run();
                 }
@@ -64,12 +68,12 @@ class ArchiveMessageTransceiverTest
                     error.set(t);
                 }
             });
-        archiveNode.setName("live-replay-node");
-        archiveNode.setDaemon(true);
-        archiveNode.start();
+        echoNode.setName("echo-node");
+        echoNode.setDaemon(true);
+        echoNode.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, MIN_VALUE);
-        final ArchiveMessageTransceiver messageTransceiver = new ArchiveMessageTransceiver(
+        final LiveRecordingMessageTransceiver messageTransceiver = new LiveRecordingMessageTransceiver(
             archivingMediaDriver,
             aeronArchive,
             true,
@@ -104,10 +108,10 @@ class ArchiveMessageTransceiverTest
         finally
         {
             running.set(false);
-            archiveNode.join();
+            echoNode.join();
             messageTransceiver.destroy();
         }
 
-        assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
+        assertArrayEquals(range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
     }
 }

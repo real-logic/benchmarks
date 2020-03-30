@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.Publication.*;
 import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
+import static io.aeron.archive.status.RecordingPos.getRecordingId;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
@@ -122,7 +123,7 @@ final class AeronUtil
             archiveCtx);
     }
 
-    static void awaitRecordingStart(final Aeron aeron, final int publicationSessionId)
+    static long awaitRecordingStart(final Aeron aeron, final int publicationSessionId)
     {
         final CountersReader counters = aeron.countersReader();
         int counterId;
@@ -131,6 +132,8 @@ final class AeronUtil
             counterId = findCounterIdBySession(counters, publicationSessionId);
         }
         while (NULL_COUNTER_ID == counterId);
+
+        return getRecordingId(counters, counterId);
     }
 
     static long findLastRecordingId(
