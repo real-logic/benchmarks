@@ -61,6 +61,12 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         test(1_000_000, MIN_MESSAGE_LENGTH);
     }
 
+    @Test
+    void severalBigMessages() throws Exception
+    {
+        test(50, 1024 * 1024);
+    }
+
     private void test(final int messages, final int messageLength) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()

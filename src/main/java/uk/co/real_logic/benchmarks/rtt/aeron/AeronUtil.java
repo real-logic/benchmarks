@@ -15,17 +15,13 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.Aeron;
-import io.aeron.ExclusivePublication;
-import io.aeron.Image;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -172,7 +168,7 @@ final class AeronUtil
     static void publishLoop(
         final ExclusivePublication publication, final Subscription subscription, final AtomicBoolean running)
     {
-        final FragmentHandler dataHandler =
+        final FragmentAssembler dataHandler = new FragmentAssembler(
             (buffer, offset, length, header) ->
             {
                 long result;
@@ -180,7 +176,7 @@ final class AeronUtil
                 {
                     checkPublicationResult(result);
                 }
-            };
+            });
 
         final Image image = subscription.imageAtIndex(0);
         final int frameCountLimit = frameCountLimit();
