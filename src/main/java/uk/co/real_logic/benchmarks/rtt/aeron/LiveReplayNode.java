@@ -35,7 +35,7 @@ import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
  * Remote node which subscribes to the replay channel of the archive and send replayed messages to the sender.
  * Counterpart for the {@link ArchiveMessageTransceiver}.
  */
-public final class LiveReplayNode implements AutoCloseable
+public final class LiveReplayNode implements AutoCloseable, Runnable
 {
     private final ExclusivePublication publication;
     private final Subscription subscription;

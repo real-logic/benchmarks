@@ -31,7 +31,7 @@ import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 /**
  * Remote node which echoes original messages back to the sender.
  */
-public final class EchoNode implements AutoCloseable
+public final class EchoNode implements AutoCloseable, Runnable
 {
     private final ExclusivePublication publication;
     private final Subscription subscription;

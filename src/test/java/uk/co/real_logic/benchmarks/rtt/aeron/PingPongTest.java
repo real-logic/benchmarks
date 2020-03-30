@@ -17,119 +17,38 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
-import org.agrona.LangUtil;
-import org.agrona.collections.LongArrayList;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import uk.co.real_logic.benchmarks.rtt.Configuration;
+import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.LongStream;
 
 import static io.aeron.Aeron.connect;
-import static java.lang.System.clearProperty;
-import static java.lang.System.setProperty;
-import static org.agrona.CloseHelper.closeAll;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
 
-class PingPongTest
+class PingPongTest extends AbstractTest<MediaDriver, Aeron, PlainMessageTransceiver, EchoNode>
 {
-    @BeforeAll
-    static void before()
+    protected EchoNode createNode(final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron)
     {
-        setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
+        return new EchoNode(running, mediaDriver, aeron, false);
     }
 
-    @AfterAll
-    static void after()
+    protected MediaDriver createDriver()
     {
-        clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
+        return launchEmbeddedMediaDriverIfConfigured();
     }
 
-    @Test
-    void test() throws Exception
+    protected Aeron connectToDriver()
     {
-        final int messages = 1_000_000;
-        final Configuration configuration = new Configuration.Builder()
-            .numberOfMessages(messages)
-            .messageTransceiverClass(PlainMessageTransceiver.class)
-            .build();
+        return connect();
+    }
 
-        final MediaDriver mediaDriver = launchEmbeddedMediaDriverIfConfigured();
-        final Aeron aeron = connect();
-        final AtomicBoolean running = new AtomicBoolean(true);
-        final AtomicReference<Throwable> error = new AtomicReference<>();
-        final CountDownLatch publisherStarted = new CountDownLatch(1);
+    protected Class<PlainMessageTransceiver> messageTransceiverClass()
+    {
+        return PlainMessageTransceiver.class;
+    }
 
-        final Thread echoNode = new Thread(
-            () ->
-            {
-                publisherStarted.countDown();
-
-                try (EchoNode node = new EchoNode(running, mediaDriver, aeron, false))
-                {
-                    node.run();
-                }
-                catch (final Throwable t)
-                {
-                    error.set(t);
-                }
-            });
-        echoNode.setName("echo-node");
-        echoNode.setDaemon(true);
-        echoNode.start();
-
-        final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final PlainMessageTransceiver messageTransceiver = new PlainMessageTransceiver(
-            mediaDriver,
-            aeron,
-            false,
-            timestamp -> timestamps.addLong(timestamp));
-
-        publisherStarted.await();
-
-        messageTransceiver.init(configuration);
-        try
-        {
-            Thread.currentThread().setName("message-transceiver");
-            int sent = 0;
-            int received = 0;
-            long timestamp = 1_000;
-            while (sent < messages || received < messages)
-            {
-                if (sent < messages && messageTransceiver.send(1, configuration.messageLength(), timestamp) == 1)
-                {
-                    sent++;
-                    timestamp++;
-                }
-                if (received < messages)
-                {
-                    received += messageTransceiver.receive();
-                }
-                if (null != error.get())
-                {
-                    LangUtil.rethrowUnchecked(error.get());
-                }
-            }
-        }
-        finally
-        {
-            running.set(false);
-            echoNode.join();
-            messageTransceiver.destroy();
-            closeAll(aeron, mediaDriver);
-            mediaDriver.context().deleteAeronDirectory();
-        }
-
-        if (null != error.get())
-        {
-            LangUtil.rethrowUnchecked(error.get());
-        }
-        assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
+    protected PlainMessageTransceiver createMessageTransceiver(
+        final MediaDriver mediaDriver, final Aeron aeron, final MessageRecorder messageRecorder)
+    {
+        return new PlainMessageTransceiver(mediaDriver, aeron, true, messageRecorder);
     }
 }

@@ -24,19 +24,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
 
-class LiveRecordingTest extends
-    AbstractTest<ArchivingMediaDriver, AeronArchive, LiveRecordingMessageTransceiver, EchoNode>
+class LiveReplayLocalArchiveTest extends
+    AbstractTest<ArchivingMediaDriver, AeronArchive, ArchiveMessageTransceiver, LiveReplayNode>
 {
-
-    protected EchoNode createNode(
+    protected LiveReplayNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {
-        return new EchoNode(running, archivingMediaDriver.mediaDriver(), aeronArchive.context().aeron(), false);
+        return new LiveReplayNode(running, archivingMediaDriver.mediaDriver(), aeronArchive, false);
     }
 
     protected ArchivingMediaDriver createDriver()
     {
-        return launchArchivingMediaDriver(true);
+        return launchArchivingMediaDriver(false);
     }
 
     protected AeronArchive connectToDriver()
@@ -44,16 +43,16 @@ class LiveRecordingTest extends
         return connect();
     }
 
-    protected Class<LiveRecordingMessageTransceiver> messageTransceiverClass()
+    protected Class<ArchiveMessageTransceiver> messageTransceiverClass()
     {
-        return LiveRecordingMessageTransceiver.class;
+        return ArchiveMessageTransceiver.class;
     }
 
-    protected LiveRecordingMessageTransceiver createMessageTransceiver(
+    protected ArchiveMessageTransceiver createMessageTransceiver(
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
         final MessageRecorder messageRecorder)
     {
-        return new LiveRecordingMessageTransceiver(archivingMediaDriver, aeronArchive, true, messageRecorder);
+        return new ArchiveMessageTransceiver(archivingMediaDriver, aeronArchive, true, messageRecorder);
     }
 }

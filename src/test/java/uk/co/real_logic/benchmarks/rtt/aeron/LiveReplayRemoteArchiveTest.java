@@ -24,19 +24,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
 
-class LiveRecordingTest extends
-    AbstractTest<ArchivingMediaDriver, AeronArchive, LiveRecordingMessageTransceiver, EchoNode>
+class LiveReplayRemoteArchiveTest extends
+    AbstractTest<ArchivingMediaDriver, AeronArchive, LiveReplayMessageTransceiver, ArchiveNode>
 {
-
-    protected EchoNode createNode(
+    protected ArchiveNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {
-        return new EchoNode(running, archivingMediaDriver.mediaDriver(), aeronArchive.context().aeron(), false);
+        return new ArchiveNode(running, archivingMediaDriver, aeronArchive, false);
     }
 
     protected ArchivingMediaDriver createDriver()
     {
-        return launchArchivingMediaDriver(true);
+        return launchArchivingMediaDriver(false);
     }
 
     protected AeronArchive connectToDriver()
@@ -44,16 +43,20 @@ class LiveRecordingTest extends
         return connect();
     }
 
-    protected Class<LiveRecordingMessageTransceiver> messageTransceiverClass()
+    protected Class<LiveReplayMessageTransceiver> messageTransceiverClass()
     {
-        return LiveRecordingMessageTransceiver.class;
+        return LiveReplayMessageTransceiver.class;
     }
 
-    protected LiveRecordingMessageTransceiver createMessageTransceiver(
+    protected LiveReplayMessageTransceiver createMessageTransceiver(
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
         final MessageRecorder messageRecorder)
     {
-        return new LiveRecordingMessageTransceiver(archivingMediaDriver, aeronArchive, true, messageRecorder);
+        return new LiveReplayMessageTransceiver(
+            archivingMediaDriver.mediaDriver(),
+            aeronArchive,
+            false,
+            messageRecorder);
     }
 }

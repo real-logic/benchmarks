@@ -16,47 +16,71 @@
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.archive.ArchivingMediaDriver;
-import io.aeron.archive.client.AeronArchive;
-import org.agrona.CloseHelper;
+import io.aeron.driver.MediaDriver;
 import org.agrona.LangUtil;
 import org.agrona.collections.LongArrayList;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
+import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
+import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
-import static io.aeron.archive.client.AeronArchive.connect;
-import static java.lang.Long.MIN_VALUE;
+import static java.lang.System.clearProperty;
+import static java.lang.System.setProperty;
+import static org.agrona.CloseHelper.closeAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
+import static uk.co.real_logic.benchmarks.rtt.Configuration.MIN_MESSAGE_LENGTH;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
-class LiveReplayFromRemoteArchiveTest
+abstract class AbstractTest<DRIVER extends AutoCloseable,
+    CLIENT extends AutoCloseable,
+    MESSAGE_TRANSCEIVER extends MessageTransceiver,
+    NODE extends AutoCloseable & Runnable>
 {
-    @Test
-    void test() throws Exception
+    @BeforeEach
+    void before()
     {
-        final int messages = 1_000_000;
+        setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
+    }
+
+    @AfterEach
+    void after()
+    {
+        clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
+    }
+
+    @Test
+    void lotsOfSmallMessages() throws Exception
+    {
+        test(1_000_000, MIN_MESSAGE_LENGTH);
+    }
+
+    private void test(final int messages, final int messageLength) throws Exception
+    {
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messageTransceiverClass(LiveReplayMessageTransceiver.class)
+            .messageLength(messageLength)
+            .messageTransceiverClass(messageTransceiverClass())
             .build();
 
-        final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver(false);
-        final AeronArchive aeronArchive = connect();
+        final DRIVER driver = createDriver();
+        final CLIENT client = connectToDriver();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);
 
-        final Thread archiveNode = new Thread(
+        final Thread nodeThread = new Thread(
             () ->
             {
                 publisherStarted.countDown();
 
-                try (ArchiveNode node =
-                    new ArchiveNode(running, archivingMediaDriver, aeronArchive, false))
+                try (NODE node = createNode(running, driver, client))
                 {
                     node.run();
                 }
@@ -65,15 +89,14 @@ class LiveReplayFromRemoteArchiveTest
                     error.set(t);
                 }
             });
-        archiveNode.setName("archive-node");
-        archiveNode.setDaemon(true);
-        archiveNode.start();
+        nodeThread.setName("remote-node");
+        nodeThread.setDaemon(true);
+        nodeThread.start();
 
-        final LongArrayList timestamps = new LongArrayList(messages, MIN_VALUE);
-        final LiveReplayMessageTransceiver messageTransceiver = new LiveReplayMessageTransceiver(
-            archivingMediaDriver.mediaDriver(),
-            aeronArchive,
-            false,
+        final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
+        final MessageTransceiver messageTransceiver = createMessageTransceiver(
+            driver,
+            client,
             timestamp -> timestamps.addLong(timestamp));
 
         publisherStarted.await();
@@ -105,13 +128,36 @@ class LiveReplayFromRemoteArchiveTest
         finally
         {
             running.set(false);
-            archiveNode.join();
+            nodeThread.join();
             messageTransceiver.destroy();
-            CloseHelper.closeAll(aeronArchive, archivingMediaDriver);
-            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            archivingMediaDriver.archive().context().deleteDirectory();
+            closeAll(client, driver);
+            if (driver instanceof MediaDriver)
+            {
+                ((MediaDriver)driver).context().deleteAeronDirectory();
+            }
+            else
+            {
+                final ArchivingMediaDriver archivingMediaDriver = (ArchivingMediaDriver)driver;
+                archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
+                archivingMediaDriver.archive().context().deleteDirectory();
+            }
         }
 
+        if (null != error.get())
+        {
+            LangUtil.rethrowUnchecked(error.get());
+        }
         assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
     }
+
+    abstract NODE createNode(AtomicBoolean running, DRIVER driver, CLIENT client);
+
+    abstract DRIVER createDriver();
+
+    abstract CLIENT connectToDriver();
+
+    abstract Class<MESSAGE_TRANSCEIVER> messageTransceiverClass();
+
+    abstract MESSAGE_TRANSCEIVER createMessageTransceiver(
+        DRIVER driver, CLIENT client, MessageRecorder messageRecorder);
 }
