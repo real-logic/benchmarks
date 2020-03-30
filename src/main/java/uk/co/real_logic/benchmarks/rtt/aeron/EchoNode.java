@@ -17,10 +17,8 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
-import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 
@@ -93,31 +91,6 @@ public final class EchoNode implements AutoCloseable
         try (EchoNode server = new EchoNode(running))
         {
             server.run();
-        }
-    }
-
-    static void publishLoop(
-        final ExclusivePublication publication, final Subscription subscription, final AtomicBoolean running)
-    {
-        final FragmentHandler dataHandler =
-            (buffer, offset, length, header) ->
-            {
-                long result;
-                while ((result = publication.offer(buffer, offset, length)) < 0L)
-                {
-                    checkPublicationResult(result);
-                }
-            };
-
-        final Image image = subscription.imageAtIndex(0);
-        final int frameCountLimit = frameCountLimit();
-        while (running.get())
-        {
-            final int fragments = image.poll(dataHandler, frameCountLimit);
-            if (0 == fragments && image.isClosed())
-            {
-                throw new IllegalStateException("image closed");
-            }
         }
     }
 }

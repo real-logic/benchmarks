@@ -18,8 +18,8 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
-import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.driver.MediaDriver;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 
@@ -27,57 +27,56 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
-import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static java.lang.Long.MAX_VALUE;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
 /**
- * Remote node which archives received messages and replays persisted messages back to the sender.
+ * Remote node which subscribes to the replay channel of the archive and send replayed messages to the sender.
  */
-public final class ArchiveNode implements AutoCloseable
+public final class LiveReplayNode implements AutoCloseable
 {
-    private final AtomicBoolean running;
-    private final ArchivingMediaDriver archivingMediaDriver;
-    private final AeronArchive aeronArchive;
-    private final boolean ownsArchiveClient;
     private final ExclusivePublication publication;
     private final Subscription subscription;
-    private final long recordingSubscriptionId;
+    private final AtomicBoolean running;
+    private final MediaDriver mediaDriver;
+    private final AeronArchive aeronArchive;
+    private final boolean ownsArchiveClient;
+    private final long replaySessionId;
 
-    ArchiveNode(final AtomicBoolean running)
+    LiveReplayNode(final AtomicBoolean running)
     {
-        this(running, launchArchivingMediaDriver(false), connect(), true);
+        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true);
     }
 
-    ArchiveNode(
+    LiveReplayNode(
         final AtomicBoolean running,
-        final ArchivingMediaDriver archivingMediaDriver,
+        final MediaDriver mediaDriver,
         final AeronArchive aeronArchive,
         final boolean ownsArchiveClient)
     {
         this.running = running;
-        this.archivingMediaDriver = archivingMediaDriver;
+        this.mediaDriver = mediaDriver;
         this.aeronArchive = aeronArchive;
         this.ownsArchiveClient = ownsArchiveClient;
 
         final Aeron aeron = aeronArchive.context().aeron();
 
-        subscription = aeron.addSubscription(senderChannel(), senderStreamId());
+        publication = aeron.addExclusivePublication(receiverChannel(), receiverStreamId());
 
-        final String archiveChannel = archiveChannel();
-        final int archiveStreamId = archiveStreamId();
-        publication = aeron.addExclusivePublication(archiveChannel, archiveStreamId);
+        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
 
-        final int publicationSessionId = publication.sessionId();
-        final String channel = addSessionId(archiveChannel, publicationSessionId);
-        recordingSubscriptionId = aeronArchive.startRecording(channel, archiveStreamId, LOCAL);
+        final String replayChannel = senderChannel();
+        final int replayStreamId = senderStreamId();
+        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
+
+        final String channel = addSessionId(replayChannel, (int)replaySessionId);
+        subscription = aeron.addSubscription(channel, replayStreamId);
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
             Thread.yield();
         }
-
-        awaitRecordingStart(aeron, publicationSessionId);
     }
 
     public void run()
@@ -85,18 +84,16 @@ public final class ArchiveNode implements AutoCloseable
         publishLoop(publication, subscription, running);
     }
 
-
     public void close()
     {
-        aeronArchive.stopRecording(recordingSubscriptionId);
+        aeronArchive.stopReplay(replaySessionId);
 
-        closeAll(publication, subscription);
+        closeAll(subscription, publication);
 
         if (ownsArchiveClient)
         {
-            closeAll(aeronArchive, archivingMediaDriver);
-            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            archivingMediaDriver.archive().context().deleteDirectory();
+            closeAll(aeronArchive, mediaDriver);
+            mediaDriver.context().deleteAeronDirectory();
         }
     }
 
@@ -109,9 +106,10 @@ public final class ArchiveNode implements AutoCloseable
         // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
 
-        try (ArchiveNode server = new ArchiveNode(running))
+        try (LiveReplayNode server = new LiveReplayNode(running))
         {
             server.run();
         }
     }
+
 }

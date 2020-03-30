@@ -90,6 +90,7 @@ public final class PlainMessageTransceiver extends MessageTransceiver
         if (ownsAeronClient)
         {
             closeAll(aeron, mediaDriver);
+            mediaDriver.context().deleteAeronDirectory();
         }
     }
 
@@ -110,25 +111,4 @@ public final class PlainMessageTransceiver extends MessageTransceiver
         return messagesReceived;
     }
 
-    static int sendMessages(
-        final ExclusivePublication publication,
-        final UnsafeBuffer offerBuffer,
-        final int numberOfMessages,
-        final int length,
-        final long timestamp)
-    {
-        int count = 0;
-        for (int i = 0; i < numberOfMessages; i++)
-        {
-            offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
-            final long result = publication.offer(offerBuffer, 0, length);
-            if (result < 0)
-            {
-                checkPublicationResult(result);
-                break;
-            }
-            count++;
-        }
-        return count;
-    }
 }

@@ -311,19 +311,19 @@ class ConfigurationTest
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () -> fromSystemProperties());
 
-        assertEquals("Property '" + MESSAGE_PUMP_PROP_NAME + "' is required!", ex.getMessage());
+        assertEquals("Property '" + MESSAGE_TRANSCEIVER_PROP_NAME + "' is required!", ex.getMessage());
     }
 
     @Test
     void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessageTransceiverHasInvalidValue()
     {
         System.setProperty(MESSAGES_PROP_NAME, "20");
-        System.setProperty(MESSAGE_PUMP_PROP_NAME, Integer.class.getName());
+        System.setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, Integer.class.getName());
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
             () -> fromSystemProperties());
 
-        assertEquals("Invalid class value for property '" + MESSAGE_PUMP_PROP_NAME +
+        assertEquals("Invalid class value for property '" + MESSAGE_TRANSCEIVER_PROP_NAME +
             "', cause: class java.lang.Integer", ex.getMessage());
     }
 
@@ -331,7 +331,7 @@ class ConfigurationTest
     void fromSystemPropertiesDefaults()
     {
         System.setProperty(MESSAGES_PROP_NAME, "42");
-        System.setProperty(MESSAGE_PUMP_PROP_NAME, InMemoryMessageTransceiver.class.getName());
+        System.setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
 
         final Configuration configuration = fromSystemProperties();
 
@@ -355,7 +355,7 @@ class ConfigurationTest
         System.setProperty(MESSAGES_PROP_NAME, "200");
         System.setProperty(BATCH_SIZE_PROP_NAME, "3");
         System.setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
-        System.setProperty(MESSAGE_PUMP_PROP_NAME, InMemoryMessageTransceiver.class.getName());
+        System.setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
         System.setProperty(SENDER_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
         System.setProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME, NoOpIdleStrategy.class.getName());
 
@@ -381,7 +381,7 @@ class ConfigurationTest
             MESSAGES_PROP_NAME,
             BATCH_SIZE_PROP_NAME,
             MESSAGE_LENGTH_PROP_NAME,
-            MESSAGE_PUMP_PROP_NAME,
+            MESSAGE_TRANSCEIVER_PROP_NAME,
             SENDER_IDLE_STRATEGY_PROP_NAME,
             RECEIVER_IDLE_STRATEGY_PROP_NAME
         ).forEach(System::clearProperty);

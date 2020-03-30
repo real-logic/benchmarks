@@ -15,16 +15,31 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
+import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
+import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.Publication.*;
+import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 final class AeronUtil
 {
@@ -107,7 +122,98 @@ final class AeronUtil
             archiveCtx);
     }
 
-    static void checkPublicationResult(final long result)
+    static void awaitRecordingStart(final Aeron aeron, final int publicationSessionId)
+    {
+        final CountersReader counters = aeron.countersReader();
+        int counterId;
+        do
+        {
+            counterId = findCounterIdBySession(counters, publicationSessionId);
+        }
+        while (NULL_COUNTER_ID == counterId);
+    }
+
+    static long findLastRecordingId(
+        final AeronArchive aeronArchive, final String recordingChannel, final int recordingStreamId)
+    {
+        final MutableLong lastRecordingId = new MutableLong();
+
+        final RecordingDescriptorConsumer consumer =
+            (controlSessionId,
+            correlationId,
+            recordingId,
+            startTimestamp,
+            stopTimestamp,
+            startPosition,
+            stopPosition,
+            initialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity) -> lastRecordingId.set(recordingId);
+
+        int foundCount;
+        do
+        {
+            foundCount = aeronArchive.listRecordingsForUri(0, 1, recordingChannel, recordingStreamId, consumer);
+        }
+        while (0 == foundCount);
+
+        return lastRecordingId.get();
+    }
+
+    static void publishLoop(
+        final ExclusivePublication publication, final Subscription subscription, final AtomicBoolean running)
+    {
+        final FragmentHandler dataHandler =
+            (buffer, offset, length, header) ->
+            {
+                long result;
+                while ((result = publication.offer(buffer, offset, length)) < 0L)
+                {
+                    checkPublicationResult(result);
+                }
+            };
+
+        final Image image = subscription.imageAtIndex(0);
+        final int frameCountLimit = frameCountLimit();
+        while (running.get())
+        {
+            final int fragments = image.poll(dataHandler, frameCountLimit);
+            if (0 == fragments && image.isClosed())
+            {
+                throw new IllegalStateException("image closed");
+            }
+        }
+    }
+
+    static int sendMessages(
+        final ExclusivePublication publication,
+        final UnsafeBuffer offerBuffer,
+        final int numberOfMessages,
+        final int length,
+        final long timestamp)
+    {
+        int count = 0;
+        for (int i = 0; i < numberOfMessages; i++)
+        {
+            offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
+            final long result = publication.offer(offerBuffer, 0, length);
+            if (result < 0)
+            {
+                checkPublicationResult(result);
+                break;
+            }
+            count++;
+        }
+        return count;
+    }
+
+    private static void checkPublicationResult(final long result)
     {
         if (result == CLOSED ||
             result == NOT_CONNECTED ||

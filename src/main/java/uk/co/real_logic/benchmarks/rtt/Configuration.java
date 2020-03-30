@@ -135,7 +135,7 @@ public final class Configuration
      * Name of the required system property to configure the {@link MessageTransceiver} class (i.e. system under test) to be
      * used for the benchmark. Must be a fully qualified class name.
      */
-    public static final String MESSAGE_PUMP_PROP_NAME = "aeron.benchmarks.rtt.messageTransceiver";
+    public static final String MESSAGE_TRANSCEIVER_PROP_NAME = "aeron.benchmarks.rtt.messageTransceiver";
 
     private final int warmUpIterations;
     private final int warmUpNumberOfMessages;
@@ -458,7 +458,7 @@ public final class Configuration
 
         builder.numberOfMessages(intProperty(MESSAGES_PROP_NAME));
 
-        builder.messageTransceiverClass(classProperty(MESSAGE_PUMP_PROP_NAME, MessageTransceiver.class));
+        builder.messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class));
 
         return builder.build();
     }
