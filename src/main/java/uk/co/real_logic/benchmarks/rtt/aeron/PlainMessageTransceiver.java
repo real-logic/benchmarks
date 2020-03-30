@@ -15,38 +15,21 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
+import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import org.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.benchmarks.rtt.Configuration;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
-import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
 import static io.aeron.Aeron.connect;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
-public final class PlainMessageTransceiver extends MessageTransceiver
+public final class PlainMessageTransceiver extends AbstractMessageTransceiver
 {
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
-    private int frameCountLimit;
-    private ExclusivePublication publication;
-    private UnsafeBuffer offerBuffer;
-
-    private Subscription subscription;
-    private Image image;
-    private int messagesReceived = 0;
-    private final FragmentAssembler dataHandler = new FragmentAssembler(
-        (buffer, offset, length, header) ->
-        {
-            onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN));
-            messagesReceived++;
-        });
 
     public PlainMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -65,50 +48,25 @@ public final class PlainMessageTransceiver extends MessageTransceiver
         this.ownsAeronClient = ownsAeronClient;
     }
 
-    public void init(final Configuration configuration) throws Exception
+    protected ExclusivePublication createPublication()
     {
-        this.publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
+        return aeron.addExclusivePublication(sendChannel(), sendStreamId());
+    }
 
-        this.subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
-
-        while (!subscription.isConnected() || !publication.isConnected())
-        {
-            Thread.yield();
-        }
-
-        offerBuffer = new UnsafeBuffer(
-            allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
-
-        image = subscription.imageAtIndex(0);
-        frameCountLimit = frameCountLimit();
+    protected Subscription createSubscription()
+    {
+        return aeron.addSubscription(receiveChannel(), receiveStreamId());
     }
 
     public void destroy() throws Exception
     {
-        closeAll(publication, subscription);
+        super.destroy();
 
         if (ownsAeronClient)
         {
             closeAll(aeron, mediaDriver);
             mediaDriver.context().deleteAeronDirectory();
         }
-    }
-
-    public int send(final int numberOfMessages, final int length, final long timestamp)
-    {
-        return sendMessages(publication, offerBuffer, numberOfMessages, length, timestamp);
-    }
-
-    public int receive()
-    {
-        messagesReceived = 0;
-        final Image image = this.image;
-        final int fragments = image.poll(dataHandler, frameCountLimit);
-        if (0 == fragments && image.isClosed())
-        {
-            throw new IllegalStateException("image closed unexpectedly");
-        }
-        return messagesReceived;
     }
 
 }

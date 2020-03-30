@@ -15,43 +15,25 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.*;
+import io.aeron.ExclusivePublication;
+import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.driver.MediaDriver;
-import org.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.benchmarks.rtt.Configuration;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
-import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static java.lang.Long.MAX_VALUE;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
-public final class LiveReplayMessageTransceiver extends MessageTransceiver
+public final class LiveReplayMessageTransceiver extends AbstractMessageTransceiver
 {
     private final MediaDriver mediaDriver;
     private final AeronArchive aeronArchive;
     private final boolean ownsArchiveClient;
-    private ExclusivePublication publication;
-    private UnsafeBuffer offerBuffer;
-
     private long replaySessionId;
-    private Subscription subscription;
-    private Image image;
-    private int messagesReceived;
-    private int frameCountLimit;
-    private final FragmentAssembler dataHandler = new FragmentAssembler(
-        (buffer, offset, length, header) ->
-        {
-            onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN));
-            messagesReceived++;
-        });
 
     public LiveReplayMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -70,12 +52,13 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         this.ownsArchiveClient = ownsArchiveClient;
     }
 
-    public void init(final Configuration configuration) throws Exception
+    protected ExclusivePublication createPublication()
     {
-        final Aeron aeron = aeronArchive.context().aeron();
+        return aeronArchive.context().aeron().addExclusivePublication(sendChannel(), sendStreamId());
+    }
 
-        publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
-
+    protected Subscription createSubscription()
+    {
         final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
 
         final String replayChannel = receiveChannel();
@@ -83,18 +66,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
-        subscription = aeron.addSubscription(channel, replayStreamId);
-
-        while (!subscription.isConnected() || !publication.isConnected())
-        {
-            Thread.yield();
-        }
-
-        offerBuffer = new UnsafeBuffer(
-            allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
-
-        image = subscription.imageAtIndex(0);
-        frameCountLimit = frameCountLimit();
+        return aeronArchive.context().aeron().addSubscription(channel, replayStreamId);
     }
 
     public void destroy() throws Exception
@@ -108,30 +80,13 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             System.out.println("WARN: " + ex.toString());
         }
 
-        closeAll(publication, subscription);
+        super.destroy();
 
         if (ownsArchiveClient)
         {
             closeAll(aeronArchive, mediaDriver);
             mediaDriver.context().deleteAeronDirectory();
         }
-    }
-
-    public int send(final int numberOfMessages, final int length, final long timestamp)
-    {
-        return sendMessages(publication, offerBuffer, numberOfMessages, length, timestamp);
-    }
-
-    public int receive()
-    {
-        messagesReceived = 0;
-        final Image image = this.image;
-        final int fragments = image.poll(dataHandler, frameCountLimit);
-        if (0 == fragments && image.isClosed())
-        {
-            throw new IllegalStateException("image closed unexpectedly");
-        }
-        return messagesReceived;
     }
 
 }
