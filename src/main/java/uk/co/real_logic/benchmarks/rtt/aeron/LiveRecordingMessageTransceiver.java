@@ -39,6 +39,10 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
+/**
+ * Implementation of the {@link uk.co.real_logic.benchmarks.rtt.MessageTransceiver} interface for benchmarking
+ * live recording of the remote stream to local archive. Used together with the {@link EchoNode}.
+ */
 public final class LiveRecordingMessageTransceiver extends MessageTransceiver
 {
     private final ArchivingMediaDriver archivingMediaDriver;

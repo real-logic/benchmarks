@@ -28,6 +28,10 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
+/**
+ * Implementation of the {@link uk.co.real_logic.benchmarks.rtt.MessageTransceiver} interface for benchmarking
+ * live replay from local archive to remote node. Used together with the {@link LiveReplayNode}.
+ */
 public final class ArchiveMessageTransceiver extends AbstractMessageTransceiver
 {
     private final ArchivingMediaDriver archivingMediaDriver;

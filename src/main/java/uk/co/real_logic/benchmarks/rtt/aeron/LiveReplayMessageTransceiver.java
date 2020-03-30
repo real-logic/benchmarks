@@ -28,6 +28,10 @@ import static java.lang.Long.MAX_VALUE;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
+/**
+ * Implementation of the {@link uk.co.real_logic.benchmarks.rtt.MessageTransceiver} interface for benchmarking
+ * live replay from remote archive. Used together with the {@link ArchiveNode}.
+ */
 public final class LiveReplayMessageTransceiver extends AbstractMessageTransceiver
 {
     private final MediaDriver mediaDriver;

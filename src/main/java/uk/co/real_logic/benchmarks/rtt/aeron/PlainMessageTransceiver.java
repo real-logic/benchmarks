@@ -25,6 +25,10 @@ import static io.aeron.Aeron.connect;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
+/**
+ * Implementation of the {@link uk.co.real_logic.benchmarks.rtt.MessageTransceiver} interface for benchmarking
+ * round trip time. Used together with the {@link EchoNode}.
+ */
 public final class PlainMessageTransceiver extends AbstractMessageTransceiver
 {
     private final MediaDriver mediaDriver;

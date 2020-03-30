@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ import static java.lang.Long.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
 
-class ArchiveMessageTransceiverTest
+class LiveReplayFromRemoteArchiveTest
 {
     @Test
     void test() throws Exception
@@ -40,7 +41,7 @@ class ArchiveMessageTransceiverTest
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messageTransceiverClass(ArchiveMessageTransceiver.class)
+            .messageTransceiverClass(LiveReplayMessageTransceiver.class)
             .build();
 
         final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver(false);
@@ -54,8 +55,8 @@ class ArchiveMessageTransceiverTest
             {
                 publisherStarted.countDown();
 
-                try (LiveReplayNode node =
-                    new LiveReplayNode(running, archivingMediaDriver.mediaDriver(), aeronArchive, false))
+                try (ArchiveNode node =
+                    new ArchiveNode(running, archivingMediaDriver, aeronArchive, false))
                 {
                     node.run();
                 }
@@ -64,15 +65,15 @@ class ArchiveMessageTransceiverTest
                     error.set(t);
                 }
             });
-        archiveNode.setName("live-replay-node");
+        archiveNode.setName("archive-node");
         archiveNode.setDaemon(true);
         archiveNode.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, MIN_VALUE);
-        final ArchiveMessageTransceiver messageTransceiver = new ArchiveMessageTransceiver(
-            archivingMediaDriver,
+        final LiveReplayMessageTransceiver messageTransceiver = new LiveReplayMessageTransceiver(
+            archivingMediaDriver.mediaDriver(),
             aeronArchive,
-            true,
+            false,
             timestamp -> timestamps.addLong(timestamp));
 
         publisherStarted.await();
@@ -106,6 +107,9 @@ class ArchiveMessageTransceiverTest
             running.set(false);
             archiveNode.join();
             messageTransceiver.destroy();
+            CloseHelper.closeAll(aeronArchive, archivingMediaDriver);
+            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
+            archivingMediaDriver.archive().context().deleteDirectory();
         }
 
         assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());

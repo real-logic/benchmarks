@@ -33,6 +33,7 @@ import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
 /**
  * Remote node which archives received messages and replays persisted messages back to the sender.
+ * Counterpart for the {@link LiveReplayMessageTransceiver}.
  */
 public final class ArchiveNode implements AutoCloseable
 {

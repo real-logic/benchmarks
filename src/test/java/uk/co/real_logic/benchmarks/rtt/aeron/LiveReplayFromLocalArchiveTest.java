@@ -15,12 +15,10 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.Aeron;
-import io.aeron.driver.MediaDriver;
+import io.aeron.archive.ArchivingMediaDriver;
+import io.aeron.archive.client.AeronArchive;
 import org.agrona.LangUtil;
 import org.agrona.collections.LongArrayList;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
 
@@ -29,49 +27,35 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.LongStream;
 
-import static io.aeron.Aeron.connect;
-import static java.lang.System.clearProperty;
-import static java.lang.System.setProperty;
-import static org.agrona.CloseHelper.closeAll;
+import static io.aeron.archive.client.AeronArchive.connect;
+import static java.lang.Long.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
 
-class PlainMessageTransceiverTest
+class LiveReplayFromLocalArchiveTest
 {
-    @BeforeAll
-    static void before()
-    {
-        setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
-    }
-
-    @AfterAll
-    static void after()
-    {
-        clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
-    }
-
     @Test
     void test() throws Exception
     {
         final int messages = 1_000_000;
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
-            .messageTransceiverClass(PlainMessageTransceiver.class)
+            .messageTransceiverClass(ArchiveMessageTransceiver.class)
             .build();
 
-        final MediaDriver mediaDriver = launchEmbeddedMediaDriverIfConfigured();
-        final Aeron aeron = connect();
+        final ArchivingMediaDriver archivingMediaDriver = launchArchivingMediaDriver(false);
+        final AeronArchive aeronArchive = connect();
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final CountDownLatch publisherStarted = new CountDownLatch(1);
 
-        final Thread echoNode = new Thread(
+        final Thread archiveNode = new Thread(
             () ->
             {
                 publisherStarted.countDown();
 
-                try (EchoNode node = new EchoNode(running, mediaDriver, aeron, false))
+                try (LiveReplayNode node =
+                    new LiveReplayNode(running, archivingMediaDriver.mediaDriver(), aeronArchive, false))
                 {
                     node.run();
                 }
@@ -80,15 +64,15 @@ class PlainMessageTransceiverTest
                     error.set(t);
                 }
             });
-        echoNode.setName("echo-node");
-        echoNode.setDaemon(true);
-        echoNode.start();
+        archiveNode.setName("live-replay-node");
+        archiveNode.setDaemon(true);
+        archiveNode.start();
 
-        final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final PlainMessageTransceiver messageTransceiver = new PlainMessageTransceiver(
-            mediaDriver,
-            aeron,
-            false,
+        final LongArrayList timestamps = new LongArrayList(messages, MIN_VALUE);
+        final ArchiveMessageTransceiver messageTransceiver = new ArchiveMessageTransceiver(
+            archivingMediaDriver,
+            aeronArchive,
+            true,
             timestamp -> timestamps.addLong(timestamp));
 
         publisherStarted.await();
@@ -120,16 +104,10 @@ class PlainMessageTransceiverTest
         finally
         {
             running.set(false);
-            echoNode.join();
+            archiveNode.join();
             messageTransceiver.destroy();
-            closeAll(aeron, mediaDriver);
-            mediaDriver.context().deleteAeronDirectory();
         }
 
-        if (null != error.get())
-        {
-            LangUtil.rethrowUnchecked(error.get());
-        }
         assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
     }
 }
