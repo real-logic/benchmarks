@@ -54,10 +54,9 @@ public abstract class AbstractMessageTransceiver extends MessageTransceiver
 
     public void init(final Configuration configuration) throws Exception
     {
-        this.subscription = createSubscription();
-
         this.publication = createPublication();
 
+        this.subscription = createSubscription();
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
