@@ -51,7 +51,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
 
     private ExclusivePublication publication;
     private UnsafeBuffer offerBuffer;
-    private long recordingSubscriptionId;
     private long recordingId;
 
     private int frameCountLimit;
@@ -111,7 +110,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
 
         final int publicationSessionId = publication.sessionId();
         final String channel = addSessionId(sendChannel, publicationSessionId);
-        recordingSubscriptionId = aeronArchive.startRecording(channel, sendStreamId, LOCAL);
+        aeronArchive.startRecording(channel, sendStreamId, LOCAL, true);
 
         recordingEventsSubscription = aeron.addSubscription(context.recordingEventsChannel(), context
             .recordingEventsStreamId());
@@ -163,8 +162,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
 
     public void destroy() throws Exception
     {
-        aeronArchive.stopRecording(recordingSubscriptionId);
-
         closeAll(publication, recordingEventsSubscription, subscription);
 
         if (ownsArchiveClient)

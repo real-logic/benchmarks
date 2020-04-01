@@ -37,7 +37,6 @@ public final class ArchiveMessageTransceiver extends AbstractMessageTransceiver
     private final ArchivingMediaDriver archivingMediaDriver;
     private final AeronArchive aeronArchive;
     private final boolean ownsArchiveClient;
-    private long recordingSubscriptionId;
 
     public ArchiveMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -66,7 +65,7 @@ public final class ArchiveMessageTransceiver extends AbstractMessageTransceiver
 
         final int publicationSessionId = publication.sessionId();
         final String channel = addSessionId(archiveChannel, publicationSessionId);
-        recordingSubscriptionId = aeronArchive.startRecording(channel, archiveStreamId, LOCAL);
+        aeronArchive.startRecording(channel, archiveStreamId, LOCAL, true);
 
         awaitRecordingStart(aeron, publicationSessionId);
         return publication;
@@ -79,8 +78,6 @@ public final class ArchiveMessageTransceiver extends AbstractMessageTransceiver
 
     public void destroy() throws Exception
     {
-        aeronArchive.stopRecording(recordingSubscriptionId);
-
         super.destroy();
 
         if (ownsArchiveClient)
