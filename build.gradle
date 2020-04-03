@@ -17,6 +17,7 @@
 plugins {
     id 'java-library'
     id 'idea'
+    id 'checkstyle'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
     id 'com.github.ben-manes.versions' version '0.28.0'
 }
@@ -28,11 +29,45 @@ repositories {
     mavenCentral()
 }
 
+def agronaVersion = '1.4.1'
+def aeronVersion = '1.27.0'
+def jmhVersion = '1.23'
+def hdrHistogramVersion = '2.1.12'
+def disruptorVersion = '3.4.2'
+def junitVersion = '5.6.1'
+def mockitoVersion = '3.3.3'
+def checkstyleVersion = '8.28'
+
+checkstyle.toolVersion = "${checkstyleVersion}"
+
 dependencies {
-    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.23'
-    implementation 'org.openjdk.jmh:jmh-core:1.23'
-    implementation 'io.aeron:aeron-all:1.27.0'
-    implementation 'com.lmax:disruptor:3.4.2'
+    api "org.agrona:agrona:${agronaVersion}"
+    
+    annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
+    implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
+    implementation "io.aeron:aeron-archive:${aeronVersion}"
+    implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+    implementation "com.lmax:disruptor:${disruptorVersion}"
+
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+}
+
+tasks.withType(JavaCompile) {
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
+    }
+    options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
+    options.fork = true
+    options.forkOptions.javaHome = file("${System.env.JAVA_HOME}")
+    options.encoding = 'UTF-8'
+    options.deprecation = true
+}
+
+test {
+    useJUnitPlatform()
 }
 
 jar.enabled = false

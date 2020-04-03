@@ -122,7 +122,7 @@ public class DisruptorBenchmark
 
         public void onEvent(final Message event, final long sequence, final boolean endOfBatch)
         {
-            int value = event.value;
+            final int value = event.value;
             if (value >= 0)
             {
                 final Queue<Integer> responseQueue = responseQueues[value];
