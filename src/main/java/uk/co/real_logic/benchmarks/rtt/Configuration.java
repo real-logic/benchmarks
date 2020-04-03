@@ -488,7 +488,7 @@ public final class Configuration
                 return klass;
             }
         }
-        catch (final NoSuchMethodException e)
+        catch (final NoSuchMethodException ignore)
         {
         }
         throw new IllegalArgumentException(
