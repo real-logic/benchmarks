@@ -17,8 +17,8 @@ package uk.co.real_logic.benchmarks.rtt;
 
 import org.agrona.AsciiEncoding;
 import org.agrona.AsciiNumberFormatException;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NoOpIdleStrategy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -115,21 +115,20 @@ public final class Configuration
     public static final String MESSAGE_LENGTH_PROP_NAME = "aeron.benchmarks.rtt.messageLength";
 
     /**
-     * Name of the system property to configure the {@link IdleStrategy} for the sender. Must be a fully qualified class
-     * name. Default value is {@link NoOpIdleStrategy}.
+     * Name of the system property to configure the {@link IdleStrategy} to use when sending messages.
+     * Must be a fully qualified class name. Default value is {@link BusySpinIdleStrategy}.
      *
-     * @see #senderIdleStrategy()
+     * @see #sendIdleStrategy()
      */
-    public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.benchmarks.rtt.sender.idleStrategy";
+    public static final String SEND_IDLE_STRATEGY_PROP_NAME = "aeron.benchmarks.rtt.send.idleStrategy";
 
     /**
-     * Name of the system property to configure the {@link IdleStrategy} for the receiver. Must be a fully qualified
-     * class name. Default value is {@link NoOpIdleStrategy}.
+     * Name of the system property to configure the {@link IdleStrategy} to use when receiving messages.
+     * Must be a fully qualified class name. Default value is {@link BusySpinIdleStrategy}.
      *
-     * @see #receiverIdleStrategy()
+     * @see #receiveIdleStrategy()
      */
-    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME =
-        "aeron.benchmarks.rtt.receiver.idle_strategy";
+    public static final String RECEIVE_IDLE_STRATEGY_PROP_NAME = "aeron.benchmarks.rtt.receive.idleStrategy";
 
     /**
      * Name of the required system property to configure the {@link MessageTransceiver} class (i.e. system under test) to be
@@ -144,8 +143,8 @@ public final class Configuration
     private final int batchSize;
     private final int messageLength;
     private final Class<? extends MessageTransceiver> messageTransceiverClass;
-    private final IdleStrategy senderIdleStrategy;
-    private final IdleStrategy receiverIdleStrategy;
+    private final IdleStrategy sendIdleStrategy;
+    private final IdleStrategy receiveIdleStrategy;
 
     private Configuration(final Builder builder)
     {
@@ -157,10 +156,10 @@ public final class Configuration
         this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
         this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
-        this.senderIdleStrategy =
-            requireNonNull(builder.senderIdleStrategy, "Sender IdleStrategy cannot be null");
-        this.receiverIdleStrategy =
-            requireNonNull(builder.receiverIdleStrategy, "Receiver IdleStrategy cannot be null");
+        this.sendIdleStrategy =
+            requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
+        this.receiveIdleStrategy =
+            requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
     }
 
     /**
@@ -246,21 +245,21 @@ public final class Configuration
     /**
      * {@link IdleStrategy} to use when sending messages.
      *
-     * @return sender {@link IdleStrategy}, defaults to {@link NoOpIdleStrategy}.
+     * @return sender {@link IdleStrategy}, defaults to {@link BusySpinIdleStrategy}.
      */
-    public IdleStrategy senderIdleStrategy()
+    public IdleStrategy sendIdleStrategy()
     {
-        return senderIdleStrategy;
+        return sendIdleStrategy;
     }
 
     /**
      * {@link IdleStrategy} to use when receiving messages.
      *
-     * @return receiver {@link IdleStrategy}, defaults to {@link NoOpIdleStrategy}.
+     * @return receiver {@link IdleStrategy}, defaults to {@link BusySpinIdleStrategy}.
      */
-    public IdleStrategy receiverIdleStrategy()
+    public IdleStrategy receiveIdleStrategy()
     {
-        return receiverIdleStrategy;
+        return receiveIdleStrategy;
     }
 
     public String toString()
@@ -273,8 +272,8 @@ public final class Configuration
             "\n    batchSize=" + batchSize +
             "\n    messageLength=" + messageLength +
             "\n    messageTransceiverClass=" + messageTransceiverClass.getName() +
-            "\n    senderIdleStrategy=" + senderIdleStrategy +
-            "\n    receiverIdleStrategy=" + receiverIdleStrategy +
+            "\n    sendIdleStrategy=" + sendIdleStrategy +
+            "\n    receiveIdleStrategy=" + receiveIdleStrategy +
             "\n}";
     }
 
@@ -290,8 +289,8 @@ public final class Configuration
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
         private Class<? extends MessageTransceiver> messageTransceiverClass;
-        private IdleStrategy senderIdleStrategy = NoOpIdleStrategy.INSTANCE;
-        private IdleStrategy receiverIdleStrategy = NoOpIdleStrategy.INSTANCE;
+        private IdleStrategy sendIdleStrategy = BusySpinIdleStrategy.INSTANCE;
+        private IdleStrategy receiveIdleStrategy = BusySpinIdleStrategy.INSTANCE;
 
         /**
          * Set the number of warm up iterations.
@@ -379,26 +378,26 @@ public final class Configuration
         }
 
         /**
-         * Set the {@link IdleStrategy} for the sender.
+         * Set the {@link IdleStrategy} for sending the messages.
          *
-         * @param senderIdleStrategy idle strategy for the sender.
+         * @param sendIdleStrategy idle strategy for the sender.
          * @return this for a fluent API.
          */
-        public Builder senderIdleStrategy(final IdleStrategy senderIdleStrategy)
+        public Builder sendIdleStrategy(final IdleStrategy sendIdleStrategy)
         {
-            this.senderIdleStrategy = senderIdleStrategy;
+            this.sendIdleStrategy = sendIdleStrategy;
             return this;
         }
 
         /**
-         * Set the {@link IdleStrategy} for the receiver.
+         * Set the {@link IdleStrategy} for receiving the messages.
          *
-         * @param receiverIdleStrategy idle strategy for the receiver.
+         * @param receiveIdleStrategy idle strategy for the receiver.
          * @return this for a fluent API.
          */
-        public Builder receiverIdleStrategy(final IdleStrategy receiverIdleStrategy)
+        public Builder receiveIdleStrategy(final IdleStrategy receiveIdleStrategy)
         {
-            this.receiverIdleStrategy = receiverIdleStrategy;
+            this.receiveIdleStrategy = receiveIdleStrategy;
             return this;
         }
 
@@ -446,14 +445,14 @@ public final class Configuration
             builder.messageLength(intProperty(MESSAGE_LENGTH_PROP_NAME));
         }
 
-        if (isPropertyProvided(SENDER_IDLE_STRATEGY_PROP_NAME))
+        if (isPropertyProvided(SEND_IDLE_STRATEGY_PROP_NAME))
         {
-            builder.senderIdleStrategy(idleStrategyProperty(SENDER_IDLE_STRATEGY_PROP_NAME));
+            builder.sendIdleStrategy(idleStrategyProperty(SEND_IDLE_STRATEGY_PROP_NAME));
         }
 
-        if (isPropertyProvided(RECEIVER_IDLE_STRATEGY_PROP_NAME))
+        if (isPropertyProvided(RECEIVE_IDLE_STRATEGY_PROP_NAME))
         {
-            builder.receiverIdleStrategy(idleStrategyProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME));
+            builder.receiveIdleStrategy(idleStrategyProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME));
         }
 
         builder.numberOfMessages(intProperty(MESSAGES_PROP_NAME));

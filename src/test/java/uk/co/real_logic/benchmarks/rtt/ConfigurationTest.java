@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
@@ -186,12 +187,12 @@ class ConfigurationTest
         final Builder builder = new Builder()
             .numberOfMessages(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .senderIdleStrategy(null);
+            .sendIdleStrategy(null);
 
         final NullPointerException ex =
             assertThrows(NullPointerException.class, () -> builder.build());
 
-        assertEquals("Sender IdleStrategy cannot be null", ex.getMessage());
+        assertEquals("Send IdleStrategy cannot be null", ex.getMessage());
     }
 
     @Test
@@ -200,12 +201,12 @@ class ConfigurationTest
         final Builder builder = new Builder()
             .numberOfMessages(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .receiverIdleStrategy(null);
+            .receiveIdleStrategy(null);
 
         final NullPointerException ex =
             assertThrows(NullPointerException.class, () -> builder.build());
 
-        assertEquals("Receiver IdleStrategy cannot be null", ex.getMessage());
+        assertEquals("Receive IdleStrategy cannot be null", ex.getMessage());
     }
 
     @Test
@@ -223,8 +224,8 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
+        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
+        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
     }
 
     @Test
@@ -238,8 +239,8 @@ class ConfigurationTest
             .batchSize(4)
             .messageLength(119)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .senderIdleStrategy(NoOpIdleStrategy.INSTANCE)
-            .receiverIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
+            .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .build();
 
         assertEquals(3, configuration.warmUpIterations());
@@ -249,8 +250,8 @@ class ConfigurationTest
         assertEquals(4, configuration.batchSize());
         assertEquals(119, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
-        assertSame(YieldingIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
+        assertSame(YieldingIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
     }
 
     @Test
@@ -264,8 +265,8 @@ class ConfigurationTest
             .batchSize(2)
             .messageLength(64)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .senderIdleStrategy(NoOpIdleStrategy.INSTANCE)
-            .receiverIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
+            .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .build();
 
         assertEquals("Configuration{" +
@@ -276,8 +277,8 @@ class ConfigurationTest
             "\n    batchSize=2" +
             "\n    messageLength=64" +
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.rtt.InMemoryMessageTransceiver" +
-            "\n    senderIdleStrategy=NoOpIdleStrategy{}" +
-            "\n    receiverIdleStrategy=YieldingIdleStrategy{}" +
+            "\n    sendIdleStrategy=NoOpIdleStrategy{}" +
+            "\n    receiveIdleStrategy=YieldingIdleStrategy{}" +
             "\n}",
             configuration.toString());
     }
@@ -342,8 +343,8 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.senderIdleStrategy());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiverIdleStrategy());
+        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
+        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
     }
 
     @Test
@@ -356,8 +357,8 @@ class ConfigurationTest
         System.setProperty(BATCH_SIZE_PROP_NAME, "3");
         System.setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
         System.setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
-        System.setProperty(SENDER_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
-        System.setProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME, NoOpIdleStrategy.class.getName());
+        System.setProperty(SEND_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
+        System.setProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME, NoOpIdleStrategy.class.getName());
 
         final Configuration configuration = fromSystemProperties();
 
@@ -368,8 +369,8 @@ class ConfigurationTest
         assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertTrue(YieldingIdleStrategy.class.isInstance(configuration.senderIdleStrategy()));
-        assertTrue(NoOpIdleStrategy.class.isInstance(configuration.receiverIdleStrategy()));
+        assertTrue(YieldingIdleStrategy.class.isInstance(configuration.sendIdleStrategy()));
+        assertTrue(NoOpIdleStrategy.class.isInstance(configuration.receiveIdleStrategy()));
     }
 
     private void clearConfigProperties()
@@ -382,8 +383,8 @@ class ConfigurationTest
             BATCH_SIZE_PROP_NAME,
             MESSAGE_LENGTH_PROP_NAME,
             MESSAGE_TRANSCEIVER_PROP_NAME,
-            SENDER_IDLE_STRATEGY_PROP_NAME,
-            RECEIVER_IDLE_STRATEGY_PROP_NAME
+            SEND_IDLE_STRATEGY_PROP_NAME,
+            RECEIVE_IDLE_STRATEGY_PROP_NAME
         ).forEach(System::clearProperty);
     }
 

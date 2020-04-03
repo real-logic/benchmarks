@@ -134,7 +134,7 @@ public final class LoadTestRig
     void receive(final AtomicLong sentMessages)
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
-        final IdleStrategy idleStrategy = configuration.receiverIdleStrategy();
+        final IdleStrategy idleStrategy = configuration.receiveIdleStrategy();
 
         long sent = 0;
         long received = 0;
@@ -167,7 +167,7 @@ public final class LoadTestRig
         final NanoClock clock = this.clock;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
-        final IdleStrategy idleStrategy = configuration.senderIdleStrategy();
+        final IdleStrategy idleStrategy = configuration.sendIdleStrategy();
         final long sendInterval = NANOS_PER_SECOND * burstSize / numberOfMessages;
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
 

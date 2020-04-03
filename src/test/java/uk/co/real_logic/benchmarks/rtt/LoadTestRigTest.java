@@ -43,8 +43,8 @@ class LoadTestRigTest
         .iterations(1)
         .numberOfMessages(1)
         .messageTransceiverClass(InMemoryMessageTransceiver.class)
-        .senderIdleStrategy(senderIdleStrategy)
-        .receiverIdleStrategy(receiverIdleStrategy)
+        .sendIdleStrategy(senderIdleStrategy)
+        .receiveIdleStrategy(receiverIdleStrategy)
         .build();
     private Histogram histogram = mock(Histogram.class);
     private MessageTransceiver messageTransceiver = mock(MessageTransceiver.class);
@@ -130,7 +130,7 @@ class LoadTestRigTest
             .thenThrow(new IllegalStateException("Unexpected call!"));
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
-            .senderIdleStrategy(senderIdleStrategy)
+            .sendIdleStrategy(senderIdleStrategy)
             .batchSize(15)
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -165,7 +165,7 @@ class LoadTestRigTest
         ).thenThrow(new IllegalStateException("Unexpected call!"));
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
-            .senderIdleStrategy(senderIdleStrategy)
+            .sendIdleStrategy(senderIdleStrategy)
             .batchSize(30)
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
