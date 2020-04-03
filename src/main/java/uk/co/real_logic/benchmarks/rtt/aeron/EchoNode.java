@@ -58,7 +58,7 @@ public final class EchoNode implements AutoCloseable, Runnable
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
-            Thread.yield();
+            yieldUninterruptibly();
         }
     }
 

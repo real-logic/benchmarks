@@ -28,8 +28,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.frameCountLimit;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.sendMessages;
+import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
 public abstract class AbstractMessageTransceiver extends MessageTransceiver
 {
@@ -60,7 +59,7 @@ public abstract class AbstractMessageTransceiver extends MessageTransceiver
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
-            Thread.yield();
+            yieldUninterruptibly();
         }
 
         offerBuffer = new UnsafeBuffer(

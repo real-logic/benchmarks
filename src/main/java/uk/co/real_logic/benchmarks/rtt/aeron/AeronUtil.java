@@ -38,6 +38,8 @@ import static io.aeron.archive.status.RecordingPos.getRecordingId;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
+import static java.lang.Thread.currentThread;
+import static java.lang.Thread.yield;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -223,6 +225,15 @@ final class AeronUtil
         for (final String signalName : ShutdownSignalBarrier.SIGNAL_NAMES)
         {
             Signal.handle(new Signal(signalName), terminationHandler);
+        }
+    }
+
+    static void yieldUninterruptibly()
+    {
+        yield();
+        if (currentThread().isInterrupted())
+        {
+            throw new IllegalStateException("Interrupted while yielding...");
         }
     }
 

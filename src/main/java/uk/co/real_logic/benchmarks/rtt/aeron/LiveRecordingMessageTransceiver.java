@@ -152,7 +152,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
 
         while (!recordingEventsSubscription.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
-            Thread.yield();
+            yieldUninterruptibly();
         }
 
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
