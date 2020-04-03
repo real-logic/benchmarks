@@ -15,13 +15,18 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
+import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
@@ -191,21 +196,28 @@ final class AeronUtil
         return lastRecordingId.get();
     }
 
-    static void pipeMessages(final Subscription from, final ExclusivePublication to, final AtomicBoolean running)
+    static void pipeMessages(
+        final Subscription subscription, final ExclusivePublication publication, final AtomicBoolean running)
     {
-        final FragmentAssembler dataHandler = new FragmentAssembler(
+        final IdleStrategy idleStrategy = idleStrategy();
+        final BufferClaim bufferClaim = new BufferClaim();
+        final FragmentHandler dataHandler =
             (buffer, offset, length, header) ->
             {
                 long result;
-                while ((result = to.offer(buffer, offset, length)) < 0L)
+                while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
                 {
                     checkPublicationResult(result);
                 }
-            });
+                bufferClaim
+                    .flags(header.flags())
+                    .reservedValue(header.reservedValue())
+                    .putBytes(buffer, offset, length)
+                    .commit();
+            };
 
-        final Image image = from.imageAtIndex(0);
+        final Image image = subscription.imageAtIndex(0);
         final int frameCountLimit = frameCountLimit();
-        final IdleStrategy idleStrategy = idleStrategy();
 
         while (running.get())
         {
