@@ -15,29 +15,43 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import io.aeron.ExclusivePublication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.driver.MediaDriver;
+import org.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.benchmarks.rtt.Configuration;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
+import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static java.lang.Long.MAX_VALUE;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
-/**
- * Implementation of the {@link uk.co.real_logic.benchmarks.rtt.MessageTransceiver} interface for benchmarking
- * live replay from remote archive. Used together with the {@link ArchiveNode}.
- */
-public final class LiveReplayMessageTransceiver extends AbstractMessageTransceiver
+public final class LiveReplayMessageTransceiver extends MessageTransceiver
 {
     private final MediaDriver mediaDriver;
     private final AeronArchive aeronArchive;
     private final boolean ownsArchiveClient;
+    private ExclusivePublication publication;
+    private UnsafeBuffer offerBuffer;
+
     private long replaySessionId;
+    private Subscription subscription;
+    private Image image;
+    private int messagesReceived;
+    private int frameCountLimit;
+    private final FragmentAssembler dataHandler = new FragmentAssembler(
+        (buffer, offset, length, header) ->
+        {
+            onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN));
+            messagesReceived++;
+        });
 
     public LiveReplayMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -56,21 +70,21 @@ public final class LiveReplayMessageTransceiver extends AbstractMessageTransceiv
         this.ownsArchiveClient = ownsArchiveClient;
     }
 
-    protected ExclusivePublication createPublication()
+    public void init(final Configuration configuration) throws Exception
     {
-        return aeronArchive.context().aeron().addExclusivePublication(sendChannel(), sendStreamId());
-    }
+        final Aeron aeron = aeronArchive.context().aeron();
 
-    protected Subscription createSubscription()
-    {
-        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
+        publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
 
-        final String replayChannel = receiveChannel();
-        final int replayStreamId = receiveStreamId();
-        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
+        while (!publication.isConnected())
+        {
+            yieldUninterruptedly();
+        }
 
-        final String channel = addSessionId(replayChannel, (int)replaySessionId);
-        return aeronArchive.context().aeron().addSubscription(channel, replayStreamId);
+        offerBuffer = new UnsafeBuffer(
+            allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
+
+        frameCountLimit = frameCountLimit();
     }
 
     public void destroy() throws Exception
@@ -84,13 +98,55 @@ public final class LiveReplayMessageTransceiver extends AbstractMessageTransceiv
             System.out.println("WARN: " + ex.toString());
         }
 
-        super.destroy();
+        closeAll(publication, subscription);
 
         if (ownsArchiveClient)
         {
             closeAll(aeronArchive, mediaDriver);
             mediaDriver.context().deleteAeronDirectory();
         }
+    }
+
+    public int send(final int numberOfMessages, final int length, final long timestamp)
+    {
+        return sendMessages(publication, offerBuffer, numberOfMessages, length, timestamp);
+    }
+
+    public int receive()
+    {
+        Image image = this.image;
+        if (null == image)
+        {
+            startReplay();
+            image = this.image;
+        }
+
+        messagesReceived = 0;
+        final int fragments = image.poll(dataHandler, frameCountLimit);
+        if (0 == fragments && image.isClosed())
+        {
+            throw new IllegalStateException("image closed unexpectedly");
+        }
+        return messagesReceived;
+    }
+
+    private void startReplay()
+    {
+        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
+
+        final String replayChannel = receiveChannel();
+        final int replayStreamId = receiveStreamId();
+        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
+
+        final String channel = addSessionId(replayChannel, (int)replaySessionId);
+        subscription = aeronArchive.context().aeron().addSubscription(channel, replayStreamId);
+
+        while (!subscription.isConnected())
+        {
+            yieldUninterruptedly();
+        }
+
+        this.image = subscription.imageAtIndex(0);
     }
 
 }
