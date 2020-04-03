@@ -23,8 +23,11 @@ import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -165,20 +168,19 @@ final class AeronUtil
         return lastRecordingId.get();
     }
 
-    static void publishLoop(
-        final ExclusivePublication publication, final Subscription subscription, final AtomicBoolean running)
+    static void pipeFragements(final Subscription from, final ExclusivePublication to, final AtomicBoolean running)
     {
         final FragmentAssembler dataHandler = new FragmentAssembler(
             (buffer, offset, length, header) ->
             {
                 long result;
-                while ((result = publication.offer(buffer, offset, length)) < 0L)
+                while ((result = to.offer(buffer, offset, length)) < 0L)
                 {
                     checkPublicationResult(result);
                 }
             });
 
-        final Image image = subscription.imageAtIndex(0);
+        final Image image = from.imageAtIndex(0);
         final int frameCountLimit = frameCountLimit();
         while (running.get())
         {
@@ -188,6 +190,8 @@ final class AeronUtil
                 throw new IllegalStateException("image closed");
             }
         }
+
+        System.out.println("Terminated by signal handler!");
     }
 
     static int sendMessages(
@@ -210,6 +214,16 @@ final class AeronUtil
             count++;
         }
         return count;
+    }
+
+    static void installSignalHandler(final AtomicBoolean running)
+    {
+        final SignalHandler terminationHandler = signal -> running.set(false);
+
+        for (final String signalName : ShutdownSignalBarrier.SIGNAL_NAMES)
+        {
+            Signal.handle(new Signal(signalName), terminationHandler);
+        }
     }
 
     private static void checkPublicationResult(final long result)

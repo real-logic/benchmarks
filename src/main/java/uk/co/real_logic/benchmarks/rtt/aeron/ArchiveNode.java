@@ -21,7 +21,6 @@ import io.aeron.Subscription;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.SystemUtil;
-import org.agrona.concurrent.SigInt;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -82,7 +81,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
 
     public void run()
     {
-        publishLoop(publication, subscription, running);
+        pipeFragements(subscription, publication, running);
     }
 
 
@@ -103,9 +102,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
         SystemUtil.loadPropertiesFiles(args);
 
         final AtomicBoolean running = new AtomicBoolean(true);
-
-        // Register a SIGINT handler for graceful shutdown.
-        SigInt.register(() -> running.set(false));
+        installSignalHandler(running);
 
         try (ArchiveNode server = new ArchiveNode(running))
         {
