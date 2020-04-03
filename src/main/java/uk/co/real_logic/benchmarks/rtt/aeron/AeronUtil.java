@@ -23,6 +23,8 @@ import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -36,6 +38,7 @@ import static io.aeron.Publication.*;
 import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
 import static io.aeron.archive.status.RecordingPos.getRecordingId;
 import static java.lang.Boolean.getBoolean;
+import static java.lang.Class.forName;
 import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
 import static java.lang.Thread.currentThread;
@@ -53,6 +56,7 @@ final class AeronUtil
     static final String ARCHIVE_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.streamId";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME = "aeron.benchmarks.rtt.aeron.embeddedMediaDriver";
     static final String FRAME_COUNT_LIMIT_PROP_NAME = "aeron.benchmarks.rtt.aeron.frameCountLimit";
+    static final String IDLE_STRATEGY = "aeron.benchmarks.rtt.aeron.idleStrategy";
 
     private AeronUtil()
     {
@@ -96,6 +100,23 @@ final class AeronUtil
     static int frameCountLimit()
     {
         return getInteger(FRAME_COUNT_LIMIT_PROP_NAME, 10);
+    }
+
+    static IdleStrategy idleStrategy()
+    {
+        final String idleStrategy = getProperty(IDLE_STRATEGY);
+        if (null == idleStrategy)
+        {
+            return BusySpinIdleStrategy.INSTANCE;
+        }
+        try
+        {
+            return (IdleStrategy)forName(idleStrategy).getConstructor().newInstance();
+        }
+        catch (final ReflectiveOperationException | ClassCastException ex)
+        {
+            throw new IllegalArgumentException("Invalid IdleStrategy value: " + idleStrategy, ex);
+        }
     }
 
     static MediaDriver launchEmbeddedMediaDriverIfConfigured()
@@ -170,7 +191,7 @@ final class AeronUtil
         return lastRecordingId.get();
     }
 
-    static void pipeFragements(final Subscription from, final ExclusivePublication to, final AtomicBoolean running)
+    static void pipeMessages(final Subscription from, final ExclusivePublication to, final AtomicBoolean running)
     {
         final FragmentAssembler dataHandler = new FragmentAssembler(
             (buffer, offset, length, header) ->
@@ -184,13 +205,11 @@ final class AeronUtil
 
         final Image image = from.imageAtIndex(0);
         final int frameCountLimit = frameCountLimit();
+        final IdleStrategy idleStrategy = idleStrategy();
+
         while (running.get())
         {
-            final int fragments = image.poll(dataHandler, frameCountLimit);
-            if (0 == fragments && image.isClosed())
-            {
-                throw new IllegalStateException("image closed");
-            }
+            idleStrategy.idle(image.poll(dataHandler, frameCountLimit));
         }
 
         System.out.println("Terminated by signal handler!");

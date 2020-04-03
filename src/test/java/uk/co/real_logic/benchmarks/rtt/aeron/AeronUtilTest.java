@@ -15,14 +15,15 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
+import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static java.lang.String.valueOf;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
 class AeronUtilTest
@@ -38,6 +39,7 @@ class AeronUtilTest
         assertEquals(1_000_000_002, archiveStreamId());
         assertFalse(embeddedMediaDriver());
         assertEquals(10, frameCountLimit());
+        assertSame(BusySpinIdleStrategy.INSTANCE, idleStrategy());
     }
 
     @Test
@@ -60,6 +62,7 @@ class AeronUtilTest
         setProperty(ARCHIVE_STREAM_ID_PROP_NAME, valueOf(archiveStreamId));
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
         setProperty(FRAME_COUNT_LIMIT_PROP_NAME, valueOf(frameCountLimit));
+        setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
         try
         {
             assertEquals(senderChannel, sendChannel());
@@ -68,6 +71,7 @@ class AeronUtilTest
             assertEquals(receiverStreamId, receiveStreamId());
             assertEquals(embeddedMediaDriver, embeddedMediaDriver());
             assertEquals(frameCountLimit, frameCountLimit());
+            assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
         }
         finally
         {
@@ -79,6 +83,7 @@ class AeronUtilTest
             clearProperty(ARCHIVE_STREAM_ID_PROP_NAME);
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
             clearProperty(FRAME_COUNT_LIMIT_PROP_NAME);
+            clearProperty(IDLE_STRATEGY);
         }
     }
 }

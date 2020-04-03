@@ -81,7 +81,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
 
     public void run()
     {
-        pipeFragements(subscription, publication, running);
+        pipeMessages(subscription, publication, running);
     }
 
 

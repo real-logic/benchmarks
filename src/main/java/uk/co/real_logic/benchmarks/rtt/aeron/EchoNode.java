@@ -64,7 +64,7 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     public void run()
     {
-        pipeFragements(subscription, publication, running);
+        pipeMessages(subscription, publication, running);
     }
 
     public void close()
