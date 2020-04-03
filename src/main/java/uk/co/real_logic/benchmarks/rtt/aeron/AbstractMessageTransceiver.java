@@ -59,7 +59,7 @@ public abstract class AbstractMessageTransceiver extends MessageTransceiver
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
-            yieldUninterruptibly();
+            yieldUninterruptedly();
         }
 
         offerBuffer = new UnsafeBuffer(

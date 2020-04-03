@@ -75,7 +75,7 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
-            yieldUninterruptibly();
+            yieldUninterruptedly();
         }
     }
 

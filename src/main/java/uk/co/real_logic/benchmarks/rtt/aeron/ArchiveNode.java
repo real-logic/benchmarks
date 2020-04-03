@@ -73,7 +73,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
-            yieldUninterruptibly();
+            yieldUninterruptedly();
         }
 
         awaitRecordingStart(aeron, publicationSessionId);

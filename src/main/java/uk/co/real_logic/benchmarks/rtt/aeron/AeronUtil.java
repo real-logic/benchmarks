@@ -247,7 +247,7 @@ final class AeronUtil
         }
     }
 
-    static void yieldUninterruptibly()
+    static void yieldUninterruptedly()
     {
         yield();
         if (currentThread().isInterrupted())
