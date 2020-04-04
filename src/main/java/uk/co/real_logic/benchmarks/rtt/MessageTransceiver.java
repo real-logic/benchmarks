@@ -22,7 +22,6 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class MessageTransceiver
 {
-
     private final MessageRecorder messageRecorder;
 
     public MessageTransceiver(final MessageRecorder messageRecorder)

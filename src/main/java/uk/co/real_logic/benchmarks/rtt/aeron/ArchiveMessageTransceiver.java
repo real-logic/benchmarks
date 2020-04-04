@@ -69,7 +69,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
         this.ownsArchiveClient = ownsArchiveClient;
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
         final Aeron aeron = aeronArchive.context().aeron();
 
@@ -97,7 +97,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
         frameCountLimit = frameCountLimit();
     }
 
-    public void destroy() throws Exception
+    public void destroy()
     {
         closeAll(publication, subscription);
 
@@ -123,6 +123,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
+
         return messagesReceived;
     }
 }

@@ -65,7 +65,7 @@ public final class PlainMessageTransceiver extends MessageTransceiver
         this.ownsAeronClient = ownsAeronClient;
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
         this.publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
 
@@ -76,14 +76,13 @@ public final class PlainMessageTransceiver extends MessageTransceiver
             yieldUninterruptedly();
         }
 
-        offerBuffer = new UnsafeBuffer(
-            allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
+        offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
         image = subscription.imageAtIndex(0);
         frameCountLimit = frameCountLimit();
     }
 
-    public void destroy() throws Exception
+    public void destroy()
     {
         closeAll(publication, subscription);
 
@@ -108,7 +107,7 @@ public final class PlainMessageTransceiver extends MessageTransceiver
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
+
         return messagesReceived;
     }
-
 }

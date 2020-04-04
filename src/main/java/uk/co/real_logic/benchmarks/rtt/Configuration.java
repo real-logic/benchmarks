@@ -149,17 +149,15 @@ public final class Configuration
     private Configuration(final Builder builder)
     {
         this.warmUpIterations = checkMinValue(builder.warmUpIterations, 0, "Warm-up iterations");
-        this.warmUpNumberOfMessages =
-            checkMinValue(builder.warmUpNumberOfMessages, warmUpIterations > 0 ? 1 : 0, "Warm-up number of messages");
+        this.warmUpNumberOfMessages = checkMinValue(
+            builder.warmUpNumberOfMessages, warmUpIterations > 0 ? 1 : 0, "Warm-up number of messages");
         this.iterations = checkMinValue(builder.iterations, 1, "Iterations");
         this.numberOfMessages = checkMinValue(builder.numberOfMessages, 1, "Number of messages");
         this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
         this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
-        this.sendIdleStrategy =
-            requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
-        this.receiveIdleStrategy =
-            requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
+        this.sendIdleStrategy = requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
+        this.receiveIdleStrategy = requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
     }
 
     /**
@@ -490,6 +488,7 @@ public final class Configuration
         catch (final NoSuchMethodException ignore)
         {
         }
+
         throw new IllegalArgumentException(
             "MessageTransceiver class must have a public constructor with a MessageRecorder parameter");
     }
@@ -520,11 +519,11 @@ public final class Configuration
         {
             throw new IllegalArgumentException("Property '" + propName + "' is required!");
         }
+
         return value;
     }
 
-    private static <T> Class<? extends T> classProperty(
-        final String propName, final Class<T> parentClass)
+    private static <T> Class<? extends T> classProperty(final String propName, final Class<T> parentClass)
     {
         try
         {

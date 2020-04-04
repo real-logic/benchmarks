@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
+import org.agrona.hints.ThreadHints;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Phaser;
@@ -117,10 +118,11 @@ class InMemoryMessageTransceiverTest
             {
                 phaser.arriveAndAwaitAdvance();
 
-                for (int i = 0, size = timestamps.length; i < size; i++)
+                for (final long timestamp : timestamps)
                 {
-                    while (0 == messageTransceiver.send(1, 24, timestamps[i]))
+                    while (0 == messageTransceiver.send(1, 24, timestamp))
                     {
+                        ThreadHints.onSpinWait();
                     }
                 }
             });
@@ -149,5 +151,4 @@ class InMemoryMessageTransceiverTest
 
         assertArrayEquals(timestamps, receivedTimestamps);
     }
-
 }

@@ -23,6 +23,7 @@ import static org.agrona.UnsafeAccess.UNSAFE;
 import static sun.misc.Unsafe.ARRAY_LONG_BASE_OFFSET;
 import static sun.misc.Unsafe.ARRAY_LONG_INDEX_SCALE;
 
+@SuppressWarnings("unused")
 abstract class InMemoryMessageTransceiver1 extends MessageTransceiver
 {
     static final int SIZE = 4096;
@@ -52,6 +53,7 @@ abstract class InMemoryMessageTransceiver1 extends MessageTransceiver
     }
 }
 
+@SuppressWarnings("unused")
 abstract class InMemoryMessageTransceiver2 extends InMemoryMessageTransceiver1
 {
     long sendIndex = 0;
@@ -81,12 +83,12 @@ public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver
         super(messageRecorder);
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
         fill(messages, 0L);
     }
 
-    public void destroy() throws Exception
+    public void destroy()
     {
         fill(messages, 0L);
     }
@@ -107,6 +109,7 @@ public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver
         UNSAFE.putOrderedLong(messages, offset(index), timestamp);
 
         sendIndex += numberOfMessages;
+
         return numberOfMessages;
     }
 
@@ -122,6 +125,7 @@ public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver
             receiveIndex++;
             return 1;
         }
+
         return 0;
     }
 }

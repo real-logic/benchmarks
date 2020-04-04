@@ -88,6 +88,7 @@ public final class LoadTestRig
     {
         out.printf("Starting latency benchmark using the following configuration:%n%s%n", configuration);
         messageTransceiver.init(configuration);
+
         try
         {
             final AtomicLong sentMessages = new AtomicLong();
@@ -121,10 +122,7 @@ public final class LoadTestRig
         }
     }
 
-    private void doRun(
-        final int iterations,
-        final int messages,
-        final AtomicLong sentMessages)
+    private void doRun(final int iterations, final int messages, final AtomicLong sentMessages)
     {
         final CompletableFuture<?> receiverTask = runAsync(() -> receive(sentMessages));
         sentMessages.set(send(iterations, messages));
@@ -150,10 +148,12 @@ public final class LoadTestRig
             {
                 idleStrategy.idle();
             }
+
             if (0 == sent)
             {
                 sent = sentMessages.get();
             }
+
             if (0 != sent && received >= sent)
             {
                 break;
@@ -191,6 +191,7 @@ public final class LoadTestRig
                 }
                 while ((sent += messageTransceiver.send(batchSize - sent, messageSize, timestamp)) < batchSize);
             }
+
             sentMessages += batchSize;
             if (totalNumberOfMessages == sentMessages)
             {
@@ -228,6 +229,7 @@ public final class LoadTestRig
         final int elapsedSeconds = (int)round((double)(now - startTime) / NANOS_PER_SECOND);
         final long sendRate = 0 == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
         out.format("Send rate %,d msg/sec%n", sendRate);
+
         return elapsedSeconds;
     }
 

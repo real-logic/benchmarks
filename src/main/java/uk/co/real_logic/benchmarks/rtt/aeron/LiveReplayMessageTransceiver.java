@@ -70,7 +70,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         this.ownsArchiveClient = ownsArchiveClient;
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
         final Aeron aeron = aeronArchive.context().aeron();
 
@@ -87,7 +87,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         frameCountLimit = frameCountLimit();
     }
 
-    public void destroy() throws Exception
+    public void destroy()
     {
         try
         {
@@ -127,6 +127,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
+
         return messagesReceived;
     }
 
@@ -148,5 +149,4 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
         this.image = subscription.imageAtIndex(0);
     }
-
 }

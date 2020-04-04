@@ -63,6 +63,7 @@ class AeronUtilTest
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
         setProperty(FRAME_COUNT_LIMIT_PROP_NAME, valueOf(frameCountLimit));
         setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
+
         try
         {
             assertEquals(senderChannel, sendChannel());

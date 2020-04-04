@@ -95,7 +95,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
         this.ownsArchiveClient = ownsArchiveClient;
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
         final AeronArchive.Context context = aeronArchive.context();
         final Aeron aeron = context.aeron();
@@ -112,41 +112,43 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
         final String channel = addSessionId(sendChannel, publicationSessionId);
         aeronArchive.startRecording(channel, sendStreamId, LOCAL, true);
 
-        recordingEventsSubscription = aeron.addSubscription(context.recordingEventsChannel(), context
-            .recordingEventsStreamId());
+        recordingEventsSubscription = aeron.addSubscription(
+            context.recordingEventsChannel(), context.recordingEventsStreamId());
 
         recordingEventsAdapter = new RecordingEventsAdapter(new RecordingEventsListener()
-        {
-            public void onStart(
-                final long recordingId,
-                final long startPosition,
-                final int sessionId,
-                final int streamId,
-                final String channel,
-                final String sourceIdentity)
             {
-            }
-
-            public void onProgress(final long recordingId, final long startPosition, final long position)
-            {
-                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
+                public void onStart(
+                    final long recordingId,
+                    final long startPosition,
+                    final int sessionId,
+                    final int streamId,
+                    final String channel,
+                    final String sourceIdentity)
                 {
-                    if (NULL_POSITION == recordingPositionConsumed)
+                }
+
+                public void onProgress(final long recordingId, final long startPosition, final long position)
+                {
+                    if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
                     {
-                        recordingPositionConsumed = startPosition;
+                        if (NULL_POSITION == recordingPositionConsumed)
+                        {
+                            recordingPositionConsumed = startPosition;
+                        }
+                        LiveRecordingMessageTransceiver.this.recordingPosition = position;
                     }
-                    LiveRecordingMessageTransceiver.this.recordingPosition = position;
                 }
-            }
 
-            public void onStop(final long recordingId, final long startPosition, final long stopPosition)
-            {
-                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
+                public void onStop(final long recordingId, final long startPosition, final long stopPosition)
                 {
-                    LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
+                    if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
+                    {
+                        LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
+                    }
                 }
-            }
-        }, recordingEventsSubscription, frameCountLimit);
+            },
+            recordingEventsSubscription,
+            frameCountLimit);
 
         recordingId = awaitRecordingStart(aeron, publicationSessionId);
 
@@ -160,7 +162,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
         image = subscription.imageAtIndex(0);
     }
 
-    public void destroy() throws Exception
+    public void destroy()
     {
         closeAll(publication, recordingEventsSubscription, subscription);
 
@@ -195,6 +197,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
+
         return messagesReceived;
     }
 }

@@ -27,7 +27,6 @@ import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMed
 class LiveRecordingTest extends
     AbstractTest<ArchivingMediaDriver, AeronArchive, LiveRecordingMessageTransceiver, EchoNode>
 {
-
     protected EchoNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {

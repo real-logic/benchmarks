@@ -100,10 +100,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         nodeThread.start();
 
         final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final MessageTransceiver messageTransceiver = createMessageTransceiver(
-            driver,
-            client,
-            timestamp -> timestamps.addLong(timestamp));
+        final MessageTransceiver messageTransceiver = createMessageTransceiver(driver, client, timestamps::addLong);
 
         publisherStarted.await();
 
@@ -121,10 +118,12 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
                     sent++;
                     timestamp++;
                 }
+
                 if (received < messages)
                 {
                     received += messageTransceiver.receive();
                 }
+
                 if (null != error.get())
                 {
                     LangUtil.rethrowUnchecked(error.get());
@@ -137,6 +136,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             nodeThread.join();
             messageTransceiver.destroy();
             closeAll(client, driver);
+
             if (driver instanceof MediaDriver)
             {
                 ((MediaDriver)driver).context().deleteAeronDirectory();
@@ -153,6 +153,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         {
             LangUtil.rethrowUnchecked(error.get());
         }
+
         assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
     }
 

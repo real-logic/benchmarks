@@ -51,8 +51,7 @@ class ConfigurationTest
         final Builder builder = new Builder()
             .warmUpIterations(-1);
 
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
         assertEquals("Warm-up iterations cannot be less than 0, got: -1", ex.getMessage());
     }
@@ -65,8 +64,7 @@ class ConfigurationTest
             .warmUpIterations(3)
             .warmUpNumberOfMessages(warmUpNumberOfMessages);
 
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
         assertEquals("Warm-up number of messages cannot be less than 1, got: " + warmUpNumberOfMessages, ex
             .getMessage());
@@ -93,8 +91,7 @@ class ConfigurationTest
         final Builder builder = new Builder()
             .iterations(iterations);
 
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
         assertEquals("Iterations cannot be less than 1, got: " + iterations,
             ex.getMessage());
@@ -107,8 +104,7 @@ class ConfigurationTest
         final Builder builder = new Builder()
             .numberOfMessages(numberOfMessages);
 
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
         assertEquals("Number of messages cannot be less than 1, got: " + numberOfMessages, ex.getMessage());
     }
@@ -121,8 +117,7 @@ class ConfigurationTest
             .numberOfMessages(1000)
             .batchSize(size);
 
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
         assertEquals("Batch size cannot be less than 1, got: " + size, ex.getMessage());
     }
@@ -135,8 +130,7 @@ class ConfigurationTest
             .numberOfMessages(200)
             .messageLength(length);
 
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
         assertEquals("Message length cannot be less than " + MIN_MESSAGE_LENGTH + ", got: " + length,
             ex.getMessage());
@@ -148,8 +142,7 @@ class ConfigurationTest
         final Builder builder = new Builder()
             .numberOfMessages(10);
 
-        final NullPointerException ex =
-            assertThrows(NullPointerException.class, () -> builder.build());
+        final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
 
         assertEquals("MessageTransceiver class cannot be null", ex.getMessage());
     }
@@ -161,8 +154,7 @@ class ConfigurationTest
             .numberOfMessages(10)
             .messageTransceiverClass(MessageTransceiver.class);
 
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
         assertEquals("MessageTransceiver class must be a concrete class", ex.getMessage());
     }
@@ -174,8 +166,7 @@ class ConfigurationTest
             .numberOfMessages(10)
             .messageTransceiverClass(TestNoPublicConstructorMessageTransceiver.class);
 
-        final IllegalArgumentException ex =
-            assertThrows(IllegalArgumentException.class, () -> builder.build());
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
         assertEquals("MessageTransceiver class must have a public constructor with a MessageRecorder parameter",
             ex.getMessage());
@@ -189,8 +180,7 @@ class ConfigurationTest
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .sendIdleStrategy(null);
 
-        final NullPointerException ex =
-            assertThrows(NullPointerException.class, () -> builder.build());
+        final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
 
         assertEquals("Send IdleStrategy cannot be null", ex.getMessage());
     }
@@ -203,8 +193,7 @@ class ConfigurationTest
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .receiveIdleStrategy(null);
 
-        final NullPointerException ex =
-            assertThrows(NullPointerException.class, () -> builder.build());
+        final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
 
         assertEquals("Receive IdleStrategy cannot be null", ex.getMessage());
     }
@@ -286,8 +275,8 @@ class ConfigurationTest
     @Test
     void fromSystemPropertiesThrowsIllegalArgumentExceptionIfNumberOfMessagesIsNotConfigured()
     {
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> fromSystemProperties());
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class, Configuration::fromSystemProperties);
 
         assertEquals("Property '" + MESSAGES_PROP_NAME + "' is required!", ex.getMessage());
     }
@@ -297,8 +286,8 @@ class ConfigurationTest
     {
         System.setProperty(MESSAGES_PROP_NAME, "100x000");
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> fromSystemProperties());
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class, Configuration::fromSystemProperties);
 
         assertEquals("Non-integer value for property '" + MESSAGES_PROP_NAME +
             "', cause: 'x' is not a valid digit @ 3", ex.getMessage());
@@ -309,8 +298,8 @@ class ConfigurationTest
     {
         System.setProperty(MESSAGES_PROP_NAME, "100");
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> fromSystemProperties());
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class, Configuration::fromSystemProperties);
 
         assertEquals("Property '" + MESSAGE_TRANSCEIVER_PROP_NAME + "' is required!", ex.getMessage());
     }
@@ -321,8 +310,8 @@ class ConfigurationTest
         System.setProperty(MESSAGES_PROP_NAME, "20");
         System.setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, Integer.class.getName());
 
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-            () -> fromSystemProperties());
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class, Configuration::fromSystemProperties);
 
         assertEquals("Invalid class value for property '" + MESSAGE_TRANSCEIVER_PROP_NAME +
             "', cause: class java.lang.Integer", ex.getMessage());
@@ -369,8 +358,8 @@ class ConfigurationTest
         assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertTrue(YieldingIdleStrategy.class.isInstance(configuration.sendIdleStrategy()));
-        assertTrue(NoOpIdleStrategy.class.isInstance(configuration.receiveIdleStrategy()));
+        assertTrue(configuration.sendIdleStrategy() instanceof YieldingIdleStrategy);
+        assertTrue(configuration.receiveIdleStrategy() instanceof NoOpIdleStrategy);
     }
 
     private void clearConfigProperties()
@@ -393,18 +382,18 @@ class ConfigurationTest
         return IntStream.range(-1, MIN_MESSAGE_LENGTH);
     }
 
-    public final class TestNoPublicConstructorMessageTransceiver extends MessageTransceiver
+    public static final class TestNoPublicConstructorMessageTransceiver extends MessageTransceiver
     {
         private TestNoPublicConstructorMessageTransceiver(final MessageRecorder messageRecorder)
         {
             super(messageRecorder);
         }
 
-        public void init(final Configuration configuration) throws Exception
+        public void init(final Configuration configuration)
         {
         }
 
-        public void destroy() throws Exception
+        public void destroy()
         {
         }
 

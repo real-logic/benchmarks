@@ -114,6 +114,7 @@ final class AeronUtil
         {
             return BusySpinIdleStrategy.INSTANCE;
         }
+
         try
         {
             return (IdleStrategy)forName(idleStrategy).getConstructor().newInstance();
@@ -128,26 +129,26 @@ final class AeronUtil
     {
         if (embeddedMediaDriver())
         {
-            final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
+            return MediaDriver.launch(new MediaDriver.Context()
                 .dirDeleteOnStart(true)
-                .spiesSimulateConnection(true);
-            return MediaDriver.launch(mediaDriverContext);
+                .spiesSimulateConnection(true));
         }
+
         return null;
     }
 
     static ArchivingMediaDriver launchArchivingMediaDriver(final boolean recordingEventsEnabled)
     {
-        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .spiesSimulateConnection(true);
-        final Archive.Context archiveCtx = new Archive.Context()
-            .aeronDirectoryName(mediaDriverCtx.aeronDirectoryName())
-            .recordingEventsEnabled(recordingEventsEnabled)
-            .deleteArchiveOnStart(true);
         return ArchivingMediaDriver.launch(
-            mediaDriverCtx,
-            archiveCtx);
+            new MediaDriver.Context()
+                .dirDeleteOnStart(true)
+                .spiesSimulateConnection(true),
+            new Archive.Context()
+                .aeronDirectoryName(new MediaDriver.Context()
+                .dirDeleteOnStart(true)
+                .spiesSimulateConnection(true).aeronDirectoryName())
+                .recordingEventsEnabled(recordingEventsEnabled)
+                .deleteArchiveOnStart(true));
     }
 
     static long awaitRecordingStart(final Aeron aeron, final int publicationSessionId)
@@ -209,6 +210,7 @@ final class AeronUtil
                 {
                     checkPublicationResult(result);
                 }
+
                 bufferClaim
                     .flags(header.flags())
                     .reservedValue(header.reservedValue())
@@ -246,6 +248,7 @@ final class AeronUtil
             }
             count++;
         }
+
         return count;
     }
 
