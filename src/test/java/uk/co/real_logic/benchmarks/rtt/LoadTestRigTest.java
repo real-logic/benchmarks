@@ -46,8 +46,8 @@ class LoadTestRigTest
         .sendIdleStrategy(senderIdleStrategy)
         .receiveIdleStrategy(receiverIdleStrategy)
         .build();
-    private Histogram histogram = mock(Histogram.class);
-    private MessageTransceiver messageTransceiver = mock(MessageTransceiver.class);
+    private final Histogram histogram = mock(Histogram.class);
+    private final MessageTransceiver messageTransceiver = mock(MessageTransceiver.class);
 
     @Test
     void constructorThrowsNullPointerExceptionIfConfigurationIsNull()
