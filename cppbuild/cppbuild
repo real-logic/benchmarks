@@ -2,6 +2,7 @@
 
 SOURCE_DIR="`pwd`"
 BUILD_DIR="`pwd`/cppbuild/Release"
+EXTRA_CMAKE_ARGS=""
 
 ncpus=1
 case "`uname`" in
@@ -13,13 +14,54 @@ case "`uname`" in
     ;;
 esac
 
-echo "Will make with \"-j $ncpus\"."
+for option in "$@"
+do
+  case ${option} in
+    --c-warnings-as-errors)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DC_WARNINGS_AS_ERRORS=ON"
+      echo "Enabling warnings as errors for c"
+      shift
+      ;;
+    --cxx-warnings-as-errors)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCXX_WARNINGS_AS_ERRORS=ON"
+      echo "Enabling warnings as errors for c++"
+      shift
+      ;;
+    -d|--debug-build)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
+      shift
+      ;;
+    --no-parallel)
+      ncpus=1
+      shift
+      ;;
+    --aeron-git-url=*)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_URL=${option#*=}"
+      echo "Setting -DAERON_GIT_URL=${option#*=}"
+      shift
+      ;;
+    --aeron-git-tag=*)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_TAG=${option#*=}"
+      echo "Setting -DAERON_GIT_TAG=${option#*=}"
+      shift
+      ;;
+    -h|--help)
+      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build]"
+      exit
+      ;;
+    *)
+      echo "Unknown option $option"
+      echo "Use --help for help"
+      exit
+      ;;
+  esac
+done
 
-if [ -d "$BUILD_DIR" ] ; then
-    echo "Build directory ($BUILD_DIR) exists, removing."
-    rm -rf $BUILD_DIR
+if [[ -d "$BUILD_DIR" ]] ; then
+  echo "Build directory ($BUILD_DIR) exists, removing."
+  rm -rf ${BUILD_DIR}
 fi
 
-mkdir -p $BUILD_DIR
+mkdir -p ${BUILD_DIR}
 
-(cd $BUILD_DIR && cmake -G "Unix Makefiles" $SOURCE_DIR && make clean && make -j "$ncpus" all)
+(cd $BUILD_DIR && cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all)
