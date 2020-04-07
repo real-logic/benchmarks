@@ -22,6 +22,7 @@ import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
@@ -55,12 +56,14 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
     }
 
+    @Timeout(10)
     @Test
     void lotsOfSmallMessages() throws Exception
     {
         test(1_000_000, MIN_MESSAGE_LENGTH);
     }
 
+    @Timeout(10)
     @Test
     void severalBigMessages() throws Exception
     {
