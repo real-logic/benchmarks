@@ -46,7 +46,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build]"
+      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--no-parallel] [--aeron-git-url=$GIT_URL] [--aeron-git-tag=$GIT_TAG]"
       exit
       ;;
     *)
