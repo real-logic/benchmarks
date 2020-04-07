@@ -68,6 +68,11 @@ tasks.withType(JavaCompile) {
 
 test {
     useJUnitPlatform()
+
+    testLogging {
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
 }
 
 jar.enabled = false
