@@ -4,3 +4,4 @@
 build
 *~
 cppbuild/Release
+benchmark.properties
