@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.rtt.aeron;
 
-import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +39,7 @@ class AeronUtilTest
         assertEquals(1_000_000_002, archiveStreamId());
         assertFalse(embeddedMediaDriver());
         assertEquals(10, frameCountLimit());
-        assertSame(BusySpinIdleStrategy.INSTANCE, idleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
     }
 
     @Test

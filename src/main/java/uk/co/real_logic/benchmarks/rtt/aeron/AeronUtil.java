@@ -28,8 +28,8 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -112,7 +112,7 @@ final class AeronUtil
         final String idleStrategy = getProperty(IDLE_STRATEGY);
         if (null == idleStrategy)
         {
-            return BusySpinIdleStrategy.INSTANCE;
+            return NoOpIdleStrategy.INSTANCE;
         }
 
         try

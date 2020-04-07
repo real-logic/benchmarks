@@ -213,8 +213,8 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
-        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
     }
 
     @Test
@@ -332,8 +332,8 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
-        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
     }
 
     @Test
@@ -347,7 +347,7 @@ class ConfigurationTest
         System.setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
         System.setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
         System.setProperty(SEND_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
-        System.setProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME, NoOpIdleStrategy.class.getName());
+        System.setProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME, BusySpinIdleStrategy.class.getName());
 
         final Configuration configuration = fromSystemProperties();
 
@@ -359,7 +359,7 @@ class ConfigurationTest
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertTrue(configuration.sendIdleStrategy() instanceof YieldingIdleStrategy);
-        assertTrue(configuration.receiveIdleStrategy() instanceof NoOpIdleStrategy);
+        assertTrue(configuration.receiveIdleStrategy() instanceof BusySpinIdleStrategy);
     }
 
     private void clearConfigProperties()
