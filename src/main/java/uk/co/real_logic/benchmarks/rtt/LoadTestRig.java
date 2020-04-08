@@ -86,7 +86,7 @@ public final class LoadTestRig
      */
     public void run() throws Exception
     {
-        out.printf("Starting latency benchmark using the following configuration:%n%s%n", configuration);
+        out.printf("%nStarting latency benchmark using the following configuration:%n%s%n", configuration);
         messageTransceiver.init(configuration);
 
         try
