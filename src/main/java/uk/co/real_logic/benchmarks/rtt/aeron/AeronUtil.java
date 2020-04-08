@@ -22,6 +22,7 @@ import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
@@ -45,6 +46,7 @@ import static io.aeron.archive.status.RecordingPos.getRecordingId;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Class.forName;
 import static java.lang.Integer.getInteger;
+import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.yield;
@@ -267,6 +269,22 @@ final class AeronUtil
         if (currentThread().isInterrupted())
         {
             throw new IllegalStateException("Interrupted while yielding...");
+        }
+    }
+
+    static long replayFullRecording(
+        final AeronArchive aeronArchive, final long recordingId, final String replayChannel, final int replayStreamId)
+    {
+        while (true)
+        {
+            try
+            {
+                return aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
+            }
+            catch (final ArchiveException ignore)
+            {
+                yieldUninterruptedly();
+            }
         }
     }
 

@@ -26,7 +26,6 @@ import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
-import static java.lang.Long.MAX_VALUE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
@@ -137,7 +136,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
         final String replayChannel = receiveChannel();
         final int replayStreamId = receiveStreamId();
-        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
+        replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
         subscription = aeronArchive.context().aeron().addSubscription(channel, replayStreamId);

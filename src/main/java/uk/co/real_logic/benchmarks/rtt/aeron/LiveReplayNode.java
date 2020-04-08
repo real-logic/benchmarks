@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
-import static java.lang.Long.MAX_VALUE;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
@@ -73,7 +72,7 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
 
         final String replayChannel = sendChannel();
         final int replayStreamId = sendStreamId();
-        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
+        replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
         subscription = aeron.addSubscription(channel, replayStreamId);
