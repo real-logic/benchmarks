@@ -97,7 +97,10 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
         if (ownsArchiveClient)
         {
             closeAll(aeronArchive, mediaDriver);
-            mediaDriver.context().deleteAeronDirectory();
+            if (null != mediaDriver)
+            {
+                mediaDriver.context().deleteAeronDirectory();
+            }
         }
     }
 
