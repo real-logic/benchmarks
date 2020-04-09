@@ -15,19 +15,19 @@ Test scenarios
 Four different test scenarios are covered:
 1. Echo benchmark (aka ping-pong)
 
-Use the following scripts: `echo-server` and `echo-client`.
+Start the scripts in the following order: `echo-server` --> `echo-client`.
 
 2. Live replay from local archive
 The client publishes messages over IPC to local publication and has a recording running using local archive. The server
 replays messages over UDP from that archive and pipes them back to the client.
 
-Use the following scripts: `live-replay-local-archive-server` and `live-replay-local-archive-client`.
+Start the scripts in the following order: `live-replay-local-archive-client` --> `live-replay-local-archive-server`.
 
 3. Live replay from remote archive
 The client publishes messages to the server using publication over UDP. The server pipes those message into a local IPC
 publication which records them into an archive. Finally the client subscribes to the replay from that archive over UDP.
 
-Use the following scripts: `live-replay-remote-archive-server` and `live-replay-remote-archive-client`.
+Start the scripts in the following order: `live-replay-remote-archive-server` --> `live-replay-remote-archive-client`.
 
 4. Live recording, i.e. client runs records a publication into local archive
 The client publishes messages over UDP to the server. It also has a recording running on that publication using local
@@ -38,7 +38,7 @@ The biggest difference between scenario 2 and this scenario is that there is no 
 reading from the disc of the saved data but still allowing to consume only those messages that were successfully
 persisted.
 
-Use the following scripts: `echo-server` and `live-recording-client`.
+Start the scripts in the following order: `echo-server` --> `live-recording-client`.
 
 
 Helper scripts:
