@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.driver.MediaDriver;
 import org.agrona.SystemUtil;
 
@@ -90,7 +91,14 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
 
     public void close()
     {
-        aeronArchive.stopReplay(replaySessionId);
+        try
+        {
+            aeronArchive.stopReplay(replaySessionId);
+        }
+        catch (final ArchiveException ex)
+        {
+            System.out.println("WARN: " + ex.getMessage());
+        }
 
         closeAll(subscription, publication);
 
