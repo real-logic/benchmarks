@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,14 +60,14 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     @Test
     void lotsOfSmallMessages() throws Exception
     {
-        test(1_000_000, MIN_MESSAGE_LENGTH, 10);
+        test(10_000, MIN_MESSAGE_LENGTH, 10);
     }
 
-    @Timeout(10)
+    @Timeout(20)
     @Test
     void severalBigMessages() throws Exception
     {
-        test(50, 1024 * 1024, 1);
+        test(25, 1024 * 1024, 1);
     }
 
     @SuppressWarnings("MethodLength")
@@ -82,8 +83,18 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         final LongArrayList receivedTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
         final LongArrayList sentTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
 
+        System.out.println(">> Creating MediaDriver...");
+        long start = System.nanoTime();
         final DRIVER driver = createDriver();
+        System.out.println("<< " + driver.getClass().getName() + " created in " +
+            NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
+
+        System.out.println(">> Connecting to the driver...");
+        start = System.nanoTime();
         final CLIENT client = connectToDriver();
+        System.out.println("<< " + client.getClass().getName() + " created in " +
+            NANOSECONDS.toMillis(System.nanoTime() - start) + "ms");
+
         try
         {
             final AtomicBoolean running = new AtomicBoolean(true);
