@@ -30,12 +30,11 @@ import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.LongStream;
 
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.CloseHelper.closeAll;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.rtt.Configuration.MIN_MESSAGE_LENGTH;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
@@ -60,17 +59,18 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     @Test
     void lotsOfSmallMessages() throws Exception
     {
-        test(1_000_000, MIN_MESSAGE_LENGTH);
+        test(1_000_000, MIN_MESSAGE_LENGTH, 10);
     }
 
     @Timeout(10)
     @Test
     void severalBigMessages() throws Exception
     {
-        test(50, 1024 * 1024);
+        test(50, 1024 * 1024, 1);
     }
 
-    private void test(final int messages, final int messageLength) throws Exception
+    @SuppressWarnings("MethodLength")
+    private void test(final int messages, final int messageLength, final int burstSize) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
@@ -102,8 +102,10 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         nodeThread.setDaemon(true);
         nodeThread.start();
 
-        final LongArrayList timestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final MessageTransceiver messageTransceiver = createMessageTransceiver(driver, client, timestamps::addLong);
+        final LongArrayList receivedTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
+        final LongArrayList sentTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
+        final MessageTransceiver messageTransceiver =
+            createMessageTransceiver(driver, client, receivedTimestamps::addLong);
 
         publisherStarted.await();
 
@@ -116,9 +118,23 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             long timestamp = 1_000;
             while (sent < messages || received < messages)
             {
-                if (sent < messages && messageTransceiver.send(1, configuration.messageLength(), timestamp) == 1)
+
+                if (sent < messages)
                 {
-                    sent++;
+                    int sentBatch = 0;
+                    do
+                    {
+                        sentBatch += messageTransceiver.send(burstSize - sentBatch, messageLength, timestamp);
+                        received += messageTransceiver.receive();
+                    }
+                    while (sentBatch < burstSize);
+
+                    for (int i = 0; i < burstSize; i++)
+                    {
+                        sentTimestamps.add(timestamp);
+                    }
+
+                    sent += burstSize;
                     timestamp++;
                 }
 
@@ -157,7 +173,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             LangUtil.rethrowUnchecked(error.get());
         }
 
-        assertArrayEquals(LongStream.range(1_000, 1_000 + messages).toArray(), timestamps.toLongArray());
+        assertEquals(sentTimestamps, receivedTimestamps);
     }
 
     abstract NODE createNode(AtomicBoolean running, DRIVER driver, CLIENT client);
