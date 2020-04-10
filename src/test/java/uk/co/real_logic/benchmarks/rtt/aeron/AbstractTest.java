@@ -66,7 +66,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     @Test
     void messageLength200bytes() throws Exception
     {
-        test(10_000, 200, 5);
+        test(1000, 200, 5);
     }
 
     @Timeout(20)
