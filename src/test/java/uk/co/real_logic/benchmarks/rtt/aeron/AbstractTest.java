@@ -121,6 +121,10 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
                 long timestamp = 1_000;
                 while (sent < messages || received < messages)
                 {
+                    if (Thread.interrupted())
+                    {
+                        throw new IllegalStateException("run cancelled!");
+                    }
 
                     if (sent < messages)
                     {
