@@ -66,7 +66,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     @Test
     void severalBigMessages() throws Exception
     {
-        test(25, 128 * 1024, 1);
+        test(25, 8192, 1);
     }
 
     @SuppressWarnings("MethodLength")
