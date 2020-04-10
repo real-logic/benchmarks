@@ -51,6 +51,7 @@ import static java.lang.System.getProperty;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.yield;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 final class AeronUtil
@@ -241,6 +242,10 @@ final class AeronUtil
         for (int i = 0; i < numberOfMessages; i++)
         {
             offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
+            if (length > SIZE_OF_LONG)
+            {
+                offerBuffer.setMemory(SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)(i + 1));
+            }
             final long result = publication.offer(offerBuffer, 0, length);
             if (result < 0)
             {

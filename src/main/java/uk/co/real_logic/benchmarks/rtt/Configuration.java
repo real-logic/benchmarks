@@ -27,6 +27,7 @@ import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.util.Objects.requireNonNull;
 import static joptsimple.internal.Strings.isNullOrEmpty;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * {@code Configuration} contains configuration values for the harness.
@@ -65,7 +66,7 @@ public final class Configuration
     /**
      * Minimal length in bytes of a single message. Contains enough space to hold the {@code timestamp} payload.
      */
-    public static final int MIN_MESSAGE_LENGTH = 8;
+    public static final int MIN_MESSAGE_LENGTH = SIZE_OF_LONG;
 
     /**
      * Name of the system property to configure the number of warm up iterations. Default value is
