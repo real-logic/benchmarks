@@ -62,11 +62,11 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         test(10_000, MIN_MESSAGE_LENGTH, 10);
     }
 
-    @Timeout(10)
+    @Timeout(20)
     @Test
     void severalBigMessages() throws Exception
     {
-        test(50, 8192, 1);
+        test(50, 32 * 1024, 1);
     }
 
     @SuppressWarnings("MethodLength")
