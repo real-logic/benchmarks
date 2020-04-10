@@ -53,6 +53,6 @@ class LiveRecordingTest extends
         final AeronArchive aeronArchive,
         final MessageRecorder messageRecorder)
     {
-        return new LiveRecordingMessageTransceiver(archivingMediaDriver, aeronArchive, true, messageRecorder);
+        return new LiveRecordingMessageTransceiver(archivingMediaDriver, aeronArchive, false, messageRecorder);
     }
 }

@@ -49,6 +49,6 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, PlainMessageTransceiver,
     protected PlainMessageTransceiver createMessageTransceiver(
         final MediaDriver mediaDriver, final Aeron aeron, final MessageRecorder messageRecorder)
     {
-        return new PlainMessageTransceiver(mediaDriver, aeron, true, messageRecorder);
+        return new PlainMessageTransceiver(mediaDriver, aeron, false, messageRecorder);
     }
 }
