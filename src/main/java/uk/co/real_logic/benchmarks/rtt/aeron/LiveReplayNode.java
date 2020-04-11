@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.driver.MediaDriver;
 import org.agrona.SystemUtil;
 
@@ -26,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
-import static java.lang.Long.MAX_VALUE;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
 
@@ -64,16 +64,21 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
 
         publication = aeron.addExclusivePublication(receiveChannel(), receiveStreamId());
 
+        while (!publication.isConnected())
+        {
+            yieldUninterruptedly();
+        }
+
         final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
 
         final String replayChannel = sendChannel();
         final int replayStreamId = sendStreamId();
-        replaySessionId = aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
+        replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
         subscription = aeron.addSubscription(channel, replayStreamId);
 
-        while (!subscription.isConnected() || !publication.isConnected())
+        while (!subscription.isConnected())
         {
             yieldUninterruptedly();
         }
@@ -86,14 +91,24 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
 
     public void close()
     {
-        aeronArchive.stopReplay(replaySessionId);
+        try
+        {
+            aeronArchive.stopReplay(replaySessionId);
+        }
+        catch (final ArchiveException ex)
+        {
+            System.out.println("WARN: " + ex.getMessage());
+        }
 
         closeAll(subscription, publication);
 
         if (ownsArchiveClient)
         {
             closeAll(aeronArchive, mediaDriver);
-            mediaDriver.context().deleteAeronDirectory();
+            if (null != mediaDriver)
+            {
+                mediaDriver.context().deleteAeronDirectory();
+            }
         }
     }
 

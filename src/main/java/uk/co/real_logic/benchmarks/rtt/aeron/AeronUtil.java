@@ -22,14 +22,15 @@ import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -45,10 +46,12 @@ import static io.aeron.archive.status.RecordingPos.getRecordingId;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Class.forName;
 import static java.lang.Integer.getInteger;
+import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.yield;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 final class AeronUtil
@@ -112,7 +115,7 @@ final class AeronUtil
         final String idleStrategy = getProperty(IDLE_STRATEGY);
         if (null == idleStrategy)
         {
-            return BusySpinIdleStrategy.INSTANCE;
+            return NoOpIdleStrategy.INSTANCE;
         }
 
         try
@@ -239,6 +242,10 @@ final class AeronUtil
         for (int i = 0; i < numberOfMessages; i++)
         {
             offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
+            if (length > SIZE_OF_LONG)
+            {
+                offerBuffer.setMemory(SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)(i + 1));
+            }
             final long result = publication.offer(offerBuffer, 0, length);
             if (result < 0)
             {
@@ -267,6 +274,22 @@ final class AeronUtil
         if (currentThread().isInterrupted())
         {
             throw new IllegalStateException("Interrupted while yielding...");
+        }
+    }
+
+    static long replayFullRecording(
+        final AeronArchive aeronArchive, final long recordingId, final String replayChannel, final int replayStreamId)
+    {
+        while (true)
+        {
+            try
+            {
+                return aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
+            }
+            catch (final ArchiveException ignore)
+            {
+                yieldUninterruptedly();
+            }
         }
     }
 

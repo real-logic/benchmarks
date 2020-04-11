@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.Aeron.connect;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
 
-class PingPongTest extends AbstractTest<MediaDriver, Aeron, PlainMessageTransceiver, EchoNode>
+class EchoTest extends AbstractTest<MediaDriver, Aeron, PlainMessageTransceiver, EchoNode>
 {
     protected EchoNode createNode(final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron)
     {
@@ -49,6 +49,6 @@ class PingPongTest extends AbstractTest<MediaDriver, Aeron, PlainMessageTranscei
     protected PlainMessageTransceiver createMessageTransceiver(
         final MediaDriver mediaDriver, final Aeron aeron, final MessageRecorder messageRecorder)
     {
-        return new PlainMessageTransceiver(mediaDriver, aeron, true, messageRecorder);
+        return new PlainMessageTransceiver(mediaDriver, aeron, false, messageRecorder);
     }
 }

@@ -73,6 +73,8 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
     {
         final Aeron aeron = aeronArchive.context().aeron();
 
+        this.subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
+
         final String archiveChannel = archiveChannel();
         final int archiveStreamId = archiveStreamId();
         publication = aeron.addExclusivePublication(archiveChannel, archiveStreamId);
@@ -81,7 +83,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
         final String channel = addSessionId(archiveChannel, publicationSessionId);
         aeronArchive.startRecording(channel, archiveStreamId, LOCAL, true);
 
-        while (!publication.isConnected())
+        while (!subscription.isConnected() || !publication.isConnected())
         {
             yieldUninterruptedly();
         }
@@ -90,6 +92,8 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
 
         offerBuffer = new UnsafeBuffer(
             allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
+
+        this.image = subscription.imageAtIndex(0);
 
         frameCountLimit = frameCountLimit();
     }
@@ -113,20 +117,8 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
 
     public int receive()
     {
-        Image image = this.image;
-        if (null == image)
-        {
-            this.subscription = aeronArchive.context().aeron().addSubscription(receiveChannel(), receiveStreamId());
-
-            while (!subscription.isConnected())
-            {
-                yieldUninterruptedly();
-            }
-
-            this.image = image = subscription.imageAtIndex(0);
-        }
-
         messagesReceived = 0;
+        final Image image = this.image;
         final int fragments = image.poll(dataHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {

@@ -17,8 +17,8 @@ package uk.co.real_logic.benchmarks.rtt;
 
 import org.agrona.AsciiEncoding;
 import org.agrona.AsciiNumberFormatException;
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -27,6 +27,7 @@ import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.util.Objects.requireNonNull;
 import static joptsimple.internal.Strings.isNullOrEmpty;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * {@code Configuration} contains configuration values for the harness.
@@ -65,7 +66,7 @@ public final class Configuration
     /**
      * Minimal length in bytes of a single message. Contains enough space to hold the {@code timestamp} payload.
      */
-    public static final int MIN_MESSAGE_LENGTH = 8;
+    public static final int MIN_MESSAGE_LENGTH = SIZE_OF_LONG;
 
     /**
      * Name of the system property to configure the number of warm up iterations. Default value is
@@ -116,7 +117,7 @@ public final class Configuration
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} to use when sending messages.
-     * Must be a fully qualified class name. Default value is {@link BusySpinIdleStrategy}.
+     * Must be a fully qualified class name. Default value is {@link NoOpIdleStrategy}.
      *
      * @see #sendIdleStrategy()
      */
@@ -124,7 +125,7 @@ public final class Configuration
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} to use when receiving messages.
-     * Must be a fully qualified class name. Default value is {@link BusySpinIdleStrategy}.
+     * Must be a fully qualified class name. Default value is {@link NoOpIdleStrategy}.
      *
      * @see #receiveIdleStrategy()
      */
@@ -243,7 +244,7 @@ public final class Configuration
     /**
      * {@link IdleStrategy} to use when sending messages.
      *
-     * @return sender {@link IdleStrategy}, defaults to {@link BusySpinIdleStrategy}.
+     * @return sender {@link IdleStrategy}, defaults to {@link NoOpIdleStrategy}.
      */
     public IdleStrategy sendIdleStrategy()
     {
@@ -253,7 +254,7 @@ public final class Configuration
     /**
      * {@link IdleStrategy} to use when receiving messages.
      *
-     * @return receiver {@link IdleStrategy}, defaults to {@link BusySpinIdleStrategy}.
+     * @return receiver {@link IdleStrategy}, defaults to {@link NoOpIdleStrategy}.
      */
     public IdleStrategy receiveIdleStrategy()
     {
@@ -287,8 +288,8 @@ public final class Configuration
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
         private Class<? extends MessageTransceiver> messageTransceiverClass;
-        private IdleStrategy sendIdleStrategy = BusySpinIdleStrategy.INSTANCE;
-        private IdleStrategy receiveIdleStrategy = BusySpinIdleStrategy.INSTANCE;
+        private IdleStrategy sendIdleStrategy = NoOpIdleStrategy.INSTANCE;
+        private IdleStrategy receiveIdleStrategy = NoOpIdleStrategy.INSTANCE;
 
         /**
          * Set the number of warm up iterations.

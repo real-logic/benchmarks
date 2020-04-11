@@ -86,7 +86,7 @@ public final class LoadTestRig
      */
     public void run() throws Exception
     {
-        out.printf("Starting latency benchmark using the following configuration:%n%s%n", configuration);
+        out.printf("%nStarting latency benchmark using the following configuration:%n%s%n", configuration);
         messageTransceiver.init(configuration);
 
         try
@@ -115,6 +115,14 @@ public final class LoadTestRig
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
             histogram.outputPercentileDistribution(out, 1000.0);
+
+            final int expectedTotalNumberOfMessages = configuration.iterations() * configuration.numberOfMessages();
+            if (sentMessages.get() < expectedTotalNumberOfMessages)
+            {
+                out.printf("%n*** WARNING: Target message rate was not achieved: expected to send %,d messages in " +
+                    "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
+                    sentMessages.get());
+            }
         }
         finally
         {

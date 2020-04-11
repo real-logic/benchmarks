@@ -81,7 +81,7 @@ class LoadTestRigTest
 
         final InOrder inOrder = inOrder(messageTransceiver, out);
         inOrder.verify(out)
-            .printf("Starting latency benchmark using the following configuration:%n%s%n", configuration);
+            .printf("%nStarting latency benchmark using the following configuration:%n%s%n", configuration);
         inOrder.verify(messageTransceiver).init(configuration);
         inOrder.verify(out)
             .printf("%nRunning warm up for %,d iterations of %,d messages with burst size of %,d...%n",

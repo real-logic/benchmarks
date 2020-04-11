@@ -53,6 +53,6 @@ class LiveReplayLocalArchiveTest extends
         final AeronArchive aeronArchive,
         final MessageRecorder messageRecorder)
     {
-        return new ArchiveMessageTransceiver(archivingMediaDriver, aeronArchive, true, messageRecorder);
+        return new ArchiveMessageTransceiver(archivingMediaDriver, aeronArchive, false, messageRecorder);
     }
 }

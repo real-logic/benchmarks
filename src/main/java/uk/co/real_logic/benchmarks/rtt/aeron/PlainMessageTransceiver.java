@@ -89,7 +89,10 @@ public final class PlainMessageTransceiver extends MessageTransceiver
         if (ownsAeronClient)
         {
             closeAll(aeron, mediaDriver);
-            mediaDriver.context().deleteAeronDirectory();
+            if (null != mediaDriver)
+            {
+                mediaDriver.context().deleteAeronDirectory();
+            }
         }
     }
 
