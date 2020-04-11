@@ -37,6 +37,8 @@ class LoadTestRigTest
     private final IdleStrategy receiverIdleStrategy = mock(IdleStrategy.class);
     private final NanoClock clock = mock(NanoClock.class);
     private final PrintStream out = mock(PrintStream.class);
+    private final Histogram histogram = mock(Histogram.class);
+    private final MessageTransceiver messageTransceiver = mock(MessageTransceiver.class);
     private final Configuration configuration = new Configuration.Builder()
         .warmUpIterations(1)
         .warmUpNumberOfMessages(1)
@@ -46,8 +48,6 @@ class LoadTestRigTest
         .sendIdleStrategy(senderIdleStrategy)
         .receiveIdleStrategy(receiverIdleStrategy)
         .build();
-    private final Histogram histogram = mock(Histogram.class);
-    private final MessageTransceiver messageTransceiver = mock(MessageTransceiver.class);
 
     @Test
     void constructorThrowsNullPointerExceptionIfConfigurationIsNull()
@@ -72,10 +72,11 @@ class LoadTestRigTest
     {
         final long nanoTime = SECONDS.toNanos(123);
         final NanoClock clock = () -> nanoTime;
+
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong())).thenReturn(1);
         when(messageTransceiver.receive()).thenReturn(1000);
-        final LoadTestRig loadTestRig =
-            new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
+
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
 
         loadTestRig.run();
 
@@ -105,9 +106,9 @@ class LoadTestRigTest
     void receiveShouldKeepReceivingMessagesUpToTheSentMessagesLimit()
     {
         when(messageTransceiver.receive()).thenReturn(1, 0, 2).thenThrow();
+
         final AtomicLong sentMessages = new AtomicLong(2);
-        final LoadTestRig loadTestRig =
-            new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
 
         loadTestRig.receive(sentMessages);
 
@@ -128,6 +129,7 @@ class LoadTestRigTest
             MILLISECONDS.toNanos(2400),
             MILLISECONDS.toNanos(2950))
             .thenThrow(new IllegalStateException("Unexpected call!"));
+
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
             .sendIdleStrategy(senderIdleStrategy)
@@ -135,8 +137,7 @@ class LoadTestRigTest
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .build();
-        final LoadTestRig loadTestRig =
-            new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
 
         final long messages = loadTestRig.send(2, 25);
 
@@ -163,6 +164,7 @@ class LoadTestRigTest
             MILLISECONDS.toNanos(9200),
             MILLISECONDS.toNanos(12000)
         ).thenThrow(new IllegalStateException("Unexpected call!"));
+
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
             .sendIdleStrategy(senderIdleStrategy)
@@ -170,8 +172,7 @@ class LoadTestRigTest
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .build();
-        final LoadTestRig loadTestRig =
-            new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
 
         final long messages = loadTestRig.send(10, 100);
 
@@ -182,10 +183,12 @@ class LoadTestRigTest
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500));
         verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500));
         verify(messageTransceiver).send(5, 100, MILLISECONDS.toNanos(500));
+
         for (int time = 800; time <= 9200; time += 300)
         {
             verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(time));
         }
+
         verify(out).format("Send rate %,d msg/sec%n", 5L);
         verify(out).format("Send rate %,d msg/sec%n", 70L);
         verifyNoMoreInteractions(out, clock, senderIdleStrategy, messageTransceiver);

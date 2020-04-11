@@ -90,8 +90,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
 
         awaitRecordingStart(aeron, publicationSessionId);
 
-        offerBuffer = new UnsafeBuffer(
-            allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
+        offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
         this.image = subscription.imageAtIndex(0);
 

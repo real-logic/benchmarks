@@ -49,13 +49,14 @@ public final class LoadTestRig
     {
         this.configuration = requireNonNull(configuration);
         requireNonNull(messageTransceiverClass);
-        this.clock = SystemNanoClock.INSTANCE;
-        this.out = System.out;
+        clock = SystemNanoClock.INSTANCE;
+        out = System.out;
         histogram = new Histogram(
             max(configuration.iterations(), configuration.warmUpIterations()) * NANOS_PER_SECOND, 3);
         try
         {
-            this.messageTransceiver = messageTransceiverClass.getConstructor(MessageRecorder.class)
+            messageTransceiver = messageTransceiverClass
+                .getConstructor(MessageRecorder.class)
                 .newInstance((MessageRecorder)timestamp -> histogram.recordValue(clock.nanoTime() - timestamp));
         }
         catch (final ReflectiveOperationException ex)
@@ -119,7 +120,7 @@ public final class LoadTestRig
             final int expectedTotalNumberOfMessages = configuration.iterations() * configuration.numberOfMessages();
             if (sentMessages.get() < expectedTotalNumberOfMessages)
             {
-                out.printf("%n*** WARNING: Target message rate was not achieved: expected to send %,d messages in " +
+                out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
                     "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
                     sentMessages.get());
             }

@@ -114,8 +114,8 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             nodeThread.setDaemon(true);
             nodeThread.start();
 
-            final MessageTransceiver messageTransceiver =
-                createMessageTransceiver(driver, client, receivedTimestamps::addLong);
+            final MessageTransceiver messageTransceiver = createMessageTransceiver(
+                driver, client, receivedTimestamps::addLong);
 
             publisherStarted.await();
 

@@ -48,8 +48,6 @@ import static java.lang.Class.forName;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
-import static java.lang.Thread.currentThread;
-import static java.lang.Thread.yield;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
@@ -270,8 +268,8 @@ final class AeronUtil
 
     static void yieldUninterruptedly()
     {
-        yield();
-        if (currentThread().isInterrupted())
+        Thread.yield();
+        if (Thread.currentThread().isInterrupted())
         {
             throw new IllegalStateException("Interrupted while yielding...");
         }
