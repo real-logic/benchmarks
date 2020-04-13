@@ -22,4 +22,5 @@ cd ..
   uk.co.real_logic.benchmarks.rtt.LoadTestRig \
   ${AERON_DIR}/low-latency-driver.properties \
   ${AERON_DIR}/low-latency-archive.properties \
-  ${AERON_DIR}/benchmark.properties
+  ${AERON_DIR}/benchmark.properties \
+  "$@"

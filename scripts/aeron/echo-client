@@ -21,4 +21,5 @@ cd ..
 ./run-java -Daeron.benchmarks.rtt.messageTransceiver=uk.co.real_logic.benchmarks.rtt.aeron.PlainMessageTransceiver \
   uk.co.real_logic.benchmarks.rtt.LoadTestRig \
   ${AERON_DIR}/low-latency-driver.properties \
-  ${AERON_DIR}/benchmark.properties
+  ${AERON_DIR}/benchmark.properties \
+  "$@"

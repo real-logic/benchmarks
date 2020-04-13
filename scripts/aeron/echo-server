@@ -20,4 +20,5 @@ AERON_DIR="`pwd`"
 cd ..
 ./run-java uk.co.real_logic.benchmarks.rtt.aeron.EchoNode \
   ${AERON_DIR}/low-latency-driver.properties \
-  ${AERON_DIR}/benchmark.properties
+  ${AERON_DIR}/benchmark.properties \
+  "$@"
