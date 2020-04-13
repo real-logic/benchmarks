@@ -49,10 +49,21 @@ Besides the scripts to run actual client and server for each case there are seve
 
 - `c-media-driver` - starts a C `MediaDriver` as a separate process.
 By default it will run locally built Aeron C driver. However it is possible to specify an executable via the
-`AERON_MD` environment variable, e.g.:
+`AERON_MD` environment variable.
+
+For example:
 ```
 AERON_MD=path_to_my_aeron_driver ./c-media-driver
 ```
+
+- `run-with-embedded-media-driver` - runs another scripts ensuring that it will be executed with the embedded
+`MediaDriver`.
+
+For example:
+```
+./run-with-embedded-media-driver ./echo-client
+```
+will run `echo-client` script with embedded `MediaDriver`.
 
 
 Overriding properties
@@ -62,14 +73,8 @@ There are two ways to override properties:
 
 1. Supply custom properties file(s) as the last argument to a script, e.g.:
 ```
-./echo-client absolute_path/my-custom-props.properties
+./echo-client my-custom-props.properties
 ```
-
-This form can be used if one wants to start an embedded `MediaDriver`, e.g.:
-```
-./echo-server "`pwd`/enable-embedded-driver.properties"
-```
-Note: `pwd` is used to compute an absolute path to the file.
 
 2. Set system properties via `JVM_OPTS` environment variable, e.g.:
 ```
