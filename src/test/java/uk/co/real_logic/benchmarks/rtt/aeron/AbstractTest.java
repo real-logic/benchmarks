@@ -18,7 +18,6 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.driver.MediaDriver;
 import org.agrona.collections.LongArrayList;
-import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,7 +88,6 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final LongArrayList receivedTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
         final LongArrayList sentTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final MutableInteger receiveCount = new MutableInteger();
 
         final DRIVER driver = createDriver();
         final CLIENT client = connectToDriver();
@@ -116,12 +114,8 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             nodeThread.setDaemon(true);
             nodeThread.start();
 
-            final MessageTransceiver messageTransceiver = createMessageTransceiver(
-                driver, client, element ->
-                {
-                    receivedTimestamps.addLong(element);
-                    receiveCount.getAndIncrement();
-                });
+            final MessageTransceiver messageTransceiver =
+                createMessageTransceiver(driver, client, receivedTimestamps::addLong);
 
             publisherStarted.await();
 
@@ -131,7 +125,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
                 Thread.currentThread().setName("message-transceiver");
                 int sent = 0;
                 long timestamp = 1_000;
-                while (sent < messages || receiveCount.get() < messages)
+                while (sent < messages || receivedTimestamps.size() < messages)
                 {
                     if (Thread.interrupted())
                     {
@@ -157,7 +151,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
                         timestamp++;
                     }
 
-                    if (receiveCount.get() < messages)
+                    if (receivedTimestamps.size() < messages)
                     {
                         messageTransceiver.receive();
                     }
