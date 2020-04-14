@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
+import org.agrona.collections.MutableInteger;
 import org.agrona.hints.ThreadHints;
 import org.junit.jupiter.api.Test;
 
@@ -36,8 +37,6 @@ class InMemoryMessageTransceiverTest
         final int result = messageTransceiver.send(1, 16, 123);
 
         assertEquals(1, result);
-        assertEquals(1, messageTransceiver.receive());
-        verify(messageRecorder).record(123);
     }
 
     @Test
@@ -46,11 +45,6 @@ class InMemoryMessageTransceiverTest
         final int result = messageTransceiver.send(4, 64, 800);
 
         assertEquals(4, result);
-        for (int i = 0; i < result; i++)
-        {
-            assertEquals(1, messageTransceiver.receive());
-        }
-        verify(messageRecorder, times(4)).record(800);
     }
 
     @Test
@@ -61,29 +55,26 @@ class InMemoryMessageTransceiverTest
         final int result = messageTransceiver.send(1, 100, 555);
 
         assertEquals(0, result);
-        for (int i = 0; i < InMemoryMessageTransceiver.SIZE; i++)
-        {
-            assertEquals(1, messageTransceiver.receive());
-        }
-        verify(messageRecorder, times(InMemoryMessageTransceiver.SIZE)).record(777);
     }
 
     @Test
-    void receiveReturnsZeroIfNothingWasWritten()
+    void receiveIsANoOpIfNothingWasWritten()
     {
-        assertEquals(0L, messageTransceiver.receive());
+        messageTransceiver.receive();
+
+        verifyNoInteractions(messageRecorder);
     }
 
     @Test
-    void receiveReturnsZeroAfterAllMessagesConsumed()
+    void receiveIsANoOpAfterAllMessagesWereConsumed()
     {
         messageTransceiver.send(5, 128, 1111);
 
         for (int i = 0; i < 5; i++)
         {
-            assertEquals(1, messageTransceiver.receive());
+            messageTransceiver.receive();
         }
-        assertEquals(0L, messageTransceiver.receive());
+        messageTransceiver.receive();
 
         verify(messageRecorder, times(5)).record(1111);
     }
@@ -103,15 +94,10 @@ class InMemoryMessageTransceiverTest
         final Phaser phaser = new Phaser(3);
 
         final long[] receivedTimestamps = new long[timestamps.length];
-        final MessageTransceiver messageTransceiver = new InMemoryMessageTransceiver(new MessageRecorder()
-        {
-            private int index;
-
-            public void record(final long timestamp)
-            {
-                receivedTimestamps[index++] = timestamp;
-            }
-        });
+        final MutableInteger receiveIndex = new MutableInteger();
+        final MessageTransceiver messageTransceiver = new InMemoryMessageTransceiver(
+            timestamp -> receivedTimestamps[receiveIndex.getAndIncrement()] = timestamp
+        );
 
         final Thread senderThread = new Thread(
             () ->
@@ -133,11 +119,11 @@ class InMemoryMessageTransceiverTest
                 phaser.arriveAndAwaitAdvance();
 
                 final int size = timestamps.length;
-                int received = 0;
-                while (received < size)
+                do
                 {
-                    received += messageTransceiver.receive();
+                    messageTransceiver.receive();
                 }
+                while (receiveIndex.get() < size);
             }
         );
 

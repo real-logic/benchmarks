@@ -20,6 +20,7 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.PrintStream;
@@ -72,11 +73,19 @@ class LoadTestRigTest
     {
         final long nanoTime = SECONDS.toNanos(123);
         final NanoClock clock = () -> nanoTime;
+        final AtomicLong receivedMessages = new AtomicLong(5);
 
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong())).thenReturn(1);
-        when(messageTransceiver.receive()).thenReturn(1000);
+        doAnswer(invocation -> receivedMessages.getAndAdd(3)).when(messageTransceiver).receive();
 
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
+        final LoadTestRig loadTestRig = new LoadTestRig(
+            configuration,
+            clock,
+            out,
+            histogram,
+            messageTransceiver,
+            new AtomicLong(),
+            receivedMessages);
 
         loadTestRig.run();
 
@@ -105,12 +114,34 @@ class LoadTestRigTest
     @Test
     void receiveShouldKeepReceivingMessagesUpToTheSentMessagesLimit()
     {
-        when(messageTransceiver.receive()).thenReturn(1, 0, 2).thenThrow();
+        final AtomicLong sentMessages = new AtomicLong(3);
+        final AtomicLong receivedMessages = new AtomicLong(0);
 
-        final AtomicLong sentMessages = new AtomicLong(2);
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
+        doAnswer(new Answer()
+        {
+            private int invocationCount = 0;
 
-        loadTestRig.receive(sentMessages);
+            public Object answer(final InvocationOnMock invocation) throws Throwable
+            {
+                if (++invocationCount == 2)
+                {
+                    return null;
+                }
+
+                return receivedMessages.getAndAdd(invocationCount);
+            }
+        }).when(messageTransceiver).receive();
+
+        final LoadTestRig loadTestRig = new LoadTestRig(
+            configuration,
+            clock,
+            out,
+            histogram,
+            messageTransceiver,
+            sentMessages,
+            receivedMessages);
+
+        loadTestRig.receive();
 
         verify(messageTransceiver, times(3)).receive();
         verify(receiverIdleStrategy, times(2)).reset();
@@ -137,7 +168,15 @@ class LoadTestRigTest
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .build();
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
+
+        final LoadTestRig loadTestRig = new LoadTestRig(
+            configuration,
+            clock,
+            out,
+            histogram,
+            messageTransceiver,
+            new AtomicLong(),
+            new AtomicLong());
 
         final long messages = loadTestRig.send(2, 25);
 
@@ -172,7 +211,15 @@ class LoadTestRigTest
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .build();
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, clock, out, histogram, messageTransceiver);
+
+        final LoadTestRig loadTestRig = new LoadTestRig(
+            configuration,
+            clock,
+            out,
+            histogram,
+            messageTransceiver,
+            new AtomicLong(),
+            new AtomicLong());
 
         final long messages = loadTestRig.send(10, 100);
 

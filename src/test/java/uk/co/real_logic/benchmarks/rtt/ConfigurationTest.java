@@ -402,9 +402,8 @@ class ConfigurationTest
             return 0;
         }
 
-        public int receive()
+        public void receive()
         {
-            return 0;
         }
     }
 }

@@ -113,19 +113,16 @@ public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver
         return numberOfMessages;
     }
 
-    public int receive()
+    public void receive()
     {
         final long offset = offset(receiveIndex);
         final long[] messages = this.messages;
         final long timestamp = UNSAFE.getLongVolatile(messages, offset);
         if (0L != timestamp)
         {
-            onMessageReceived(timestamp);
             UNSAFE.putOrderedLong(messages, offset, 0L);
+            onMessageReceived(timestamp);
             receiveIndex++;
-            return 1;
         }
-
-        return 0;
     }
 }

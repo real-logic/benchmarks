@@ -43,14 +43,10 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
     private long replaySessionId;
     private Subscription subscription;
     private Image image;
-    private int messagesReceived;
     private int frameCountLimit;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
-        (buffer, offset, length, header) ->
-        {
-            onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN));
-            messagesReceived++;
-        });
+        (buffer, offset, length, header) -> onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN))
+    );
 
     public LiveReplayMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -113,7 +109,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp);
     }
 
-    public int receive()
+    public void receive()
     {
         Image image = this.image;
         if (null == image)
@@ -122,14 +118,11 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             image = this.image;
         }
 
-        messagesReceived = 0;
         final int fragments = image.poll(dataHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
-
-        return messagesReceived;
     }
 
     private void startReplay()

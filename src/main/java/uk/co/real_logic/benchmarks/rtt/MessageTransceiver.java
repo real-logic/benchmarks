@@ -70,12 +70,11 @@ public abstract class MessageTransceiver
     /**
      * Receive one or more messages.
      *
-     * @return number of messages received.
      * @implSpec For every received message method {@link #onMessageReceived(long)} <strong>must</strong> be called.
      * @implNote Can be a no op if the send is <em>synchronous and blocking</em>.
      * @see #send(int, int, long)
      */
-    public abstract int receive();
+    public abstract void receive();
 
     /**
      * Callback method to be invoked for every message received.

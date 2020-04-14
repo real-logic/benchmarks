@@ -26,9 +26,11 @@ import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static java.lang.Math.*;
+import static java.lang.Math.min;
+import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -43,6 +45,8 @@ public final class LoadTestRig
     private final NanoClock clock;
     private final PrintStream out;
     private final Histogram histogram;
+    private final AtomicLong sentMessages;
+    private final AtomicLong receivedMessages;
 
     public LoadTestRig(
         final Configuration configuration, final Class<? extends MessageTransceiver> messageTransceiverClass)
@@ -51,13 +55,17 @@ public final class LoadTestRig
         requireNonNull(messageTransceiverClass);
         clock = SystemNanoClock.INSTANCE;
         out = System.out;
-        histogram = new Histogram(
-            max(configuration.iterations(), configuration.warmUpIterations()) * NANOS_PER_SECOND, 3);
+        histogram = new Histogram(HOURS.toNanos(1), 3);
+        sentMessages = new AtomicLong();
+        receivedMessages = new AtomicLong();
         try
         {
-            messageTransceiver = messageTransceiverClass
-                .getConstructor(MessageRecorder.class)
-                .newInstance((MessageRecorder)timestamp -> histogram.recordValue(clock.nanoTime() - timestamp));
+            messageTransceiver = messageTransceiverClass.getConstructor(MessageRecorder.class)
+                .newInstance((MessageRecorder)timestamp ->
+                {
+                    histogram.recordValue(clock.nanoTime() - timestamp);
+                    receivedMessages.getAndIncrement();
+                });
         }
         catch (final ReflectiveOperationException ex)
         {
@@ -71,13 +79,17 @@ public final class LoadTestRig
         final NanoClock clock,
         final PrintStream out,
         final Histogram histogram,
-        final MessageTransceiver messageTransceiver)
+        final MessageTransceiver messageTransceiver,
+        final AtomicLong sentMessages,
+        final AtomicLong receivedMessages)
     {
         this.configuration = configuration;
         this.clock = clock;
         this.out = out;
         this.histogram = histogram;
         this.messageTransceiver = messageTransceiver;
+        this.sentMessages = sentMessages;
+        this.receivedMessages = receivedMessages;
     }
 
     /**
@@ -92,8 +104,6 @@ public final class LoadTestRig
 
         try
         {
-            final AtomicLong sentMessages = new AtomicLong();
-
             // Warm up
             if (configuration.warmUpIterations() > 0)
             {
@@ -101,10 +111,11 @@ public final class LoadTestRig
                     configuration.warmUpIterations(),
                     configuration.warmUpNumberOfMessages(),
                     configuration.batchSize());
-                doRun(configuration.warmUpIterations(), configuration.warmUpNumberOfMessages(), sentMessages);
+                doRun(configuration.warmUpIterations(), configuration.warmUpNumberOfMessages());
 
                 histogram.reset();
                 sentMessages.set(0);
+                receivedMessages.set(0);
             }
 
             // Measurement
@@ -112,7 +123,7 @@ public final class LoadTestRig
                 configuration.iterations(),
                 configuration.numberOfMessages(),
                 configuration.batchSize());
-            doRun(configuration.iterations(), configuration.numberOfMessages(), sentMessages);
+            doRun(configuration.iterations(), configuration.numberOfMessages());
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
             histogram.outputPercentileDistribution(out, 1000.0);
@@ -131,26 +142,30 @@ public final class LoadTestRig
         }
     }
 
-    private void doRun(final int iterations, final int messages, final AtomicLong sentMessages)
+    private void doRun(final int iterations, final int messages)
     {
-        final CompletableFuture<?> receiverTask = runAsync(() -> receive(sentMessages));
+        final CompletableFuture<?> receiverTask = runAsync(this::receive);
         sentMessages.set(send(iterations, messages));
         receiverTask.join();
     }
 
-    void receive(final AtomicLong sentMessages)
+    void receive()
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final IdleStrategy idleStrategy = configuration.receiveIdleStrategy();
+        final AtomicLong sentMessages = this.sentMessages;
+        final AtomicLong receivedMessages = this.receivedMessages;
 
         long sent = 0;
         long received = 0;
         while (true)
         {
-            final int count = messageTransceiver.receive();
-            if (count > 0)
+            messageTransceiver.receive();
+
+            final long receivedMessagesCount = receivedMessages.get();
+            if (receivedMessagesCount != received)
             {
-                received += count;
+                received = receivedMessagesCount;
                 idleStrategy.reset();
             }
             else

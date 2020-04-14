@@ -62,7 +62,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
 
     private Subscription subscription;
     private Image image;
-    private int messagesReceived = 0;
     private final ImageControlledFragmentAssembler messageHandler = new ImageControlledFragmentAssembler(
         (buffer, offset, length, header) ->
         {
@@ -73,7 +72,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
 
             onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN));
             recordingPositionConsumed += align(length, FRAME_ALIGNMENT);
-            messagesReceived++;
 
             return COMMIT;
         });
@@ -116,37 +114,37 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
             context.recordingEventsChannel(), context.recordingEventsStreamId());
 
         recordingEventsAdapter = new RecordingEventsAdapter(new RecordingEventsListener()
+        {
+            public void onStart(
+                final long recordingId,
+                final long startPosition,
+                final int sessionId,
+                final int streamId,
+                final String channel,
+                final String sourceIdentity)
             {
-                public void onStart(
-                    final long recordingId,
-                    final long startPosition,
-                    final int sessionId,
-                    final int streamId,
-                    final String channel,
-                    final String sourceIdentity)
-                {
-                }
+            }
 
-                public void onProgress(final long recordingId, final long startPosition, final long position)
+            public void onProgress(final long recordingId, final long startPosition, final long position)
+            {
+                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
                 {
-                    if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
+                    if (NULL_POSITION == recordingPositionConsumed)
                     {
-                        if (NULL_POSITION == recordingPositionConsumed)
-                        {
-                            recordingPositionConsumed = startPosition;
-                        }
-                        LiveRecordingMessageTransceiver.this.recordingPosition = position;
+                        recordingPositionConsumed = startPosition;
                     }
+                    LiveRecordingMessageTransceiver.this.recordingPosition = position;
                 }
+            }
 
-                public void onStop(final long recordingId, final long startPosition, final long stopPosition)
+            public void onStop(final long recordingId, final long startPosition, final long stopPosition)
+            {
+                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
                 {
-                    if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
-                    {
-                        LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
-                    }
+                    LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
                 }
-            },
+            }
+        },
             recordingEventsSubscription,
             frameCountLimit);
 
@@ -179,25 +177,22 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
         return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp);
     }
 
-    public int receive()
+    public void receive()
     {
         if (recordingPositionConsumed == recordingPosition)
         {
             recordingEventsAdapter.poll();
             if (recordingPositionConsumed == recordingPosition)
             {
-                return 0; // no new recording events
+                return; // no new recording events
             }
         }
 
-        messagesReceived = 0;
         final Image image = this.image;
         final int fragments = image.controlledPoll(messageHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
-
-        return messagesReceived;
     }
 }

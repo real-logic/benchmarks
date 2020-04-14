@@ -40,13 +40,9 @@ public final class PlainMessageTransceiver extends MessageTransceiver
 
     private Subscription subscription;
     private Image image;
-    private int messagesReceived = 0;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
-        (buffer, offset, length, header) ->
-        {
-            onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN));
-            messagesReceived++;
-        });
+        (buffer, offset, length, header) -> onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN))
+    );
 
     public PlainMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -101,16 +97,13 @@ public final class PlainMessageTransceiver extends MessageTransceiver
         return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp);
     }
 
-    public int receive()
+    public void receive()
     {
-        messagesReceived = 0;
         final Image image = this.image;
         final int fragments = image.poll(dataHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
-
-        return messagesReceived;
     }
 }
