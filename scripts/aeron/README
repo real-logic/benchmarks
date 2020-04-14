@@ -69,14 +69,21 @@ will run `echo-client` script with embedded `MediaDriver`.
 Overriding properties
 ---------------------
 
-There are two ways to override properties:
+There are three ways to define and/or override properties:
 
-1. Supply custom properties file(s) as the last argument to a script, e.g.:
+1. Create a file named `benchmark.properties` and define your properties there.
+
+The example below illustrates setting property `aeron.benchmarks.rtt.messages` to 1000000:
+```
+aeron.benchmarks.rtt.messages=1000000
+```
+
+2. Supply custom properties file(s) as the last argument to a script, e.g.:
 ```
 ./echo-client my-custom-props.properties
 ```
 
-2. Set system properties via `JVM_OPTS` environment variable, e.g.:
+3. Set system properties via `JVM_OPTS` environment variable, e.g.:
 ```
 export JVM_OPTS="${JVM_OPTS} -Daeron.benchmarks.rtt.warmup.messages=50 -Daeron.benchmarks.rtt.aeron.frameCountLimit=25"
 
