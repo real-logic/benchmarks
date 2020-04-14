@@ -47,28 +47,33 @@ public abstract class MessageTransceiver
     public abstract void destroy() throws Exception;
 
     /**
-     * Sends specified number of {@code messages} with the given {@code length} and a {@code timestamp} as payload.
+     * Sends specified number of {@code numberOfMessages} with the given {@code messageLength} and a {@code timestamp}
+     * as a payload.
      *
      * @param numberOfMessages to be sent.
-     * @param length           in bytes of a single message.
+     * @param messageLength    in bytes (of a single message).
      * @param timestamp        to be included in the message payload.
-     * @return actual number of messages sent
-     * @implSpec {@code Sender} must send a message with the payload that is at least {@code length} bytes long and
-     * <em>must</em> include given {@code timestamp} in it. Any header added by the sender <em>may not</em> be
-     * counted towards the {@code length}.
+     * @return actual number of messages sent.
+     * @implSpec {@code Sender} must send a message with the payload that is at least {@code messageLength} bytes long
+     * and <strong>must</strong> include given {@code timestamp} value. Any header added by the sender
+     * <strong>may not</strong> be counted towards the {@code messageLength} bytes.
+     * <p>
+     * If send is <em>synchronous and blocking</em>, i.e. for every message sent there will be an immediate response
+     * message, then for every received message method {@link #onMessageReceived(long)} <strong>must</strong> be called.
+     * </p>
      * @implNote The implementation can re-try actual send operation multiple times if needed but it
-     * <em>should not</em> block forever since test rig will re-try sending the batch, e.g. if a first call sends
-     * only {code 3} out of {code 5} messages then there will be a second call with the batch length of {code 2}.
-     * only {code 3} out of {code 5} messages then there will be a second call with the batch length of {code 2}.
+     * <strong>should not</strong> block forever since test rig will re-try sending the batch, e.g. if a first call
+     * sends only {code 3} out of {code 5} messages then there will be a second call with the batch size of {code 2}.
      */
-    public abstract int send(int numberOfMessages, int length, long timestamp);
+    public abstract int send(int numberOfMessages, int messageLength, long timestamp);
 
     /**
      * Receive one or more messages.
      *
-     * @return number of messages received
-     * @implSpec For every received message the {@link #onMessageReceived(long)} method must be called.
-     * @implNote Can be a blocking call. Invoked by the test rig in a separate receiver thread.
+     * @return number of messages received.
+     * @implSpec For every received message method {@link #onMessageReceived(long)} <strong>must</strong> be called.
+     * @implNote Can be a no op if the send is <em>synchronous and blocking</em>.
+     * @see #send(int, int, long)
      */
     public abstract int receive();
 

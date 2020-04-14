@@ -93,7 +93,7 @@ public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver
         fill(messages, 0L);
     }
 
-    public int send(final int numberOfMessages, final int length, final long timestamp)
+    public int send(final int numberOfMessages, final int messageLength, final long timestamp)
     {
         final long[] messages = this.messages;
         final long index = sendIndex;

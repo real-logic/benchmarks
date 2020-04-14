@@ -174,9 +174,9 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
         }
     }
 
-    public int send(final int numberOfMessages, final int length, final long timestamp)
+    public int send(final int numberOfMessages, final int messageLength, final long timestamp)
     {
-        return sendMessages(publication, offerBuffer, numberOfMessages, length, timestamp);
+        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp);
     }
 
     public int receive()
