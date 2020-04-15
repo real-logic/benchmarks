@@ -55,21 +55,21 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
     }
 
-    @Timeout(10)
+    @Timeout(20)
     @Test
     void messageLength8bytes() throws Exception
     {
         test(10_000, MIN_MESSAGE_LENGTH, 10);
     }
 
-    @Timeout(10)
+    @Timeout(20)
     @Test
     void messageLength200bytes() throws Exception
     {
         test(1000, 200, 5);
     }
 
-    @Timeout(30)
+    @Timeout(20)
     @Test
     void messageLength32KB() throws Exception
     {
