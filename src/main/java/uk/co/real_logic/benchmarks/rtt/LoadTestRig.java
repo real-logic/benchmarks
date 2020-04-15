@@ -224,18 +224,22 @@ public final class LoadTestRig
             }
 
             timestamp += sendInterval;
+            now = clock.nanoTime();
 
-            if (now < timestamp)
+            if (now < timestamp && now < endTime)
             {
                 idleStrategy.reset();
-                while ((now = clock.nanoTime()) < timestamp && now < endTime)
+                do
                 {
                     idleStrategy.idle();
+                    now = clock.nanoTime();
                 }
-                if (now >= endTime)
-                {
-                    break;
-                }
+                while (now < timestamp && now < endTime);
+            }
+
+            if (now >= endTime)
+            {
+                break;
             }
 
             if (now >= nextReportTime)

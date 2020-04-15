@@ -182,7 +182,6 @@ class LoadTestRigTest
 
         assertEquals(50, messages);
         verify(clock, times(4)).nanoTime();
-        verify(senderIdleStrategy, times(3)).reset();
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1000));
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1600));
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(2200));
@@ -223,21 +222,17 @@ class LoadTestRigTest
 
         final long messages = loadTestRig.send(10, 100);
 
-        assertEquals(900, messages);
+        assertEquals(90, messages);
         verify(clock, times(5)).nanoTime();
-        verify(senderIdleStrategy, times(4)).reset();
+        verify(senderIdleStrategy, times(2)).reset();
         verify(senderIdleStrategy, times(3)).idle();
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500));
         verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500));
         verify(messageTransceiver).send(5, 100, MILLISECONDS.toNanos(500));
-
-        for (int time = 800; time <= 9200; time += 300)
-        {
-            verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(time));
-        }
-
+        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(800));
+        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(1100));
         verify(out).format("Send rate %,d msg/sec%n", 5L);
-        verify(out).format("Send rate %,d msg/sec%n", 70L);
+        verify(out).format("Send rate %,d msg/sec%n", 6L);
         verifyNoMoreInteractions(out, clock, senderIdleStrategy, messageTransceiver);
     }
 }
