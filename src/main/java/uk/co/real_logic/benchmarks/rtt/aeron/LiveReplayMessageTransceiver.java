@@ -17,7 +17,6 @@ package uk.co.real_logic.benchmarks.rtt.aeron;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
@@ -40,7 +39,6 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
     private ExclusivePublication publication;
     private UnsafeBuffer offerBuffer;
 
-    private long replaySessionId;
     private Subscription subscription;
     private Image image;
     private int frameCountLimit;
@@ -83,15 +81,6 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public void destroy()
     {
-        try
-        {
-            aeronArchive.stopReplay(replaySessionId);
-        }
-        catch (final ArchiveException ex)
-        {
-            System.out.println("WARN: " + ex.toString());
-        }
-
         closeAll(publication, subscription);
 
         if (ownsArchiveClient)
@@ -131,7 +120,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
         final String replayChannel = receiveChannel();
         final int replayStreamId = receiveStreamId();
-        replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
+        final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
         subscription = aeronArchive.context().aeron().addSubscription(channel, replayStreamId);

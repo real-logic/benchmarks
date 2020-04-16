@@ -19,7 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
 import io.aeron.driver.MediaDriver;
 import org.agrona.SystemUtil;
 
@@ -42,7 +41,6 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
     private final MediaDriver mediaDriver;
     private final AeronArchive aeronArchive;
     private final boolean ownsArchiveClient;
-    private final long replaySessionId;
 
     LiveReplayNode(final AtomicBoolean running)
     {
@@ -73,7 +71,7 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
 
         final String replayChannel = sendChannel();
         final int replayStreamId = sendStreamId();
-        replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
+        final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
         subscription = aeron.addSubscription(channel, replayStreamId);
@@ -91,15 +89,6 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
 
     public void close()
     {
-        try
-        {
-            aeronArchive.stopReplay(replaySessionId);
-        }
-        catch (final ArchiveException ex)
-        {
-            System.out.println("WARN: " + ex.getMessage());
-        }
-
         closeAll(subscription, publication);
 
         if (ownsArchiveClient)
