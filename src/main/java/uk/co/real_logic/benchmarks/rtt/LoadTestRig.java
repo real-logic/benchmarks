@@ -107,9 +107,11 @@ public final class LoadTestRig
             // Warm up
             if (configuration.warmUpIterations() > 0)
             {
-                out.printf("%nRunning warm up for %,d iterations of %,d messages with burst size of %,d...%n",
+                out.printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload and a" +
+                    " burst size of %,d...%n",
                     configuration.warmUpIterations(),
                     configuration.warmUpNumberOfMessages(),
+                    configuration.messageLength(),
                     configuration.batchSize());
                 doRun(configuration.warmUpIterations(), configuration.warmUpNumberOfMessages());
 
@@ -119,9 +121,11 @@ public final class LoadTestRig
             }
 
             // Measurement
-            out.printf("%nRunning measurement for %,d iterations of %,d messages with burst size of %,d...%n",
+            out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload and a" +
+                " burst size of %,d...%n",
                 configuration.iterations(),
                 configuration.numberOfMessages(),
+                configuration.messageLength(),
                 configuration.batchSize());
             doRun(configuration.iterations(), configuration.numberOfMessages());
 
