@@ -19,6 +19,7 @@ import org.HdrHistogram.Histogram;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -53,19 +54,7 @@ class LoadTestRigTest
     @Test
     void constructorThrowsNullPointerExceptionIfConfigurationIsNull()
     {
-        assertThrows(NullPointerException.class, () -> new LoadTestRig(null, MessageTransceiver.class));
-    }
-
-    @Test
-    void constructorThrowsNullPointerExceptionIfMessageTransceiverClassIsNull()
-    {
-        assertThrows(NullPointerException.class, () -> new LoadTestRig(configuration, null));
-    }
-
-    @Test
-    void constructorThrowsExceptionIfMessageTransceiverCannotBeCreated()
-    {
-        assertThrows(InstantiationException.class, () -> new LoadTestRig(configuration, MessageTransceiver.class));
+        assertThrows(NullPointerException.class, () -> new LoadTestRig(null));
     }
 
     @Test
@@ -236,5 +225,20 @@ class LoadTestRigTest
         verify(out).format("Send rate %,d msg/sec%n", 5L);
         verify(out).format("Send rate %,d msg/sec%n", 6L);
         verifyNoMoreInteractions(out, clock, senderIdleStrategy, messageTransceiver);
+    }
+
+    @Timeout(10)
+    @Test
+    void endToEndTest() throws Exception
+    {
+        final Configuration configuration = new Configuration.Builder()
+            .iterations(3)
+            .numberOfMessages(10_000)
+            .warmUpIterations(0)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .build();
+        final LoadTestRig testRig = new LoadTestRig(configuration);
+
+        testRig.run();
     }
 }

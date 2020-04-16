@@ -48,11 +48,11 @@ public final class LoadTestRig
     private final AtomicLong sentMessages;
     private final AtomicLong receivedMessages;
 
-    public LoadTestRig(
-        final Configuration configuration, final Class<? extends MessageTransceiver> messageTransceiverClass)
+    public LoadTestRig(final Configuration configuration)
     {
         this.configuration = requireNonNull(configuration);
-        requireNonNull(messageTransceiverClass);
+        final Class<? extends MessageTransceiver> messageTransceiverClass =
+            requireNonNull(configuration.messageTransceiverClass());
         clock = SystemNanoClock.INSTANCE;
         out = System.out;
         histogram = new Histogram(HOURS.toNanos(1), 3);
@@ -270,6 +270,6 @@ public final class LoadTestRig
         SystemUtil.loadPropertiesFiles(args);
 
         final Configuration configuration = Configuration.fromSystemProperties();
-        new LoadTestRig(configuration, configuration.messageTransceiverClass()).run();
+        new LoadTestRig(configuration).run();
     }
 }
