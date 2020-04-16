@@ -31,9 +31,9 @@ class AeronUtilTest
     @Test
     void defaultConfigurationValues()
     {
-        assertEquals("aeron:udp?endpoint=localhost:33333", sendChannel());
+        assertEquals("aeron:udp?endpoint=localhost:13333", sendChannel());
         assertEquals(1_000_000_000, sendStreamId());
-        assertEquals("aeron:udp?endpoint=localhost:33334", receiveChannel());
+        assertEquals("aeron:udp?endpoint=localhost:13334", receiveChannel());
         assertEquals(1_000_000_001, receiveStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_000_002, archiveStreamId());

@@ -70,7 +70,7 @@ final class AeronUtil
 
     static String sendChannel()
     {
-        return getProperty(SEND_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:33333");
+        return getProperty(SEND_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13333");
     }
 
     static int sendStreamId()
@@ -80,7 +80,7 @@ final class AeronUtil
 
     static String receiveChannel()
     {
-        return getProperty(RECEIVE_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:33334");
+        return getProperty(RECEIVE_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13334");
     }
 
     static int receiveStreamId()
