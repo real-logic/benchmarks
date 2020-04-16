@@ -24,7 +24,8 @@ public interface MessageRecorder
     /**
      * Record arrival of a message.
      *
-     * @param timestamp payload of the message.
+     * @param timestamp from the message.
+     * @param checksum  from the message.
      */
-    void record(long timestamp);
+    void record(long timestamp, long checksum);
 }

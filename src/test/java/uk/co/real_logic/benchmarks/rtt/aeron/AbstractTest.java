@@ -57,7 +57,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
 
     @Timeout(30)
     @Test
-    void messageLength8bytes() throws Exception
+    void messageLength16bytes() throws Exception
     {
         test(10_000, MIN_MESSAGE_LENGTH, 10);
     }
@@ -115,7 +115,11 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             nodeThread.start();
 
             final MessageTransceiver messageTransceiver =
-                createMessageTransceiver(driver, client, receivedTimestamps::addLong);
+                createMessageTransceiver(driver, client, (timestamp, checksum) ->
+                {
+                    assertEquals(-timestamp, checksum);
+                    receivedTimestamps.addLong(timestamp);
+                });
 
             publisherStarted.await();
 
@@ -137,7 +141,8 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
                         int sentBatch = 0;
                         do
                         {
-                            sentBatch += messageTransceiver.send(burstSize - sentBatch, messageLength, timestamp);
+                            sentBatch +=
+                                messageTransceiver.send(burstSize - sentBatch, messageLength, timestamp, -timestamp);
                             messageTransceiver.receive();
                         }
                         while (sentBatch < burstSize);

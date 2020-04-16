@@ -28,6 +28,7 @@ import static io.aeron.archive.client.AeronArchive.connect;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
@@ -45,8 +46,12 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
     private Image image;
     private int frameCountLimit;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
-        (buffer, offset, length, header) -> onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN))
-    );
+        (buffer, offset, length, header) ->
+        {
+            final long timestamp = buffer.getLong(offset, LITTLE_ENDIAN);
+            final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
+            onMessageReceived(timestamp, checksum);
+        });
 
     public ArchiveMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -105,9 +110,9 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
         }
     }
 
-    public int send(final int numberOfMessages, final int messageLength, final long timestamp)
+    public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp);
+        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
     }
 
     public void receive()

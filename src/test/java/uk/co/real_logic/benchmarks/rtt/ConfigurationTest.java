@@ -397,7 +397,7 @@ class ConfigurationTest
         {
         }
 
-        public int send(final int numberOfMessages, final int messageLength, final long timestamp)
+        public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
         {
             return 0;
         }

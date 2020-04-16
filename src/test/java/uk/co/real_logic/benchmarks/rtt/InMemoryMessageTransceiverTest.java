@@ -17,15 +17,19 @@ package uk.co.real_logic.benchmarks.rtt;
 
 import org.agrona.collections.MutableInteger;
 import org.agrona.hints.ThreadHints;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static java.lang.Long.MAX_VALUE;
+import static java.lang.Long.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@Disabled
 class InMemoryMessageTransceiverTest
 {
     private final MessageRecorder messageRecorder = mock(MessageRecorder.class);
@@ -34,7 +38,7 @@ class InMemoryMessageTransceiverTest
     @Test
     void sendASingleMessage()
     {
-        final int result = messageTransceiver.send(1, 16, 123);
+        final int result = messageTransceiver.send(1, 16, 123, MIN_VALUE);
 
         assertEquals(1, result);
     }
@@ -42,7 +46,7 @@ class InMemoryMessageTransceiverTest
     @Test
     void sendMultipleMessages()
     {
-        final int result = messageTransceiver.send(4, 64, 800);
+        final int result = messageTransceiver.send(4, 64, 800, -222);
 
         assertEquals(4, result);
     }
@@ -50,9 +54,9 @@ class InMemoryMessageTransceiverTest
     @Test
     void sendReturnsZeroIfItCantFitAnEntireBatch()
     {
-        messageTransceiver.send(InMemoryMessageTransceiver.SIZE, 8, 777);
+        messageTransceiver.send(InMemoryMessageTransceiver.SIZE, 8, 777, 100);
 
-        final int result = messageTransceiver.send(1, 100, 555);
+        final int result = messageTransceiver.send(1, 100, 555, 21);
 
         assertEquals(0, result);
     }
@@ -68,7 +72,7 @@ class InMemoryMessageTransceiverTest
     @Test
     void receiveIsANoOpAfterAllMessagesWereConsumed()
     {
-        messageTransceiver.send(5, 128, 1111);
+        messageTransceiver.send(5, 128, 1111, 300);
 
         for (int i = 0; i < 5; i++)
         {
@@ -76,7 +80,7 @@ class InMemoryMessageTransceiverTest
         }
         messageTransceiver.receive();
 
-        verify(messageRecorder, times(5)).record(1111);
+        verify(messageRecorder, times(5)).record(1111, 300);
     }
 
     @Test
@@ -90,14 +94,17 @@ class InMemoryMessageTransceiverTest
 
     private void testConcurrentSendAndReceive(final int messages) throws InterruptedException
     {
-        final long[] timestamps = ThreadLocalRandom.current().longs(messages, 1, Long.MAX_VALUE).toArray();
+        final long[] timestamps = ThreadLocalRandom.current().longs(messages, 1, MAX_VALUE).toArray();
         final Phaser phaser = new Phaser(3);
 
         final long[] receivedTimestamps = new long[timestamps.length];
         final MutableInteger receiveIndex = new MutableInteger();
         final MessageTransceiver messageTransceiver = new InMemoryMessageTransceiver(
-            timestamp -> receivedTimestamps[receiveIndex.getAndIncrement()] = timestamp
-        );
+            (timestamp, checksum) ->
+            {
+                assertEquals(-timestamp / 2, checksum);
+                receivedTimestamps[receiveIndex.getAndIncrement()] = timestamp;
+            });
 
         final Thread senderThread = new Thread(
             () ->
@@ -106,7 +113,7 @@ class InMemoryMessageTransceiverTest
 
                 for (final long timestamp : timestamps)
                 {
-                    while (0 == messageTransceiver.send(1, 24, timestamp))
+                    while (0 == messageTransceiver.send(1, 24, timestamp, -timestamp / 2))
                     {
                         ThreadHints.onSpinWait();
                     }

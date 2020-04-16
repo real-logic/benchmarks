@@ -24,6 +24,7 @@ import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.min;
@@ -39,6 +40,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public final class LoadTestRig
 {
+    static final long CHECKSUM = ThreadLocalRandom.current().nextLong();
+
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
     private final Configuration configuration;
     private final MessageTransceiver messageTransceiver;
@@ -61,8 +64,12 @@ public final class LoadTestRig
         try
         {
             messageTransceiver = messageTransceiverClass.getConstructor(MessageRecorder.class)
-                .newInstance((MessageRecorder)timestamp ->
+                .newInstance((MessageRecorder)(timestamp, checksum) ->
                 {
+                    if (CHECKSUM != checksum)
+                    {
+                        throw new IllegalStateException("Invalid message checksum!");
+                    }
                     histogram.recordValue(clock.nanoTime() - timestamp);
                     receivedMessages.getAndIncrement();
                 });
@@ -209,15 +216,16 @@ public final class LoadTestRig
         while (true)
         {
             final int batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
-            int sent = messageTransceiver.send(batchSize, messageSize, timestamp);
+            int sent = messageTransceiver.send(batchSize, messageSize, timestamp, CHECKSUM);
             if (sent < batchSize)
             {
                 idleStrategy.reset();
                 do
                 {
                     idleStrategy.idle();
+                    sent += messageTransceiver.send(batchSize - sent, messageSize, timestamp, CHECKSUM);
                 }
-                while ((sent += messageTransceiver.send(batchSize - sent, messageSize, timestamp)) < batchSize);
+                while (sent < batchSize);
             }
 
             sentMessages += batchSize;

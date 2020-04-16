@@ -49,8 +49,8 @@ import static java.lang.Integer.getInteger;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
-import static uk.co.real_logic.benchmarks.rtt.Configuration.MIN_MESSAGE_LENGTH;
 
 final class AeronUtil
 {
@@ -232,16 +232,14 @@ final class AeronUtil
         final UnsafeBuffer offerBuffer,
         final int numberOfMessages,
         final int messageLength,
-        final long timestamp)
+        final long timestamp,
+        final long checksum)
     {
         int count = 0;
         for (int i = 0; i < numberOfMessages; i++)
         {
             offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
-            if (messageLength > MIN_MESSAGE_LENGTH)
-            {
-                offerBuffer.setMemory(MIN_MESSAGE_LENGTH, messageLength - MIN_MESSAGE_LENGTH, (byte)(i + 1));
-            }
+            offerBuffer.putLong(messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
             final long result = publication.offer(offerBuffer, 0, messageLength);
             if (result < 0)
             {

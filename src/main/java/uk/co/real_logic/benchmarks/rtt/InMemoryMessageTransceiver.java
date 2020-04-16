@@ -29,7 +29,7 @@ abstract class InMemoryMessageTransceiver1 extends MessageTransceiver
     static final int SIZE = 4096;
     private static final int MASK = SIZE - 1;
     private static final int SHIFT = 31 - numberOfLeadingZeros(ARRAY_LONG_INDEX_SCALE);
-    private static final int PADDING_OFFSET = CACHE_LINE_LENGTH / SIZE_OF_LONG;
+    static final int PADDING = CACHE_LINE_LENGTH / SIZE_OF_LONG;
     final long[] messages = new long[SIZE];
 
     // Padding
@@ -49,7 +49,7 @@ abstract class InMemoryMessageTransceiver1 extends MessageTransceiver
 
     static long offset(final long index)
     {
-        return (((index + PADDING_OFFSET) & MASK) << SHIFT) + ARRAY_LONG_BASE_OFFSET;
+        return ((index & MASK) << SHIFT) + ARRAY_LONG_BASE_OFFSET;
     }
 }
 
@@ -93,36 +93,46 @@ public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver
         fill(messages, 0L);
     }
 
-    public int send(final int numberOfMessages, final int messageLength, final long timestamp)
+    public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
         final long[] messages = this.messages;
         final long index = sendIndex;
-        if (0L != UNSAFE.getLongVolatile(messages, offset(index + numberOfMessages - 1)))
+        if (0L != UNSAFE.getLongVolatile(messages, offset(index + 1 + messageIndexOffset(numberOfMessages))))
         {
             return 0;
         }
 
         for (int i = numberOfMessages; i > 1; i--)
         {
-            UNSAFE.putLong(messages, offset(index + i - 1), timestamp);
+            UNSAFE.putLong(messages, offset(index + messageIndexOffset(i)), timestamp);
+            UNSAFE.putLong(messages, offset(index + 1 + messageIndexOffset(i)), checksum);
         }
-        UNSAFE.putOrderedLong(messages, offset(index), timestamp);
+        UNSAFE.putLong(messages, offset(index), timestamp);
+        UNSAFE.putOrderedLong(messages, offset(index + 1), checksum);
 
-        sendIndex += numberOfMessages;
+        sendIndex += 2 + messageIndexOffset(numberOfMessages);
 
         return numberOfMessages;
     }
 
+    private static int messageIndexOffset(final int n)
+    {
+        return (n - 1) * PADDING;
+    }
+
     public void receive()
     {
-        final long offset = offset(receiveIndex);
+        final long checksumOffset = offset(receiveIndex + 1);
         final long[] messages = this.messages;
-        final long timestamp = UNSAFE.getLongVolatile(messages, offset);
-        if (0L != timestamp)
+        final long checksum = UNSAFE.getLongVolatile(messages, checksumOffset);
+        if (0L != checksum)
         {
-            UNSAFE.putOrderedLong(messages, offset, 0L);
-            onMessageReceived(timestamp);
-            receiveIndex++;
+            final long timestampOffset = offset(receiveIndex);
+            final long timestamp = UNSAFE.getLong(messages, timestampOffset);
+            UNSAFE.putLong(messages, timestampOffset, 0L);
+            UNSAFE.putOrderedLong(messages, checksumOffset, 0L);
+            onMessageReceived(timestamp, checksum);
+            receiveIndex += 2 + PADDING;
         }
     }
 }

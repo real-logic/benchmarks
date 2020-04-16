@@ -33,8 +33,7 @@ import static io.aeron.logbuffer.ControlledFragmentHandler.Action.ABORT;
 import static io.aeron.logbuffer.ControlledFragmentHandler.Action.COMMIT;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BitUtil.align;
+import static org.agrona.BitUtil.*;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
@@ -70,7 +69,9 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
                 return ABORT;
             }
 
-            onMessageReceived(buffer.getLong(offset, LITTLE_ENDIAN));
+            final long timestamp = buffer.getLong(offset, LITTLE_ENDIAN);
+            final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
+            onMessageReceived(timestamp, checksum);
             recordingPositionConsumed += align(length, FRAME_ALIGNMENT);
 
             return COMMIT;
@@ -172,9 +173,9 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
         }
     }
 
-    public int send(final int numberOfMessages, final int messageLength, final long timestamp)
+    public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp);
+        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
     }
 
     public void receive()

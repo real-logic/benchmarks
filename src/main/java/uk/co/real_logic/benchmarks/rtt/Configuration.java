@@ -64,9 +64,10 @@ public final class Configuration
     public static final int DEFAULT_BATCH_SIZE = 1;
 
     /**
-     * Minimal length in bytes of a single message. Contains enough space to hold the {@code timestamp} payload.
+     * Minimal length in bytes of a single message. Contains enough space to hold a {@code timestamp} and a
+     * {@code checksum}, i.e. two {@code long} values.
      */
-    public static final int MIN_MESSAGE_LENGTH = SIZE_OF_LONG;
+    public static final int MIN_MESSAGE_LENGTH = 2 * SIZE_OF_LONG;
 
     /**
      * Name of the system property to configure the number of warm up iterations. Default value is

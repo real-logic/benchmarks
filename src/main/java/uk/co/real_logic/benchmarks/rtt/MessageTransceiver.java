@@ -34,7 +34,7 @@ public abstract class MessageTransceiver
      *
      * @param configuration configuration options
      * @throws Exception in case of an error
-     * @implNote The method should block until it is safe to call {@link #send(int, int, long)}
+     * @implNote The method should block until it is safe to call {@link #send(int, int, long, long)}
      * and {@link #receive()} methods.
      */
     public abstract void init(Configuration configuration) throws Exception;
@@ -52,37 +52,42 @@ public abstract class MessageTransceiver
      *
      * @param numberOfMessages to be sent.
      * @param messageLength    in bytes (of a single message).
-     * @param timestamp        to be included in the message payload.
+     * @param timestamp        to be included at the beginning of the message payload.
+     * @param checksum         to be included at the end of the message payload.
      * @return actual number of messages sent.
      * @implSpec {@code Sender} must send a message with the payload that is at least {@code messageLength} bytes long
-     * and <strong>must</strong> include given {@code timestamp} value. Any header added by the sender
-     * <strong>may not</strong> be counted towards the {@code messageLength} bytes.
+     * and <strong>must</strong> include given {@code timestamp} value at the beginning of the message payload and
+     * {@code checksum} at the end of it. Any header added by the sender <strong>may not</strong> be counted towards
+     * the {@code messageLength} bytes.
      * <p>
      * If send is <em>synchronous and blocking</em>, i.e. for every message sent there will be an immediate response
-     * message, then for every received message method {@link #onMessageReceived(long)} <strong>must</strong> be called.
+     * message, then for every received message method {@link #onMessageReceived(long, long)} <strong>must</strong> be
+     * called.
      * </p>
      * @implNote The implementation can re-try actual send operation multiple times if needed but it
      * <strong>should not</strong> block forever since test rig will re-try sending the batch, e.g. if a first call
      * sends only {code 3} out of {code 5} messages then there will be a second call with the batch size of {code 2}.
      */
-    public abstract int send(int numberOfMessages, int messageLength, long timestamp);
+    public abstract int send(int numberOfMessages, int messageLength, long timestamp, long checksum);
 
     /**
      * Receive one or more messages.
      *
-     * @implSpec For every received message method {@link #onMessageReceived(long)} <strong>must</strong> be called.
+     * @implSpec For every received message method {@link #onMessageReceived(long, long)} <strong>must</strong> be
+     * called.
      * @implNote Can be a no op if the send is <em>synchronous and blocking</em>.
-     * @see #send(int, int, long)
+     * @see #send(int, int, long, long)
      */
     public abstract void receive();
 
     /**
      * Callback method to be invoked for every message received.
      *
-     * @param timestamp payload of the received message.
+     * @param timestamp from the received message.
+     * @param checksum  from the received message.
      */
-    protected final void onMessageReceived(final long timestamp)
+    protected final void onMessageReceived(final long timestamp, final long checksum)
     {
-        messageRecorder.record(timestamp);
+        messageRecorder.record(timestamp, checksum);
     }
 }
