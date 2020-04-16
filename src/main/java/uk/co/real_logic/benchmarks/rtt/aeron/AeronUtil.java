@@ -225,8 +225,6 @@ final class AeronUtil
         {
             idleStrategy.idle(image.poll(dataHandler, frameCountLimit));
         }
-
-        System.out.println("Terminated by signal handler!");
     }
 
     static int sendMessages(
