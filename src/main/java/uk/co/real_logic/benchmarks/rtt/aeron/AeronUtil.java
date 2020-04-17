@@ -220,9 +220,18 @@ final class AeronUtil
         final Image image = subscription.imageAtIndex(0);
         final int frameCountLimit = frameCountLimit();
 
-        while (running.get())
+        while (true)
         {
-            idleStrategy.idle(image.poll(dataHandler, frameCountLimit));
+            final int fragmentsRead = image.poll(dataHandler, frameCountLimit);
+            if (0 == fragmentsRead)
+            {
+                if (image.isClosed() || !running.get())
+                {
+                    break;
+                }
+            }
+
+            idleStrategy.idle(fragmentsRead);
         }
     }
 
