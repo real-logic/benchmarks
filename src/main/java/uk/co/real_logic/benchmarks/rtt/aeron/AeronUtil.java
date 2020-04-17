@@ -213,7 +213,6 @@ final class AeronUtil
 
                 bufferClaim
                     .flags(header.flags())
-                    .reservedValue(header.reservedValue())
                     .putBytes(buffer, offset, length)
                     .commit();
             };
