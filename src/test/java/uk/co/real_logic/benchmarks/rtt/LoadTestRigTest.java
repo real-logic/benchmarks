@@ -18,7 +18,6 @@ package uk.co.real_logic.benchmarks.rtt;
 import org.HdrHistogram.Histogram;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.InOrder;
@@ -229,7 +228,6 @@ class LoadTestRigTest
         verifyNoMoreInteractions(out, clock, senderIdleStrategy, messageTransceiver);
     }
 
-    @Disabled
     @Timeout(10)
     @Test
     void endToEndTest() throws Exception

@@ -17,7 +17,6 @@ package uk.co.real_logic.benchmarks.rtt;
 
 import org.agrona.collections.MutableInteger;
 import org.agrona.hints.ThreadHints;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Phaser;
@@ -29,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-@Disabled
 class InMemoryMessageTransceiverTest
 {
     private final MessageRecorder messageRecorder = mock(MessageRecorder.class);

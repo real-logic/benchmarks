@@ -29,7 +29,7 @@ abstract class InMemoryMessageTransceiver1 extends MessageTransceiver
     static final int SIZE = 4096;
     private static final int MASK = SIZE - 1;
     private static final int SHIFT = 31 - numberOfLeadingZeros(ARRAY_LONG_INDEX_SCALE);
-    static final int PADDING = CACHE_LINE_LENGTH / SIZE_OF_LONG;
+    static final int PADDING = CACHE_LINE_LENGTH / SIZE_OF_LONG - 1;
     final long[] messages = new long[SIZE];
 
     // Padding
@@ -110,14 +110,14 @@ public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver
         UNSAFE.putLong(messages, offset(index), timestamp);
         UNSAFE.putOrderedLong(messages, offset(index + 1), checksum);
 
-        sendIndex += 2 + messageIndexOffset(numberOfMessages);
+        sendIndex += messageIndexOffset(numberOfMessages + 1);
 
         return numberOfMessages;
     }
 
     private static int messageIndexOffset(final int n)
     {
-        return (n - 1) * PADDING;
+        return (n - 1) * (1 + PADDING);
     }
 
     public void receive()
@@ -132,7 +132,7 @@ public final class InMemoryMessageTransceiver extends InMemoryMessageTransceiver
             UNSAFE.putLong(messages, timestampOffset, 0L);
             UNSAFE.putOrderedLong(messages, checksumOffset, 0L);
             onMessageReceived(timestamp, checksum);
-            receiveIndex += 2 + PADDING;
+            receiveIndex += 1 + PADDING;
         }
     }
 }
