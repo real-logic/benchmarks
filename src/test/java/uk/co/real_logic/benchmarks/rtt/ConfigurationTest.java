@@ -21,10 +21,20 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.EnumSet;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -199,6 +209,69 @@ class ConfigurationTest
     }
 
     @Test
+    void throwsNullPointerExceptionIfOutputDirectoryIsNull()
+    {
+        final Builder builder = new Builder()
+            .numberOfMessages(4)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(null);
+
+        final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
+
+        assertEquals("Output directory cannot be null", ex.getMessage());
+    }
+
+    @Test
+    void throwsIllegalArgumentExceptionIfOutputDirectoryIsNotADirectory(final @TempDir Path tempDir) throws IOException
+    {
+        final Path outputDirectory = Files.createTempFile(tempDir, "test", "file");
+
+        final Builder builder = new Builder()
+            .numberOfMessages(4)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(outputDirectory);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
+
+        assertEquals("Output directory is not a directory: " + outputDirectory, ex.getMessage());
+    }
+
+    @Test
+    @EnabledOnOs({ OS.LINUX, OS.MAC })
+    void throwsIllegalArgumentExceptionIfOutputDirectoryIsNotWriteable(final @TempDir Path tempDir) throws IOException
+    {
+        final Path outputDirectory = Files.createDirectory(tempDir.resolve("read-only"),
+            PosixFilePermissions.asFileAttribute(EnumSet.of(PosixFilePermission.OWNER_READ)));
+
+        final Builder builder = new Builder()
+            .numberOfMessages(4)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(outputDirectory);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
+
+        assertEquals("Output directory is not writeable: " + outputDirectory, ex.getMessage());
+    }
+
+    @Test
+    @EnabledOnOs({ OS.LINUX, OS.MAC })
+    void throwsIllegalArgumentExceptionIfOutputDirectoryCannotBeCreated(final @TempDir Path tempDir) throws IOException
+    {
+        final Path rootDirectory = Files.createDirectory(tempDir.resolve("read-only"),
+            PosixFilePermissions.asFileAttribute(EnumSet.of(PosixFilePermission.OWNER_READ)));
+        final Path outputDirectory = rootDirectory.resolve("actual-dir");
+
+        final Builder builder = new Builder()
+            .numberOfMessages(4)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(outputDirectory);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
+
+        assertEquals("Failed to create output directory: " + outputDirectory, ex.getMessage());
+    }
+
+    @Test
     void defaultOptions()
     {
         final Configuration configuration = new Builder()
@@ -215,11 +288,13 @@ class ConfigurationTest
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
+        assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
     }
 
     @Test
-    void explicitOptions()
+    void explicitOptions(final @TempDir Path tempDir)
     {
+        final Path outputDirectory = tempDir.resolve("my-output-dir");
         final Configuration configuration = new Builder()
             .warmUpNumberOfMessages(222)
             .warmUpIterations(3)
@@ -230,6 +305,7 @@ class ConfigurationTest
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .outputDirectory(outputDirectory)
             .build();
 
         assertEquals(3, configuration.warmUpIterations());
@@ -241,6 +317,7 @@ class ConfigurationTest
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(YieldingIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
+        assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
     }
 
     @Test
@@ -268,6 +345,7 @@ class ConfigurationTest
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.rtt.InMemoryMessageTransceiver" +
             "\n    sendIdleStrategy=NoOpIdleStrategy{}" +
             "\n    receiveIdleStrategy=YieldingIdleStrategy{}" +
+            "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
             "\n}",
             configuration.toString());
     }
@@ -334,10 +412,11 @@ class ConfigurationTest
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
+        assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
     }
 
     @Test
-    void fromSystemPropertiesOverrideAll()
+    void fromSystemPropertiesOverrideAll(final @TempDir Path tempDir)
     {
         System.setProperty(WARM_UP_ITERATIONS_PROP_NAME, "2");
         System.setProperty(WARM_UP_MESSAGES_PROP_NAME, "10");
@@ -348,6 +427,8 @@ class ConfigurationTest
         System.setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
         System.setProperty(SEND_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
         System.setProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME, BusySpinIdleStrategy.class.getName());
+        final Path outputDirectory = tempDir.resolve("my-output-dir-prop");
+        System.setProperty(OUTPUT_DIRECTORY_PROP_NAME, outputDirectory.toAbsolutePath().toString());
 
         final Configuration configuration = fromSystemProperties();
 
@@ -360,6 +441,7 @@ class ConfigurationTest
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertTrue(configuration.sendIdleStrategy() instanceof YieldingIdleStrategy);
         assertTrue(configuration.receiveIdleStrategy() instanceof BusySpinIdleStrategy);
+        assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
     }
 
     private void clearConfigProperties()
@@ -373,7 +455,8 @@ class ConfigurationTest
             MESSAGE_LENGTH_PROP_NAME,
             MESSAGE_TRANSCEIVER_PROP_NAME,
             SEND_IDLE_STRATEGY_PROP_NAME,
-            RECEIVE_IDLE_STRATEGY_PROP_NAME
+            RECEIVE_IDLE_STRATEGY_PROP_NAME,
+            OUTPUT_DIRECTORY_PROP_NAME
         ).forEach(System::clearProperty);
     }
 
