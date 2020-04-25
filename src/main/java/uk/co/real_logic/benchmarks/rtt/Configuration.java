@@ -149,6 +149,11 @@ public final class Configuration
      */
     public static final String OUTPUT_DIRECTORY_PROP_NAME = "aeron.benchmarks.rtt.outputDirectory";
 
+    /**
+     * Name of the required system property to configure the prefix for the results file.
+     */
+    public static final String OUTPUT_FILE_NAME_PREFIX_PROP_NAME = "aeron.benchmarks.rtt.outputFileNamePrefix";
+
     private final int warmUpIterations;
     private final int warmUpNumberOfMessages;
     private final int iterations;
@@ -159,6 +164,7 @@ public final class Configuration
     private final IdleStrategy sendIdleStrategy;
     private final IdleStrategy receiveIdleStrategy;
     private final Path outputDirectory;
+    private final String outputFileNamePrefix;
 
     private Configuration(final Builder builder)
     {
@@ -173,6 +179,7 @@ public final class Configuration
         this.sendIdleStrategy = requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
         this.receiveIdleStrategy = requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
+        outputFileNamePrefix = validateOutputFileName(builder.outputFileNamePrefix);
     }
 
     /**
@@ -276,13 +283,23 @@ public final class Configuration
     }
 
     /**
-     * Output directory used for storing the historgram files.
+     * Output directory used for storing the histogram files.
      *
      * @return output directory.
      */
     public Path outputDirectory()
     {
         return outputDirectory;
+    }
+
+    /**
+     * Output file name prefix used for creating the file name to persist the results histogram.
+     *
+     * @return output file name prefix.
+     */
+    public String outputFileNamePrefix()
+    {
+        return outputFileNamePrefix;
     }
 
     public String toString()
@@ -298,6 +315,7 @@ public final class Configuration
             "\n    sendIdleStrategy=" + sendIdleStrategy +
             "\n    receiveIdleStrategy=" + receiveIdleStrategy +
             "\n    outputDirectory=" + outputDirectory +
+            "\n    outputFileNamePrefix=" + outputFileNamePrefix +
             "\n}";
     }
 
@@ -316,6 +334,7 @@ public final class Configuration
         private IdleStrategy sendIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private IdleStrategy receiveIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private Path outputDirectory = Paths.get("results");
+        private String outputFileNamePrefix;
 
         /**
          * Set the number of warm up iterations.
@@ -439,6 +458,18 @@ public final class Configuration
         }
 
         /**
+         * Set the output file name prefix.
+         *
+         * @param outputFileNamePrefix file name prefix.
+         * @return this for a fluent API.
+         */
+        public Builder outputFileNamePrefix(final String outputFileNamePrefix)
+        {
+            this.outputFileNamePrefix = outputFileNamePrefix;
+            return this;
+        }
+
+        /**
          * Create a new instance of the {@link Configuration} class from this builder.
          *
          * @return a {@link Configuration} instance
@@ -500,6 +531,8 @@ public final class Configuration
         builder.numberOfMessages(intProperty(MESSAGES_PROP_NAME));
 
         builder.messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class));
+
+        builder.outputFileNamePrefix(getProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME));
 
         return builder.build();
     }
@@ -631,4 +664,15 @@ public final class Configuration
 
         return outputDirectory.toAbsolutePath();
     }
+
+    private static String validateOutputFileName(final String outputFileNamePrefix)
+    {
+        final String prefix = requireNonNull(outputFileNamePrefix, "Output file name prefix cannot be null").trim();
+        if (prefix.isEmpty())
+        {
+            throw new IllegalArgumentException("Output file name prefix cannot be empty!");
+        }
+        return prefix;
+    }
+
 }
