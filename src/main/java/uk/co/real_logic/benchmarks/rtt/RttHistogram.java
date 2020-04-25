@@ -18,6 +18,7 @@ package uk.co.real_logic.benchmarks.rtt;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramLogWriter;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -30,7 +31,8 @@ import static org.agrona.AsciiEncoding.parseIntAscii;
 
 final class RttHistogram
 {
-    public static final String FILE_EXTENSION = ".hdr";
+    static final String FILE_EXTENSION = ".hdr";
+    static final String AGGREGATE_FILE_SUFFIX = "-combined" + FILE_EXTENSION;
 
     private final Histogram histogram;
 
@@ -108,7 +110,9 @@ final class RttHistogram
                 return false;
             }
             final String fileName = file.getFileName().toString();
-            return fileName.endsWith(FILE_EXTENSION) && fileName.startsWith(fileNamePrefix);
+            return fileName.endsWith(FILE_EXTENSION) &&
+                !fileName.endsWith(AGGREGATE_FILE_SUFFIX) &&
+                fileName.startsWith(fileNamePrefix);
         }).mapToInt(file ->
         {
             final String fileName = file.getFileName().toString();
@@ -117,11 +121,20 @@ final class RttHistogram
         }).max().orElse(-1) + 1;
 
         final Path file = outputDirectory.resolve(fileNamePrefix + index + FILE_EXTENSION);
+        return saveToFile(histogram, 1.0, file);
+    }
+
+    static Path saveToFile(
+        final Histogram histogram, final double maxValueUnitRatio, final Path file) throws FileNotFoundException
+    {
         final HistogramLogWriter logWriter = new HistogramLogWriter(file.toFile());
         try
         {
             logWriter.outputIntervalHistogram(
-                histogram.getStartTimeStamp() / 1000.0, histogram.getEndTimeStamp() / 1000.0, histogram, 1.0);
+                histogram.getStartTimeStamp() / 1000.0,
+                histogram.getEndTimeStamp() / 1000.0,
+                histogram,
+                maxValueUnitRatio);
         }
         finally
         {
