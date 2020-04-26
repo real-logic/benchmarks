@@ -220,7 +220,7 @@ class ConfigurationTest
 
         final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
 
-        assertEquals("Output directory cannot be null", ex.getMessage());
+        assertEquals("output directory cannot be null", ex.getMessage());
     }
 
     @Test
@@ -252,7 +252,7 @@ class ConfigurationTest
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Output directory is not writeable: " + outputDirectory, ex.getMessage());
+        assertEquals("output directory is not writeable: " + outputDirectory, ex.getMessage());
     }
 
     @Test
@@ -270,7 +270,7 @@ class ConfigurationTest
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Failed to create output directory: " + outputDirectory, ex.getMessage());
+        assertEquals("failed to create output directory: " + outputDirectory, ex.getMessage());
     }
 
     @Test
@@ -364,7 +364,7 @@ class ConfigurationTest
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class, Configuration::fromSystemProperties);
 
-        assertEquals("Property '" + MESSAGES_PROP_NAME + "' is required!", ex.getMessage());
+        assertEquals("property '" + MESSAGES_PROP_NAME + "' is required!", ex.getMessage());
     }
 
     @Test
@@ -387,7 +387,7 @@ class ConfigurationTest
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class, Configuration::fromSystemProperties);
 
-        assertEquals("Property '" + MESSAGE_TRANSCEIVER_PROP_NAME + "' is required!", ex.getMessage());
+        assertEquals("property '" + MESSAGE_TRANSCEIVER_PROP_NAME + "' is required!", ex.getMessage());
     }
 
     @Test
@@ -469,8 +469,8 @@ class ConfigurationTest
             SEND_IDLE_STRATEGY_PROP_NAME,
             RECEIVE_IDLE_STRATEGY_PROP_NAME,
             OUTPUT_DIRECTORY_PROP_NAME,
-            OUTPUT_FILE_NAME_PREFIX_PROP_NAME
-        ).forEach(System::clearProperty);
+            OUTPUT_FILE_NAME_PREFIX_PROP_NAME)
+            .forEach(System::clearProperty);
     }
 
     private static IntStream messageSizes()

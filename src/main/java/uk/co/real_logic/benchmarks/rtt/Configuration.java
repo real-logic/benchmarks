@@ -595,7 +595,7 @@ public final class Configuration
         final String value = getProperty(propName);
         if (isNullOrEmpty(value))
         {
-            throw new IllegalArgumentException("Property '" + propName + "' is required!");
+            throw new IllegalArgumentException("property '" + propName + "' is required!");
         }
 
         return value;
@@ -636,7 +636,7 @@ public final class Configuration
 
     private static Path validateOutputDirectory(final Path outputDirectory)
     {
-        requireNonNull(outputDirectory, "Output directory cannot be null");
+        requireNonNull(outputDirectory, "output directory cannot be null");
 
         if (exists(outputDirectory))
         {
