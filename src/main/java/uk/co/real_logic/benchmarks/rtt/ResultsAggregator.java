@@ -41,7 +41,7 @@ public final class ResultsAggregator
     {
         if (!exists(directory))
         {
-            throw new IllegalArgumentException("Directory " + directory.toAbsolutePath() + " does not exist!");
+            throw new IllegalArgumentException("directory does not exist: " + directory.toAbsolutePath());
         }
 
         if (!isDirectory(directory))
@@ -52,7 +52,7 @@ public final class ResultsAggregator
         if (Double.isNaN(outputValueUnitScalingRatio) || Double.compare(outputValueUnitScalingRatio, 0.0) <= 0)
         {
             throw new IllegalArgumentException(
-                "Output value scale ratio must a positive number, got: " + outputValueUnitScalingRatio);
+                "output value scale ratio must a positive number, got: " + outputValueUnitScalingRatio);
         }
 
         this.directory = directory;
@@ -62,16 +62,17 @@ public final class ResultsAggregator
     public void run() throws IOException
     {
         final Map<String, List<Path>> byPrefix = walk(directory)
-            .filter(path ->
+            .filter((path) ->
             {
                 if (!isRegularFile(path))
                 {
                     return false;
                 }
+
                 final String fileName = path.getFileName().toString();
                 return fileName.endsWith(FILE_EXTENSION) && !fileName.endsWith(AGGREGATE_FILE_SUFFIX);
             })
-            .collect(groupingBy(file ->
+            .collect(groupingBy((file) ->
             {
                 final String fileName = file.getFileName().toString();
                 return fileName.substring(0, fileName.lastIndexOf('-'));
@@ -84,30 +85,26 @@ public final class ResultsAggregator
         }
     }
 
-    private Histogram aggregateHistograms(final Entry<String, List<Path>> e) throws FileNotFoundException
+    private Histogram aggregateHistograms(final Entry<String, List<Path>> entry) throws FileNotFoundException
     {
         Histogram aggregate = null;
-        for (final Path file : e.getValue())
+
+        for (final Path file : entry.getValue())
         {
-            final HistogramLogReader logReader = new HistogramLogReader(file.toFile());
-            try
+            try (HistogramLogReader logReader = new HistogramLogReader(file.toFile()))
             {
                 while (logReader.hasNext())
                 {
-                    final Histogram histo = (Histogram)logReader.nextIntervalHistogram();
+                    final Histogram histogram = (Histogram)logReader.nextIntervalHistogram();
                     if (null == aggregate)
                     {
-                        aggregate = histo;
+                        aggregate = histogram;
                     }
                     else
                     {
-                        aggregate.add(histo);
+                        aggregate.add(histogram);
                     }
                 }
-            }
-            finally
-            {
-                logReader.close();
             }
         }
 
@@ -123,8 +120,9 @@ public final class ResultsAggregator
         }
 
         final Path directory = Paths.get(args[0]);
-        final ResultsAggregator resultsAggregator =
-            new ResultsAggregator(directory, args.length == 2 ? Double.parseDouble(args[1]) : 1.0);
+        final ResultsAggregator resultsAggregator = new ResultsAggregator(
+            directory, args.length == 2 ? Double.parseDouble(args[1]) : 1.0);
+
         resultsAggregator.run();
     }
 

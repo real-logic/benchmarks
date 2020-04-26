@@ -28,6 +28,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import static java.util.Arrays.sort;
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,7 +53,7 @@ class ResultsAggregatorTest
         final IllegalArgumentException exception =
             assertThrows(IllegalArgumentException.class, () -> new ResultsAggregator(dir, 1));
 
-        assertEquals("Directory " + dir + " does not exist!", exception.getMessage());
+        assertEquals("directory does not exist: " + dir, exception.getMessage());
     }
 
     @Test
@@ -73,7 +74,7 @@ class ResultsAggregatorTest
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
             () -> new ResultsAggregator(tempDir, outputValueUnitScalingRatio));
 
-        assertEquals("Output value scale ratio must a positive number, got: " + outputValueUnitScalingRatio,
+        assertEquals("output value scale ratio must a positive number, got: " + outputValueUnitScalingRatio,
             exception.getMessage());
     }
 
@@ -114,7 +115,7 @@ class ResultsAggregatorTest
         aggregator.run();
 
         final String[] aggregateFiles = tempDir.toFile().list((dir, name) -> name.endsWith(AGGREGATE_FILE_SUFFIX));
-        sort(aggregateFiles);
+        sort(Objects.requireNonNull(aggregateFiles));
         assertArrayEquals(new String[]{ "my-combined.hdr", "other-combined.hdr" },
             aggregateFiles);
         assertEquals(createHistogram(2, 25, 100, 555, 777, 999, 555555, 1232343),
@@ -132,6 +133,7 @@ class ResultsAggregatorTest
         {
             histogram.recordValue(value);
         }
+
         return histogram;
     }
 
@@ -151,15 +153,9 @@ class ResultsAggregatorTest
 
     private Histogram loadFromDisc(final String fileName) throws FileNotFoundException
     {
-        final HistogramLogReader logReader = new HistogramLogReader(tempDir.resolve(fileName).toFile());
-        try
+        try (HistogramLogReader logReader = new HistogramLogReader(tempDir.resolve(fileName).toFile()))
         {
             return (Histogram)logReader.nextIntervalHistogram();
         }
-        finally
-        {
-            logReader.close();
-        }
     }
-
 }

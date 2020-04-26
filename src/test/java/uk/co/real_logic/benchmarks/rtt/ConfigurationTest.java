@@ -235,7 +235,7 @@ class ConfigurationTest
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Output directory is not a directory: " + outputDirectory, ex.getMessage());
+        assertEquals("output path is not a directory: " + outputDirectory, ex.getMessage());
     }
 
     @Test
@@ -375,7 +375,7 @@ class ConfigurationTest
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class, Configuration::fromSystemProperties);
 
-        assertEquals("Non-integer value for property '" + MESSAGES_PROP_NAME +
+        assertEquals("non-integer value for property '" + MESSAGES_PROP_NAME +
             "', cause: 'x' is not a valid digit @ 3", ex.getMessage());
     }
 
@@ -399,7 +399,7 @@ class ConfigurationTest
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class, Configuration::fromSystemProperties);
 
-        assertEquals("Invalid class value for property '" + MESSAGE_TRANSCEIVER_PROP_NAME +
+        assertEquals("invalid class value for property '" + MESSAGE_TRANSCEIVER_PROP_NAME +
             "', cause: class java.lang.Integer", ex.getMessage());
     }
 

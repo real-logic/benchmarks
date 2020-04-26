@@ -528,11 +528,10 @@ public final class Configuration
             builder.outputDirectory(Paths.get(getProperty(OUTPUT_DIRECTORY_PROP_NAME)));
         }
 
-        builder.numberOfMessages(intProperty(MESSAGES_PROP_NAME));
-
-        builder.messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class));
-
-        builder.outputFileNamePrefix(getProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME));
+        builder
+            .numberOfMessages(intProperty(MESSAGES_PROP_NAME))
+            .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class))
+            .outputFileNamePrefix(getProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME));
 
         return builder.build();
     }
@@ -543,6 +542,7 @@ public final class Configuration
         {
             throw new IllegalArgumentException(prefix + " cannot be less than " + minValue + ", got: " + value);
         }
+
         return value;
     }
 
@@ -554,6 +554,7 @@ public final class Configuration
         {
             throw new IllegalArgumentException("MessageTransceiver class must be a concrete class");
         }
+
         try
         {
             final Constructor<? extends MessageTransceiver> constructor = klass.getConstructor(MessageRecorder.class);
@@ -584,8 +585,8 @@ public final class Configuration
         }
         catch (final AsciiNumberFormatException ex)
         {
-            throw new IllegalArgumentException("Non-integer value for property '" + propName + "', cause: " +
-                ex.getMessage());
+            throw new IllegalArgumentException(
+                "non-integer value for property '" + propName + "', cause: " + ex.getMessage());
         }
     }
 
@@ -609,8 +610,8 @@ public final class Configuration
         }
         catch (final ClassNotFoundException | ClassCastException ex)
         {
-            throw new IllegalArgumentException("Invalid class value for property '" + propName + "', cause: " +
-                ex.getMessage());
+            throw new IllegalArgumentException(
+                "invalid class value for property '" + propName + "', cause: " + ex.getMessage());
         }
     }
 
@@ -623,13 +624,13 @@ public final class Configuration
         }
         catch (final InstantiationException | IllegalAccessException | NoSuchMethodException ex)
         {
-            throw new IllegalArgumentException("Invalid IdleStrategy property '" + propName + "', cause: " +
-                ex.getMessage());
+            throw new IllegalArgumentException(
+                "invalid IdleStrategy property '" + propName + "', cause: " + ex.getMessage());
         }
         catch (final InvocationTargetException ex)
         {
-            throw new IllegalArgumentException("Invalid IdleStrategy property '" + propName + "', cause: " +
-                ex.getCause().getMessage());
+            throw new IllegalArgumentException(
+                "invalid IdleStrategy property '" + propName + "', cause: " + ex.getCause().getMessage());
         }
     }
 
@@ -641,13 +642,14 @@ public final class Configuration
         {
             if (!isDirectory(outputDirectory))
             {
-                throw new IllegalArgumentException("Output directory is not a directory: " +
-                    outputDirectory.toAbsolutePath());
+                throw new IllegalArgumentException(
+                    "output path is not a directory: " + outputDirectory.toAbsolutePath());
             }
+
             if (!isWritable(outputDirectory))
             {
-                throw new IllegalArgumentException("Output directory is not writeable: " +
-                    outputDirectory.toAbsolutePath());
+                throw new IllegalArgumentException(
+                    "output directory is not writeable: " + outputDirectory.toAbsolutePath());
             }
         }
         else
@@ -658,7 +660,7 @@ public final class Configuration
             }
             catch (final IOException e)
             {
-                throw new IllegalArgumentException("Failed to create output directory: " + outputDirectory, e);
+                throw new IllegalArgumentException("failed to create output directory: " + outputDirectory, e);
             }
         }
 
@@ -667,12 +669,12 @@ public final class Configuration
 
     private static String validateOutputFileName(final String outputFileNamePrefix)
     {
-        final String prefix = requireNonNull(outputFileNamePrefix, "Output file name prefix cannot be null").trim();
+        final String prefix = requireNonNull(outputFileNamePrefix, "output file name prefix cannot be null").trim();
         if (prefix.isEmpty())
         {
-            throw new IllegalArgumentException("Output file name prefix cannot be empty!");
+            throw new IllegalArgumentException("output file name prefix cannot be empty!");
         }
+
         return prefix;
     }
-
 }

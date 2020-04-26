@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 import static java.nio.file.Files.find;
 import static java.nio.file.Files.isRegularFile;
@@ -103,29 +104,38 @@ final class RttHistogram
         }
 
         final String fileNamePrefix = prefix + "-";
-        final int index = find(outputDirectory, 1, (file, attrs) ->
-        {
-            if (!isRegularFile(file))
+        final Stream<Path> pathStream = find(
+            outputDirectory,
+            1,
+            (file, attrs) ->
             {
-                return false;
-            }
-            final String fileName = file.getFileName().toString();
-            return fileName.endsWith(FILE_EXTENSION) &&
-                !fileName.endsWith(AGGREGATE_FILE_SUFFIX) &&
-                fileName.startsWith(fileNamePrefix);
-        }).mapToInt(file ->
-        {
-            final String fileName = file.getFileName().toString();
-            final int indexLength = fileName.length() - FILE_EXTENSION.length() - fileNamePrefix.length();
-            return parseIntAscii(fileName, fileNamePrefix.length(), indexLength);
-        }).max().orElse(-1) + 1;
+                if (!isRegularFile(file))
+                {
+                    return false;
+                }
 
-        final Path file = outputDirectory.resolve(fileNamePrefix + index + FILE_EXTENSION);
-        return saveToFile(histogram, 1.0, file);
+                final String fileName = file.getFileName().toString();
+
+                return fileName.endsWith(FILE_EXTENSION) &&
+                    !fileName.endsWith(AGGREGATE_FILE_SUFFIX) &&
+                    fileName.startsWith(fileNamePrefix);
+            });
+
+        final int index = pathStream.mapToInt(
+            (file) ->
+            {
+                final String fileName = file.getFileName().toString();
+                final int indexLength = fileName.length() - FILE_EXTENSION.length() - fileNamePrefix.length();
+                return parseIntAscii(fileName, fileNamePrefix.length(), indexLength);
+            })
+            .max()
+            .orElse(-1) + 1;
+
+        return saveToFile(histogram, 1.0, outputDirectory.resolve(fileNamePrefix + index + FILE_EXTENSION));
     }
 
-    static Path saveToFile(
-        final Histogram histogram, final double maxValueUnitRatio, final Path file) throws FileNotFoundException
+    static Path saveToFile(final Histogram histogram, final double maxValueUnitRatio, final Path file)
+        throws FileNotFoundException
     {
         final HistogramLogWriter logWriter = new HistogramLogWriter(file.toFile());
         try
@@ -140,6 +150,7 @@ final class RttHistogram
         {
             logWriter.close();
         }
+
         return file;
     }
 }
