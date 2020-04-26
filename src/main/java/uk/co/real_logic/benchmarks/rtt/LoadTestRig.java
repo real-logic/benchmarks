@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
-import org.HdrHistogram.Histogram;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
@@ -31,7 +30,6 @@ import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -47,7 +45,7 @@ public final class LoadTestRig
     private final MessageTransceiver messageTransceiver;
     private final NanoClock clock;
     private final PrintStream out;
-    private final Histogram histogram;
+    private final RttHistogram histogram;
     private final AtomicLong sentMessages;
     private final AtomicLong receivedMessages;
 
@@ -58,7 +56,7 @@ public final class LoadTestRig
             requireNonNull(configuration.messageTransceiverClass());
         clock = SystemNanoClock.INSTANCE;
         out = System.out;
-        histogram = new Histogram(HOURS.toNanos(1), 3);
+        histogram = new RttHistogram();
         sentMessages = new AtomicLong();
         receivedMessages = new AtomicLong();
         try
@@ -85,7 +83,7 @@ public final class LoadTestRig
         final Configuration configuration,
         final NanoClock clock,
         final PrintStream out,
-        final Histogram histogram,
+        final RttHistogram histogram,
         final MessageTransceiver messageTransceiver,
         final AtomicLong sentMessages,
         final AtomicLong receivedMessages)
@@ -146,6 +144,8 @@ public final class LoadTestRig
                     "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
                     sentMessages.get());
             }
+
+            histogram.saveToFile(configuration.outputDirectory(), configuration.outputFileNamePrefix());
         }
         finally
         {

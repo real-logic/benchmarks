@@ -22,10 +22,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,32 +59,35 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
 
     @Timeout(30)
     @Test
-    void messageLength16bytes() throws Exception
+    void messageLength16bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(10_000, MIN_MESSAGE_LENGTH, 10);
+        test(10_000, MIN_MESSAGE_LENGTH, 10, tempDir);
     }
 
     @Timeout(30)
     @Test
-    void messageLength200bytes() throws Exception
+    void messageLength200bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(1000, 200, 5);
+        test(1000, 200, 5, tempDir);
     }
 
     @Timeout(30)
     @Test
-    void messageLength32KB() throws Exception
+    void messageLength32KB(final @TempDir Path tempDir) throws Exception
     {
-        test(100, 32 * 1024, 1);
+        test(100, 32 * 1024, 1, tempDir);
     }
 
     @SuppressWarnings("MethodLength")
-    private void test(final int messages, final int messageLength, final int burstSize) throws Exception
+    private void test(
+        final int messages, final int messageLength, final int burstSize, final Path tempDir) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
             .messageLength(messageLength)
             .messageTransceiverClass(messageTransceiverClass())
+            .outputDirectory(tempDir)
+            .outputFileNamePrefix(getClass().getSimpleName() + "-results")
             .build();
 
         final AtomicReference<Throwable> error = new AtomicReference<>();

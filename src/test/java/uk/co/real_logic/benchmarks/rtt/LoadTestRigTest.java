@@ -15,22 +15,24 @@
  */
 package uk.co.real_logic.benchmarks.rtt;
 
-import org.HdrHistogram.Histogram;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.benchmarks.rtt.LoadTestRig.CHECKSUM;
 
@@ -40,17 +42,25 @@ class LoadTestRigTest
     private final IdleStrategy receiverIdleStrategy = mock(IdleStrategy.class);
     private final NanoClock clock = mock(NanoClock.class);
     private final PrintStream out = mock(PrintStream.class);
-    private final Histogram histogram = mock(Histogram.class);
+    private final RttHistogram histogram = mock(RttHistogram.class);
     private final MessageTransceiver messageTransceiver = mock(MessageTransceiver.class);
-    private final Configuration configuration = new Configuration.Builder()
-        .warmUpIterations(1)
-        .warmUpNumberOfMessages(1)
-        .iterations(1)
-        .numberOfMessages(1)
-        .messageTransceiverClass(InMemoryMessageTransceiver.class)
-        .sendIdleStrategy(senderIdleStrategy)
-        .receiveIdleStrategy(receiverIdleStrategy)
-        .build();
+    private Configuration configuration;
+
+    @BeforeEach
+    void before(final @TempDir Path tempDir)
+    {
+        configuration = new Configuration.Builder()
+            .warmUpIterations(1)
+            .warmUpNumberOfMessages(1)
+            .iterations(1)
+            .numberOfMessages(1)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .sendIdleStrategy(senderIdleStrategy)
+            .receiveIdleStrategy(receiverIdleStrategy)
+            .outputDirectory(tempDir)
+            .outputFileNamePrefix("test-results")
+            .build();
+    }
 
     @Test
     void constructorThrowsNullPointerExceptionIfConfigurationIsNull()
@@ -79,7 +89,7 @@ class LoadTestRigTest
 
         loadTestRig.run();
 
-        final InOrder inOrder = inOrder(messageTransceiver, out);
+        final InOrder inOrder = inOrder(messageTransceiver, out, histogram);
         inOrder.verify(out)
             .printf("%nStarting latency benchmark using the following configuration:%n%s%n", configuration);
         inOrder.verify(messageTransceiver).init(configuration);
@@ -91,6 +101,7 @@ class LoadTestRigTest
             configuration.batchSize());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
+        inOrder.verify(histogram).reset();
         inOrder.verify(out).printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes" +
             " payload and a burst size of %,d...%n",
             configuration.iterations(),
@@ -100,6 +111,8 @@ class LoadTestRigTest
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);
         inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(out).printf("%nHistogram of RTT latencies in microseconds.%n");
+        inOrder.verify(histogram).outputPercentileDistribution(out, 1000.0);
+        inOrder.verify(histogram).saveToFile(configuration.outputDirectory(), configuration.outputFileNamePrefix());
         inOrder.verify(messageTransceiver).destroy();
     }
 
@@ -142,7 +155,7 @@ class LoadTestRigTest
     }
 
     @Test
-    void sendStopsWhenTotalNumberOfMessagesIsReached()
+    void sendStopsWhenTotalNumberOfMessagesIsReached(final @TempDir Path tempDir)
     {
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong()))
             .thenAnswer((Answer<Integer>)invocation -> (int)invocation.getArgument(0));
@@ -159,6 +172,8 @@ class LoadTestRigTest
             .batchSize(15)
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(tempDir)
+            .outputFileNamePrefix("test")
             .build();
 
         final LoadTestRig loadTestRig = new LoadTestRig(
@@ -184,7 +199,7 @@ class LoadTestRigTest
     }
 
     @Test
-    void sendStopsIfTimeElapsesBeforeTargetNumberOfMessagesIsReached()
+    void sendStopsIfTimeElapsesBeforeTargetNumberOfMessagesIsReached(final @TempDir Path tempDir)
     {
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(15, 10, 5, 30);
         when(clock.nanoTime()).thenReturn(
@@ -201,6 +216,8 @@ class LoadTestRigTest
             .batchSize(30)
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(tempDir)
+            .outputFileNamePrefix("test")
             .build();
 
         final LoadTestRig loadTestRig = new LoadTestRig(
@@ -230,7 +247,7 @@ class LoadTestRigTest
 
     @Timeout(10)
     @Test
-    void endToEndTest() throws Exception
+    void endToEndTest(final @TempDir Path tempDir) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
             .iterations(3)
@@ -238,9 +255,15 @@ class LoadTestRigTest
             .batchSize(5)
             .warmUpIterations(0)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(tempDir)
+            .outputFileNamePrefix("test")
             .build();
         final LoadTestRig testRig = new LoadTestRig(configuration);
 
         testRig.run();
+
+        final File[] files = tempDir.toFile().listFiles();
+        assertNotNull(files);
+        assertEquals(1, files.length);
     }
 }

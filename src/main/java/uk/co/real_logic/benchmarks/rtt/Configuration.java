@@ -20,11 +20,16 @@ import org.agrona.AsciiNumberFormatException;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import static java.lang.System.getProperty;
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isPublic;
+import static java.nio.file.Files.*;
 import static java.util.Objects.requireNonNull;
 import static joptsimple.internal.Strings.isNullOrEmpty;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -138,6 +143,17 @@ public final class Configuration
      */
     public static final String MESSAGE_TRANSCEIVER_PROP_NAME = "aeron.benchmarks.rtt.messageTransceiver";
 
+    /**
+     * Name of the system property to configure the output directory where histogram files for each run should be
+     * stored. Default value is {@code results} directory created in the current directory.
+     */
+    public static final String OUTPUT_DIRECTORY_PROP_NAME = "aeron.benchmarks.rtt.outputDirectory";
+
+    /**
+     * Name of the required system property to configure the prefix for the results file.
+     */
+    public static final String OUTPUT_FILE_NAME_PREFIX_PROP_NAME = "aeron.benchmarks.rtt.outputFileNamePrefix";
+
     private final int warmUpIterations;
     private final int warmUpNumberOfMessages;
     private final int iterations;
@@ -147,6 +163,8 @@ public final class Configuration
     private final Class<? extends MessageTransceiver> messageTransceiverClass;
     private final IdleStrategy sendIdleStrategy;
     private final IdleStrategy receiveIdleStrategy;
+    private final Path outputDirectory;
+    private final String outputFileNamePrefix;
 
     private Configuration(final Builder builder)
     {
@@ -160,6 +178,8 @@ public final class Configuration
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
         this.sendIdleStrategy = requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
         this.receiveIdleStrategy = requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
+        this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
+        outputFileNamePrefix = validateOutputFileName(builder.outputFileNamePrefix);
     }
 
     /**
@@ -262,6 +282,26 @@ public final class Configuration
         return receiveIdleStrategy;
     }
 
+    /**
+     * Output directory used for storing the histogram files.
+     *
+     * @return output directory.
+     */
+    public Path outputDirectory()
+    {
+        return outputDirectory;
+    }
+
+    /**
+     * Output file name prefix used for creating the file name to persist the results histogram.
+     *
+     * @return output file name prefix.
+     */
+    public String outputFileNamePrefix()
+    {
+        return outputFileNamePrefix;
+    }
+
     public String toString()
     {
         return "Configuration{" +
@@ -274,6 +314,8 @@ public final class Configuration
             "\n    messageTransceiverClass=" + messageTransceiverClass.getName() +
             "\n    sendIdleStrategy=" + sendIdleStrategy +
             "\n    receiveIdleStrategy=" + receiveIdleStrategy +
+            "\n    outputDirectory=" + outputDirectory +
+            "\n    outputFileNamePrefix=" + outputFileNamePrefix +
             "\n}";
     }
 
@@ -291,6 +333,8 @@ public final class Configuration
         private Class<? extends MessageTransceiver> messageTransceiverClass;
         private IdleStrategy sendIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private IdleStrategy receiveIdleStrategy = NoOpIdleStrategy.INSTANCE;
+        private Path outputDirectory = Paths.get("results");
+        private String outputFileNamePrefix;
 
         /**
          * Set the number of warm up iterations.
@@ -402,6 +446,30 @@ public final class Configuration
         }
 
         /**
+         * Set the output directory to store histogram files in.
+         *
+         * @param outputDirectory output directory.
+         * @return this for a fluent API.
+         */
+        public Builder outputDirectory(final Path outputDirectory)
+        {
+            this.outputDirectory = outputDirectory;
+            return this;
+        }
+
+        /**
+         * Set the output file name prefix.
+         *
+         * @param outputFileNamePrefix file name prefix.
+         * @return this for a fluent API.
+         */
+        public Builder outputFileNamePrefix(final String outputFileNamePrefix)
+        {
+            this.outputFileNamePrefix = outputFileNamePrefix;
+            return this;
+        }
+
+        /**
          * Create a new instance of the {@link Configuration} class from this builder.
          *
          * @return a {@link Configuration} instance
@@ -455,9 +523,16 @@ public final class Configuration
             builder.receiveIdleStrategy(idleStrategyProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME));
         }
 
+        if (isPropertyProvided(OUTPUT_DIRECTORY_PROP_NAME))
+        {
+            builder.outputDirectory(Paths.get(getProperty(OUTPUT_DIRECTORY_PROP_NAME)));
+        }
+
         builder.numberOfMessages(intProperty(MESSAGES_PROP_NAME));
 
         builder.messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class));
+
+        builder.outputFileNamePrefix(getProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME));
 
         return builder.build();
     }
@@ -497,7 +572,7 @@ public final class Configuration
 
     private static boolean isPropertyProvided(final String propName)
     {
-        return !isNullOrEmpty(System.getProperty(propName));
+        return !isNullOrEmpty(getProperty(propName));
     }
 
     private static int intProperty(final String propName)
@@ -516,7 +591,7 @@ public final class Configuration
 
     private static String getPropertyValue(final String propName)
     {
-        final String value = System.getProperty(propName);
+        final String value = getProperty(propName);
         if (isNullOrEmpty(value))
         {
             throw new IllegalArgumentException("Property '" + propName + "' is required!");
@@ -557,4 +632,47 @@ public final class Configuration
                 ex.getCause().getMessage());
         }
     }
+
+    private static Path validateOutputDirectory(final Path outputDirectory)
+    {
+        requireNonNull(outputDirectory, "Output directory cannot be null");
+
+        if (exists(outputDirectory))
+        {
+            if (!isDirectory(outputDirectory))
+            {
+                throw new IllegalArgumentException("Output directory is not a directory: " +
+                    outputDirectory.toAbsolutePath());
+            }
+            if (!isWritable(outputDirectory))
+            {
+                throw new IllegalArgumentException("Output directory is not writeable: " +
+                    outputDirectory.toAbsolutePath());
+            }
+        }
+        else
+        {
+            try
+            {
+                createDirectories(outputDirectory);
+            }
+            catch (final IOException e)
+            {
+                throw new IllegalArgumentException("Failed to create output directory: " + outputDirectory, e);
+            }
+        }
+
+        return outputDirectory.toAbsolutePath();
+    }
+
+    private static String validateOutputFileName(final String outputFileNamePrefix)
+    {
+        final String prefix = requireNonNull(outputFileNamePrefix, "Output file name prefix cannot be null").trim();
+        if (prefix.isEmpty())
+        {
+            throw new IllegalArgumentException("Output file name prefix cannot be empty!");
+        }
+        return prefix;
+    }
+
 }
