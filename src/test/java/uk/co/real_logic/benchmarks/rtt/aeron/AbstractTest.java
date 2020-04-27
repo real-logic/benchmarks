@@ -87,7 +87,6 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             .messageLength(messageLength)
             .messageTransceiverClass(messageTransceiverClass())
             .outputDirectory(tempDir)
-            .outputFileNamePrefix(getClass().getSimpleName() + "-results")
             .build();
 
         final AtomicReference<Throwable> error = new AtomicReference<>();

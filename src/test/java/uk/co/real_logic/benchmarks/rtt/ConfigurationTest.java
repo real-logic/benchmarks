@@ -27,6 +27,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.other.benchmark.impl.MessageTransceiverFromAnotherPackage;
+import uk.co.real_logic.benchmarks.rtt.nested.NestedMessageTransceiver;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -89,7 +91,6 @@ class ConfigurationTest
             .warmUpNumberOfMessages(0)
             .numberOfMessages(1_000)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .outputFileNamePrefix("my-results")
             .build();
 
         assertEquals(0, configuration.warmUpIterations());
@@ -274,12 +275,38 @@ class ConfigurationTest
     }
 
     @Test
+    void outputFileNamePrefixShortensTransceiverClassNameByRemovingCommonPackagePrefix(final @TempDir Path tempDir)
+    {
+        final Configuration configuration = new Builder()
+            .numberOfMessages(12)
+            .batchSize(3)
+            .messageLength(75)
+            .messageTransceiverClass(NestedMessageTransceiver.class)
+            .outputDirectory(tempDir)
+            .build();
+
+        assertEquals("nested.NestedMessageTransceiver_12_3_75", configuration.outputFileNamePrefix());
+    }
+
+    @Test
+    void outputFileNamePrefixUsesFullyQualifiedTransceiverClassNameWhenFromAnotherPackage(final @TempDir Path tempDir)
+    {
+        final Configuration configuration = new Builder()
+            .numberOfMessages(100)
+            .messageTransceiverClass(MessageTransceiverFromAnotherPackage.class)
+            .outputDirectory(tempDir)
+            .build();
+
+        assertEquals(MessageTransceiverFromAnotherPackage.class.getName() + "_100_1_16",
+            configuration.outputFileNamePrefix());
+    }
+
+    @Test
     void defaultOptions()
     {
         final Configuration configuration = new Builder()
             .numberOfMessages(123)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .outputFileNamePrefix("my-prefix")
             .build();
 
         assertEquals(123, configuration.numberOfMessages());
@@ -292,7 +319,6 @@ class ConfigurationTest
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
-        assertEquals("my-prefix", configuration.outputFileNamePrefix());
     }
 
     @Test
@@ -310,7 +336,6 @@ class ConfigurationTest
             .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .outputDirectory(outputDirectory)
-            .outputFileNamePrefix("another_ONE")
             .build();
 
         assertEquals(3, configuration.warmUpIterations());
@@ -323,7 +348,6 @@ class ConfigurationTest
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(YieldingIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
-        assertEquals("another_ONE", configuration.outputFileNamePrefix());
     }
 
     @Test
@@ -339,7 +363,6 @@ class ConfigurationTest
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
-            .outputFileNamePrefix("prefix")
             .build();
 
         assertEquals("Configuration{" +
@@ -353,7 +376,7 @@ class ConfigurationTest
             "\n    sendIdleStrategy=NoOpIdleStrategy{}" +
             "\n    receiveIdleStrategy=YieldingIdleStrategy{}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
-            "\n    outputFileNamePrefix=prefix" +
+            "\n    outputFileNamePrefix=InMemoryMessageTransceiver_777_2_64" +
             "\n}",
             configuration.toString());
     }
@@ -408,7 +431,6 @@ class ConfigurationTest
     {
         setProperty(MESSAGES_PROP_NAME, "42");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
-        setProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "one");
 
         final Configuration configuration = fromSystemProperties();
 
@@ -422,7 +444,6 @@ class ConfigurationTest
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
-        assertEquals("one", configuration.outputFileNamePrefix());
     }
 
     @Test
@@ -439,7 +460,6 @@ class ConfigurationTest
         setProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME, BusySpinIdleStrategy.class.getName());
         final Path outputDirectory = tempDir.resolve("my-output-dir-prop");
         setProperty(OUTPUT_DIRECTORY_PROP_NAME, outputDirectory.toAbsolutePath().toString());
-        setProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "two");
 
         final Configuration configuration = fromSystemProperties();
 
@@ -453,7 +473,6 @@ class ConfigurationTest
         assertTrue(configuration.sendIdleStrategy() instanceof YieldingIdleStrategy);
         assertTrue(configuration.receiveIdleStrategy() instanceof BusySpinIdleStrategy);
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
-        assertEquals("two", configuration.outputFileNamePrefix());
     }
 
     private void clearConfigProperties()
@@ -468,8 +487,7 @@ class ConfigurationTest
             MESSAGE_TRANSCEIVER_PROP_NAME,
             SEND_IDLE_STRATEGY_PROP_NAME,
             RECEIVE_IDLE_STRATEGY_PROP_NAME,
-            OUTPUT_DIRECTORY_PROP_NAME,
-            OUTPUT_FILE_NAME_PREFIX_PROP_NAME)
+            OUTPUT_DIRECTORY_PROP_NAME)
             .forEach(System::clearProperty);
     }
 

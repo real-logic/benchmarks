@@ -149,10 +149,13 @@ public final class Configuration
      */
     public static final String OUTPUT_DIRECTORY_PROP_NAME = "aeron.benchmarks.rtt.outputDirectory";
 
-    /**
-     * Name of the required system property to configure the prefix for the results file.
-     */
-    public static final String OUTPUT_FILE_NAME_PREFIX_PROP_NAME = "aeron.benchmarks.rtt.outputFileNamePrefix";
+    private static final String COMMON_PACKAGE_PREFIX;
+
+    static
+    {
+        final String className = Configuration.class.getName();
+        COMMON_PACKAGE_PREFIX = className.substring(0, className.lastIndexOf('.') + 1);
+    }
 
     private final int warmUpIterations;
     private final int warmUpNumberOfMessages;
@@ -179,7 +182,7 @@ public final class Configuration
         this.sendIdleStrategy = requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
         this.receiveIdleStrategy = requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
-        outputFileNamePrefix = validateOutputFileName(builder.outputFileNamePrefix);
+        outputFileNamePrefix = computeFileNamePrefix();
     }
 
     /**
@@ -319,6 +322,15 @@ public final class Configuration
             "\n}";
     }
 
+    private String computeFileNamePrefix()
+    {
+        final String messageTransceiverClassName = messageTransceiverClass.getName();
+        final String className = messageTransceiverClassName.startsWith(COMMON_PACKAGE_PREFIX) ?
+            messageTransceiverClassName.substring(COMMON_PACKAGE_PREFIX.length()) :
+            messageTransceiverClassName;
+        return className + "_" + numberOfMessages + "_" + batchSize + "_" + messageLength;
+    }
+
     /**
      * A builder for the {@code Configuration}.
      */
@@ -334,7 +346,6 @@ public final class Configuration
         private IdleStrategy sendIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private IdleStrategy receiveIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private Path outputDirectory = Paths.get("results");
-        private String outputFileNamePrefix;
 
         /**
          * Set the number of warm up iterations.
@@ -458,18 +469,6 @@ public final class Configuration
         }
 
         /**
-         * Set the output file name prefix.
-         *
-         * @param outputFileNamePrefix file name prefix.
-         * @return this for a fluent API.
-         */
-        public Builder outputFileNamePrefix(final String outputFileNamePrefix)
-        {
-            this.outputFileNamePrefix = outputFileNamePrefix;
-            return this;
-        }
-
-        /**
          * Create a new instance of the {@link Configuration} class from this builder.
          *
          * @return a {@link Configuration} instance
@@ -530,8 +529,7 @@ public final class Configuration
 
         builder
             .numberOfMessages(intProperty(MESSAGES_PROP_NAME))
-            .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class))
-            .outputFileNamePrefix(getProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME));
+            .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class));
 
         return builder.build();
     }
@@ -665,16 +663,5 @@ public final class Configuration
         }
 
         return outputDirectory.toAbsolutePath();
-    }
-
-    private static String validateOutputFileName(final String outputFileNamePrefix)
-    {
-        final String prefix = requireNonNull(outputFileNamePrefix, "output file name prefix cannot be null").trim();
-        if (prefix.isEmpty())
-        {
-            throw new IllegalArgumentException("output file name prefix cannot be empty!");
-        }
-
-        return prefix;
     }
 }
