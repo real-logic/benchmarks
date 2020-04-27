@@ -19,25 +19,26 @@ import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramLogReader;
 
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static java.lang.Double.*;
 import static java.nio.file.Files.*;
 import static java.util.stream.Collectors.groupingBy;
 import static uk.co.real_logic.benchmarks.rtt.RttHistogram.*;
-import static uk.co.real_logic.benchmarks.rtt.RttHistogram.AGGREGATE_FILE_SUFFIX;
-import static uk.co.real_logic.benchmarks.rtt.RttHistogram.FILE_EXTENSION;
 
 public final class ResultsAggregator
 {
     private final Path directory;
-    private final double outputValueUnitScalingRatio;
+    private final double reportOutputScalingRatio;
 
-    public ResultsAggregator(final Path directory, final double outputValueUnitScalingRatio)
+    public ResultsAggregator(final Path directory, final double reportOutputScalingRatio)
     {
         if (!exists(directory))
         {
@@ -49,14 +50,14 @@ public final class ResultsAggregator
             throw new IllegalArgumentException(directory.toAbsolutePath() + " is not a directory!");
         }
 
-        if (Double.isNaN(outputValueUnitScalingRatio) || Double.compare(outputValueUnitScalingRatio, 0.0) <= 0)
+        if (isNaN(reportOutputScalingRatio) || compare(reportOutputScalingRatio, 0.0) <= 0)
         {
             throw new IllegalArgumentException(
-                "output value scale ratio must a positive number, got: " + outputValueUnitScalingRatio);
+                "report output value scale ratio must a positive number, got: " + reportOutputScalingRatio);
         }
 
         this.directory = directory;
-        this.outputValueUnitScalingRatio = outputValueUnitScalingRatio;
+        this.reportOutputScalingRatio = reportOutputScalingRatio;
     }
 
     public void run() throws IOException
@@ -81,7 +82,9 @@ public final class ResultsAggregator
         for (final Entry<String, List<Path>> e : byPrefix.entrySet())
         {
             final Histogram aggregate = aggregateHistograms(e);
-            saveToFile(aggregate, outputValueUnitScalingRatio, directory.resolve(e.getKey() + AGGREGATE_FILE_SUFFIX));
+            final String filePrefix = e.getKey();
+            saveToFile(aggregate, directory.resolve(filePrefix + AGGREGATE_FILE_SUFFIX));
+            createReportFile(aggregate, directory.resolve(filePrefix + REPORT_FILE_SUFFIX));
         }
     }
 
@@ -111,6 +114,15 @@ public final class ResultsAggregator
         return aggregate;
     }
 
+    private void createReportFile(final Histogram aggregate, final Path reportFile) throws IOException
+    {
+        try (FileOutputStream fos = new FileOutputStream(reportFile.toFile(), false);
+            PrintStream printStream = new PrintStream(fos))
+        {
+            aggregate.outputPercentileDistribution(printStream, reportOutputScalingRatio);
+        }
+    }
+
     public static void main(final String[] args) throws IOException
     {
         if (args.length < 1 || args.length > 2)
@@ -121,26 +133,28 @@ public final class ResultsAggregator
 
         final Path directory = Paths.get(args[0]);
         final ResultsAggregator resultsAggregator = new ResultsAggregator(
-            directory, args.length == 2 ? Double.parseDouble(args[1]) : 1.0);
+            directory, args.length == 2 ? parseDouble(args[1]) : 1000.0);
 
         resultsAggregator.run();
     }
 
     private static void printHelp()
     {
-        System.out.println("Usage: <input-dir> [outputValueUnitScalingRatio] - aggregates multiple histogram files");
+        System.out.println("Usage: <input-dir> [reportOutputScalingRatio] - aggregates multiple histogram files");
         System.out.println("  from the `input-dir` into a single file grouping them by a common prefix.");
+        System.out.println("  For each aggregate file it also produces a report file which can be plotted using");
+        System.out.println("  https://github.com/HdrHistogram/HistogramLogAnalyzer or");
+        System.out.println("  http://hdrhistogram.github.io/HdrHistogram/plotFiles.html.");
         System.out.println("  For example if the `input-dir` contains files `my-0.hdr`, `my-6.hdr` and `other-3.hdr`");
-        System.out.println("  the result of executing the aggregator will be two new files in the same directory,");
-        System.out.println("  i.e. `my-combined.hdr` (combination of the `my-0.hdr` and `my-6.hdr`) and");
-        System.out.println("  `other-combined.hdr` (contains the `other-0.hdr` histogram).");
+        System.out.println("  the result of executing the aggregator will be four new files in the same directory,");
+        System.out.println("  i.e. `my-combined.hdr` (combination of the `my-0.hdr` and `my-6.hdr`) and the report");
+        System.out.println("  file `my-report.hgrm`; `other-combined.hdr` (contains the `other-0.hdr` histogram) and");
+        System.out.println("  `other-report.hgrm`.");
         System.out.println();
         System.out.println("  Input arguments:");
         System.out.println("  `input-dir` - is the directory containing results files to be aggregated");
-        System.out.println("  `outputValueUnitScalingRatio` - is the scaling factor by which to divide histogram");
-        System.out.println("  recorded values units in output.");
-        System.out.println("  Default value is 1.0, i.e. the output will be in nanoseconds.");
-        System.out.println("  For example setting `outputValueUnitScalingRatio` to 1000.0 will change the output");
-        System.out.println("  to be in microseconds.");
+        System.out.println("  `reportOutputScalingRatio` - is the scaling factor by which to divide histogram");
+        System.out.println("  recorded values units to produce the report file.");
+        System.out.println("  Default value is 1000.0, i.e. the output will be in microseconds.");
     }
 }

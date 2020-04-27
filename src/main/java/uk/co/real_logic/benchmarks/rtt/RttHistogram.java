@@ -34,6 +34,7 @@ final class RttHistogram
 {
     static final String FILE_EXTENSION = ".hdr";
     static final String AGGREGATE_FILE_SUFFIX = "-combined" + FILE_EXTENSION;
+    static final String REPORT_FILE_SUFFIX = "-report.hgrm";
 
     private final Histogram histogram;
 
@@ -131,10 +132,10 @@ final class RttHistogram
             .max()
             .orElse(-1) + 1;
 
-        return saveToFile(histogram, 1.0, outputDirectory.resolve(fileNamePrefix + index + FILE_EXTENSION));
+        return saveToFile(histogram, outputDirectory.resolve(fileNamePrefix + index + FILE_EXTENSION));
     }
 
-    static Path saveToFile(final Histogram histogram, final double maxValueUnitRatio, final Path file)
+    static Path saveToFile(final Histogram histogram, final Path file)
         throws FileNotFoundException
     {
         final HistogramLogWriter logWriter = new HistogramLogWriter(file.toFile());
@@ -144,7 +145,7 @@ final class RttHistogram
                 histogram.getStartTimeStamp() / 1000.0,
                 histogram.getEndTimeStamp() / 1000.0,
                 histogram,
-                maxValueUnitRatio);
+                1.0);
         }
         finally
         {
