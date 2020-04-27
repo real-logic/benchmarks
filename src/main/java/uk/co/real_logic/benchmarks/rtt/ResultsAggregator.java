@@ -143,7 +143,6 @@ public final class ResultsAggregator
         System.out.println("Usage: <input-dir> [reportOutputScalingRatio] - aggregates multiple histogram files");
         System.out.println("  from the `input-dir` into a single file grouping them by a common prefix.");
         System.out.println("  For each aggregate file it also produces a report file which can be plotted using");
-        System.out.println("  https://github.com/HdrHistogram/HistogramLogAnalyzer or");
         System.out.println("  http://hdrhistogram.github.io/HdrHistogram/plotFiles.html.");
         System.out.println("  For example if the `input-dir` contains files `my-0.hdr`, `my-6.hdr` and `other-3.hdr`");
         System.out.println("  the result of executing the aggregator will be four new files in the same directory,");
