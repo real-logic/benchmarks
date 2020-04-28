@@ -58,7 +58,6 @@ class LoadTestRigTest
             .sendIdleStrategy(senderIdleStrategy)
             .receiveIdleStrategy(receiverIdleStrategy)
             .outputDirectory(tempDir)
-            .outputFileNamePrefix("test-results")
             .build();
     }
 
@@ -173,7 +172,6 @@ class LoadTestRigTest
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
-            .outputFileNamePrefix("test")
             .build();
 
         final LoadTestRig loadTestRig = new LoadTestRig(
@@ -217,7 +215,6 @@ class LoadTestRigTest
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
-            .outputFileNamePrefix("test")
             .build();
 
         final LoadTestRig loadTestRig = new LoadTestRig(
@@ -256,7 +253,6 @@ class LoadTestRigTest
             .warmUpIterations(0)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
-            .outputFileNamePrefix("test")
             .build();
         final LoadTestRig testRig = new LoadTestRig(configuration);
 
