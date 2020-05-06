@@ -38,7 +38,7 @@ The binaries with __Benchmark__ in the name use Google Benchmark and only displa
 While the binaries with __Nanomark__ in the name use Nanomark (included in the source) and displays full histograms.
 
 To pick a specific tag for Aeron, edit the __GIT_TAG__ value in the Aeron ExternalProject_Add section in CMakeLists.txt to have
-the specific tag in Aeron used. For example, GIT_TAG "1.22.0" will use Aeron 1.22.0 release.
+the specific tag in Aeron used. For example, GIT_TAG "1.27.0" will use Aeron 1.27.0 release.
 
 License (See LICENSE file for full license)
 -------------------------------------------
