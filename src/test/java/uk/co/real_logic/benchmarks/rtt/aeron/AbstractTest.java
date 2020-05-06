@@ -73,9 +73,9 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
 
     @Timeout(30)
     @Test
-    void messageLength16KB(final @TempDir Path tempDir) throws Exception
+    void messageLength1KB(final @TempDir Path tempDir) throws Exception
     {
-        test(100, 16 * 1024, 1, tempDir);
+        test(100, 1024, 1, tempDir);
     }
 
     @SuppressWarnings("MethodLength")
