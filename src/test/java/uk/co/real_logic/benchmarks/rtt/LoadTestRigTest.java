@@ -151,7 +151,7 @@ class LoadTestRigTest
 
         verify(out).printf("%n*** WARNING: Insufficient number of CPU cores detected!" +
             "%nThe benchmarking harness requires at least %d physical CPU cores." +
-            "%nThe current system reports %d logical cores which, assuming hyper-threading enabled, is " +
+            "%nThe current system reports %d logical cores which, assuming the hyper-threading is enabled, is " +
             "insufficient." +
             "%nPlease ensure that the sufficient number of physical CPU cores are available in order to obtain " +
             "reliable results.%n",
