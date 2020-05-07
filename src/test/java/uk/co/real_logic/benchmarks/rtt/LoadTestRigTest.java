@@ -35,6 +35,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.benchmarks.rtt.LoadTestRig.CHECKSUM;
+import static uk.co.real_logic.benchmarks.rtt.LoadTestRig.MINIMUM_NUMBER_OF_CPU_CORES;
 
 class LoadTestRigTest
 {
@@ -50,8 +51,7 @@ class LoadTestRigTest
     void before(final @TempDir Path tempDir)
     {
         configuration = new Configuration.Builder()
-            .warmUpIterations(1)
-            .warmUpNumberOfMessages(1)
+            .warmUpIterations(0)
             .iterations(1)
             .numberOfMessages(1)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -77,6 +77,17 @@ class LoadTestRigTest
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(1);
         doAnswer(invocation -> receivedMessages.getAndAdd(3)).when(messageTransceiver).receive();
 
+        configuration = new Configuration.Builder()
+            .warmUpIterations(1)
+            .warmUpNumberOfMessages(1)
+            .iterations(1)
+            .numberOfMessages(1)
+            .messageTransceiverClass(configuration.messageTransceiverClass())
+            .sendIdleStrategy(senderIdleStrategy)
+            .receiveIdleStrategy(receiverIdleStrategy)
+            .outputDirectory(configuration.outputDirectory())
+            .build();
+
         final LoadTestRig loadTestRig = new LoadTestRig(
             configuration,
             clock,
@@ -84,7 +95,8 @@ class LoadTestRigTest
             histogram,
             messageTransceiver,
             new AtomicLong(),
-            receivedMessages);
+            receivedMessages,
+            MINIMUM_NUMBER_OF_CPU_CORES * 2);
 
         loadTestRig.run();
 
@@ -116,6 +128,73 @@ class LoadTestRigTest
     }
 
     @Test
+    void runWarnsAboutInsufficientCpu() throws Exception
+    {
+        final long nanoTime = SECONDS.toNanos(123);
+        final NanoClock clock = () -> nanoTime;
+        final AtomicLong receivedMessages = new AtomicLong(5);
+
+        when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(1);
+
+        final LoadTestRig loadTestRig = new LoadTestRig(
+            configuration,
+            clock,
+            out,
+            histogram,
+            messageTransceiver,
+            new AtomicLong(),
+            receivedMessages,
+            MINIMUM_NUMBER_OF_CPU_CORES + 1);
+
+        loadTestRig.run();
+
+
+        verify(out).printf("%n*** WARNING: Insufficient number of CPU cores detected!" +
+            "%nThe benchmarking harness requires at least %d physical CPU cores." +
+            "%nThe current system reports %d logical cores which, assuming hyper-threading enabled, is " +
+            "insufficient." +
+            "%nPlease ensure that the sufficient number of physical CPU cores are available in order to obtain " +
+            "reliable results.%n",
+            MINIMUM_NUMBER_OF_CPU_CORES, MINIMUM_NUMBER_OF_CPU_CORES + 1);
+    }
+
+    @Test
+    void runWarnsAboutMissedTargetRate() throws Exception
+    {
+        when(clock.nanoTime()).thenReturn(1L, 9_000_000_000L);
+        final AtomicLong receivedMessages = new AtomicLong(5);
+
+        when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong()))
+            .thenAnswer((Answer<Integer>)invocation -> invocation.getArgument(0));
+
+        configuration = new Configuration.Builder()
+            .warmUpIterations(0)
+            .iterations(3)
+            .numberOfMessages(5)
+            .batchSize(2)
+            .messageTransceiverClass(configuration.messageTransceiverClass())
+            .sendIdleStrategy(senderIdleStrategy)
+            .receiveIdleStrategy(receiverIdleStrategy)
+            .outputDirectory(configuration.outputDirectory())
+            .build();
+
+        final LoadTestRig loadTestRig = new LoadTestRig(
+            configuration,
+            clock,
+            out,
+            histogram,
+            messageTransceiver,
+            new AtomicLong(),
+            receivedMessages,
+            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+
+        loadTestRig.run();
+
+        verify(out).printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
+            "total but managed to send only %,d messages!%n", 15L, 2L);
+    }
+
+    @Test
     void receiveShouldKeepReceivingMessagesUpToTheSentMessagesLimit()
     {
         final AtomicLong sentMessages = new AtomicLong(3);
@@ -143,7 +222,8 @@ class LoadTestRigTest
             histogram,
             messageTransceiver,
             sentMessages,
-            receivedMessages);
+            receivedMessages,
+            MINIMUM_NUMBER_OF_CPU_CORES * 2);
 
         loadTestRig.receive();
 
@@ -181,7 +261,8 @@ class LoadTestRigTest
             histogram,
             messageTransceiver,
             new AtomicLong(),
-            new AtomicLong());
+            new AtomicLong(),
+            MINIMUM_NUMBER_OF_CPU_CORES * 2);
 
         final long messages = loadTestRig.send(2, 25);
 
@@ -224,7 +305,8 @@ class LoadTestRigTest
             histogram,
             messageTransceiver,
             new AtomicLong(),
-            new AtomicLong());
+            new AtomicLong(),
+            MINIMUM_NUMBER_OF_CPU_CORES * 2);
 
         final long messages = loadTestRig.send(10, 100);
 

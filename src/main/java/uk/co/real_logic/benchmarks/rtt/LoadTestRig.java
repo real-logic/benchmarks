@@ -38,6 +38,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public final class LoadTestRig
 {
+    static final int MINIMUM_NUMBER_OF_CPU_CORES = 6;
     static final long CHECKSUM = ThreadLocalRandom.current().nextLong();
 
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
@@ -48,6 +49,7 @@ public final class LoadTestRig
     private final RttHistogram histogram;
     private final AtomicLong sentMessages;
     private final AtomicLong receivedMessages;
+    private final int availableProcessors;
 
     public LoadTestRig(final Configuration configuration)
     {
@@ -56,6 +58,7 @@ public final class LoadTestRig
             requireNonNull(configuration.messageTransceiverClass());
         clock = SystemNanoClock.INSTANCE;
         out = System.out;
+        availableProcessors = Runtime.getRuntime().availableProcessors();
         histogram = new RttHistogram();
         sentMessages = new AtomicLong();
         receivedMessages = new AtomicLong();
@@ -86,7 +89,8 @@ public final class LoadTestRig
         final RttHistogram histogram,
         final MessageTransceiver messageTransceiver,
         final AtomicLong sentMessages,
-        final AtomicLong receivedMessages)
+        final AtomicLong receivedMessages,
+        final int availableProcessors)
     {
         this.configuration = configuration;
         this.clock = clock;
@@ -95,6 +99,7 @@ public final class LoadTestRig
         this.messageTransceiver = messageTransceiver;
         this.sentMessages = sentMessages;
         this.receivedMessages = receivedMessages;
+        this.availableProcessors = availableProcessors;
     }
 
     /**
@@ -137,13 +142,8 @@ public final class LoadTestRig
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
             histogram.outputPercentileDistribution(out, 1000.0);
 
-            final int expectedTotalNumberOfMessages = configuration.iterations() * configuration.numberOfMessages();
-            if (sentMessages.get() < expectedTotalNumberOfMessages)
-            {
-                out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
-                    "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
-                    sentMessages.get());
-            }
+            warnIfInsufficientCpu();
+            warnIfTargetRateNotAchieved();
 
             histogram.saveToFile(configuration.outputDirectory(), configuration.outputFileNamePrefix());
         }
@@ -271,6 +271,30 @@ public final class LoadTestRig
         out.format("Send rate %,d msg/sec%n", sendRate);
 
         return elapsedSeconds;
+    }
+
+    private void warnIfInsufficientCpu()
+    {
+        if ((availableProcessors >>> 1) < MINIMUM_NUMBER_OF_CPU_CORES)
+        {
+            out.printf("%n*** WARNING: Insufficient number of CPU cores detected!" +
+                "%nThe benchmarking harness requires at least %d physical CPU cores." +
+                "%nThe current system reports %d logical cores which, assuming the hyper-threading is enabled, is " +
+                "insufficient." +
+                "%nPlease ensure that the sufficient number of physical CPU cores are available in order to obtain " +
+                "reliable results.%n", MINIMUM_NUMBER_OF_CPU_CORES, availableProcessors);
+        }
+    }
+
+    private void warnIfTargetRateNotAchieved()
+    {
+        final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.numberOfMessages();
+        if (sentMessages.get() < expectedTotalNumberOfMessages)
+        {
+            out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
+                "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
+                sentMessages.get());
+        }
     }
 
     public static void main(final String[] args) throws Exception
