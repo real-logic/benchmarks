@@ -171,8 +171,8 @@ include_directories(${AERON_SOURCE_DIR}/aeron-client/src/main/cpp)
 include_directories(${AERON_SOURCE_DIR}/aeron-client/src/main/c)
 include_directories(${AERON_SOURCE_DIR}/aeron-driver/src/main/c)
 
-include_directories(${CMAKE_SOURCE_DIR}/src/main/cpp)
+include_directories(${CMAKE_SOURCE_DIR}/aeron-benchmarks-aeron/src/main/cpp)
 
 ##########################################################
 
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/aeron-benchmarks-aeron/src/main/cpp")

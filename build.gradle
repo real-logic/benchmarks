@@ -38,61 +38,94 @@ def junitVersion = '5.6.2'
 def mockitoVersion = '3.3.3'
 def checkstyleVersion = '8.28'
 
-checkstyle.toolVersion = "${checkstyleVersion}"
-
-dependencies {
-    api "org.agrona:agrona:${agronaVersion}"
-    
-    annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
-    implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
-    implementation "io.aeron:aeron-archive:${aeronVersion}"
-    implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
-    implementation "com.lmax:disruptor:${disruptorVersion}"
-
-    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
-}
-
-tasks.withType(JavaCompile) {
-    if (JavaVersion.current().isJava9Compatible()) {
-        options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
-    }
-    options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
-    options.fork = true
-    options.forkOptions.javaHome = file("${System.env.JAVA_HOME}")
-    options.encoding = 'UTF-8'
-    options.deprecation = true
-}
-
-test {
-    useJUnitPlatform()
-
-    testLogging {
-        showStandardStreams = true
-        exceptionFormat = 'full'
+allprojects {
+    repositories {
+        mavenLocal()
+        mavenCentral()
     }
 }
 
-jar.enabled = false
-jar.finalizedBy shadowJar
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'checkstyle'
 
-shadowJar {
-    archiveFileName = 'benchmarks.jar'
-    manifest.attributes('Main-Class': 'org.openjdk.jmh.Main')
+    dependencies {
+        testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    }
+
+    checkstyle.toolVersion = "${checkstyleVersion}"
+
+    tasks.withType(Jar) {
+        enabled = true
+        includeEmptyDirs = false
+    }
+
+    tasks.withType(JavaCompile) {
+        if (JavaVersion.current().isJava9Compatible()) {
+            options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
+        }
+        options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
+        options.fork = true
+        options.forkOptions.javaHome = file("${System.env.JAVA_HOME}")
+        options.encoding = 'UTF-8'
+        options.deprecation = true
+    }
+
+    tasks.withType(Test) {
+        useJUnitPlatform()
+
+        testLogging {
+            showStandardStreams = true
+            exceptionFormat = 'full'
+        }
+    }
 }
 
-task runJavaBenchmarks(type: Exec) {
+project(':aeron-benchmarks-api') {
+    dependencies {
+        api "org.agrona:agrona:${agronaVersion}"
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+    }
+}
+
+project(':aeron-benchmarks-aeron') {
+    dependencies {
+        api project(':aeron-benchmarks-api')
+        annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
+        implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
+        implementation "io.aeron:aeron-archive:${aeronVersion}"
+        implementation "com.lmax:disruptor:${disruptorVersion}"
+    }
+}
+
+project(':aeron-benchmarks-all') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+
+    dependencies {
+        implementation project(':aeron-benchmarks-aeron')
+    }
+
+    shadowJar {
+        archiveFileName = 'aeron-benchmarks.jar'
+        manifest.attributes('Main-Class': 'org.openjdk.jmh.Main')
+    }
+
+    jar.finalizedBy shadowJar
+}
+
+task runJavaBenchmarks(type: Exec, dependsOn: ':aeron-benchmarks-all:shadowJar') {
     commandLine 'java',
-    '-jar', 'build/libs/benchmarks.jar',
+    '-jar', 'aeron-benchmarks-all/build/libs/aeron-benchmarks.jar',
     '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
 
-task runAeronJavaBenchmarks(type: Exec) {
+task runAeronJavaBenchmarks(type: Exec, dependsOn: ':aeron-benchmarks-all:shadowJar') {
     commandLine 'java',
-    '-jar', 'build/libs/benchmarks.jar',
+    '-jar', 'aeron-benchmarks-all/build/libs/aeron-benchmarks.jar',
     '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
     'Aeron',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
