@@ -19,9 +19,9 @@ import io.aeron.*;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
-import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.Configuration;
+import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;

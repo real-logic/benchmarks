@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt;
+package uk.co.real_logic.benchmarks.remote;
 
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
@@ -28,7 +28,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.other.benchmark.impl.MessageTransceiverFromAnotherPackage;
-import uk.co.real_logic.benchmarks.rtt.nested.NestedMessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.nested.NestedMessageTransceiver;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 
 import static java.lang.System.setProperty;
 import static org.junit.jupiter.api.Assertions.*;
-import static uk.co.real_logic.benchmarks.rtt.Configuration.*;
+import static uk.co.real_logic.benchmarks.remote.Configuration.*;
 
 class ConfigurationTest
 {
@@ -372,7 +372,7 @@ class ConfigurationTest
             "\n    numberOfMessages=777" +
             "\n    batchSize=2" +
             "\n    messageLength=64" +
-            "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.rtt.InMemoryMessageTransceiver" +
+            "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
             "\n    sendIdleStrategy=NoOpIdleStrategy{}" +
             "\n    receiveIdleStrategy=YieldingIdleStrategy{}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +

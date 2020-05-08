@@ -1,10 +1,10 @@
 Overview
 --------
 
-This directory provides scripts to benchmark Aeron using the `uk.co.real_logic.benchmarks.rtt.LoadTestRig`.
+This directory provides scripts to benchmark Aeron using the `uk.co.real_logic.benchmarks.remote.LoadTestRig`.
 
 All benchmarks require two nodes: "client" and "server", where "client" is the
-`uk.co.real_logic.benchmarks.rtt.LoadTestRig` that uses one of the `uk.co.real_logic.benchmarks.rtt.MessageTransceiver`
+`uk.co.real_logic.benchmarks.remote.LoadTestRig` that uses one of the `uk.co.real_logic.benchmarks.remote.MessageTransceiver`
 implementation under the hood and the "server" is the remote node that pipes messages through.
 NOTE: It is advised to have "client" and "server" run on different machines.
 

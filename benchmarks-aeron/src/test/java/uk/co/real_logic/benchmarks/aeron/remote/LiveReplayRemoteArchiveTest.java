@@ -17,7 +17,7 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
-import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

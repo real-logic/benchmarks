@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt;
+package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramLogReader;
@@ -31,7 +31,7 @@ import java.util.Map.Entry;
 import static java.lang.Double.*;
 import static java.nio.file.Files.*;
 import static java.util.stream.Collectors.groupingBy;
-import static uk.co.real_logic.benchmarks.rtt.RttHistogram.*;
+import static uk.co.real_logic.benchmarks.remote.RttHistogram.*;
 
 public final class ResultsAggregator
 {

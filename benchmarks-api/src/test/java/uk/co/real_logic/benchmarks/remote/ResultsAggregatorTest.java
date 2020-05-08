@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt;
+package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramLogReader;
@@ -30,8 +30,8 @@ import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.util.Arrays.sort;
 import static org.junit.jupiter.api.Assertions.*;
-import static uk.co.real_logic.benchmarks.rtt.RttHistogram.AGGREGATE_FILE_SUFFIX;
-import static uk.co.real_logic.benchmarks.rtt.RttHistogram.REPORT_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.RttHistogram.AGGREGATE_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.RttHistogram.REPORT_FILE_SUFFIX;
 
 class ResultsAggregatorTest
 {

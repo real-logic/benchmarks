@@ -23,9 +23,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
-import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.Configuration;
+import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +38,7 @@ import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
-import static uk.co.real_logic.benchmarks.rtt.Configuration.MIN_MESSAGE_LENGTH;
+import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
 abstract class AbstractTest<DRIVER extends AutoCloseable,
     CLIENT extends AutoCloseable,

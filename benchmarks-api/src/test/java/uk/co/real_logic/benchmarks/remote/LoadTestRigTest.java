@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt;
+package uk.co.real_logic.benchmarks.remote;
 
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
@@ -34,8 +34,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.benchmarks.rtt.LoadTestRig.CHECKSUM;
-import static uk.co.real_logic.benchmarks.rtt.LoadTestRig.MINIMUM_NUMBER_OF_CPU_CORES;
+import static uk.co.real_logic.benchmarks.remote.LoadTestRig.CHECKSUM;
+import static uk.co.real_logic.benchmarks.remote.LoadTestRig.MINIMUM_NUMBER_OF_CPU_CORES;
 
 class LoadTestRigTest
 {

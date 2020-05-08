@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt;
+package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.EncodableHistogram;
 import org.HdrHistogram.Histogram;
@@ -31,7 +31,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.benchmarks.rtt.RttHistogram.AGGREGATE_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.RttHistogram.AGGREGATE_FILE_SUFFIX;
 
 class RttHistogramTest
 {

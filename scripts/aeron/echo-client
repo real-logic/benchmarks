@@ -19,7 +19,7 @@ AERON_DIR="`pwd`"
 
 cd ..
 ./run-java -Daeron.benchmarks.rtt.messageTransceiver=uk.co.real_logic.benchmarks.aeron.remote.PlainMessageTransceiver \
-  uk.co.real_logic.benchmarks.rtt.LoadTestRig \
+  uk.co.real_logic.benchmarks.remote.LoadTestRig \
   ${AERON_DIR}/low-latency-driver.properties \
   ${AERON_DIR}/benchmark.properties \
   "$@"

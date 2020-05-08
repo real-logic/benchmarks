@@ -15,9 +15,9 @@
  */
 package org.other.benchmark.impl;
 
-import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
-import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.Configuration;
+import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 public class MessageTransceiverFromAnotherPackage extends MessageTransceiver
 {

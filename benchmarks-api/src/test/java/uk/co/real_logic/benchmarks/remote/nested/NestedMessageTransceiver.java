@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.nested;
+package uk.co.real_logic.benchmarks.remote.nested;
 
-import uk.co.real_logic.benchmarks.rtt.Configuration;
-import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
-import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.Configuration;
+import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 public class NestedMessageTransceiver extends MessageTransceiver
 {
