@@ -1,2 +1,6 @@
-rootProject.name = 'benchmarks'
+rootProject.name = 'aeron-benchmarks'
 
+include (
+        'aeron-benchmarks-api',
+        'aeron-benchmarks-aeron',
+        'aeron-benchmarks-all')

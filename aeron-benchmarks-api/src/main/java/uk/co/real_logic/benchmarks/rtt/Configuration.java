@@ -31,8 +31,8 @@ import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isPublic;
 import static java.nio.file.Files.*;
 import static java.util.Objects.requireNonNull;
-import static joptsimple.internal.Strings.isNullOrEmpty;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.Strings.isEmpty;
 
 /**
  * {@code Configuration} contains configuration values for the harness.
@@ -571,7 +571,7 @@ public final class Configuration
 
     private static boolean isPropertyProvided(final String propName)
     {
-        return !isNullOrEmpty(getProperty(propName));
+        return !isEmpty(getProperty(propName));
     }
 
     private static int intProperty(final String propName)
@@ -591,7 +591,7 @@ public final class Configuration
     private static String getPropertyValue(final String propName)
     {
         final String value = getProperty(propName);
-        if (isNullOrEmpty(value))
+        if (isEmpty(value))
         {
             throw new IllegalArgumentException("property '" + propName + "' is required!");
         }
