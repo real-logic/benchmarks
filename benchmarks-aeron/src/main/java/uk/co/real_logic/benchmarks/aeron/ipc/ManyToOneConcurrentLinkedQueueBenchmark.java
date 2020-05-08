@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.aeron.latency;
+package uk.co.real_logic.benchmarks.aeron.ipc;
 
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Arrays;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.MAX_THREAD_COUNT;
-import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.aeron.ipc.Configuration.MAX_THREAD_COUNT;
+import static uk.co.real_logic.benchmarks.aeron.ipc.Configuration.RESPONSE_QUEUE_CAPACITY;
 
-public class ConcurrentLinkedQueueBenchmark
+public class ManyToOneConcurrentLinkedQueueBenchmark
 {
     @State(Scope.Benchmark)
     public static class SharedState
@@ -39,7 +39,7 @@ public class ConcurrentLinkedQueueBenchmark
 
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicInteger threadId = new AtomicInteger();
-        final Queue<Integer> sendQueue = new ConcurrentLinkedQueue<>();
+        final Queue<Integer> sendQueue = new ManyToOneConcurrentLinkedQueue<>();
 
         @SuppressWarnings("unchecked")
         final Queue<Integer>[] responseQueues = new OneToOneConcurrentArrayQueue[MAX_THREAD_COUNT];

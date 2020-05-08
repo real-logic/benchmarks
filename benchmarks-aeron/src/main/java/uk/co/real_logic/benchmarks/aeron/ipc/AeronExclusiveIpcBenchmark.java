@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.aeron.latency;
+package uk.co.real_logic.benchmarks.aeron.ipc;
 
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.MAX_THREAD_COUNT;
-import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.aeron.ipc.Configuration.MAX_THREAD_COUNT;
+import static uk.co.real_logic.benchmarks.aeron.ipc.Configuration.RESPONSE_QUEUE_CAPACITY;
 
 public class AeronExclusiveIpcBenchmark
 {
