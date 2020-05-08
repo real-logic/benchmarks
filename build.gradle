@@ -84,16 +84,16 @@ subprojects {
     }
 }
 
-project(':aeron-benchmarks-api') {
+project(':benchmarks-api') {
     dependencies {
         api "org.agrona:agrona:${agronaVersion}"
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 }
 
-project(':aeron-benchmarks-aeron') {
+project(':benchmarks-aeron') {
     dependencies {
-        api project(':aeron-benchmarks-api')
+        api project(':benchmarks-api')
         annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
         implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
         implementation "io.aeron:aeron-archive:${aeronVersion}"
@@ -101,31 +101,31 @@ project(':aeron-benchmarks-aeron') {
     }
 }
 
-project(':aeron-benchmarks-all') {
+project(':benchmarks-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        implementation project(':aeron-benchmarks-aeron')
+        implementation project(':benchmarks-aeron')
     }
 
     shadowJar {
-        archiveFileName = 'aeron-benchmarks.jar'
+        archiveFileName = 'benchmarks.jar'
         manifest.attributes('Main-Class': 'org.openjdk.jmh.Main')
     }
 
     jar.finalizedBy shadowJar
 }
 
-task runJavaBenchmarks(type: Exec, dependsOn: ':aeron-benchmarks-all:shadowJar') {
+task runJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') {
     commandLine 'java',
-    '-jar', 'aeron-benchmarks-all/build/libs/aeron-benchmarks.jar',
+    '-jar', 'benchmarks-all/build/libs/benchmarks.jar',
     '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
 
-task runAeronJavaBenchmarks(type: Exec, dependsOn: ':aeron-benchmarks-all:shadowJar') {
+task runAeronJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') {
     commandLine 'java',
-    '-jar', 'aeron-benchmarks-all/build/libs/aeron-benchmarks.jar',
+    '-jar', 'benchmarks-all/build/libs/benchmarks.jar',
     '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
     'Aeron',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
