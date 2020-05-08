@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.latency;
+package uk.co.real_logic.benchmarks.aeron.latency;
 
-import com.lmax.disruptor.*;
+import com.lmax.disruptor.BusySpinWaitStrategy;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.LifecycleAware;
+import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Arrays;
 import java.util.Queue;
@@ -28,8 +31,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
-import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.MAX_THREAD_COUNT;
+import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
 
 public class DisruptorBenchmark
 {
@@ -162,7 +165,7 @@ public class DisruptorBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
     @Threads(1)
     public Integer test1Producer(final PerThreadState state)
     {
@@ -170,7 +173,7 @@ public class DisruptorBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
     @Threads(2)
     public Integer test2Producers(final PerThreadState state)
     {
@@ -178,7 +181,7 @@ public class DisruptorBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
     @Threads(3)
     public Integer test3Producers(final PerThreadState state)
     {

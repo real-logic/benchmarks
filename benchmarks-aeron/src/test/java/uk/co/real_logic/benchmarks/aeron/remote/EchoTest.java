@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.aeron;
+package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
@@ -22,7 +22,7 @@ import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
 
 class EchoTest extends AbstractTest<MediaDriver, Aeron, PlainMessageTransceiver, EchoNode>
 {

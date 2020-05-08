@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.aeron;
+package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.driver.MediaDriver;
@@ -37,8 +37,8 @@ import static java.lang.System.setProperty;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 import static uk.co.real_logic.benchmarks.rtt.Configuration.MIN_MESSAGE_LENGTH;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
 abstract class AbstractTest<DRIVER extends AutoCloseable,
     CLIENT extends AutoCloseable,

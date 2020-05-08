@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.latency;
+package uk.co.real_logic.benchmarks.aeron.latency;
 
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.Arrays;
 import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
-import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
-import static uk.co.real_logic.benchmarks.latency.Configuration.SEND_QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.MAX_THREAD_COUNT;
+import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
 
-@State(Scope.Benchmark)
-public class A1BaselineBenchmark
+public class LinkedBlockingQueueBenchmark
 {
     @State(Scope.Benchmark)
     public static class SharedState
@@ -40,7 +39,7 @@ public class A1BaselineBenchmark
 
         final AtomicBoolean running = new AtomicBoolean(true);
         final AtomicInteger threadId = new AtomicInteger();
-        final Queue<Integer> sendQueue = new OneToOneConcurrentArrayQueue<>(SEND_QUEUE_CAPACITY);
+        final Queue<Integer> sendQueue = new LinkedBlockingQueue<>();
 
         @SuppressWarnings("unchecked")
         final Queue<Integer>[] responseQueues = new OneToOneConcurrentArrayQueue[MAX_THREAD_COUNT];
@@ -125,17 +124,25 @@ public class A1BaselineBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
     @Threads(1)
-    public Integer baselineTimingOverhead(final PerThreadState state)
+    public Integer test1Producer(final PerThreadState state)
     {
-        return state.responseQueue.poll();
+        return sendBurst(state);
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
-    @Threads(1)
-    public Integer test1Producer(final PerThreadState state)
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
+    @Threads(2)
+    public Integer test2Producers(final PerThreadState state)
+    {
+        return sendBurst(state);
+    }
+
+    @Benchmark
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
+    @Threads(3)
+    public Integer test3Producers(final PerThreadState state)
     {
         return sendBurst(state);
     }

@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.latency;
+package uk.co.real_logic.benchmarks.aeron.latency;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.CommonContext;
+import io.aeron.ExclusivePublication;
+import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.logbuffer.*;
+import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.Header;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
@@ -34,8 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
-import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.MAX_THREAD_COUNT;
+import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
 
 public class AeronExclusiveIpcBenchmark
 {
@@ -178,7 +182,7 @@ public class AeronExclusiveIpcBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
     @Threads(1)
     public Integer test1Producer(final PerThreadState state)
     {

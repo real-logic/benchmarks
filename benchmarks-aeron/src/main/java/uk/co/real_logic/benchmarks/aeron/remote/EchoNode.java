@@ -13,70 +13,50 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.aeron;
+package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import org.agrona.SystemUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.aeron.ChannelUri.addSessionId;
-import static io.aeron.archive.client.AeronArchive.connect;
+import static io.aeron.Aeron.connect;
 import static org.agrona.CloseHelper.closeAll;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 /**
- * Remote node which subscribes to the replay channel of the archive and send replayed messages to the sender.
- * Counterpart for the {@link ArchiveMessageTransceiver}.
+ * Remote node which echoes original messages back to the sender.
  */
-public final class LiveReplayNode implements AutoCloseable, Runnable
+public final class EchoNode implements AutoCloseable, Runnable
 {
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
     private final MediaDriver mediaDriver;
-    private final AeronArchive aeronArchive;
-    private final boolean ownsArchiveClient;
+    private final Aeron aeron;
+    private final boolean ownsAeronClient;
 
-    LiveReplayNode(final AtomicBoolean running)
+    EchoNode(final AtomicBoolean running)
     {
         this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true);
     }
 
-    LiveReplayNode(
-        final AtomicBoolean running,
-        final MediaDriver mediaDriver,
-        final AeronArchive aeronArchive,
-        final boolean ownsArchiveClient)
+    EchoNode(
+        final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron, final boolean ownsAeronClient)
     {
         this.running = running;
         this.mediaDriver = mediaDriver;
-        this.aeronArchive = aeronArchive;
-        this.ownsArchiveClient = ownsArchiveClient;
-
-        final Aeron aeron = aeronArchive.context().aeron();
+        this.aeron = aeron;
+        this.ownsAeronClient = ownsAeronClient;
 
         publication = aeron.addExclusivePublication(receiveChannel(), receiveStreamId());
 
-        while (!publication.isConnected())
-        {
-            yieldUninterruptedly();
-        }
+        subscription = aeron.addSubscription(sendChannel(), sendStreamId());
 
-        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
-
-        final String replayChannel = sendChannel();
-        final int replayStreamId = sendStreamId();
-        final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
-
-        final String channel = addSessionId(replayChannel, (int)replaySessionId);
-        subscription = aeron.addSubscription(channel, replayStreamId);
-
-        while (!subscription.isConnected())
+        while (!subscription.isConnected() || !publication.isConnected())
         {
             yieldUninterruptedly();
         }
@@ -91,9 +71,9 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
     {
         closeAll(subscription, publication);
 
-        if (ownsArchiveClient)
+        if (ownsAeronClient)
         {
-            closeAll(aeronArchive, mediaDriver);
+            closeAll(aeron, mediaDriver);
             if (null != mediaDriver)
             {
                 mediaDriver.context().deleteAeronDirectory();
@@ -108,7 +88,7 @@ public final class LiveReplayNode implements AutoCloseable, Runnable
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);
 
-        try (LiveReplayNode server = new LiveReplayNode(running))
+        try (EchoNode server = new EchoNode(running))
         {
             server.run();
         }

@@ -18,7 +18,7 @@
 AERON_DIR="`pwd`"
 
 cd ..
-./run-java -Daeron.benchmarks.rtt.messageTransceiver=uk.co.real_logic.benchmarks.rtt.aeron.ArchiveMessageTransceiver \
+./run-java -Daeron.benchmarks.rtt.messageTransceiver=uk.co.real_logic.benchmarks.aeron.remote.ArchiveMessageTransceiver \
   uk.co.real_logic.benchmarks.rtt.LoadTestRig \
   ${AERON_DIR}/low-latency-driver.properties \
   ${AERON_DIR}/low-latency-archive.properties \

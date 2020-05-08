@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.aeron;
+package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.*;
+import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.rtt.Configuration;
 import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
@@ -25,18 +25,20 @@ import uk.co.real_logic.benchmarks.rtt.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
+import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
-public final class LiveReplayMessageTransceiver extends MessageTransceiver
+public final class ArchiveMessageTransceiver extends MessageTransceiver
 {
-    private final MediaDriver mediaDriver;
+    private final ArchivingMediaDriver archivingMediaDriver;
     private final AeronArchive aeronArchive;
     private final boolean ownsArchiveClient;
+
     private ExclusivePublication publication;
     private UnsafeBuffer offerBuffer;
 
@@ -51,19 +53,19 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             onMessageReceived(timestamp, checksum);
         });
 
-    public LiveReplayMessageTransceiver(final MessageRecorder messageRecorder)
+    public ArchiveMessageTransceiver(final MessageRecorder messageRecorder)
     {
-        this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
+        this(launchArchivingMediaDriver(false), connect(), true, messageRecorder);
     }
 
-    LiveReplayMessageTransceiver(
-        final MediaDriver mediaDriver,
+    ArchiveMessageTransceiver(
+        final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
         final boolean ownsArchiveClient,
         final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
-        this.mediaDriver = mediaDriver;
+        this.archivingMediaDriver = archivingMediaDriver;
         this.aeronArchive = aeronArchive;
         this.ownsArchiveClient = ownsArchiveClient;
     }
@@ -72,14 +74,26 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
     {
         final Aeron aeron = aeronArchive.context().aeron();
 
-        publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
+        this.subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
 
-        while (!publication.isConnected())
+        final String archiveChannel = archiveChannel();
+        final int archiveStreamId = archiveStreamId();
+        publication = aeron.addExclusivePublication(archiveChannel, archiveStreamId);
+
+        final int publicationSessionId = publication.sessionId();
+        final String channel = addSessionId(archiveChannel, publicationSessionId);
+        aeronArchive.startRecording(channel, archiveStreamId, LOCAL, true);
+
+        while (!subscription.isConnected() || !publication.isConnected())
         {
             yieldUninterruptedly();
         }
 
+        awaitRecordingStart(aeron, publicationSessionId);
+
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
+
+        this.image = subscription.imageAtIndex(0);
 
         frameCountLimit = frameCountLimit();
     }
@@ -90,11 +104,9 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
         if (ownsArchiveClient)
         {
-            closeAll(aeronArchive, mediaDriver);
-            if (null != mediaDriver)
-            {
-                mediaDriver.context().deleteAeronDirectory();
-            }
+            closeAll(aeronArchive, archivingMediaDriver);
+            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
+            archivingMediaDriver.archive().context().deleteDirectory();
         }
     }
 
@@ -105,36 +117,11 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public void receive()
     {
-        Image image = this.image;
-        if (null == image)
-        {
-            startReplay();
-            image = this.image;
-        }
-
+        final Image image = this.image;
         final int fragments = image.poll(dataHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
-    }
-
-    private void startReplay()
-    {
-        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
-
-        final String replayChannel = receiveChannel();
-        final int replayStreamId = receiveStreamId();
-        final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
-
-        final String channel = addSessionId(replayChannel, (int)replaySessionId);
-        subscription = aeronArchive.context().aeron().addSubscription(channel, replayStreamId);
-
-        while (!subscription.isConnected())
-        {
-            yieldUninterruptedly();
-        }
-
-        this.image = subscription.imageAtIndex(0);
     }
 }

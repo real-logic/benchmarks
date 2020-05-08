@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.latency;
+package uk.co.real_logic.benchmarks.aeron.latency;
 
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
-import org.agrona.concurrent.*;
 
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static uk.co.real_logic.benchmarks.latency.Configuration.MAX_THREAD_COUNT;
-import static uk.co.real_logic.benchmarks.latency.Configuration.RESPONSE_QUEUE_CAPACITY;
-import static uk.co.real_logic.benchmarks.latency.Configuration.SEND_QUEUE_CAPACITY;
+import static uk.co.real_logic.benchmarks.aeron.latency.Configuration.*;
 
 public class ManyToOneConcurrentArrayQueueBenchmark
 {
@@ -124,7 +123,7 @@ public class ManyToOneConcurrentArrayQueueBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
     @Threads(1)
     public Integer test1Producer(final PerThreadState state)
     {
@@ -132,7 +131,7 @@ public class ManyToOneConcurrentArrayQueueBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
     @Threads(2)
     public Integer test2Producers(final PerThreadState state)
     {
@@ -140,7 +139,7 @@ public class ManyToOneConcurrentArrayQueueBenchmark
     }
 
     @Benchmark
-    @BenchmarkMode({Mode.SampleTime, Mode.AverageTime})
+    @BenchmarkMode({ Mode.SampleTime, Mode.AverageTime })
     @Threads(3)
     public Integer test3Producers(final PerThreadState state)
     {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.aeron;
+package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
@@ -22,20 +22,20 @@ import uk.co.real_logic.benchmarks.rtt.MessageRecorder;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.archive.client.AeronArchive.connect;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.launchArchivingMediaDriver;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchArchivingMediaDriver;
 
-class LiveReplayLocalArchiveTest extends
-    AbstractTest<ArchivingMediaDriver, AeronArchive, ArchiveMessageTransceiver, LiveReplayNode>
+class LiveRecordingTest extends
+    AbstractTest<ArchivingMediaDriver, AeronArchive, LiveRecordingMessageTransceiver, EchoNode>
 {
-    protected LiveReplayNode createNode(
+    protected EchoNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {
-        return new LiveReplayNode(running, archivingMediaDriver.mediaDriver(), aeronArchive, false);
+        return new EchoNode(running, archivingMediaDriver.mediaDriver(), aeronArchive.context().aeron(), false);
     }
 
     protected ArchivingMediaDriver createDriver()
     {
-        return launchArchivingMediaDriver(false);
+        return launchArchivingMediaDriver(true);
     }
 
     protected AeronArchive connectToDriver()
@@ -43,16 +43,16 @@ class LiveReplayLocalArchiveTest extends
         return connect();
     }
 
-    protected Class<ArchiveMessageTransceiver> messageTransceiverClass()
+    protected Class<LiveRecordingMessageTransceiver> messageTransceiverClass()
     {
-        return ArchiveMessageTransceiver.class;
+        return LiveRecordingMessageTransceiver.class;
     }
 
-    protected ArchiveMessageTransceiver createMessageTransceiver(
+    protected LiveRecordingMessageTransceiver createMessageTransceiver(
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
         final MessageRecorder messageRecorder)
     {
-        return new ArchiveMessageTransceiver(archivingMediaDriver, aeronArchive, false, messageRecorder);
+        return new LiveRecordingMessageTransceiver(archivingMediaDriver, aeronArchive, false, messageRecorder);
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.aeron;
+package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
@@ -28,7 +28,7 @@ import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.agrona.CloseHelper.closeAll;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 /**
  * Remote node which archives received messages and replays persisted messages back to the sender.

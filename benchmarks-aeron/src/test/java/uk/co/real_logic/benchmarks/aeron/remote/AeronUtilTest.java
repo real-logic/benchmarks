@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.aeron;
+package uk.co.real_logic.benchmarks.aeron.remote;
 
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -24,7 +24,7 @@ import static java.lang.String.valueOf;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.junit.jupiter.api.Assertions.*;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 class AeronUtilTest
 {

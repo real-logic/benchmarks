@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.benchmarks.rtt.aeron;
+package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.*;
 import io.aeron.archive.ArchivingMediaDriver;
@@ -36,7 +36,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.*;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
-import static uk.co.real_logic.benchmarks.rtt.aeron.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 /**
  * Implementation of the {@link uk.co.real_logic.benchmarks.rtt.MessageTransceiver} interface for benchmarking
