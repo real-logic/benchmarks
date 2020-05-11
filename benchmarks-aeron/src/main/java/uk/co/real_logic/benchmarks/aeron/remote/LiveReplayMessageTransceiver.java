@@ -79,6 +79,22 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             yieldUninterruptedly();
         }
 
+        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
+
+        final String replayChannel = receiveChannel();
+        final int replayStreamId = receiveStreamId();
+        final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
+
+        final String channel = addSessionId(replayChannel, (int)replaySessionId);
+        subscription = aeron.addSubscription(channel, replayStreamId);
+
+        while (!subscription.isConnected())
+        {
+            yieldUninterruptedly();
+        }
+
+        this.image = subscription.imageAtIndex(0);
+
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
         frameCountLimit = frameCountLimit();
@@ -105,36 +121,11 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public void receive()
     {
-        Image image = this.image;
-        if (null == image)
-        {
-            startReplay();
-            image = this.image;
-        }
-
+        final Image image = this.image;
         final int fragments = image.poll(dataHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
-    }
-
-    private void startReplay()
-    {
-        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
-
-        final String replayChannel = receiveChannel();
-        final int replayStreamId = receiveStreamId();
-        final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
-
-        final String channel = addSessionId(replayChannel, (int)replaySessionId);
-        subscription = aeronArchive.context().aeron().addSubscription(channel, replayStreamId);
-
-        while (!subscription.isConnected())
-        {
-            yieldUninterruptedly();
-        }
-
-        this.image = subscription.imageAtIndex(0);
     }
 }
