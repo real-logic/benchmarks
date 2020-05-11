@@ -98,12 +98,12 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         try
         {
             final AtomicBoolean running = new AtomicBoolean(true);
-            final CountDownLatch publisherStarted = new CountDownLatch(1);
 
-            final Thread nodeThread = new Thread(
+            final CountDownLatch remoteNodeStarted = new CountDownLatch(1);
+            final Thread remoteNode = new Thread(
                 () ->
                 {
-                    publisherStarted.countDown();
+                    remoteNodeStarted.countDown();
 
                     try (NODE node = createNode(running, driver, client))
                     {
@@ -114,9 +114,9 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
                         error.set(t);
                     }
                 });
-            nodeThread.setName("remote-node");
-            nodeThread.setDaemon(true);
-            nodeThread.start();
+            remoteNode.setName("remote-node");
+            remoteNode.setDaemon(true);
+            remoteNode.start();
 
             final MessageTransceiver messageTransceiver =
                 createMessageTransceiver(driver, client, (timestamp, checksum) ->
@@ -125,12 +125,12 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
                     receivedTimestamps.addLong(timestamp);
                 });
 
-            publisherStarted.await();
 
+            Thread.currentThread().setName("message-transceiver");
             messageTransceiver.init(configuration);
             try
             {
-                Thread.currentThread().setName("message-transceiver");
+                remoteNodeStarted.await();
                 int sent = 0;
                 long timestamp = 1_000;
                 while (sent < messages || receivedTimestamps.size() < messages)
@@ -174,7 +174,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             finally
             {
                 running.set(false);
-                nodeThread.join();
+                remoteNode.join();
                 messageTransceiver.destroy();
             }
         }
