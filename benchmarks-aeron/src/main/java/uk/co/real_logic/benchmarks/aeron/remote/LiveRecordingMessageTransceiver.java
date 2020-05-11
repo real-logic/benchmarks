@@ -107,10 +107,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
         final int sendStreamId = sendStreamId();
         publication = aeron.addExclusivePublication(sendChannel, sendStreamId);
 
-        final int publicationSessionId = publication.sessionId();
-        final String channel = addSessionId(sendChannel, publicationSessionId);
-        aeronArchive.startRecording(channel, sendStreamId, LOCAL, true);
-
         recordingEventsSubscription = aeron.addSubscription(
             context.recordingEventsChannel(), context.recordingEventsStreamId());
 
@@ -149,12 +145,15 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
             recordingEventsSubscription,
             frameCountLimit);
 
-        recordingId = awaitRecordingStart(aeron, publicationSessionId);
-
         while (!recordingEventsSubscription.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
             yieldUninterruptedly();
         }
+
+        final int publicationSessionId = publication.sessionId();
+        final String channel = addSessionId(sendChannel, publicationSessionId);
+        aeronArchive.startRecording(channel, sendStreamId, LOCAL, true);
+        recordingId = awaitRecordingStart(aeron, publicationSessionId);
 
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
