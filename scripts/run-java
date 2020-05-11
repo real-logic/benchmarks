@@ -16,7 +16,7 @@
 ##
 
 ${JAVA_HOME}/bin/java \
-    -cp ../aeron-benchmarks-all/build/libs/aeron-benchmarks.jar \
+    -cp ../benchmarks-all/build/libs/benchmarks.jar \
     -XX:+UnlockExperimentalVMOptions \
     -XX:+TrustFinalNonStaticFields \
     -XX:+UnlockDiagnosticVMOptions \
