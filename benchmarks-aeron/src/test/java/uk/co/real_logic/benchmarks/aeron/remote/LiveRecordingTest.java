@@ -17,16 +17,37 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.aeron.CommonContext.IPC_CHANNEL;
+import static io.aeron.archive.client.AeronArchive.Configuration.RECORDING_EVENTS_CHANNEL_PROP_NAME;
+import static io.aeron.archive.client.AeronArchive.Configuration.RECORDING_EVENTS_ENABLED_PROP_NAME;
 import static io.aeron.archive.client.AeronArchive.connect;
+import static java.lang.System.clearProperty;
+import static java.lang.System.setProperty;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchArchivingMediaDriver;
 
 class LiveRecordingTest extends
     AbstractTest<ArchivingMediaDriver, AeronArchive, LiveRecordingMessageTransceiver, EchoNode>
 {
+    @BeforeEach
+    void before()
+    {
+        setProperty(RECORDING_EVENTS_ENABLED_PROP_NAME, "true");
+        setProperty(RECORDING_EVENTS_CHANNEL_PROP_NAME, IPC_CHANNEL);
+    }
+
+    @AfterEach
+    void after()
+    {
+        clearProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
+        clearProperty(RECORDING_EVENTS_CHANNEL_PROP_NAME);
+    }
+
     protected EchoNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {
@@ -35,7 +56,7 @@ class LiveRecordingTest extends
 
     protected ArchivingMediaDriver createDriver()
     {
-        return launchArchivingMediaDriver(true);
+        return launchArchivingMediaDriver();
     }
 
     protected AeronArchive connectToDriver()

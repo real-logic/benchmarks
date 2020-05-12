@@ -55,7 +55,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
 
     public ArchiveMessageTransceiver(final MessageRecorder messageRecorder)
     {
-        this(launchArchivingMediaDriver(false), connect(), true, messageRecorder);
+        this(launchArchivingMediaDriver(), connect(), true, messageRecorder);
     }
 
     ArchiveMessageTransceiver(

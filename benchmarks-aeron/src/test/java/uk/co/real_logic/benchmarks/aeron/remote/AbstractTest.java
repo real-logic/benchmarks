@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.aeron.archive.client.AeronArchive.Configuration.RECORDING_EVENTS_ENABLED_PROP_NAME;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.CloseHelper.closeAll;
@@ -49,12 +50,14 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     void before()
     {
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
+        setProperty(RECORDING_EVENTS_ENABLED_PROP_NAME, "false");
     }
 
     @AfterEach
     void after()
     {
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
+        clearProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
     }
 
     @Timeout(30)

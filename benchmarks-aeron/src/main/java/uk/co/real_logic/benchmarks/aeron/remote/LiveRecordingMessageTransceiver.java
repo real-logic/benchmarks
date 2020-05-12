@@ -79,7 +79,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
 
     public LiveRecordingMessageTransceiver(final MessageRecorder messageRecorder)
     {
-        this(launchArchivingMediaDriver(true), connect(), true, messageRecorder);
+        this(launchArchivingMediaDriver(), connect(), true, messageRecorder);
     }
 
     LiveRecordingMessageTransceiver(

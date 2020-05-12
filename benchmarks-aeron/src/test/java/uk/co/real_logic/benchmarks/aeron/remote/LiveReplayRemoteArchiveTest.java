@@ -35,7 +35,7 @@ class LiveReplayRemoteArchiveTest extends
 
     protected ArchivingMediaDriver createDriver()
     {
-        return launchArchivingMediaDriver(false);
+        return launchArchivingMediaDriver();
     }
 
     protected AeronArchive connectToDriver()
