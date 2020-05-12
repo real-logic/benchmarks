@@ -3,4 +3,5 @@ rootProject.name = 'benchmarks'
 include (
     'benchmarks-api',
     'benchmarks-aeron',
+    'benchmarks-grpc',
     'benchmarks-all')
