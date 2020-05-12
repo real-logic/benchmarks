@@ -80,7 +80,7 @@ public final class Configuration
      *
      * @see #warmUpIterations()
      */
-    public static final String WARM_UP_ITERATIONS_PROP_NAME = "aeron.benchmarks.rtt.warmup.iterations";
+    public static final String WARM_UP_ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.iterations";
 
     /**
      * Name of the system property to configure the number of messages to be sent during warm up. Default value is
@@ -88,7 +88,7 @@ public final class Configuration
      *
      * @see #warmUpNumberOfMessages()
      */
-    public static final String WARM_UP_MESSAGES_PROP_NAME = "aeron.benchmarks.rtt.warmup.messages";
+    public static final String WARM_UP_MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.messages";
 
     /**
      * Name of the system property to configure the number of measurement iterations. Default value is
@@ -96,7 +96,7 @@ public final class Configuration
      *
      * @see #iterations()
      */
-    public static final String ITERATIONS_PROP_NAME = "aeron.benchmarks.rtt.iterations";
+    public static final String ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.remote.iterations";
 
     /**
      * Name of the required system property to configure the number of messages to be sent during the measurement
@@ -104,7 +104,7 @@ public final class Configuration
      *
      * @see #numberOfMessages()
      */
-    public static final String MESSAGES_PROP_NAME = "aeron.benchmarks.rtt.messages";
+    public static final String MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messages";
 
     /**
      * Name of the system property to configure the batch size, i.e. number of messages to be sent in a single burst.
@@ -112,14 +112,14 @@ public final class Configuration
      *
      * @see #batchSize()
      */
-    public static final String BATCH_SIZE_PROP_NAME = "aeron.benchmarks.rtt.batchSize";
+    public static final String BATCH_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.batchSize";
 
     /**
      * Name of the system property to configure the message size in bytes. Default value is {@link #MIN_MESSAGE_LENGTH}.
      *
      * @see #messageLength()
      */
-    public static final String MESSAGE_LENGTH_PROP_NAME = "aeron.benchmarks.rtt.messageLength";
+    public static final String MESSAGE_LENGTH_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messageLength";
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} to use when sending messages.
@@ -127,7 +127,7 @@ public final class Configuration
      *
      * @see #sendIdleStrategy()
      */
-    public static final String SEND_IDLE_STRATEGY_PROP_NAME = "aeron.benchmarks.rtt.send.idleStrategy";
+    public static final String SEND_IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.send.idleStrategy";
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} to use when receiving messages.
@@ -135,19 +135,20 @@ public final class Configuration
      *
      * @see #receiveIdleStrategy()
      */
-    public static final String RECEIVE_IDLE_STRATEGY_PROP_NAME = "aeron.benchmarks.rtt.receive.idleStrategy";
+    public static final String RECEIVE_IDLE_STRATEGY_PROP_NAME =
+        "uk.co.real_logic.benchmarks.remote.receive.idleStrategy";
 
     /**
      * Name of the required system property to configure the {@link MessageTransceiver} class (i.e. system under test) to be
      * used for the benchmark. Must be a fully qualified class name.
      */
-    public static final String MESSAGE_TRANSCEIVER_PROP_NAME = "aeron.benchmarks.rtt.messageTransceiver";
+    public static final String MESSAGE_TRANSCEIVER_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messageTransceiver";
 
     /**
      * Name of the system property to configure the output directory where histogram files for each run should be
      * stored. Default value is {@code results} directory created in the current directory.
      */
-    public static final String OUTPUT_DIRECTORY_PROP_NAME = "aeron.benchmarks.rtt.outputDirectory";
+    public static final String OUTPUT_DIRECTORY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.outputDirectory";
 
     private static final String API_PACKAGE_NAME_PREFIX;
     private static final String TOP_LEVEL_PACKAGE_NAME_PREFIX;

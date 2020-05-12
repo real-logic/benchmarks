@@ -16,7 +16,7 @@
 ##
 
 # Enable embedded media driver
-export JVM_OPTS="${JVM_OPTS} -Daeron.benchmarks.rtt.aeron.embeddedMediaDriver=true"
+export JVM_OPTS="${JVM_OPTS} -Duk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver=true"
 
 # Call original command
 exec "$@"

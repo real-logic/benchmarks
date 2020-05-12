@@ -54,15 +54,16 @@ import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 final class AeronUtil
 {
-    static final String SEND_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.send.channel";
-    static final String SEND_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.send.streamId";
-    static final String RECEIVE_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.receive.channel";
-    static final String RECEIVE_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.receive.streamId";
-    static final String ARCHIVE_CHANNEL_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.channel";
-    static final String ARCHIVE_STREAM_ID_PROP_NAME = "aeron.benchmarks.rtt.aeron.archive.streamId";
-    static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME = "aeron.benchmarks.rtt.aeron.embeddedMediaDriver";
-    static final String FRAME_COUNT_LIMIT_PROP_NAME = "aeron.benchmarks.rtt.aeron.frameCountLimit";
-    static final String IDLE_STRATEGY = "aeron.benchmarks.rtt.aeron.idleStrategy";
+    static final String SEND_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.send.channel";
+    static final String SEND_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.send.streamId";
+    static final String RECEIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.receive.channel";
+    static final String RECEIVE_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.receive.streamId";
+    static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
+    static final String ARCHIVE_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.streamId";
+    static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
+    static final String FRAME_COUNT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.frameCountLimit";
+    static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idleStrategy";
 
     private AeronUtil()
     {
