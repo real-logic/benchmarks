@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.agrona.AsciiEncoding.parseIntAscii;
 
-final class RttHistogram
+final class PersistedHistogram
 {
     static final String FILE_EXTENSION = ".hdr";
     static final String AGGREGATE_FILE_SUFFIX = "-combined" + FILE_EXTENSION;
@@ -38,12 +38,12 @@ final class RttHistogram
 
     private final Histogram histogram;
 
-    RttHistogram()
+    PersistedHistogram()
     {
         this(new Histogram(HOURS.toNanos(1), 3));
     }
 
-    RttHistogram(final Histogram histogram)
+    PersistedHistogram(final Histogram histogram)
     {
         this.histogram = histogram;
     }

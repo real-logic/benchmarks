@@ -31,17 +31,17 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.benchmarks.remote.RttHistogram.AGGREGATE_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.AGGREGATE_FILE_SUFFIX;
 
-class RttHistogramTest
+class PersistedHistogramTest
 {
     private final Histogram histogram = mock(Histogram.class);
-    private final RttHistogram rttHistogram = new RttHistogram(histogram);
+    private final PersistedHistogram persistedHistogram = new PersistedHistogram(histogram);
 
     @Test
     void reset()
     {
-        rttHistogram.reset();
+        persistedHistogram.reset();
 
         verify(histogram).reset();
         verifyNoMoreInteractions(histogram);
@@ -52,7 +52,7 @@ class RttHistogramTest
     {
         final long value = 131;
 
-        rttHistogram.recordValue(value);
+        persistedHistogram.recordValue(value);
 
         verify(histogram).recordValue(value);
         verifyNoMoreInteractions(histogram);
@@ -64,7 +64,7 @@ class RttHistogramTest
         final PrintStream out = System.out;
         final double scaleRatio = -2.5;
 
-        rttHistogram.outputPercentileDistribution(out, scaleRatio);
+        persistedHistogram.outputPercentileDistribution(out, scaleRatio);
 
         verify(histogram).outputPercentileDistribution(out, scaleRatio);
         verifyNoMoreInteractions(histogram);
@@ -73,25 +73,25 @@ class RttHistogramTest
     @Test
     void saveToFileThrowsNullPointerExceptionIfOutputDirectoryIsNull()
     {
-        assertThrows(NullPointerException.class, () -> rttHistogram.saveToFile(null, "my-file"));
+        assertThrows(NullPointerException.class, () -> persistedHistogram.saveToFile(null, "my-file"));
     }
 
     @Test
     void saveToFileThrowsNullPointerExceptionIfNamePrefixIsNull(final @TempDir Path tempDir)
     {
-        assertThrows(NullPointerException.class, () -> rttHistogram.saveToFile(tempDir, null));
+        assertThrows(NullPointerException.class, () -> persistedHistogram.saveToFile(tempDir, null));
     }
 
     @Test
     void saveToFileThrowsIllegalArgumentExceptionIfNamePrefixIsEmpty(final @TempDir Path tempDir)
     {
-        assertThrows(IllegalArgumentException.class, () -> rttHistogram.saveToFile(tempDir, ""));
+        assertThrows(IllegalArgumentException.class, () -> persistedHistogram.saveToFile(tempDir, ""));
     }
 
     @Test
     void saveToFileThrowsIllegalArgumentExceptionIfNamePrefixIsBlank(final @TempDir Path tempDir)
     {
-        assertThrows(IllegalArgumentException.class, () -> rttHistogram.saveToFile(tempDir, " \t  \n  "));
+        assertThrows(IllegalArgumentException.class, () -> persistedHistogram.saveToFile(tempDir, " \t  \n  "));
     }
 
     @Test
@@ -103,9 +103,9 @@ class RttHistogramTest
         histogram.recordValue(2);
         histogram.recordValue(4);
 
-        final RttHistogram rttHistogram = new RttHistogram(histogram.copy());
+        final PersistedHistogram persistedHistogram = new PersistedHistogram(histogram.copy());
 
-        assertThrows(IOException.class, () -> rttHistogram.saveToFile(rootFile, "ignore"));
+        assertThrows(IOException.class, () -> persistedHistogram.saveToFile(rootFile, "ignore"));
     }
 
     @Test
@@ -120,9 +120,9 @@ class RttHistogramTest
         histogram.recordValue(1000);
         histogram.recordValue(250);
 
-        final RttHistogram rttHistogram = new RttHistogram(histogram.copy());
+        final PersistedHistogram persistedHistogram = new PersistedHistogram(histogram.copy());
 
-        final Path file = rttHistogram.saveToFile(tempDir, "test-histogram");
+        final Path file = persistedHistogram.saveToFile(tempDir, "test-histogram");
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
@@ -143,9 +143,9 @@ class RttHistogramTest
         histogram.recordValue(2);
         histogram.recordValue(4);
 
-        final RttHistogram rttHistogram = new RttHistogram(histogram.copy());
+        final PersistedHistogram persistedHistogram = new PersistedHistogram(histogram.copy());
 
-        final Path file = rttHistogram.saveToFile(tempDir, "another_one");
+        final Path file = persistedHistogram.saveToFile(tempDir, "another_one");
 
         assertNotNull(file);
         assertTrue(Files.exists(file));

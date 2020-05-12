@@ -31,7 +31,7 @@ import java.util.Map.Entry;
 import static java.lang.Double.*;
 import static java.nio.file.Files.*;
 import static java.util.stream.Collectors.groupingBy;
-import static uk.co.real_logic.benchmarks.remote.RttHistogram.*;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.*;
 
 public final class ResultsAggregator
 {

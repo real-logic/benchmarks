@@ -30,8 +30,8 @@ import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.util.Arrays.sort;
 import static org.junit.jupiter.api.Assertions.*;
-import static uk.co.real_logic.benchmarks.remote.RttHistogram.AGGREGATE_FILE_SUFFIX;
-import static uk.co.real_logic.benchmarks.remote.RttHistogram.REPORT_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.AGGREGATE_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.REPORT_FILE_SUFFIX;
 
 class ResultsAggregatorTest
 {

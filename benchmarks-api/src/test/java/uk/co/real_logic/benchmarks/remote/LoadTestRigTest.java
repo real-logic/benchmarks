@@ -43,7 +43,7 @@ class LoadTestRigTest
     private final IdleStrategy receiverIdleStrategy = mock(IdleStrategy.class);
     private final NanoClock clock = mock(NanoClock.class);
     private final PrintStream out = mock(PrintStream.class);
-    private final RttHistogram histogram = mock(RttHistogram.class);
+    private final PersistedHistogram histogram = mock(PersistedHistogram.class);
     private final MessageTransceiver messageTransceiver = mock(MessageTransceiver.class);
     private Configuration configuration;
 

@@ -46,7 +46,7 @@ public final class LoadTestRig
     private final MessageTransceiver messageTransceiver;
     private final NanoClock clock;
     private final PrintStream out;
-    private final RttHistogram histogram;
+    private final PersistedHistogram histogram;
     private final AtomicLong sentMessages;
     private final AtomicLong receivedMessages;
     private final int availableProcessors;
@@ -59,7 +59,7 @@ public final class LoadTestRig
         clock = SystemNanoClock.INSTANCE;
         out = System.out;
         availableProcessors = Runtime.getRuntime().availableProcessors();
-        histogram = new RttHistogram();
+        histogram = new PersistedHistogram();
         sentMessages = new AtomicLong();
         receivedMessages = new AtomicLong();
         try
@@ -86,7 +86,7 @@ public final class LoadTestRig
         final Configuration configuration,
         final NanoClock clock,
         final PrintStream out,
-        final RttHistogram histogram,
+        final PersistedHistogram histogram,
         final MessageTransceiver messageTransceiver,
         final AtomicLong sentMessages,
         final AtomicLong receivedMessages,
