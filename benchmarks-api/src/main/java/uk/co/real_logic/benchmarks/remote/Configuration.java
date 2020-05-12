@@ -149,12 +149,15 @@ public final class Configuration
      */
     public static final String OUTPUT_DIRECTORY_PROP_NAME = "aeron.benchmarks.rtt.outputDirectory";
 
-    private static final String COMMON_PACKAGE_PREFIX;
+    private static final String API_PACKAGE_NAME_PREFIX;
+    private static final String TOP_LEVEL_PACKAGE_NAME_PREFIX;
 
     static
     {
         final String className = Configuration.class.getName();
-        COMMON_PACKAGE_PREFIX = className.substring(0, className.lastIndexOf('.') + 1);
+        final int lastDotIndex = className.lastIndexOf('.');
+        API_PACKAGE_NAME_PREFIX = className.substring(0, lastDotIndex + 1);
+        TOP_LEVEL_PACKAGE_NAME_PREFIX = className.substring(0, className.lastIndexOf('.', lastDotIndex - 1) + 1);
     }
 
     private final int warmUpIterations;
@@ -325,9 +328,22 @@ public final class Configuration
     private String computeFileNamePrefix()
     {
         final String messageTransceiverClassName = messageTransceiverClass.getName();
-        final String className = messageTransceiverClassName.startsWith(COMMON_PACKAGE_PREFIX) ?
-            messageTransceiverClassName.substring(COMMON_PACKAGE_PREFIX.length()) :
-            messageTransceiverClassName;
+        final String className;
+        if (messageTransceiverClassName.startsWith(TOP_LEVEL_PACKAGE_NAME_PREFIX))
+        {
+            if (messageTransceiverClassName.startsWith(API_PACKAGE_NAME_PREFIX))
+            {
+                className = messageTransceiverClassName.substring(API_PACKAGE_NAME_PREFIX.length());
+            }
+            else
+            {
+                className = messageTransceiverClassName.substring(TOP_LEVEL_PACKAGE_NAME_PREFIX.length());
+            }
+        }
+        else
+        {
+            className = messageTransceiverClassName;
+        }
         return className + "_" + numberOfMessages + "_" + batchSize + "_" + messageLength;
     }
 

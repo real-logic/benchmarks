@@ -29,6 +29,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.other.benchmark.impl.MessageTransceiverFromAnotherPackage;
 import uk.co.real_logic.benchmarks.remote.nested.NestedMessageTransceiver;
+import uk.co.real_logic.benchmarks.remotesibling.MessageTransceiverFromSiblingPackage;
+import uk.co.real_logic.benchmarks.remotesibling.nested.NestedSiblingMessageTransceiver;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -286,6 +288,37 @@ class ConfigurationTest
             .build();
 
         assertEquals("nested.NestedMessageTransceiver_12_3_75", configuration.outputFileNamePrefix());
+    }
+
+    @Test
+    void outputFileNamePrefixShortensTransceiverClassNameByRemovingCommonPackagePrefixWhenInSiblingPackage(
+        final @TempDir Path tempDir)
+    {
+        final Configuration configuration = new Builder()
+            .numberOfMessages(8)
+            .batchSize(4)
+            .messageLength(25)
+            .messageTransceiverClass(MessageTransceiverFromSiblingPackage.class)
+            .outputDirectory(tempDir)
+            .build();
+
+        assertEquals("remotesibling.MessageTransceiverFromSiblingPackage_8_4_25", configuration.outputFileNamePrefix());
+    }
+
+    @Test
+    void outputFileNamePrefixShortensTransceiverClassNameByRemovingCommonPackagePrefixWhenNestedInSiblingPackage(
+        final @TempDir Path tempDir)
+    {
+        final Configuration configuration = new Builder()
+            .numberOfMessages(100)
+            .batchSize(1)
+            .messageLength(100)
+            .messageTransceiverClass(NestedSiblingMessageTransceiver.class)
+            .outputDirectory(tempDir)
+            .build();
+
+        assertEquals("remotesibling.nested.NestedSiblingMessageTransceiver_100_1_100",
+            configuration.outputFileNamePrefix());
     }
 
     @Test
