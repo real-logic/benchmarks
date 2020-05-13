@@ -18,8 +18,9 @@ plugins {
     id 'java-library'
     id 'idea'
     id 'checkstyle'
-    id 'com.github.johnrengelman.shadow' version '5.2.0'
     id 'com.github.ben-manes.versions' version '0.28.0'
+    id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
+    id 'com.google.protobuf' version '0.8.12' apply false
 }
 
 defaultTasks 'clean', 'build'
@@ -37,6 +38,8 @@ def disruptorVersion = '3.4.2'
 def junitVersion = '5.6.2'
 def mockitoVersion = '3.3.3'
 def checkstyleVersion = '8.28'
+def grpcVersion = '1.29.0'
+def protobufVersion = '3.11.4'
 
 allprojects {
     repositories {
@@ -48,6 +51,7 @@ allprojects {
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'checkstyle'
+    apply plugin: 'idea'
 
     dependencies {
         testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
@@ -101,11 +105,33 @@ project(':benchmarks-aeron') {
     }
 }
 
+project(':benchmarks-grpc') {
+    apply plugin: 'com.google.protobuf'
+
+    dependencies {
+        api project(':benchmarks-api')
+        implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+        implementation "io.grpc:grpc-stub:${grpcVersion}"
+        implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    }
+
+    protobuf {
+        protoc { artifact = "com.google.protobuf:protoc:${protobufVersion}" }
+        plugins {
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
+        }
+        generateProtoTasks {
+            all()*.plugins { grpc {} }
+        }
+    }
+}
+
 project(':benchmarks-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
         implementation project(':benchmarks-aeron')
+        implementation project(':benchmarks-grpc')
     }
 
     shadowJar {
