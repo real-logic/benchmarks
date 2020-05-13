@@ -29,19 +29,19 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.getServerChannel;
 
-public class BlockingMessageTrasceiver extends MessageTransceiver
+public class BlockingMessageTransceiver extends MessageTransceiver
 {
     private ManagedChannel serverChannel;
     private EchoBenchmarksBlockingStub blockingClient;
     private EchoMessage.Builder messageBuilder;
     private ByteString payload;
 
-    public BlockingMessageTrasceiver(final MessageRecorder messageRecorder)
+    public BlockingMessageTransceiver(final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
         serverChannel = getServerChannel();
         blockingClient = EchoBenchmarksGrpc.newBlockingStub(serverChannel);

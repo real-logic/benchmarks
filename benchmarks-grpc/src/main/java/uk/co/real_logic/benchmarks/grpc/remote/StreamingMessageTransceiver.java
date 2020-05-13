@@ -32,23 +32,21 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.getServerChannel;
 import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
-public class StreamingMessageTrasceiver extends MessageTransceiver
+public class StreamingMessageTransceiver extends MessageTransceiver
 {
     private ManagedChannel serverChannel;
-    private EchoBenchmarksStub asyncClient;
     private ClientCallStreamObserver<EchoMessage> requestObserver;
     private EchoMessage.Builder messageBuilder;
     private ByteString payload;
 
-    public StreamingMessageTrasceiver(final MessageRecorder messageRecorder)
+    public StreamingMessageTransceiver(final MessageRecorder messageRecorder)
     {
         super(messageRecorder);
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
         serverChannel = getServerChannel();
-        asyncClient = EchoBenchmarksGrpc.newStub(serverChannel);
 
         final StreamObserver<EchoMessage> responseObserver = new StreamObserver<EchoMessage>()
         {
@@ -68,6 +66,7 @@ public class StreamingMessageTrasceiver extends MessageTransceiver
             }
         };
 
+        final EchoBenchmarksStub asyncClient = EchoBenchmarksGrpc.newStub(serverChannel);
         requestObserver = (ClientCallStreamObserver<EchoMessage>)asyncClient.echoStream(responseObserver);
 
         messageBuilder = EchoMessage.newBuilder();

@@ -93,8 +93,8 @@ abstract class AbstractGrpcTest
                         int sentBatch = 0;
                         do
                         {
-                            sentBatch +=
-                                messageTransceiver.send(burstSize - sentBatch, messageLength, timestamp, 3 * timestamp);
+                            sentBatch += messageTransceiver.send(
+                                burstSize - sentBatch, messageLength, timestamp, 3 * timestamp);
                             messageTransceiver.receive();
                         }
                         while (sentBatch < burstSize);

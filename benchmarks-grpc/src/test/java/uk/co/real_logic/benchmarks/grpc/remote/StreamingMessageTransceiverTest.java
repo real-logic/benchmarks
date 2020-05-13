@@ -18,10 +18,10 @@ package uk.co.real_logic.benchmarks.grpc.remote;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
-class StreamingMessageTrasceiverTest extends uk.co.real_logic.benchmarks.grpc.remote.AbstractGrpcTest
+class StreamingMessageTransceiverTest extends AbstractGrpcTest
 {
     protected MessageTransceiver createMessageTransceiver(final MessageRecorder messageRecorder)
     {
-        return new StreamingMessageTrasceiver(messageRecorder);
+        return new StreamingMessageTransceiver(messageRecorder);
     }
 }
