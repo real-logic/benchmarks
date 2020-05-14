@@ -25,13 +25,20 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TreeMap;
 
 import static java.lang.System.getProperty;
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.lang.reflect.Modifier.isPublic;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.*;
 import static java.util.Objects.requireNonNull;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.toHex;
 import static org.agrona.Strings.isEmpty;
 
 /**
@@ -152,6 +159,7 @@ public final class Configuration
 
     private static final String API_PACKAGE_NAME_PREFIX;
     private static final String TOP_LEVEL_PACKAGE_NAME_PREFIX;
+    private static final MessageDigest SHA256;
 
     static
     {
@@ -159,6 +167,14 @@ public final class Configuration
         final int lastDotIndex = className.lastIndexOf('.');
         API_PACKAGE_NAME_PREFIX = className.substring(0, lastDotIndex + 1);
         TOP_LEVEL_PACKAGE_NAME_PREFIX = className.substring(0, className.lastIndexOf('.', lastDotIndex - 1) + 1);
+        try
+        {
+            SHA256 = MessageDigest.getInstance("SHA-256");
+        }
+        catch (final NoSuchAlgorithmException e)
+        {
+            throw new Error(e);
+        }
     }
 
     private final int warmUpIterations;
@@ -186,7 +202,7 @@ public final class Configuration
         this.sendIdleStrategy = requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
         this.receiveIdleStrategy = requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
-        outputFileNamePrefix = computeFileNamePrefix();
+        outputFileNamePrefix = computeFileNamePrefix(builder.systemProperties);
     }
 
     /**
@@ -326,26 +342,32 @@ public final class Configuration
             "\n}";
     }
 
-    private String computeFileNamePrefix()
+    private String computeFileNamePrefix(final Properties systemProperties)
     {
         final String messageTransceiverClassName = messageTransceiverClass.getName();
-        final String className;
+        final StringBuilder builder = new StringBuilder(messageTransceiverClassName.length() + 98);
+
         if (messageTransceiverClassName.startsWith(TOP_LEVEL_PACKAGE_NAME_PREFIX))
         {
             if (messageTransceiverClassName.startsWith(API_PACKAGE_NAME_PREFIX))
             {
-                className = messageTransceiverClassName.substring(API_PACKAGE_NAME_PREFIX.length());
+                builder.append(messageTransceiverClassName.substring(API_PACKAGE_NAME_PREFIX.length()));
             }
             else
             {
-                className = messageTransceiverClassName.substring(TOP_LEVEL_PACKAGE_NAME_PREFIX.length());
+                builder.append(messageTransceiverClassName.substring(TOP_LEVEL_PACKAGE_NAME_PREFIX.length()));
             }
         }
         else
         {
-            className = messageTransceiverClassName;
+            builder.append(messageTransceiverClassName);
         }
-        return className + "_" + numberOfMessages + "_" + batchSize + "_" + messageLength;
+
+        builder.append("_").append(numberOfMessages)
+            .append("_").append(batchSize)
+            .append("_").append(messageLength)
+            .append("_").append(computeSha256(systemProperties));
+        return builder.toString();
     }
 
     /**
@@ -363,6 +385,7 @@ public final class Configuration
         private IdleStrategy sendIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private IdleStrategy receiveIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private Path outputDirectory = Paths.get("results");
+        private Properties systemProperties = System.getProperties();
 
         /**
          * Set the number of warm up iterations.
@@ -493,6 +516,12 @@ public final class Configuration
         public Configuration build()
         {
             return new Configuration(this);
+        }
+
+        Builder systemProperties(final Properties properties)
+        {
+            systemProperties = properties;
+            return this;
         }
     }
 
@@ -680,5 +709,30 @@ public final class Configuration
         }
 
         return outputDirectory.toAbsolutePath();
+    }
+
+    static String computeSha256(final Properties properties)
+    {
+        final TreeMap<String, String> sortedProperties = new TreeMap<>();
+        for (final Map.Entry<Object, Object> entry : properties.entrySet())
+        {
+            sortedProperties.put((String)entry.getKey(), (String)entry.getValue());
+        }
+
+        return toHex(computeSha256Digest(sortedProperties));
+    }
+
+    private static byte[] computeSha256Digest(final TreeMap<String, String> properties)
+    {
+        synchronized (SHA256)
+        {
+            SHA256.reset();
+            for (final Map.Entry<String, String> entry : properties.entrySet())
+            {
+                SHA256.update(entry.getKey().getBytes(UTF_8));
+                SHA256.update(entry.getValue().getBytes(UTF_8));
+            }
+            return SHA256.digest();
+        }
     }
 }

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.other.benchmark.impl.MessageTransceiverFromAnotherPackage;
@@ -39,11 +40,15 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Properties;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.System.setProperty;
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static uk.co.real_logic.benchmarks.remote.Configuration.*;
 
 class ConfigurationTest
@@ -285,9 +290,12 @@ class ConfigurationTest
             .messageLength(75)
             .messageTransceiverClass(NestedMessageTransceiver.class)
             .outputDirectory(tempDir)
+            .systemProperties(props("E", "m*c^2"))
             .build();
 
-        assertEquals("nested.NestedMessageTransceiver_12_3_75", configuration.outputFileNamePrefix());
+        assertEquals(
+            "nested.NestedMessageTransceiver_12_3_75_a2bea3034417edbbe21e66dd9b68d43fe53e287e04a1f6b119741ab9e0729f60",
+            configuration.outputFileNamePrefix());
     }
 
     @Test
@@ -300,9 +308,12 @@ class ConfigurationTest
             .messageLength(25)
             .messageTransceiverClass(MessageTransceiverFromSiblingPackage.class)
             .outputDirectory(tempDir)
+            .systemProperties(new Properties())
             .build();
 
-        assertEquals("remotesibling.MessageTransceiverFromSiblingPackage_8_4_25", configuration.outputFileNamePrefix());
+        assertEquals("remotesibling.MessageTransceiverFromSiblingPackage_8_4_25" +
+            "_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            configuration.outputFileNamePrefix());
     }
 
     @Test
@@ -315,9 +326,11 @@ class ConfigurationTest
             .messageLength(100)
             .messageTransceiverClass(NestedSiblingMessageTransceiver.class)
             .outputDirectory(tempDir)
+            .systemProperties(new Properties())
             .build();
 
-        assertEquals("remotesibling.nested.NestedSiblingMessageTransceiver_100_1_100",
+        assertEquals("remotesibling.nested.NestedSiblingMessageTransceiver_100_1_100" +
+            "_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             configuration.outputFileNamePrefix());
     }
 
@@ -328,9 +341,11 @@ class ConfigurationTest
             .numberOfMessages(100)
             .messageTransceiverClass(MessageTransceiverFromAnotherPackage.class)
             .outputDirectory(tempDir)
+            .systemProperties(props("x", "5"))
             .build();
 
-        assertEquals(MessageTransceiverFromAnotherPackage.class.getName() + "_100_1_16",
+        assertEquals(MessageTransceiverFromAnotherPackage.class.getName() + "_100_1_16" +
+            "_29f2394eb92d0ded9247b8d7188ebddae3e13c71ebcf939302619b29604486b0",
             configuration.outputFileNamePrefix());
     }
 
@@ -340,6 +355,7 @@ class ConfigurationTest
         final Configuration configuration = new Builder()
             .numberOfMessages(123)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .systemProperties(new Properties())
             .build();
 
         assertEquals(123, configuration.numberOfMessages());
@@ -352,6 +368,9 @@ class ConfigurationTest
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
+        assertEquals("InMemoryMessageTransceiver_123_" + DEFAULT_BATCH_SIZE + "_" + MIN_MESSAGE_LENGTH +
+            "_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            configuration.outputFileNamePrefix());
     }
 
     @Test
@@ -396,6 +415,7 @@ class ConfigurationTest
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .systemProperties(props("java", "25"))
             .build();
 
         assertEquals("Configuration{" +
@@ -410,6 +430,7 @@ class ConfigurationTest
             "\n    receiveIdleStrategy=YieldingIdleStrategy{}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
             "\n    outputFileNamePrefix=InMemoryMessageTransceiver_777_2_64" +
+            "_73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
             "\n}",
             configuration.toString());
     }
@@ -506,6 +527,41 @@ class ConfigurationTest
         assertTrue(configuration.sendIdleStrategy() instanceof YieldingIdleStrategy);
         assertTrue(configuration.receiveIdleStrategy() instanceof BusySpinIdleStrategy);
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
+    }
+
+    @ParameterizedTest
+    @MethodSource("computeSha256Inputs")
+    void computeSha256FromProperties(final Properties properties, final String sha256)
+    {
+        assertEquals(sha256, computeSha256(properties));
+    }
+
+    static List<Arguments> computeSha256Inputs()
+    {
+        return asList(
+            arguments(new Properties(),
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"),
+            arguments(props("emptyKey", ""),
+                "7b0cfdb635b9790840cbe4d9caca23a03240f1d13da3dccd92255e4208127f08"),
+            arguments(props("java", "¯\\_(ツ)_/¯"),
+                "750e8c40c5473ea1d8eae9c27b1fe61b6e8249f87db30fca5ececc57cba14afe"),
+            arguments(props("java", "\uD83E\uDD37"),
+                "75d681403cdcc3fd6ada5cdb383e18c7af2862b750ddc670895471cae30bf76b"),
+            arguments(props("X", "-100", "B", "2", "z", "0", "\uD83E\uDD37", "42", "y", "2.25"),
+                "8bc055dc860587df8a9234d6721e6a482dd707e204f29895eee08aeeaaaf4432"),
+            arguments(props("\uD83E\uDD37", "42", "B", "2", "X", "-100", "y", "2.25", "z", "0"),
+                "8bc055dc860587df8a9234d6721e6a482dd707e204f29895eee08aeeaaaf4432"));
+    }
+
+    private static Properties props(final String... keyValuePairs)
+    {
+        assertEquals(0, keyValuePairs.length & 1);
+        final Properties properties = new Properties();
+        for (int i = 0; i < keyValuePairs.length; i += 2)
+        {
+            properties.put(keyValuePairs[i], keyValuePairs[i + 1]);
+        }
+        return properties;
     }
 
     private void clearConfigProperties()
