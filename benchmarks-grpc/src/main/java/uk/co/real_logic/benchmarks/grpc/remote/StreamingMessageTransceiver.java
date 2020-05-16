@@ -20,10 +20,10 @@ import io.grpc.ManagedChannel;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.agrona.LangUtil;
+import uk.co.real_logic.benchmarks.grpc.remote.EchoBenchmarksGrpc.EchoBenchmarksStub;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
-import uk.co.real_logic.benchmarks.grpc.remote.EchoBenchmarksGrpc.EchoBenchmarksStub;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -70,8 +70,8 @@ public class StreamingMessageTransceiver extends MessageTransceiver
         requestObserver = (ClientCallStreamObserver<EchoMessage>)asyncClient.echoStream(responseObserver);
 
         messageBuilder = EchoMessage.newBuilder();
-        final int payloadLength = configuration.messageLength() - MIN_MESSAGE_LENGTH - 4 /* array length field */;
-        if (payloadLength <= 0)
+        final int payloadLength = configuration.messageLength() - MIN_MESSAGE_LENGTH;
+        if (payloadLength == 0)
         {
             payload = ByteString.EMPTY;
         }

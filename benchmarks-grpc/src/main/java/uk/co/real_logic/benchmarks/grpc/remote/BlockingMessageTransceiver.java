@@ -17,17 +17,17 @@ package uk.co.real_logic.benchmarks.grpc.remote;
 
 import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
+import uk.co.real_logic.benchmarks.grpc.remote.EchoBenchmarksGrpc.EchoBenchmarksBlockingStub;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
-import uk.co.real_logic.benchmarks.grpc.remote.EchoBenchmarksGrpc.EchoBenchmarksBlockingStub;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.getServerChannel;
+import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
 public class BlockingMessageTransceiver extends MessageTransceiver
 {
@@ -47,8 +47,8 @@ public class BlockingMessageTransceiver extends MessageTransceiver
         blockingClient = EchoBenchmarksGrpc.newBlockingStub(serverChannel);
 
         messageBuilder = EchoMessage.newBuilder();
-        final int payloadLength = configuration.messageLength() - MIN_MESSAGE_LENGTH - 4 /* array length field */;
-        if (payloadLength <= 0)
+        final int payloadLength = configuration.messageLength() - MIN_MESSAGE_LENGTH;
+        if (payloadLength == 0)
         {
             payload = ByteString.EMPTY;
         }
