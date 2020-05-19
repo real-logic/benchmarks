@@ -40,6 +40,8 @@ def mockitoVersion = '3.3.3'
 def checkstyleVersion = '8.34'
 def grpcVersion = '1.30.2'
 def protobufVersion = '3.12.3'
+def kafkaVersion = '2.5.0'
+def slf4jVersion = '1.7.30'
 
 allprojects {
     repositories {
@@ -126,12 +128,24 @@ project(':benchmarks-grpc') {
     }
 }
 
+project(':benchmarks-kafka') {
+    dependencies {
+        api project(':benchmarks-api')
+        implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
+        runtimeOnly "org.apache.kafka:kafka_2.13:${kafkaVersion}"
+        runtimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+        testImplementation "org.apache.kafka:kafka_2.13:${kafkaVersion}"
+        testRuntimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+    }
+}
+
 project(':benchmarks-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
         implementation project(':benchmarks-aeron')
         implementation project(':benchmarks-grpc')
+        implementation project(':benchmarks-kafka')
     }
 
     shadowJar {
