@@ -26,7 +26,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.record.TimestampType;
@@ -67,7 +66,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
     private int checksumOffset;
     private UnsafeBuffer sendBuffer;
     private UnsafeBuffer receiverBuffer;
-    private List<Future<RecordMetadata>> outstandingRequests;
 
     public KafkaMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -153,7 +151,7 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         config.putAll(commonProps);
         config.put(ProducerConfig.LINGER_MS_CONFIG, "0"); //ensure writes are synchronous
         config.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, Long.toString(Long.MAX_VALUE));
-        config.put(ProducerConfig.ACKS_CONFIG, "1");
+        config.put(ProducerConfig.ACKS_CONFIG, "0");
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
         config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "none");
@@ -168,10 +166,8 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        final List<Future<RecordMetadata>> outstandingRequests = initOutstandingRequests(numberOfMessages);
         final byte[] value = createPayload(checksum);
-        sendMessages(numberOfMessages, timestamp, value, outstandingRequests);
-        awaitMessagesSent(numberOfMessages, outstandingRequests);
+        sendMessages(numberOfMessages, timestamp, value);
         return numberOfMessages;
     }
 
@@ -188,23 +184,10 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         return buffer.byteArray();
     }
 
-    private List<Future<RecordMetadata>> initOutstandingRequests(final int numberOfMessages)
-    {
-        List<Future<RecordMetadata>> outstandingRequests = this.outstandingRequests;
-        if (outstandingRequests != null)
-        {
-            return outstandingRequests;
-        }
-        outstandingRequests = new ArrayList<>(numberOfMessages);
-        this.outstandingRequests = outstandingRequests;
-        return outstandingRequests;
-    }
-
     private void sendMessages(
         final int numberOfMessages,
         final Long timestamp,
-        final byte[] value,
-        final List<Future<RecordMetadata>> outstandingRequests)
+        final byte[] value)
     {
         final String topic = this.topic;
         final Integer partition = this.partition;
@@ -212,20 +195,8 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         final KafkaProducer<byte[], byte[]> producer = this.producer;
         for (int i = 0; i < numberOfMessages; i++)
         {
-            final Future<RecordMetadata> future = producer.send(
-                new ProducerRecord<>(topic, partition, timestamp, key, value), null);
-            outstandingRequests.add(future);
+            producer.send(new ProducerRecord<>(topic, partition, timestamp, key, value), null);
         }
-    }
-
-    private void awaitMessagesSent(final int numberOfMessages, final List<Future<RecordMetadata>> outstandingRequests)
-    {
-        for (int i = 0; i < numberOfMessages; i++)
-        {
-            final Future<RecordMetadata> future = outstandingRequests.get(i);
-            await(future); // wait for the record to be sent
-        }
-        outstandingRequests.clear();
     }
 
     private static <T> T await(final Future<? extends T> future)
