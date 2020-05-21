@@ -66,8 +66,7 @@ final class KafkaConfig
     public static Map<String, String> getTopicConfig()
     {
         final Map<String, String> topicConfig = new HashMap<>();
-        topicConfig.put(TopicConfig.COMPRESSION_TYPE_CONFIG,
-            getProperty(TopicConfig.COMPRESSION_TYPE_CONFIG, "producer"));
+        topicConfig.put(TopicConfig.COMPRESSION_TYPE_CONFIG, "producer");
         topicConfig.put(TopicConfig.PREALLOCATE_CONFIG,
             getProperty(TopicConfig.PREALLOCATE_CONFIG, "false"));
         final String maxLong = Long.toString(Long.MAX_VALUE);
