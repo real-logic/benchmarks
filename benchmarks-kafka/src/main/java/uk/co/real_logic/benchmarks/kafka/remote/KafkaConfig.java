@@ -18,6 +18,7 @@ package uk.co.real_logic.benchmarks.kafka.remote;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.TopicConfig;
+import org.apache.kafka.common.metrics.Sensor;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 
@@ -49,13 +50,26 @@ final class KafkaConfig
         commonProps.put(BOOTSTRAP_SERVERS_CONFIG, getBrokerList());
         putIfProvided(commonProps, SEND_BUFFER_CONFIG);
         putIfProvided(commonProps, RECEIVE_BUFFER_CONFIG);
+        putIfProvided(commonProps, REQUEST_TIMEOUT_MS_CONFIG);
+        putIfProvided(commonProps, DEFAULT_API_TIMEOUT_MS_CONFIG);
+        commonProps.put(METRICS_SAMPLE_WINDOW_MS_CONFIG,
+            getProperty(METRICS_SAMPLE_WINDOW_MS_CONFIG, "30000"));
+        commonProps.put(METRICS_NUM_SAMPLES_CONFIG,
+            getProperty(METRICS_NUM_SAMPLES_CONFIG, "2"));
+        commonProps.put(METRICS_RECORDING_LEVEL_CONFIG,
+            getProperty(METRICS_RECORDING_LEVEL_CONFIG, Sensor.RecordingLevel.INFO.toString()));
+        commonProps.put(METRIC_REPORTER_CLASSES_CONFIG,
+            getProperty(METRIC_REPORTER_CLASSES_CONFIG, ""));
         return commonProps;
     }
 
     public static Map<String, String> getTopicConfig()
     {
         final Map<String, String> topicConfig = new HashMap<>();
-        topicConfig.put(TopicConfig.COMPRESSION_TYPE_CONFIG, "producer");
+        topicConfig.put(TopicConfig.COMPRESSION_TYPE_CONFIG,
+            getProperty(TopicConfig.COMPRESSION_TYPE_CONFIG, "producer"));
+        topicConfig.put(TopicConfig.PREALLOCATE_CONFIG,
+            getProperty(TopicConfig.PREALLOCATE_CONFIG, "false"));
         final String maxLong = Long.toString(Long.MAX_VALUE);
         topicConfig.put(TopicConfig.FLUSH_MESSAGES_INTERVAL_CONFIG,
             getProperty(TopicConfig.FLUSH_MESSAGES_INTERVAL_CONFIG, maxLong));
@@ -78,8 +92,6 @@ final class KafkaConfig
             getProperty(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, "0")); //ensure we have no temporal batching
         config.put(ConsumerConfig.CHECK_CRCS_CONFIG,
             getProperty(ConsumerConfig.CHECK_CRCS_CONFIG, "false"));
-        config.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG,
-            getProperty(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, String.valueOf(1024 * 1024 * 1024)));
         return config;
     }
 
@@ -92,11 +104,17 @@ final class KafkaConfig
         config.put(ProducerConfig.LINGER_MS_CONFIG,
             getProperty(ProducerConfig.LINGER_MS_CONFIG, "0")); //ensure writes are synchronous
         config.put(ProducerConfig.MAX_BLOCK_MS_CONFIG,
-            getProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, Long.toString(Long.MAX_VALUE)));
+            getProperty(ProducerConfig.MAX_BLOCK_MS_CONFIG, "300000"));
         config.put(ProducerConfig.ACKS_CONFIG,
             getProperty(ProducerConfig.ACKS_CONFIG, "0"));
         config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG,
             getProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "none"));
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG,
+            getProperty(ProducerConfig.BATCH_SIZE_CONFIG, Long.toString(16 * 1024)));
+        config.put(ProducerConfig.BUFFER_MEMORY_CONFIG,
+            getProperty(ProducerConfig.BUFFER_MEMORY_CONFIG, Long.toString(32 * 1024 * 1024)));
+        config.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,
+            getProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, Long.toString(1024 * 1024)));
         return config;
     }
 
@@ -111,12 +129,12 @@ final class KafkaConfig
         return brokerList;
     }
 
-    private static void putIfProvided(final Map<String, String> commonProps, final String sendBufferConfig)
+    private static void putIfProvided(final Map<String, String> props, final String propName)
     {
-        final String property = getProperty(sendBufferConfig);
-        if (null != property)
+        final String value = getProperty(propName);
+        if (null != value)
         {
-            commonProps.put(sendBufferConfig, property);
+            props.put(propName, value);
         }
     }
 }
