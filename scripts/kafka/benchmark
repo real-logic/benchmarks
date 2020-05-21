@@ -22,6 +22,7 @@ cd ..
   -Dlog4j.configuration=file:${KAFKA_DIR}/log4j.properties \
   uk.co.real_logic.benchmarks.remote.LoadTestRig \
   ${KAFKA_DIR}/common.properties \
+  ${KAFKA_DIR}/topic.properties \
   ${KAFKA_DIR}/consumer.properties \
   ${KAFKA_DIR}/producer.properties \
   ${KAFKA_DIR}/benchmark.properties \
