@@ -62,7 +62,8 @@ class KafkaEmbeddedCluster implements AutoCloseable
         factory.startup(zookeeper);
 
         final KafkaConfig config = createConfig(port, zookeeperPort);
-        final Seq<KafkaMetricsReporter> metricsReporters = (Seq<KafkaMetricsReporter>)Seq$.MODULE$.empty();
+        @SuppressWarnings("unchecked") final Seq<KafkaMetricsReporter> metricsReporters =
+            (Seq<KafkaMetricsReporter>)Seq$.MODULE$.empty();
         kafka = new KafkaServer(config, Time.SYSTEM, Option.empty(), metricsReporters);
         kafka.startup();
     }

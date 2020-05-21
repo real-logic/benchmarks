@@ -24,18 +24,16 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.config.TopicConfig;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
@@ -73,14 +71,13 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 
     public void init(final Configuration configuration) throws Exception
     {
-        final Map<String, String> commonProps = getCommonProperties();
-        createTopic(commonProps);
-        initConsumer(commonProps);
-        initProducer(commonProps);
+        createTopic();
+        initConsumer();
+        initProducer();
 
         partition = null;
         key = null;
-        final PartitionSelector partitionSelector = KafkaConfig.getPartitionSelectorPropName();
+        final PartitionSelector partitionSelector = KafkaConfig.getPartitionSelector();
         switch (partitionSelector)
         {
             case EXPLICIT:
@@ -98,12 +95,12 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         receiverBuffer = new UnsafeBuffer(new byte[payloadLength]);
     }
 
-    private void createTopic(final Map<String, String> commonProps)
+    private void createTopic()
     {
         topic = "topic-" + TOPIC_ID.getAndAdd(1);
 
         final Properties config = new Properties();
-        config.putAll(commonProps);
+        config.putAll(getCommonProperties());
         try (Admin admin = Admin.create(config))
         {
             final Set<String> topics = await(admin.listTopics().names());
@@ -112,27 +109,15 @@ public class KafkaMessageTransceiver extends MessageTransceiver
                 await(admin.deleteTopics(singletonList(topic)).all());
             }
             final NewTopic newTopic = new NewTopic(topic, NUM_PARTITIONS, REPLICATION_FACTOR);
-            final Map<String, String> topicConfig = new HashMap<>();
-            topicConfig.put(TopicConfig.COMPRESSION_TYPE_CONFIG, "producer");
-            topicConfig.put(TopicConfig.FLUSH_MESSAGES_INTERVAL_CONFIG, Long.toString(getFlushMessagesInterval()));
-            topicConfig.put(TopicConfig.FLUSH_MS_CONFIG, Long.toString(getFlushMessagesTimeMillis()));
-            newTopic.configs(topicConfig);
+            newTopic.configs(getTopicConfig());
             await(admin.createTopics(singletonList(newTopic)).all());
         }
     }
 
-    private void initConsumer(final Map<String, String> commonProps)
+    private void initConsumer()
     {
-        final Properties config = new Properties();
-        config.putAll(commonProps);
+        final Properties config = getConsumerConfig();
         config.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group-" + GROUP_ID.getAndAdd(1));
-        config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-        config.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, "0"); //ensure we have no temporal batching
-        config.put(ConsumerConfig.CHECK_CRCS_CONFIG, "false");
-        config.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, String.valueOf(1024 * 1024 * 1024)); // 1GB
         consumer = new KafkaConsumer<>(config);
 
         final List<TopicPartition> topicPartitions = consumer.partitionsFor(topic).stream()
@@ -143,17 +128,9 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         consumer.assignment().forEach(topicPartition -> consumer.position(topicPartition));
     }
 
-    private void initProducer(final Map<String, String> commonProps)
+    private void initProducer()
     {
-        final Properties config = new Properties();
-        config.putAll(commonProps);
-        config.put(ProducerConfig.LINGER_MS_CONFIG, "0"); //ensure writes are synchronous
-        config.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, Long.toString(Long.MAX_VALUE));
-        config.put(ProducerConfig.ACKS_CONFIG, "0");
-        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "none");
-        producer = new KafkaProducer<>(config);
+        producer = new KafkaProducer<>(getProducerConfig());
     }
 
     public void destroy() throws Exception

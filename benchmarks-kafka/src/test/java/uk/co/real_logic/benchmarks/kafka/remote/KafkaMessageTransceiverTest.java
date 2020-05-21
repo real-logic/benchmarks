@@ -30,8 +30,8 @@ import java.nio.file.Path;
 
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
+import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.KAFKA_SERVER_PROP_NAME;
 import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.PARTITION_SELECTOR_PROP_NAME;
 import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
@@ -43,13 +43,13 @@ class KafkaMessageTransceiverTest
     static void beforeAll(final @TempDir Path tempDir) throws Exception
     {
         cluster = new KafkaEmbeddedCluster(13500, 13501, tempDir);
-        setProperty(KAFKA_SERVER_PROP_NAME, cluster.brokerList());
+        setProperty(BOOTSTRAP_SERVERS_CONFIG, cluster.brokerList());
     }
 
     @AfterAll
     static void afterAll(final @TempDir Path tempDir) throws Exception
     {
-        clearProperty(KAFKA_SERVER_PROP_NAME);
+        clearProperty(BOOTSTRAP_SERVERS_CONFIG);
         cluster.close();
     }
 
