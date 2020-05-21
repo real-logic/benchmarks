@@ -19,7 +19,6 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -37,7 +36,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.time.Duration.ofMillis;
@@ -51,8 +49,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 {
     private static final int NUM_PARTITIONS = 2;
     private static final short REPLICATION_FACTOR = (short)1;
-    private static final AtomicInteger GROUP_ID = new AtomicInteger(1);
-    private static final AtomicInteger TOPIC_ID = new AtomicInteger(5000);
     private static final Duration POLL_TIMEOUT = ofMillis(100);
 
     private KafkaConsumer<byte[], byte[]> consumer;
@@ -71,7 +67,7 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 
     public void init(final Configuration configuration) throws Exception
     {
-        createTopic();
+        createTopic(configuration);
         initConsumer();
         initProducer();
 
@@ -95,30 +91,28 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         receiverBuffer = new UnsafeBuffer(new byte[payloadLength]);
     }
 
-    private void createTopic()
+    private void createTopic(final Configuration configuration) throws Exception
     {
-        topic = "topic-" + TOPIC_ID.getAndAdd(1);
+        final String outputFileNamePrefix = configuration.outputFileNamePrefix();
+        topic = "benchmark-" + outputFileNamePrefix.substring(outputFileNamePrefix.lastIndexOf('_') + 1);
 
         final Properties config = new Properties();
         config.putAll(getCommonProperties());
         try (Admin admin = Admin.create(config))
         {
             final Set<String> topics = await(admin.listTopics().names());
-            if (topics.contains(topic))
+            if (!topics.contains(topic))
             {
-                await(admin.deleteTopics(singletonList(topic)).all());
+                final NewTopic newTopic = new NewTopic(topic, NUM_PARTITIONS, REPLICATION_FACTOR);
+                newTopic.configs(getTopicConfig());
+                await(admin.createTopics(singletonList(newTopic)).all());
             }
-            final NewTopic newTopic = new NewTopic(topic, NUM_PARTITIONS, REPLICATION_FACTOR);
-            newTopic.configs(getTopicConfig());
-            await(admin.createTopics(singletonList(newTopic)).all());
         }
     }
 
     private void initConsumer()
     {
-        final Properties config = getConsumerConfig();
-        config.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group-" + GROUP_ID.getAndAdd(1));
-        consumer = new KafkaConsumer<>(config);
+        consumer = new KafkaConsumer<>(getConsumerConfig());
 
         final List<TopicPartition> topicPartitions = consumer.partitionsFor(topic).stream()
             .map(partitionInfo -> new TopicPartition(partitionInfo.topic(), partitionInfo.partition()))

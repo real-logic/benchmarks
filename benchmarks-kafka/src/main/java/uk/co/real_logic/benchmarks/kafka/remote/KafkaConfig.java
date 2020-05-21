@@ -81,6 +81,7 @@ final class KafkaConfig
     {
         final Properties config = new Properties();
         config.putAll(getCommonProperties());
+        config.put(ConsumerConfig.GROUP_ID_CONFIG, "benchmark-consumer");
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         config.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
