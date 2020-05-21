@@ -28,7 +28,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.TopicConfig;
-import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
@@ -93,7 +92,7 @@ public class KafkaMessageTransceiver extends MessageTransceiver
                 key = bytes;
                 break;
         }
-        final int payloadLength = configuration.messageLength() - SIZE_OF_LONG;
+        final int payloadLength = configuration.messageLength();
         checksumOffset = payloadLength - SIZE_OF_LONG;
         sendBuffer = new UnsafeBuffer(new byte[payloadLength]);
         receiverBuffer = new UnsafeBuffer(new byte[payloadLength]);
@@ -115,7 +114,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
             final NewTopic newTopic = new NewTopic(topic, NUM_PARTITIONS, REPLICATION_FACTOR);
             final Map<String, String> topicConfig = new HashMap<>();
             topicConfig.put(TopicConfig.COMPRESSION_TYPE_CONFIG, "producer");
-            topicConfig.put(TopicConfig.MESSAGE_TIMESTAMP_TYPE_CONFIG, TimestampType.CREATE_TIME.name);
             topicConfig.put(TopicConfig.FLUSH_MESSAGES_INTERVAL_CONFIG, Long.toString(getFlushMessagesInterval()));
             topicConfig.put(TopicConfig.FLUSH_MS_CONFIG, Long.toString(getFlushMessagesTimeMillis()));
             newTopic.configs(topicConfig);
@@ -166,27 +164,27 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        final byte[] value = createPayload(checksum);
-        sendMessages(numberOfMessages, timestamp, value);
+        final byte[] value = createPayload(timestamp, checksum);
+        sendMessages(numberOfMessages, value);
         return numberOfMessages;
     }
 
-    private byte[] createPayload(final long checksum)
+    private byte[] createPayload(final long timestamp, final long checksum)
     {
         final UnsafeBuffer buffer = this.sendBuffer;
         final int checksumOffset = this.checksumOffset;
+        buffer.putLong(0, timestamp, LITTLE_ENDIAN);
         buffer.putLong(checksumOffset, checksum, LITTLE_ENDIAN);
-        if (checksumOffset > 0)
+        if (checksumOffset > SIZE_OF_LONG)
         {
-            buffer.setMemory(0, checksumOffset, (byte)(checksum ^ checksumOffset));
+            buffer.setMemory(SIZE_OF_LONG, checksumOffset - SIZE_OF_LONG, (byte)(checksum ^ timestamp));
         }
 
-        return buffer.byteArray();
+        return buffer.byteArray().clone();
     }
 
     private void sendMessages(
         final int numberOfMessages,
-        final Long timestamp,
         final byte[] value)
     {
         final String topic = this.topic;
@@ -195,7 +193,7 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         final KafkaProducer<byte[], byte[]> producer = this.producer;
         for (int i = 0; i < numberOfMessages; i++)
         {
-            producer.send(new ProducerRecord<>(topic, partition, timestamp, key, value), null);
+            producer.send(new ProducerRecord<>(topic, partition, key, value), null);
         }
     }
 
@@ -231,7 +229,7 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         for (final ConsumerRecord<byte[], byte[]> record : records)
         {
             buffer.wrap(record.value());
-            onMessageReceived(record.timestamp(), buffer.getLong(checksumOffset, LITTLE_ENDIAN));
+            onMessageReceived(buffer.getLong(0, LITTLE_ENDIAN), buffer.getLong(checksumOffset, LITTLE_ENDIAN));
         }
     }
 }

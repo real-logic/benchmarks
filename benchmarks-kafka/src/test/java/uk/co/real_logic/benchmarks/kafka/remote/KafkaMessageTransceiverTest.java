@@ -100,7 +100,7 @@ class KafkaMessageTransceiverTest
         try
         {
             int sent = 0;
-            long timestamp = System.nanoTime();
+            long timestamp = 12345;
             while (sent < numberOfMessages || receivedTimestamps.size() < numberOfMessages)
             {
                 if (Thread.interrupted())
