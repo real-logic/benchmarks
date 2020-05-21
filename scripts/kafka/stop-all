@@ -31,3 +31,5 @@ if [ -z "$PIDS" ]; then
 else
   kill -s $SIGNAL $PIDS
 fi
+
+rm -rf ../kafka-data
