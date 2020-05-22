@@ -56,7 +56,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
     private String topic;
     private Integer partition;
     private byte[] key;
-    private int checksumOffset;
     private UnsafeBuffer sendBuffer;
     private UnsafeBuffer receiverBuffer;
 
@@ -86,7 +85,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
                 break;
         }
         final int payloadLength = configuration.messageLength();
-        checksumOffset = payloadLength - SIZE_OF_LONG;
         sendBuffer = new UnsafeBuffer(new byte[payloadLength]);
         receiverBuffer = new UnsafeBuffer(new byte[payloadLength]);
     }
@@ -135,28 +133,20 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        final byte[] value = createPayload(timestamp, checksum);
-        sendMessages(numberOfMessages, value);
+        final byte[] messagePayload = createPayload(timestamp, checksum, messageLength);
+        sendMessages(numberOfMessages, messagePayload);
         return numberOfMessages;
     }
 
-    private byte[] createPayload(final long timestamp, final long checksum)
+    private byte[] createPayload(final long timestamp, final long checksum, final int messageLength)
     {
         final UnsafeBuffer buffer = this.sendBuffer;
-        final int checksumOffset = this.checksumOffset;
         buffer.putLong(0, timestamp, LITTLE_ENDIAN);
-        buffer.putLong(checksumOffset, checksum, LITTLE_ENDIAN);
-        if (checksumOffset > SIZE_OF_LONG)
-        {
-            buffer.setMemory(SIZE_OF_LONG, checksumOffset - SIZE_OF_LONG, (byte)(checksum ^ timestamp));
-        }
-
-        return buffer.byteArray().clone();
+        buffer.putLong(messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
+        return buffer.byteArray();
     }
 
-    private void sendMessages(
-        final int numberOfMessages,
-        final byte[] value)
+    private void sendMessages(final int numberOfMessages, final byte[] messagePayload)
     {
         final String topic = this.topic;
         final Integer partition = this.partition;
@@ -164,7 +154,12 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         final KafkaProducer<byte[], byte[]> producer = this.producer;
         for (int i = 0; i < numberOfMessages; i++)
         {
-            producer.send(new ProducerRecord<>(topic, partition, key, value), null);
+            producer.send(new ProducerRecord<>(
+                topic,
+                partition,
+                key != null ? key.clone() : null,
+                messagePayload.clone()),
+                null);
         }
     }
 
@@ -196,11 +191,13 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         }
 
         final UnsafeBuffer buffer = this.receiverBuffer;
-        final int checksumOffset = this.checksumOffset;
         for (final ConsumerRecord<byte[], byte[]> record : records)
         {
-            buffer.wrap(record.value());
-            onMessageReceived(buffer.getLong(0, LITTLE_ENDIAN), buffer.getLong(checksumOffset, LITTLE_ENDIAN));
+            final byte[] value = record.value();
+            buffer.wrap(value);
+            onMessageReceived(
+                buffer.getLong(0, LITTLE_ENDIAN),
+                buffer.getLong(value.length - SIZE_OF_LONG, LITTLE_ENDIAN));
         }
     }
 }
