@@ -69,11 +69,8 @@ final class KafkaConfig
         topicConfig.put(TopicConfig.COMPRESSION_TYPE_CONFIG, "producer");
         topicConfig.put(TopicConfig.PREALLOCATE_CONFIG,
             getProperty(TopicConfig.PREALLOCATE_CONFIG, "false"));
-        final String maxLong = Long.toString(Long.MAX_VALUE);
-        topicConfig.put(TopicConfig.FLUSH_MESSAGES_INTERVAL_CONFIG,
-            getProperty(TopicConfig.FLUSH_MESSAGES_INTERVAL_CONFIG, maxLong));
-        topicConfig.put(TopicConfig.FLUSH_MS_CONFIG,
-            getProperty(TopicConfig.FLUSH_MS_CONFIG, maxLong));
+        putIfProvided(topicConfig, TopicConfig.FLUSH_MESSAGES_INTERVAL_CONFIG);
+        putIfProvided(topicConfig, TopicConfig.FLUSH_MS_CONFIG);
         return topicConfig;
     }
 
