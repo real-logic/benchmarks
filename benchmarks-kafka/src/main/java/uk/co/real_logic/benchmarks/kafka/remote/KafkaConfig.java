@@ -34,6 +34,8 @@ import static uk.co.real_logic.benchmarks.kafka.remote.PartitionSelector.byName;
 final class KafkaConfig
 {
     public static final String PARTITION_SELECTOR_PROP_NAME = "uk.co.real_logic.benchmarks.kafka.remote.partition";
+    public static final String PRODUCER_MAX_IN_FLIGHT_MESSAGES_PROP_NAME =
+        "uk.co.real_logic.benchmarks.kafka.remote.producer.max.in.flight.messages";
 
     private KafkaConfig()
     {
@@ -113,6 +115,11 @@ final class KafkaConfig
         config.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,
             getProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, Long.toString(1024 * 1024)));
         return config;
+    }
+
+    public static int getMaxInFlightMessages()
+    {
+        return Integer.getInteger(PRODUCER_MAX_IN_FLIGHT_MESSAGES_PROP_NAME, 1000);
     }
 
     private static String getBrokerList()

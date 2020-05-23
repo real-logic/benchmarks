@@ -22,22 +22,23 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.time.Duration.ofMillis;
@@ -53,14 +54,31 @@ public class KafkaMessageTransceiver extends MessageTransceiver
     private static final short REPLICATION_FACTOR = (short)1;
     private static final Duration POLL_TIMEOUT = ofMillis(100);
 
-    private KafkaConsumer<byte[], byte[]> consumer;
+    private final AtomicInteger outstandingRequests = new AtomicInteger();
+    private final AtomicReference<Throwable> error = new AtomicReference<>();
+    private final Callback sendCallback = (metadata, exception) ->
+    {
+        if (null != exception)
+        {
+            if (!error.compareAndSet(null, exception))
+            {
+                error.get().addSuppressed(exception);
+            }
+        }
+        else
+        {
+            outstandingRequests.getAndDecrement();
+        }
+    };
     private KafkaProducer<byte[], byte[]> producer;
     private String topic;
     private Integer partition;
     private byte[] key;
     private UnsafeBuffer sendBuffer;
+    private int maxInFlightMessages;
+
+    private KafkaConsumer<byte[], byte[]> consumer;
     private UnsafeBuffer receiverBuffer;
-    private List<Future<RecordMetadata>> outstandingRequests;
 
     public KafkaMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -90,7 +108,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         final int payloadLength = configuration.messageLength();
         sendBuffer = new UnsafeBuffer(new byte[payloadLength]);
         receiverBuffer = new UnsafeBuffer(new byte[payloadLength]);
-        outstandingRequests = new ArrayList<>(configuration.batchSize());
     }
 
     private void createTopic(final Configuration configuration) throws Exception
@@ -127,20 +144,52 @@ public class KafkaMessageTransceiver extends MessageTransceiver
     private void initProducer()
     {
         producer = new KafkaProducer<>(getProducerConfig());
+        maxInFlightMessages = getMaxInFlightMessages();
     }
 
     public void destroy() throws Exception
     {
         consumer.commitSync();
         closeAll(producer, consumer);
+        final Throwable throwable = error.get();
+        if (null != throwable)
+        {
+            LangUtil.rethrowUnchecked(throwable);
+        }
     }
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
+        final AtomicInteger outstandingRequests = this.outstandingRequests;
+        final int maxInFlightMessages = this.maxInFlightMessages;
+        if (maxInFlightMessages == outstandingRequests.get())
+        {
+            return 0;
+        }
+
         final byte[] messagePayload = createPayload(timestamp, checksum, messageLength);
-        sendMessages(numberOfMessages, messagePayload);
-        awaitSend(numberOfMessages);
-        return numberOfMessages;
+        final String topic = this.topic;
+        final Integer partition = this.partition;
+        final byte[] key = this.key;
+        final Callback callback = this.sendCallback;
+        final KafkaProducer<byte[], byte[]> producer = this.producer;
+        int sent = 0;
+        for (int i = 0; i < numberOfMessages; i++)
+        {
+            if (maxInFlightMessages == outstandingRequests.getAndIncrement())
+            {
+                outstandingRequests.getAndDecrement();
+                break;
+            }
+            final ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(
+                topic,
+                partition,
+                key != null ? key.clone() : null,
+                messagePayload.clone());
+            producer.send(record, callback);
+            sent++;
+        }
+        return sent;
     }
 
     private byte[] createPayload(final long timestamp, final long checksum, final int messageLength)
@@ -149,35 +198,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         buffer.putLong(0, timestamp, LITTLE_ENDIAN);
         buffer.putLong(messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
         return buffer.byteArray();
-    }
-
-    private void sendMessages(final int numberOfMessages, final byte[] messagePayload)
-    {
-        final String topic = this.topic;
-        final Integer partition = this.partition;
-        final byte[] key = this.key;
-        final KafkaProducer<byte[], byte[]> producer = this.producer;
-        final List<Future<RecordMetadata>> outstandingRequests = this.outstandingRequests;
-        for (int i = 0; i < numberOfMessages; i++)
-        {
-            final ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(
-                topic,
-                partition,
-                key != null ? key.clone() : null,
-                messagePayload.clone());
-            outstandingRequests.add(producer.send(record, null));
-        }
-    }
-
-    private void awaitSend(final int numberOfMessages)
-    {
-        final List<Future<RecordMetadata>> outstandingRequests = this.outstandingRequests;
-        for (int i = 0; i < numberOfMessages; i++)
-        {
-            final Future<RecordMetadata> future = outstandingRequests.get(i);
-            await(future); // wait for the record to be sent
-        }
-        outstandingRequests.clear();
     }
 
     private static <T> T await(final Future<? extends T> future)
