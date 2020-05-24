@@ -48,15 +48,11 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.*;
 
-public class KafkaMessageTransceiver extends MessageTransceiver
+abstract class KafkaMessageTransceiverProducerState extends MessageTransceiver
 {
-    private static final int NUM_PARTITIONS = 2;
-    private static final short REPLICATION_FACTOR = (short)1;
-    private static final Duration POLL_TIMEOUT = ofMillis(100);
-
-    private final AtomicInteger outstandingRequests = new AtomicInteger();
-    private final AtomicReference<Throwable> error = new AtomicReference<>();
-    private final Callback sendCallback = (metadata, exception) ->
+    final AtomicInteger outstandingRequests = new AtomicInteger();
+    final AtomicReference<Throwable> error = new AtomicReference<>();
+    final Callback sendCallback = (metadata, exception) ->
     {
         if (null != exception)
         {
@@ -70,12 +66,38 @@ public class KafkaMessageTransceiver extends MessageTransceiver
             outstandingRequests.getAndDecrement();
         }
     };
-    private KafkaProducer<byte[], byte[]> producer;
-    private String topic;
-    private Integer partition;
-    private byte[] key;
-    private UnsafeBuffer sendBuffer;
-    private int maxInFlightMessages;
+    KafkaProducer<byte[], byte[]> producer;
+    String topic;
+    Integer partition;
+    byte[] key;
+    UnsafeBuffer sendBuffer;
+    int maxInFlightMessages;
+
+    KafkaMessageTransceiverProducerState(final MessageRecorder messageRecorder)
+    {
+        super(messageRecorder);
+    }
+}
+
+@SuppressWarnings("unused")
+abstract class KafkaMessageTransceiverProducerStatePadding extends KafkaMessageTransceiverProducerState
+{
+    byte p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
+    byte p016, p017, p018, p019, p020, p021, p022, p023, p024, p025, p026, p027, p028, p029, p030, p031;
+    byte p032, p033, p034, p035, p036, p037, p038, p039, p040, p041, p042, p043, p044, p045, p046, p047;
+    byte p048, p049, p050, p051, p052, p053, p054, p055, p056, p057, p058, p059, p060, p061, p062, p063;
+
+    KafkaMessageTransceiverProducerStatePadding(final MessageRecorder messageRecorder)
+    {
+        super(messageRecorder);
+    }
+}
+
+public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStatePadding
+{
+    private static final int NUM_PARTITIONS = 2;
+    private static final short REPLICATION_FACTOR = (short)1;
+    private static final Duration POLL_TIMEOUT = ofMillis(100);
 
     private KafkaConsumer<byte[], byte[]> consumer;
     private UnsafeBuffer receiverBuffer;
