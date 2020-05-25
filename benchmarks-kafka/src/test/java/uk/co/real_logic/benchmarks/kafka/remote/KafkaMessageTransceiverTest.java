@@ -32,7 +32,7 @@ import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.PARTITION_SELECTOR_PROP_NAME;
+import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.PARTITION_SELECTION_PROP_NAME;
 import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
 class KafkaMessageTransceiverTest
@@ -55,17 +55,17 @@ class KafkaMessageTransceiverTest
 
     @Timeout(30)
     @ParameterizedTest
-    @EnumSource(PartitionSelector.class)
-    void messageLength16bytes(final PartitionSelector partitionSelector) throws Exception
+    @EnumSource(PartitionSelection.class)
+    void messageLength16bytes(final PartitionSelection partitionSelection) throws Exception
     {
-        setProperty(PARTITION_SELECTOR_PROP_NAME, partitionSelector.name());
+        setProperty(PARTITION_SELECTION_PROP_NAME, partitionSelection.name());
         try
         {
             test(500, MIN_MESSAGE_LENGTH, 10);
         }
         finally
         {
-            clearProperty(PARTITION_SELECTOR_PROP_NAME);
+            clearProperty(PARTITION_SELECTION_PROP_NAME);
         }
     }
 

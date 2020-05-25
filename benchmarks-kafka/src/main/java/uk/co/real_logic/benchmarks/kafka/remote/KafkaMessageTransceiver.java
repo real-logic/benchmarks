@@ -115,8 +115,8 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
 
         partition = null;
         key = null;
-        final PartitionSelector partitionSelector = KafkaConfig.getPartitionSelector();
-        switch (partitionSelector)
+        final PartitionSelection partitionSelection = getPartitionSelection();
+        switch (partitionSelection)
         {
             case EXPLICIT:
                 partition = 0;

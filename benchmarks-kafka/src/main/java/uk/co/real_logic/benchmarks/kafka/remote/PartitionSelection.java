@@ -20,7 +20,7 @@ import java.util.Map;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Stream.of;
 
-public enum PartitionSelector
+public enum PartitionSelection
 {
     /**
      * Indicates that a partition should be set explicitly.
@@ -37,10 +37,10 @@ public enum PartitionSelector
      */
     RANDOM;
 
-    private static final Map<String, PartitionSelector> BY_NAME = of(values())
+    private static final Map<String, PartitionSelection> BY_NAME = of(values())
         .collect(toMap(Enum::name, x -> x));
 
-    public static PartitionSelector byName(final String name)
+    public static PartitionSelection byName(final String name)
     {
         return BY_NAME.getOrDefault(name, EXPLICIT);
     }

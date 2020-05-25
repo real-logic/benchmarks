@@ -29,11 +29,11 @@ import java.util.Properties;
 import static java.lang.System.getProperty;
 import static org.agrona.Strings.isEmpty;
 import static org.apache.kafka.clients.CommonClientConfigs.*;
-import static uk.co.real_logic.benchmarks.kafka.remote.PartitionSelector.byName;
+import static uk.co.real_logic.benchmarks.kafka.remote.PartitionSelection.byName;
 
 final class KafkaConfig
 {
-    public static final String PARTITION_SELECTOR_PROP_NAME = "uk.co.real_logic.benchmarks.kafka.remote.partition";
+    public static final String PARTITION_SELECTION_PROP_NAME = "uk.co.real_logic.benchmarks.kafka.remote.partition";
     public static final String PRODUCER_MAX_IN_FLIGHT_MESSAGES_PROP_NAME =
         "uk.co.real_logic.benchmarks.kafka.remote.producer.max.in.flight.messages";
 
@@ -41,9 +41,9 @@ final class KafkaConfig
     {
     }
 
-    public static PartitionSelector getPartitionSelector()
+    public static PartitionSelection getPartitionSelection()
     {
-        return byName(getProperty(PARTITION_SELECTOR_PROP_NAME));
+        return byName(getProperty(PARTITION_SELECTION_PROP_NAME));
     }
 
     public static Map<String, String> getCommonProperties()
