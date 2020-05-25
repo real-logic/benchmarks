@@ -206,7 +206,7 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
             final ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(
                 topic,
                 partition,
-                key != null ? key.clone() : null,
+                null != key ? key.clone() : null,
                 messagePayload.clone());
             producer.send(record, callback);
             sent++;
