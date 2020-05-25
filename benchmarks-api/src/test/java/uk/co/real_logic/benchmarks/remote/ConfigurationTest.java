@@ -426,8 +426,8 @@ class ConfigurationTest
             "\n    batchSize=2" +
             "\n    messageLength=64" +
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
-            "\n    sendIdleStrategy=NoOpIdleStrategy{}" +
-            "\n    receiveIdleStrategy=YieldingIdleStrategy{}" +
+            "\n    sendIdleStrategy=NoOpIdleStrategy{alias=noop}" +
+            "\n    receiveIdleStrategy=YieldingIdleStrategy{alias=yield}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
             "\n    outputFileNamePrefix=InMemoryMessageTransceiver_777_2_64" +
             "_73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
