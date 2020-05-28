@@ -18,7 +18,7 @@
 GRPC_DIR="`pwd`"
 
 cd ..
-./run-java -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.grpc.remote.BlockingMessageTrasceiver \
+./run-java -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.grpc.remote.BlockingMessageTransceiver \
   uk.co.real_logic.benchmarks.remote.LoadTestRig \
   ${GRPC_DIR}/benchmark.properties \
   "$@"
