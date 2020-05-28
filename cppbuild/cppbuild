@@ -35,24 +35,34 @@ do
       ncpus=1
       shift
       ;;
-    --aeron-git-url=*)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_URL=${option#*=}"
-      echo "Setting -DAERON_GIT_URL=${option#*=}"
+    --aeron-git-url)
+      gitUrl=1
       shift
       ;;
-    --aeron-git-tag=*)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_TAG=${option#*=}"
-      echo "Setting -DAERON_GIT_TAG=${option#*=}"
+    --aeron-git-tag)
+      gitTag=1
       shift
       ;;
     -h|--help)
-      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--no-parallel] [--aeron-git-url=$GIT_URL] [--aeron-git-tag=$GIT_TAG]"
+      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--no-parallel] [--aeron-git-url $GIT_URL] [--aeron-git-tag $GIT_TAG]"
       exit
       ;;
     *)
-      echo "Unknown option $option"
-      echo "Use --help for help"
-      exit
+      if [[ -n "$gitUrl" ]]; then
+        EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_URL=${option}"
+        echo "Setting -DAERON_GIT_URL=${option}"
+        unset gitUrl
+        shift
+      elif [[ -n "$gitTag" ]]; then
+        EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_TAG=${option}"
+        echo "Setting -DAERON_GIT_TAG=${option}"
+        unset gitTag
+        shift
+      else
+        echo "Unknown option $option"
+        echo "Use --help for help"
+        exit
+      fi
       ;;
   esac
 done
