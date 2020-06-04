@@ -39,7 +39,7 @@ def junitVersion = '5.6.2'
 def mockitoVersion = '3.3.3'
 def checkstyleVersion = '8.28'
 def grpcVersion = '1.29.0'
-def protobufVersion = '3.12.1'
+def protobufVersion = '3.12.3'
 
 allprojects {
     repositories {
@@ -158,6 +158,6 @@ task runAeronJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') 
 }
 
 wrapper {
-    gradleVersion = '6.4.1'
+    gradleVersion = '6.5'
     distributionType = 'ALL'
 }
