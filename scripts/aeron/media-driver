@@ -15,7 +15,7 @@
 ## limitations under the License.
 ##
 
-AERON_DIR="`pwd`"
+AERON_DIR=$(pwd)
 
 cd ..
-./run-java io.aeron.driver.MediaDriver ${AERON_DIR}/low-latency-driver.properties "$@"
+./run-java io.aeron.driver.MediaDriver "${AERON_DIR}/low-latency-driver.properties" "$@"

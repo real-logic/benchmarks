@@ -27,7 +27,7 @@ export AERON_CONDUCTOR_IDLE_STRATEGY="spinning"
 export AERON_SENDER_IDLE_STRATEGY="noop"
 export AERON_RECEIVER_IDLE_STRATEGY="noop"
 
-if [ -z ${AERON_MD} ];
+if [ -z "${AERON_MD}" ];
 then
    AERON_MD=../../cppbuild/Release/aeron-prefix/src/aeron-build/binaries/aeronmd
 fi

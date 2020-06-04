@@ -15,9 +15,9 @@
 ## limitations under the License.
 ##
 
-GRPC_DIR="`pwd`"
+GRPC_DIR=$(pwd)
 
 cd ..
 ./run-java uk.co.real_logic.benchmarks.grpc.remote.EchoServer \
-  ${GRPC_DIR}/benchmark.properties \
+  "${GRPC_DIR}/benchmark.properties" \
   "$@"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-SOURCE_DIR="`pwd`"
-BUILD_DIR="`pwd`/cppbuild/Release"
+SOURCE_DIR=$(pwd)
+BUILD_DIR="$(pwd)/cppbuild/Release"
 EXTRA_CMAKE_ARGS=""
 
 ncpus=1
@@ -69,9 +69,9 @@ done
 
 if [[ -d "$BUILD_DIR" ]] ; then
   echo "Build directory ($BUILD_DIR) exists, removing."
-  rm -rf ${BUILD_DIR}
+  rm -rf "${BUILD_DIR}"
 fi
 
-mkdir -p ${BUILD_DIR}
+mkdir -p "${BUILD_DIR}"
 
-(cd $BUILD_DIR && cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all)
+(cd "$BUILD_DIR" && cmake -G "Unix Makefiles" "${EXTRA_CMAKE_ARGS}" "${SOURCE_DIR}" && make clean && make -j "$ncpus" all)
