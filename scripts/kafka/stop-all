@@ -19,7 +19,7 @@ PIDS=$(ps ax | grep -i 'kafka\.Kafka' | grep java | grep -v grep | awk '{print $
 if [ -z "$PIDS" ]; then
   echo "No kafka server to stop"
 else
-  kill -9 $PIDS
+  kill -9 "$PIDS"
 fi
 
 PIDS=$(ps ax | grep java | grep -i QuorumPeerMain | grep -v grep | awk '{print $1}')
@@ -27,7 +27,7 @@ PIDS=$(ps ax | grep java | grep -i QuorumPeerMain | grep -v grep | awk '{print $
 if [ -z "$PIDS" ]; then
   echo "No zookeeper server to stop"
 else
-  kill -s TERM $PIDS
+  kill -s TERM "$PIDS"
 fi
 
 rm -rf ../kafka-data

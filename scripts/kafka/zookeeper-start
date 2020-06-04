@@ -15,11 +15,11 @@
 ## limitations under the License.
 ##
 
-KAFKA_DIR="`pwd`"
+KAFKA_DIR=$(pwd)
 
 cd ..
 ./run-java -Xms1g -Xmx1g \
-  -Dlog4j.configuration=file:${KAFKA_DIR}/log4j.properties \
+  "-Dlog4j.configuration=file:${KAFKA_DIR}/log4j.properties" \
   org.apache.zookeeper.server.quorum.QuorumPeerMain \
-  ${KAFKA_DIR}/zookeeper.properties \
+  "${KAFKA_DIR}/zookeeper.properties" \
   "$@"

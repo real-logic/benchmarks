@@ -15,10 +15,10 @@
 ## limitations under the License.
 ##
 
-KAFKA_DIR="`pwd`"
+KAFKA_DIR=$(pwd)
 
 cd ..
-./run-java -Dlog4j.configuration=file:${KAFKA_DIR}/log4j.properties \
+./run-java "-Dlog4j.configuration=file:${KAFKA_DIR}/log4j.properties" \
   kafka.Kafka \
-  ${KAFKA_DIR}/server.properties \
+  "${KAFKA_DIR}/server.properties" \
   "$@"

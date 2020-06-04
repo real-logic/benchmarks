@@ -15,12 +15,12 @@
 ## limitations under the License.
 ##
 
-KAFKA_DIR="`pwd`"
+KAFKA_DIR=$(pwd)
 
 cd ..
 ./run-java -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.kafka.remote.KafkaMessageTransceiver \
-  -Dlog4j.configuration=file:${KAFKA_DIR}/log4j.properties \
+  "-Dlog4j.configuration=file:${KAFKA_DIR}/log4j.properties" \
   uk.co.real_logic.benchmarks.remote.LoadTestRig \
-  ${KAFKA_DIR}/client.properties \
-  ${KAFKA_DIR}/benchmark.properties \
+  "${KAFKA_DIR}/client.properties" \
+  "${KAFKA_DIR}/benchmark.properties" \
   "$@"
