@@ -16,10 +16,13 @@
 
 set AERON_DIR=%CD%
 
-cd ..
+pushd %AERON_DIR%\..
+
 call run-java.cmd -Daeron.archive.recording.events.enabled=false ^
   uk.co.real_logic.benchmarks.aeron.remote.ArchiveNode ^
   "%AERON_DIR%\low-latency-driver.properties" ^
   "%AERON_DIR%\low-latency-archive.properties" ^
   "%AERON_DIR%\benchmark.properties" ^
   %*
+
+popd

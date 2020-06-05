@@ -16,5 +16,8 @@
 
 set AERON_DIR=%CD%
 
-cd ..
+pushd %AERON_DIR%\..
+
 call run-java.cmd io.aeron.driver.MediaDriver "%AERON_DIR%\low-latency-driver.properties" %*
+
+popd

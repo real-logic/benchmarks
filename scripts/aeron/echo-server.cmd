@@ -18,8 +18,11 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set AERON_DIR=%CD%
 
-cd ..
+pushd %AERON_DIR%\..
+
 call run-java.cmd uk.co.real_logic.benchmarks.aeron.remote.EchoNode ^
   "%AERON_DIR%\low-latency-driver.properties" ^
   "%AERON_DIR%\benchmark.properties" ^
   %*
+
+popd

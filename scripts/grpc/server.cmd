@@ -18,7 +18,10 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set GRPC_DIR=%CD%
 
-cd ..
+pushd %GRPC_DIR%\..
+
 call run-java.cmd uk.co.real_logic.benchmarks.grpc.remote.EchoServer ^
   "%GRPC_DIR%\benchmark.properties" ^
   %*
+
+popd

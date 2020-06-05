@@ -1,4 +1,3 @@
-#!\usr\bin\env bash
 ::
 :: Copyright 2015-2020 Real Logic Limited.
 ::
@@ -17,9 +16,12 @@
 
 set AERON_DIR=%CD%
 
-cd ..
+pushd %AERON_DIR%\..
+
 call run-java.cmd -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.aeron.remote.LiveReplayMessageTransceiver ^
   uk.co.real_logic.benchmarks.remote.LoadTestRig ^
   "%AERON_DIR%\low-latency-driver.properties" ^
   "%AERON_DIR%\benchmark.properties" ^
   %*
+
+popd

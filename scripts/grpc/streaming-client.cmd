@@ -18,8 +18,11 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set GRPC_DIR=%CD%
 
-cd ..
+pushd %GRPC_DIR%\..
+
 call run-java.cmd -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.grpc.remote.StreamingMessageTransceiver ^
   uk.co.real_logic.benchmarks.remote.LoadTestRig ^
   "%GRPC_DIR%\benchmark.properties" ^
   %*
+
+popd

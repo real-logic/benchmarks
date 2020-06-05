@@ -18,7 +18,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set AERON_DIR=%CD%
 
-cd ..
+pushd %AERON_DIR%\..
 call run-java.cmd -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.aeron.remote.ArchiveMessageTransceiver ^
   -Daeron.archive.recording.events.enabled=false ^
   uk.co.real_logic.benchmarks.remote.LoadTestRig ^
@@ -26,3 +26,5 @@ call run-java.cmd -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.
   "%AERON_DIR%\low-latency-archive.properties" ^
   "%AERON_DIR%\benchmark.properties" ^
   %*
+
+popd
