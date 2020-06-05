@@ -14,20 +14,23 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 ##
-PIDS=$(ps ax | grep -i 'kafka\.Kafka' | grep java | grep -v grep | awk '{print $1}')
 
-if [ -z "$PIDS" ]; then
-  echo "No kafka server to stop"
-else
-  kill -9 "$PIDS"
-fi
+killJavaProcess() {
+    NAME=$1
+    TASK_PID=$("${JAVA_HOME}/bin/jps" | grep ${NAME} | awk '{print $1}')
 
-PIDS=$(ps ax | grep java | grep -i QuorumPeerMain | grep -v grep | awk '{print $1}')
+    if [ -z "${TASK_PID}" ]; then
+      echo "${NAME} is not running"
+    else
+      kill -9 "${TASK_PID}"
+    fi
+}
 
-if [ -z "$PIDS" ]; then
-  echo "No zookeeper server to stop"
-else
-  kill -s TERM "$PIDS"
-fi
+# Kill Kafka process
+killJavaProcess 'Kafka'
 
-rm -rf ../kafka-data
+# Kill Zookeeper proces
+killJavaProcess 'QuorumPeerMain'
+
+# Delete data directory
+rm -rf $(pwd)/kafka-data

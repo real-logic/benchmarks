@@ -16,11 +16,11 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-rem Kill Kafka first
+rem Kill Kafka process
 call :killJavaProcess Kafka
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-rem Now kill Zookeeper
+rem Kill Zookeeper process
 call :killJavaProcess QuorumPeerMain
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
