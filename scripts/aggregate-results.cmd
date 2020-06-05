@@ -14,4 +14,4 @@
 :: limitations under the License.
 ::
 
-call run-java.cmd -Duk.co.real_logic.benchmarks.remote.ResultsAggregator %*
+call run-java.cmd uk.co.real_logic.benchmarks.remote.ResultsAggregator %*
