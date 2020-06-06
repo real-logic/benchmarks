@@ -28,4 +28,4 @@
     -XX:+AlwaysPreTouch \
     -XX:MaxMetaspaceSize=1G \
     -XX:ReservedCodeCacheSize=1G \
-    "${JVM_OPTS}" "$@"
+    ${JVM_OPTS} "$@"
