@@ -200,11 +200,11 @@ class LoadTestRigTest
         final AtomicLong sentMessages = new AtomicLong(3);
         final AtomicLong receivedMessages = new AtomicLong(0);
 
-        doAnswer(new Answer()
+        doAnswer(new Answer<Long>()
         {
             private int invocationCount = 0;
 
-            public Object answer(final InvocationOnMock invocation) throws Throwable
+            public Long answer(final InvocationOnMock invocation)
             {
                 if (++invocationCount == 2)
                 {

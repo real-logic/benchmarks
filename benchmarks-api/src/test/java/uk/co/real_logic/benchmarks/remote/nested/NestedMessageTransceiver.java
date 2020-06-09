@@ -26,11 +26,11 @@ public class NestedMessageTransceiver extends MessageTransceiver
         super(messageRecorder);
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
     }
 
-    public void destroy() throws Exception
+    public void destroy()
     {
     }
 

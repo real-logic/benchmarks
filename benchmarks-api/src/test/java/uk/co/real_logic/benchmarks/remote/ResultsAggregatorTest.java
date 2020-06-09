@@ -116,6 +116,7 @@ class ResultsAggregatorTest
         aggregator.run();
 
         final String[] aggregateFiles = tempDir.toFile().list((dir, name) -> name.endsWith(AGGREGATE_FILE_SUFFIX));
+        assertNotNull(aggregateFiles);
         sort(aggregateFiles);
         assertArrayEquals(new String[]{ "my-combined.hdr", "other-combined.hdr" }, aggregateFiles);
         final Histogram myAggregate = createHistogram(2, 25, 100, 555, 777, 999, 555555, 1232343);
@@ -124,6 +125,7 @@ class ResultsAggregatorTest
         assertEquals(otherAggregate, loadFromDisc("other-combined.hdr"));
 
         final String[] reportFiles = tempDir.toFile().list((dir, name) -> name.endsWith(REPORT_FILE_SUFFIX));
+        assertNotNull(reportFiles);
         sort(reportFiles);
         assertArrayEquals(new String[]{ "my-report.hgrm", "other-report.hgrm" }, reportFiles);
         assertArrayEquals(outputPercentileDistribution(myAggregate, reportOutputScalingRatio),
