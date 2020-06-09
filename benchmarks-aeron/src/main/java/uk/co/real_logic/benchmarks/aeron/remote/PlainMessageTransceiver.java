@@ -68,9 +68,8 @@ public final class PlainMessageTransceiver extends MessageTransceiver
 
     public void init(final Configuration configuration)
     {
-        this.publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
-
-        this.subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
+        publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
+        subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
@@ -104,7 +103,6 @@ public final class PlainMessageTransceiver extends MessageTransceiver
 
     public void receive()
     {
-        final Image image = this.image;
         final int fragments = image.poll(dataHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {

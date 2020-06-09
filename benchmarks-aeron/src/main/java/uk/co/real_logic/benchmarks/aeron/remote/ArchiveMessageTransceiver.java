@@ -74,7 +74,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
     {
         final Aeron aeron = aeronArchive.context().aeron();
 
-        this.subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
+        subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
 
         final String archiveChannel = archiveChannel();
         final int archiveStreamId = archiveStreamId();
@@ -93,7 +93,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
 
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
-        this.image = subscription.imageAtIndex(0);
+        image = subscription.imageAtIndex(0);
 
         frameCountLimit = frameCountLimit();
     }
@@ -117,7 +117,6 @@ public final class ArchiveMessageTransceiver extends MessageTransceiver
 
     public void receive()
     {
-        final Image image = this.image;
         final int fragments = image.poll(dataHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {

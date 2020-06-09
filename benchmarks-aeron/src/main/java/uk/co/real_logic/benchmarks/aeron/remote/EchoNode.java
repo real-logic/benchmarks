@@ -53,7 +53,6 @@ public final class EchoNode implements AutoCloseable, Runnable
         this.ownsAeronClient = ownsAeronClient;
 
         publication = aeron.addExclusivePublication(receiveChannel(), receiveStreamId());
-
         subscription = aeron.addSubscription(sendChannel(), sendStreamId());
 
         while (!subscription.isConnected() || !publication.isConnected())

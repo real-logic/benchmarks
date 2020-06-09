@@ -111,37 +111,37 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
             context.recordingEventsChannel(), context.recordingEventsStreamId());
 
         recordingEventsAdapter = new RecordingEventsAdapter(new RecordingEventsListener()
-        {
-            public void onStart(
-                final long recordingId,
-                final long startPosition,
-                final int sessionId,
-                final int streamId,
-                final String channel,
-                final String sourceIdentity)
             {
-            }
-
-            public void onProgress(final long recordingId, final long startPosition, final long position)
-            {
-                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
+                public void onStart(
+                    final long recordingId,
+                    final long startPosition,
+                    final int sessionId,
+                    final int streamId,
+                    final String channel,
+                    final String sourceIdentity)
                 {
-                    if (NULL_POSITION == recordingPositionConsumed)
+                }
+
+                public void onProgress(final long recordingId, final long startPosition, final long position)
+                {
+                    if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
                     {
-                        recordingPositionConsumed = startPosition;
+                        if (NULL_POSITION == recordingPositionConsumed)
+                        {
+                            recordingPositionConsumed = startPosition;
+                        }
+                        LiveRecordingMessageTransceiver.this.recordingPosition = position;
                     }
-                    LiveRecordingMessageTransceiver.this.recordingPosition = position;
                 }
-            }
 
-            public void onStop(final long recordingId, final long startPosition, final long stopPosition)
-            {
-                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
+                public void onStop(final long recordingId, final long startPosition, final long stopPosition)
                 {
-                    LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
+                    if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
+                    {
+                        LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
+                    }
                 }
-            }
-        },
+            },
             recordingEventsSubscription,
             frameCountLimit);
 
@@ -188,7 +188,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
             }
         }
 
-        final Image image = this.image;
         final int fragments = image.controlledPoll(messageHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {

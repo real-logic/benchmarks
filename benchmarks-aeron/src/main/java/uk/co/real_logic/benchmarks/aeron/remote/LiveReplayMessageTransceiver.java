@@ -93,7 +93,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             yieldUninterruptedly();
         }
 
-        this.image = subscription.imageAtIndex(0);
+        image = subscription.imageAtIndex(0);
 
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
@@ -121,7 +121,6 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public void receive()
     {
-        final Image image = this.image;
         final int fragments = image.poll(dataHandler, frameCountLimit);
         if (0 == fragments && image.isClosed())
         {

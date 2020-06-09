@@ -144,6 +144,7 @@ final class AeronUtil
         final MediaDriver.Context driverContext = new MediaDriver.Context()
             .dirDeleteOnStart(true)
             .spiesSimulateConnection(true);
+
         return ArchivingMediaDriver.launch(
             driverContext,
             new Archive.Context()
@@ -248,6 +249,7 @@ final class AeronUtil
         {
             offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
             offerBuffer.putLong(messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
+
             final long result = publication.offer(offerBuffer, 0, messageLength, null);
             if (result < 0)
             {
