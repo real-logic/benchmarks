@@ -33,4 +33,4 @@ killJavaProcess 'Kafka'
 killJavaProcess 'QuorumPeerMain'
 
 # Delete data directory
-rm -rf $(pwd)/kafka-data
+rm -rf $(pwd)/../kafka-data
