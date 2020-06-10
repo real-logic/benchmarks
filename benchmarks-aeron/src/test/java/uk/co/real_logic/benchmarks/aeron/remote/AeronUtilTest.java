@@ -52,7 +52,7 @@ class AeronUtilTest
         final String archiveChannel = "archive";
         final int archiveStreamId = 777;
         final boolean embeddedMediaDriver = true;
-        final int frameCountLimit = 111;
+        final int fragmentLimit = 111;
 
         setProperty(SEND_CHANNEL_PROP_NAME, senderChannel);
         setProperty(SEND_STREAM_ID_PROP_NAME, valueOf(senderStreamId));
@@ -61,7 +61,7 @@ class AeronUtilTest
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, archiveChannel);
         setProperty(ARCHIVE_STREAM_ID_PROP_NAME, valueOf(archiveStreamId));
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
-        setProperty(FRAME_COUNT_LIMIT_PROP_NAME, valueOf(frameCountLimit));
+        setProperty(FRAGMENT_LIMIT_PROP_NAME, valueOf(fragmentLimit));
         setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
 
         try
@@ -71,7 +71,7 @@ class AeronUtilTest
             assertEquals(receiverChannel, receiveChannel());
             assertEquals(receiverStreamId, receiveStreamId());
             assertEquals(embeddedMediaDriver, embeddedMediaDriver());
-            assertEquals(frameCountLimit, fragmentLimit());
+            assertEquals(fragmentLimit, fragmentLimit());
             assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
         }
         finally
@@ -83,7 +83,7 @@ class AeronUtilTest
             clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
             clearProperty(ARCHIVE_STREAM_ID_PROP_NAME);
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
-            clearProperty(FRAME_COUNT_LIMIT_PROP_NAME);
+            clearProperty(FRAGMENT_LIMIT_PROP_NAME);
             clearProperty(IDLE_STRATEGY);
         }
     }

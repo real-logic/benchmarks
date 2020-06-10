@@ -85,7 +85,7 @@ uk.co.real_logic.benchmarks.remote.messages=1000000
 
 3. Set system properties via `JVM_OPTS` environment variable, e.g.:
 ```
-export JVM_OPTS="${JVM_OPTS} -Duk.co.real_logic.benchmarks.remote.warmup.messages=50 -Duk.co.real_logic.benchmarks.aeron.remote.frameCountLimit=25"
+export JVM_OPTS="${JVM_OPTS} -Duk.co.real_logic.benchmarks.remote.warmup.messages=50 -Duk.co.real_logic.benchmarks.aeron.remote.fragmentLimit=25"
 
 ./run-with-embedded-media-driver ./live-replay-remote-archive-client
 ```

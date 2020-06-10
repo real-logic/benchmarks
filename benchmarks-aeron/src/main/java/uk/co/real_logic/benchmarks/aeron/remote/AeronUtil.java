@@ -62,7 +62,7 @@ final class AeronUtil
     static final String ARCHIVE_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.streamId";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
-    static final String FRAME_COUNT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.frameCountLimit";
+    static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentLimit";
     static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idleStrategy";
 
     private AeronUtil()
@@ -106,7 +106,7 @@ final class AeronUtil
 
     static int fragmentLimit()
     {
-        return getInteger(FRAME_COUNT_LIMIT_PROP_NAME, 10);
+        return getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
     }
 
     static IdleStrategy idleStrategy()
@@ -123,7 +123,7 @@ final class AeronUtil
         }
         catch (final ReflectiveOperationException | ClassCastException ex)
         {
-            throw new IllegalArgumentException("Invalid IdleStrategy value: " + idleStrategy, ex);
+            throw new IllegalArgumentException("Invalid IdleStrategy: " + idleStrategy, ex);
         }
     }
 
@@ -219,11 +219,11 @@ final class AeronUtil
             };
 
         final Image image = subscription.imageAtIndex(0);
-        final int frameCountLimit = fragmentLimit();
+        final int fragmentLimit = fragmentLimit();
 
         while (true)
         {
-            final int fragmentsRead = image.poll(dataHandler, frameCountLimit);
+            final int fragmentsRead = image.poll(dataHandler, fragmentLimit);
             if (0 == fragmentsRead)
             {
                 if (image.isClosed() || !running.get())

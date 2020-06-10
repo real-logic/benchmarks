@@ -37,7 +37,7 @@ public final class PlainMessageTransceiver extends MessageTransceiverProducerSta
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
-    private int frameCountLimit;
+    private int fragmentLimit;
 
     private Subscription subscription;
     private Image image;
@@ -79,7 +79,7 @@ public final class PlainMessageTransceiver extends MessageTransceiverProducerSta
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
         image = subscription.imageAtIndex(0);
-        frameCountLimit = fragmentLimit();
+        fragmentLimit = fragmentLimit();
     }
 
     public void destroy()
@@ -103,7 +103,7 @@ public final class PlainMessageTransceiver extends MessageTransceiverProducerSta
 
     public void receive()
     {
-        final int fragments = image.poll(dataHandler, frameCountLimit);
+        final int fragments = image.poll(dataHandler, fragmentLimit);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
