@@ -43,7 +43,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiverProducerS
 
     private Subscription subscription;
     private Image image;
-    private int frameCountLimit;
+    private int fragmentLimit;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
@@ -94,7 +94,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiverProducerS
 
         image = subscription.imageAtIndex(0);
 
-        frameCountLimit = frameCountLimit();
+        fragmentLimit = fragmentLimit();
     }
 
     public void destroy()
@@ -116,7 +116,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiverProducerS
 
     public void receive()
     {
-        final int fragments = image.poll(dataHandler, frameCountLimit);
+        final int fragments = image.poll(dataHandler, fragmentLimit);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");

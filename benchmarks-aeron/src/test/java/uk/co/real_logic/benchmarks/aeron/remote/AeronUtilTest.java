@@ -38,7 +38,7 @@ class AeronUtilTest
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_000_002, archiveStreamId());
         assertFalse(embeddedMediaDriver());
-        assertEquals(10, frameCountLimit());
+        assertEquals(10, fragmentLimit());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
     }
 
@@ -71,7 +71,7 @@ class AeronUtilTest
             assertEquals(receiverChannel, receiveChannel());
             assertEquals(receiverStreamId, receiveStreamId());
             assertEquals(embeddedMediaDriver, embeddedMediaDriver());
-            assertEquals(frameCountLimit, frameCountLimit());
+            assertEquals(frameCountLimit, fragmentLimit());
             assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
         }
         finally

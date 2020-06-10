@@ -20,6 +20,9 @@ import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.client.RecordingEventsListener;
+import io.aeron.logbuffer.ControlledFragmentHandler;
+import io.aeron.logbuffer.Header;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
@@ -41,37 +44,22 @@ import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
  * Implementation of the {@link uk.co.real_logic.benchmarks.remote.MessageTransceiver} interface for benchmarking
  * live recording of the remote stream to local archive. Used together with the {@link EchoNode}.
  */
-public final class LiveRecordingMessageTransceiver extends MessageTransceiverProducerStatePadded
+public final class LiveRecordingMessageTransceiver
+    extends MessageTransceiverProducerStatePadded implements ControlledFragmentHandler
 {
-    private final ArchivingMediaDriver archivingMediaDriver;
-    private final AeronArchive aeronArchive;
-    private final boolean ownsArchiveClient;
-
-    private int frameCountLimit;
-
-    private Subscription recordingEventsSubscription;
-    private RecordingEventsAdapter recordingEventsAdapter;
-    private long recordingId;
     private long recordingPosition = NULL_POSITION;
     private long recordingPositionConsumed = NULL_POSITION;
+    private long recordingId;
+    private int fragmentLimit;
+    private final boolean ownsArchiveClient;
 
+    private final ImageControlledFragmentAssembler messageHandler = new ImageControlledFragmentAssembler(this);
+    private final ArchivingMediaDriver archivingMediaDriver;
+    private final AeronArchive aeronArchive;
+    private Subscription recordingEventsSubscription;
+    private RecordingEventsAdapter recordingEventsAdapter;
     private Subscription subscription;
     private Image image;
-    private final ImageControlledFragmentAssembler messageHandler = new ImageControlledFragmentAssembler(
-        (buffer, offset, length, header) ->
-        {
-            if (recordingPositionConsumed == recordingPosition)
-            {
-                return ABORT;
-            }
-
-            final long timestamp = buffer.getLong(offset, LITTLE_ENDIAN);
-            final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
-            onMessageReceived(timestamp, checksum);
-            recordingPositionConsumed += align(length, FRAME_ALIGNMENT);
-
-            return COMMIT;
-        });
 
     public LiveRecordingMessageTransceiver(final MessageRecorder messageRecorder)
     {
@@ -95,7 +83,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiverPro
         final AeronArchive.Context context = aeronArchive.context();
         final Aeron aeron = context.aeron();
 
-        frameCountLimit = frameCountLimit();
+        fragmentLimit = fragmentLimit();
 
         subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
 
@@ -106,40 +94,8 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiverPro
         recordingEventsSubscription = aeron.addSubscription(
             context.recordingEventsChannel(), context.recordingEventsStreamId());
 
-        recordingEventsAdapter = new RecordingEventsAdapter(new RecordingEventsListener()
-        {
-            public void onStart(
-                final long recordingId,
-                final long startPosition,
-                final int sessionId,
-                final int streamId,
-                final String channel,
-                final String sourceIdentity)
-            {
-            }
-
-            public void onProgress(final long recordingId, final long startPosition, final long position)
-            {
-                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
-                {
-                    if (NULL_POSITION == recordingPositionConsumed)
-                    {
-                        recordingPositionConsumed = startPosition;
-                    }
-                    LiveRecordingMessageTransceiver.this.recordingPosition = position;
-                }
-            }
-
-            public void onStop(final long recordingId, final long startPosition, final long stopPosition)
-            {
-                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
-                {
-                    LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
-                }
-            }
-        },
-            recordingEventsSubscription,
-            frameCountLimit);
+        recordingEventsAdapter = new RecordingEventsAdapter(
+            new LiveRecordingEventsListener(this), recordingEventsSubscription, fragmentLimit);
 
         while (!recordingEventsSubscription.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
@@ -152,7 +108,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiverPro
         recordingId = awaitRecordingStart(aeron, publicationSessionId);
 
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
-
         image = subscription.imageAtIndex(0);
     }
 
@@ -184,10 +139,67 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiverPro
             }
         }
 
-        final int fragments = image.controlledPoll(messageHandler, frameCountLimit);
+        final int fragments = image.controlledPoll(messageHandler, fragmentLimit);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
+        }
+    }
+
+    public ControlledFragmentHandler.Action onFragment(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
+    {
+        if (recordingPositionConsumed == recordingPosition)
+        {
+            return ABORT;
+        }
+
+        final long timestamp = buffer.getLong(offset, LITTLE_ENDIAN);
+        final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
+        onMessageReceived(timestamp, checksum);
+        recordingPositionConsumed += align(length, FRAME_ALIGNMENT);
+
+        return COMMIT;
+    }
+
+    static final class LiveRecordingEventsListener implements RecordingEventsListener
+    {
+        private final LiveRecordingMessageTransceiver messageTransceiver;
+
+        LiveRecordingEventsListener(final LiveRecordingMessageTransceiver messageTransceiver)
+        {
+            this.messageTransceiver = messageTransceiver;
+        }
+
+        public void onStart(
+            final long recordingId,
+            final long startPosition,
+            final int sessionId,
+            final int streamId,
+            final String channel,
+            final String sourceIdentity)
+        {
+        }
+
+        public void onProgress(final long recordingId, final long startPosition, final long position)
+        {
+            if (recordingId == messageTransceiver.recordingId)
+            {
+                if (NULL_POSITION == messageTransceiver.recordingPositionConsumed)
+                {
+                    messageTransceiver.recordingPositionConsumed = startPosition;
+                }
+
+                messageTransceiver.recordingPosition = position;
+            }
+        }
+
+        public void onStop(final long recordingId, final long startPosition, final long stopPosition)
+        {
+            if (recordingId == messageTransceiver.recordingId)
+            {
+                messageTransceiver.recordingPosition = stopPosition;
+            }
         }
     }
 }

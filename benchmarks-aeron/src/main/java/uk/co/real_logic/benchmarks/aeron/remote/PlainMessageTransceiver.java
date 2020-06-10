@@ -79,7 +79,7 @@ public final class PlainMessageTransceiver extends MessageTransceiverProducerSta
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
         image = subscription.imageAtIndex(0);
-        frameCountLimit = frameCountLimit();
+        frameCountLimit = fragmentLimit();
     }
 
     public void destroy()

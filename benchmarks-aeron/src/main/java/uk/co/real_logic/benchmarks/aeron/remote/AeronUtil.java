@@ -104,7 +104,7 @@ final class AeronUtil
         return getBoolean(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
     }
 
-    static int frameCountLimit()
+    static int fragmentLimit()
     {
         return getInteger(FRAME_COUNT_LIMIT_PROP_NAME, 10);
     }
@@ -219,7 +219,7 @@ final class AeronUtil
             };
 
         final Image image = subscription.imageAtIndex(0);
-        final int frameCountLimit = frameCountLimit();
+        final int frameCountLimit = fragmentLimit();
 
         while (true)
         {
