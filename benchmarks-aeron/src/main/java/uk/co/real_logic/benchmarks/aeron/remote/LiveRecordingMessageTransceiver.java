@@ -23,7 +23,6 @@ import io.aeron.archive.client.RecordingEventsListener;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
-import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -42,20 +41,17 @@ import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
  * Implementation of the {@link uk.co.real_logic.benchmarks.remote.MessageTransceiver} interface for benchmarking
  * live recording of the remote stream to local archive. Used together with the {@link EchoNode}.
  */
-public final class LiveRecordingMessageTransceiver extends MessageTransceiver
+public final class LiveRecordingMessageTransceiver extends MessageTransceiverProducerStatePadded
 {
     private final ArchivingMediaDriver archivingMediaDriver;
     private final AeronArchive aeronArchive;
     private final boolean ownsArchiveClient;
 
-    private ExclusivePublication publication;
-    private UnsafeBuffer offerBuffer;
-    private long recordingId;
-
     private int frameCountLimit;
 
     private Subscription recordingEventsSubscription;
     private RecordingEventsAdapter recordingEventsAdapter;
+    private long recordingId;
     private long recordingPosition = NULL_POSITION;
     private long recordingPositionConsumed = NULL_POSITION;
 
@@ -111,37 +107,37 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver
             context.recordingEventsChannel(), context.recordingEventsStreamId());
 
         recordingEventsAdapter = new RecordingEventsAdapter(new RecordingEventsListener()
+        {
+            public void onStart(
+                final long recordingId,
+                final long startPosition,
+                final int sessionId,
+                final int streamId,
+                final String channel,
+                final String sourceIdentity)
             {
-                public void onStart(
-                    final long recordingId,
-                    final long startPosition,
-                    final int sessionId,
-                    final int streamId,
-                    final String channel,
-                    final String sourceIdentity)
-                {
-                }
+            }
 
-                public void onProgress(final long recordingId, final long startPosition, final long position)
+            public void onProgress(final long recordingId, final long startPosition, final long position)
+            {
+                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
                 {
-                    if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
+                    if (NULL_POSITION == recordingPositionConsumed)
                     {
-                        if (NULL_POSITION == recordingPositionConsumed)
-                        {
-                            recordingPositionConsumed = startPosition;
-                        }
-                        LiveRecordingMessageTransceiver.this.recordingPosition = position;
+                        recordingPositionConsumed = startPosition;
                     }
+                    LiveRecordingMessageTransceiver.this.recordingPosition = position;
                 }
+            }
 
-                public void onStop(final long recordingId, final long startPosition, final long stopPosition)
+            public void onStop(final long recordingId, final long startPosition, final long stopPosition)
+            {
+                if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
                 {
-                    if (recordingId == LiveRecordingMessageTransceiver.this.recordingId)
-                    {
-                        LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
-                    }
+                    LiveRecordingMessageTransceiver.this.recordingPosition = stopPosition;
                 }
-            },
+            }
+        },
             recordingEventsSubscription,
             frameCountLimit);
 

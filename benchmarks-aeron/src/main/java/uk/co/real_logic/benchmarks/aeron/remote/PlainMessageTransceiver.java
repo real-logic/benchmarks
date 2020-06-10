@@ -15,12 +15,14 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.FragmentAssembler;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
-import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static io.aeron.Aeron.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -30,14 +32,12 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
-public final class PlainMessageTransceiver extends MessageTransceiver
+public final class PlainMessageTransceiver extends MessageTransceiverProducerStatePadded
 {
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
     private int frameCountLimit;
-    private ExclusivePublication publication;
-    private UnsafeBuffer offerBuffer;
 
     private Subscription subscription;
     private Image image;

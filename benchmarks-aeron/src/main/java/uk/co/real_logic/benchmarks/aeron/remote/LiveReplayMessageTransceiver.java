@@ -15,13 +15,15 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.FragmentAssembler;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
-import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
@@ -32,13 +34,11 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
-public final class LiveReplayMessageTransceiver extends MessageTransceiver
+public final class LiveReplayMessageTransceiver extends MessageTransceiverProducerStatePadded
 {
     private final MediaDriver mediaDriver;
     private final AeronArchive aeronArchive;
     private final boolean ownsArchiveClient;
-    private ExclusivePublication publication;
-    private UnsafeBuffer offerBuffer;
 
     private Subscription subscription;
     private Image image;
