@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +28,7 @@ import static io.aeron.archive.client.AeronArchive.Configuration.RECORDING_EVENT
 import static io.aeron.archive.client.AeronArchive.connect;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchArchivingMediaDriver;
+import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithEmbeddedDriver;
 
 class LiveRecordingTest extends
     AbstractTest<ArchivingMediaDriver, AeronArchive, LiveRecordingMessageTransceiver, EchoNode>
@@ -51,12 +50,12 @@ class LiveRecordingTest extends
     protected EchoNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {
-        return new EchoNode(running, archivingMediaDriver.mediaDriver(), aeronArchive.context().aeron(), false);
+        return new EchoNode(running, null, aeronArchive.context().aeron(), false);
     }
 
     protected ArchivingMediaDriver createDriver()
     {
-        return launchArchivingMediaDriver();
+        return launchArchiveWithEmbeddedDriver();
     }
 
     protected AeronArchive connectToDriver()

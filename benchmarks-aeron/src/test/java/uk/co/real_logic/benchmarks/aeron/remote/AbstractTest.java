@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.driver.MediaDriver;
 import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.AfterEach;
@@ -188,12 +187,6 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             if (driver instanceof MediaDriver)
             {
                 ((MediaDriver)driver).context().deleteAeronDirectory();
-            }
-            else
-            {
-                final ArchivingMediaDriver archivingMediaDriver = (ArchivingMediaDriver)driver;
-                archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
-                archivingMediaDriver.archive().context().deleteDirectory();
             }
         }
 

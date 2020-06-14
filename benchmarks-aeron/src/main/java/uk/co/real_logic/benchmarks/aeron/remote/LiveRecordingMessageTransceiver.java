@@ -15,8 +15,10 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.*;
-import io.aeron.archive.ArchivingMediaDriver;
+import io.aeron.Aeron;
+import io.aeron.Image;
+import io.aeron.ImageControlledFragmentAssembler;
+import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.client.RecordingEventsListener;
@@ -118,8 +120,6 @@ public final class LiveRecordingMessageTransceiver
         if (ownsArchiveClient)
         {
             closeAll(aeronArchive, archivingMediaDriver);
-            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            archivingMediaDriver.archive().context().deleteDirectory();
         }
     }
 

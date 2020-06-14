@@ -15,14 +15,13 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.archive.client.AeronArchive.connect;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchArchivingMediaDriver;
+import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithEmbeddedDriver;
 
 class LiveReplayRemoteArchiveTest extends
     AbstractTest<ArchivingMediaDriver, AeronArchive, LiveReplayMessageTransceiver, ArchiveNode>
@@ -35,7 +34,7 @@ class LiveReplayRemoteArchiveTest extends
 
     protected ArchivingMediaDriver createDriver()
     {
-        return launchArchivingMediaDriver();
+        return launchArchiveWithEmbeddedDriver();
     }
 
     protected AeronArchive connectToDriver()
@@ -53,10 +52,6 @@ class LiveReplayRemoteArchiveTest extends
         final AeronArchive aeronArchive,
         final MessageRecorder messageRecorder)
     {
-        return new LiveReplayMessageTransceiver(
-            archivingMediaDriver.mediaDriver(),
-            aeronArchive,
-            false,
-            messageRecorder);
+        return new LiveReplayMessageTransceiver(null, aeronArchive, false, messageRecorder);
     }
 }

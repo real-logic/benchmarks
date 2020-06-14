@@ -18,7 +18,6 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
-import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.SystemUtil;
 
@@ -91,8 +90,6 @@ public final class ArchiveNode implements AutoCloseable, Runnable
         if (ownsArchiveClient)
         {
             closeAll(aeronArchive, archivingMediaDriver);
-            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            archivingMediaDriver.archive().context().deleteDirectory();
         }
     }
 

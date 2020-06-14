@@ -19,8 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
-import io.aeron.archive.Archive;
-import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
@@ -51,6 +49,8 @@ import static java.lang.System.getProperty;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
+import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithEmbeddedDriver;
+import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithStandaloneDriver;
 
 final class AeronUtil
 {
@@ -141,15 +141,7 @@ final class AeronUtil
 
     static ArchivingMediaDriver launchArchivingMediaDriver()
     {
-        final MediaDriver.Context driverContext = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .spiesSimulateConnection(true);
-
-        return ArchivingMediaDriver.launch(
-            driverContext,
-            new Archive.Context()
-                .aeronDirectoryName(driverContext.aeronDirectoryName())
-                .deleteArchiveOnStart(true));
+        return embeddedMediaDriver() ? launchArchiveWithEmbeddedDriver() : launchArchiveWithStandaloneDriver();
     }
 
     static long awaitRecordingStart(final Aeron aeron, final int publicationSessionId)

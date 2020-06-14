@@ -19,7 +19,6 @@ import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Subscription;
-import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
@@ -104,8 +103,6 @@ public final class ArchiveMessageTransceiver extends MessageTransceiverProducerS
         if (ownsArchiveClient)
         {
             closeAll(aeronArchive, archivingMediaDriver);
-            archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            archivingMediaDriver.archive().context().deleteDirectory();
         }
     }
 
