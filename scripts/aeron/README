@@ -56,15 +56,6 @@ For example:
 AERON_MD=path_to_my_aeron_driver ./c-media-driver
 ```
 
-- `run-with-embedded-media-driver` - runs another scripts ensuring that it will be executed with the embedded
-`MediaDriver`.
-
-For example:
-```
-./run-with-embedded-media-driver ./echo-client
-```
-will run `echo-client` script with embedded `MediaDriver`.
-
 
 Overriding properties
 ---------------------
