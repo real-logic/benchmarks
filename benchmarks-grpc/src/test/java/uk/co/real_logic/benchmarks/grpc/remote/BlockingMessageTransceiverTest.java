@@ -17,6 +17,8 @@ package uk.co.real_logic.benchmarks.grpc.remote;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
@@ -24,6 +26,7 @@ import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.TLS;
 
+@DisabledOnOs(OS.WINDOWS)
 class BlockingMessageTransceiverTest extends AbstractGrpcTest
 {
     @BeforeEach

@@ -76,15 +76,6 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - name: Generate certificates
-        run: |
-          choco install mkcert --version 1.4.0 --force
-
-          md certificates && cd certificates
-
-          set TRUST_STORES=java
-
-          mkcert -install -cert-file benchmarks.pem -key-file benchmarks-key.pem localhost 127.0.0.1
       - name: Build with Gradle
         run: ./gradlew
 
