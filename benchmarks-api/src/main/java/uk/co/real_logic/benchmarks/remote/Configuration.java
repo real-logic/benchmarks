@@ -63,7 +63,7 @@ public final class Configuration
     /**
      * Default number of measurement iterations.
      */
-    public static final int DEFAULT_ITERATIONS = 30;
+    public static final int DEFAULT_ITERATIONS = 10;
 
     /**
      * Default number of messages in a single batch.
