@@ -120,10 +120,10 @@ public final class LoadTestRig
                 out.printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload and a" +
                     " burst size of %,d...%n",
                     configuration.warmUpIterations(),
-                    configuration.warmUpNumberOfMessages(),
+                    configuration.numberOfMessages(),
                     configuration.messageLength(),
                     configuration.batchSize());
-                doRun(configuration.warmUpIterations(), configuration.warmUpNumberOfMessages());
+                doRun(configuration.warmUpIterations(), configuration.numberOfMessages());
 
                 histogram.reset();
                 sentMessages.set(0);

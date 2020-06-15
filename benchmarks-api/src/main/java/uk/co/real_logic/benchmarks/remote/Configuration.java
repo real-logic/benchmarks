@@ -61,11 +61,6 @@ public final class Configuration
     public static final int DEFAULT_WARM_UP_ITERATIONS = 5;
 
     /**
-     * Default number of messages per single warm up iteration.
-     */
-    public static final int DEFAULT_WARM_UP_NUMBER_OF_MESSAGES = 1_000;
-
-    /**
      * Default number of measurement iterations.
      */
     public static final int DEFAULT_ITERATIONS = 30;
@@ -88,14 +83,6 @@ public final class Configuration
      * @see #warmUpIterations()
      */
     public static final String WARM_UP_ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.iterations";
-
-    /**
-     * Name of the system property to configure the number of messages to be sent during warm up. Default value is
-     * {@link #DEFAULT_WARM_UP_NUMBER_OF_MESSAGES}.
-     *
-     * @see #warmUpNumberOfMessages()
-     */
-    public static final String WARM_UP_MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.messages";
 
     /**
      * Name of the system property to configure the number of measurement iterations. Default value is
@@ -178,7 +165,6 @@ public final class Configuration
     }
 
     private final int warmUpIterations;
-    private final int warmUpNumberOfMessages;
     private final int iterations;
     private final int numberOfMessages;
     private final int batchSize;
@@ -192,8 +178,6 @@ public final class Configuration
     private Configuration(final Builder builder)
     {
         this.warmUpIterations = checkMinValue(builder.warmUpIterations, 0, "Warm-up iterations");
-        this.warmUpNumberOfMessages = checkMinValue(
-            builder.warmUpNumberOfMessages, warmUpIterations > 0 ? 1 : 0, "Warm-up number of messages");
         this.iterations = checkMinValue(builder.iterations, 1, "Iterations");
         this.numberOfMessages = checkMinValue(builder.numberOfMessages, 1, "Number of messages");
         this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
@@ -214,18 +198,6 @@ public final class Configuration
     public int warmUpIterations()
     {
         return warmUpIterations;
-    }
-
-    /**
-     * Number of messages per warm up iteration.
-     *
-     * @return number of messages per warm up iteration, defaults to {@link #DEFAULT_WARM_UP_NUMBER_OF_MESSAGES}.
-     * @implNote Actual number of messages sent can be less than this number if the underlying system is not capable
-     * of achieving the target send rate.
-     */
-    public int warmUpNumberOfMessages()
-    {
-        return warmUpNumberOfMessages;
     }
 
     /**
@@ -329,7 +301,6 @@ public final class Configuration
     {
         return "Configuration{" +
             "\n    warmUpIterations=" + warmUpIterations +
-            "\n    warmUpNumberOfMessages=" + warmUpNumberOfMessages +
             "\n    iterations=" + iterations +
             "\n    numberOfMessages=" + numberOfMessages +
             "\n    batchSize=" + batchSize +
@@ -376,7 +347,6 @@ public final class Configuration
     public static final class Builder
     {
         private int warmUpIterations = DEFAULT_WARM_UP_ITERATIONS;
-        private int warmUpNumberOfMessages = DEFAULT_WARM_UP_NUMBER_OF_MESSAGES;
         private int iterations = DEFAULT_ITERATIONS;
         private int numberOfMessages;
         private int batchSize = DEFAULT_BATCH_SIZE;
@@ -396,18 +366,6 @@ public final class Configuration
         public Builder warmUpIterations(final int iterations)
         {
             this.warmUpIterations = iterations;
-            return this;
-        }
-
-        /**
-         * Set the number of messages per warm up iteration.
-         *
-         * @param numberOfMessages per warm up iteration.
-         * @return this for a fluent API.
-         */
-        public Builder warmUpNumberOfMessages(final int numberOfMessages)
-        {
-            this.warmUpNumberOfMessages = numberOfMessages;
             return this;
         }
 
@@ -536,11 +494,6 @@ public final class Configuration
         if (isPropertyProvided(WARM_UP_ITERATIONS_PROP_NAME))
         {
             builder.warmUpIterations(intProperty(WARM_UP_ITERATIONS_PROP_NAME));
-        }
-
-        if (isPropertyProvided(WARM_UP_MESSAGES_PROP_NAME))
-        {
-            builder.warmUpNumberOfMessages(intProperty(WARM_UP_MESSAGES_PROP_NAME));
         }
 
         if (isPropertyProvided(ITERATIONS_PROP_NAME))

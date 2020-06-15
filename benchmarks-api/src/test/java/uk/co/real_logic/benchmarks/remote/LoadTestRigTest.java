@@ -79,7 +79,6 @@ class LoadTestRigTest
 
         configuration = new Configuration.Builder()
             .warmUpIterations(1)
-            .warmUpNumberOfMessages(1)
             .iterations(1)
             .numberOfMessages(1)
             .messageTransceiverClass(configuration.messageTransceiverClass())
@@ -107,7 +106,7 @@ class LoadTestRigTest
         inOrder.verify(out).printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload" +
             " and a burst size of %,d...%n",
             configuration.warmUpIterations(),
-            configuration.warmUpNumberOfMessages(),
+            configuration.numberOfMessages(),
             configuration.messageLength(),
             configuration.batchSize());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);

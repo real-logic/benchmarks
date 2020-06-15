@@ -76,32 +76,16 @@ class ConfigurationTest
         assertEquals("Warm-up iterations cannot be less than 0, got: -1", ex.getMessage());
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = { -6, 0 })
-    void throwsIllegalArgumentExceptionIfWarmUpNumberOfMessagesIsInvalid(final int warmUpNumberOfMessages)
-    {
-        final Builder builder = new Builder()
-            .warmUpIterations(3)
-            .warmUpNumberOfMessages(warmUpNumberOfMessages);
-
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
-
-        assertEquals("Warm-up number of messages cannot be less than 1, got: " + warmUpNumberOfMessages, ex
-            .getMessage());
-    }
-
     @Test
-    void warmUpNumberOfMessagesCanBeZeroIfWarmUpIterationsIsZero()
+    void warmIterationsCanBeZero()
     {
         final Configuration configuration = new Builder()
             .warmUpIterations(0)
-            .warmUpNumberOfMessages(0)
             .numberOfMessages(1_000)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .build();
 
         assertEquals(0, configuration.warmUpIterations());
-        assertEquals(0, configuration.warmUpNumberOfMessages());
     }
 
     @ParameterizedTest
@@ -359,7 +343,6 @@ class ConfigurationTest
             .build();
 
         assertEquals(123, configuration.numberOfMessages());
-        assertEquals(DEFAULT_WARM_UP_NUMBER_OF_MESSAGES, configuration.warmUpNumberOfMessages());
         assertEquals(DEFAULT_WARM_UP_ITERATIONS, configuration.warmUpIterations());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
@@ -378,7 +361,6 @@ class ConfigurationTest
     {
         final Path outputDirectory = tempDir.resolve("my-output-dir");
         final Configuration configuration = new Builder()
-            .warmUpNumberOfMessages(222)
             .warmUpIterations(3)
             .iterations(11)
             .numberOfMessages(666)
@@ -391,7 +373,6 @@ class ConfigurationTest
             .build();
 
         assertEquals(3, configuration.warmUpIterations());
-        assertEquals(222, configuration.warmUpNumberOfMessages());
         assertEquals(11, configuration.iterations());
         assertEquals(666, configuration.numberOfMessages());
         assertEquals(4, configuration.batchSize());
@@ -407,7 +388,6 @@ class ConfigurationTest
     {
         final Configuration configuration = new Builder()
             .warmUpIterations(4)
-            .warmUpNumberOfMessages(3)
             .iterations(10)
             .numberOfMessages(777)
             .batchSize(2)
@@ -420,7 +400,6 @@ class ConfigurationTest
 
         assertEquals("Configuration{" +
             "\n    warmUpIterations=4" +
-            "\n    warmUpNumberOfMessages=3" +
             "\n    iterations=10" +
             "\n    numberOfMessages=777" +
             "\n    batchSize=2" +
@@ -489,7 +468,6 @@ class ConfigurationTest
         final Configuration configuration = fromSystemProperties();
 
         assertEquals(42, configuration.numberOfMessages());
-        assertEquals(DEFAULT_WARM_UP_NUMBER_OF_MESSAGES, configuration.warmUpNumberOfMessages());
         assertEquals(DEFAULT_WARM_UP_ITERATIONS, configuration.warmUpIterations());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
@@ -504,7 +482,6 @@ class ConfigurationTest
     void fromSystemPropertiesOverrideAll(final @TempDir Path tempDir)
     {
         setProperty(WARM_UP_ITERATIONS_PROP_NAME, "2");
-        setProperty(WARM_UP_MESSAGES_PROP_NAME, "10");
         setProperty(ITERATIONS_PROP_NAME, "4");
         setProperty(MESSAGES_PROP_NAME, "200");
         setProperty(BATCH_SIZE_PROP_NAME, "3");
@@ -518,7 +495,6 @@ class ConfigurationTest
         final Configuration configuration = fromSystemProperties();
 
         assertEquals(2, configuration.warmUpIterations());
-        assertEquals(10, configuration.warmUpNumberOfMessages());
         assertEquals(4, configuration.iterations());
         assertEquals(200, configuration.numberOfMessages());
         assertEquals(3, configuration.batchSize());
@@ -568,7 +544,6 @@ class ConfigurationTest
     {
         Stream.of(
             WARM_UP_ITERATIONS_PROP_NAME,
-            WARM_UP_MESSAGES_PROP_NAME,
             ITERATIONS_PROP_NAME,
             MESSAGES_PROP_NAME,
             BATCH_SIZE_PROP_NAME,
