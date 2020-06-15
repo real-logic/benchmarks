@@ -16,21 +16,21 @@
 package uk.co.real_logic.benchmarks.grpc.remote;
 
 import io.grpc.Server;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 
-import static io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder.forAddress;
+import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.getServerBuilder;
 
 public class EchoServer implements AutoCloseable
 {
     private final Server server;
 
-    public EchoServer(final SocketAddress serverAddress)
+    public EchoServer(final NettyServerBuilder serverBuilder)
     {
-        server = forAddress(serverAddress).addService(new EchoService()).build();
+        server = serverBuilder.addService(new EchoService()).build();
     }
 
     public void start() throws IOException
@@ -50,7 +50,7 @@ public class EchoServer implements AutoCloseable
     {
         SystemUtil.loadPropertiesFiles(args);
 
-        try (EchoServer server = new EchoServer(GrpcConfig.getServerAddress()))
+        try (EchoServer server = new EchoServer(getServerBuilder()))
         {
             server.start();
 

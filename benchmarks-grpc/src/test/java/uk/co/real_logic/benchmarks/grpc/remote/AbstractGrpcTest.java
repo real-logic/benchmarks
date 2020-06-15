@@ -23,7 +23,7 @@ import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.getServerAddress;
+import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.getServerBuilder;
 import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
 abstract class AbstractGrpcTest
@@ -56,7 +56,7 @@ abstract class AbstractGrpcTest
         final int messageLength,
         final int burstSize) throws Exception
     {
-        try (EchoServer server = new EchoServer(getServerAddress()))
+        try (EchoServer server = new EchoServer(getServerBuilder()))
         {
             server.start();
 

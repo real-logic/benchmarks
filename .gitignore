@@ -1,8 +1,9 @@
-.idea
+.idea/
 *.iml
-.gradle
-build
+.gradle/
+build/
 *~
-cppbuild/Release
+cppbuild/Release/
 benchmark.properties
-results
+results/
+certificates/

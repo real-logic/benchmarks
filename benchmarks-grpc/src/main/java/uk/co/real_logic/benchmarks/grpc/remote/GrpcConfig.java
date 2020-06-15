@@ -16,11 +16,14 @@
 package uk.co.real_logic.benchmarks.grpc.remote;
 
 import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import static io.grpc.ManagedChannelBuilder.forAddress;
+import static java.lang.Boolean.getBoolean;
 import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
 
@@ -28,6 +31,7 @@ final class GrpcConfig
 {
     public static final String SERVER_HOST = "uk.co.real_logic.benchmarks.grpc.remote.server.host";
     public static final String SERVER_PORT = "uk.co.real_logic.benchmarks.grpc.remote.server.port";
+    public static final String TLS = "uk.co.real_logic.benchmarks.grpc.remote.tls";
 
     private GrpcConfig()
     {
@@ -35,12 +39,36 @@ final class GrpcConfig
 
     public static ManagedChannel getServerChannel()
     {
-        return forAddress(getServerHost(), getServerPort()).usePlaintext().build();
+        final ManagedChannelBuilder<?> channelBuilder =
+            ManagedChannelBuilder.forAddress(getServerHost(), getServerPort());
+        if (!getBoolean(TLS))
+        {
+            channelBuilder.usePlaintext();
+        }
+        return channelBuilder.build();
     }
 
-    public static SocketAddress getServerAddress()
+    public static NettyServerBuilder getServerBuilder()
     {
-        return new InetSocketAddress(getServerHost(), getServerPort());
+        final NettyServerBuilder serverBuilder =
+            NettyServerBuilder.forAddress(new InetSocketAddress(getServerHost(), getServerPort()));
+        if (getBoolean(TLS))
+        {
+            final Path userDir = Paths.get(getProperty("user.dir"));
+            final Path certificatesDir;
+            if (userDir.endsWith("benchmarks-grpc") || userDir.endsWith("scripts"))
+            {
+                certificatesDir = userDir.getParent().resolve("certificates");
+            }
+            else
+            {
+                certificatesDir = userDir.resolve("certificates");
+            }
+            serverBuilder.useTransportSecurity(
+                certificatesDir.resolve("benchmarks.pem").toFile(),
+                certificatesDir.resolve("benchmarks-key.pem").toFile());
+        }
+        return serverBuilder;
     }
 
     private static String getServerHost()

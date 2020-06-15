@@ -2,6 +2,19 @@
 
 Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures.
 
+## Build and tests
+
+Some tests require a TLS certificate to be installed in the `certificates` directory. This can be done using the
+https://github.com/FiloSottile/mkcert tool.
+
+Here is an example of running this tool from the project root directory:
+
+    $ mkdir certificates
+
+    $ TRUST_STORES=java mkcert -install -cert-file certificates/benchmarks.pem -key-file certificates/benchmarks-key.pem localhost 127.0.0.1
+
+This command will generate required files and install the generated certificate into a Java's trust store.
+
 ## Java Benchmarks
 
 To run the Java benchmarks execute the Gradle script in the base directory.

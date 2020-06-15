@@ -15,11 +15,29 @@
  */
 package uk.co.real_logic.benchmarks.grpc.remote;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
+import static java.lang.System.clearProperty;
+import static java.lang.System.setProperty;
+import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.TLS;
+
 class BlockingMessageTransceiverTest extends AbstractGrpcTest
 {
+    @BeforeEach
+    void before()
+    {
+        setProperty(TLS, "true");
+    }
+
+    @AfterEach
+    void after()
+    {
+        clearProperty(TLS);
+    }
+
     protected MessageTransceiver createMessageTransceiver(final MessageRecorder messageRecorder)
     {
         return new BlockingMessageTransceiver(messageRecorder);
