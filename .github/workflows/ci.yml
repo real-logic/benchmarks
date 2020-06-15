@@ -44,9 +44,9 @@ jobs:
         run: |
           brew install mkcert
 
-          mkdir certificates
+          mkdir certificates && cd certificates
 
-          TRUST_STORES=java mkcert -install -cert-file certificates/benchmarks.pem -key-file certificates/benchmarks-key.pem localhost 127.0.0.1
+          TRUST_STORES=java mkcert -install -cert-file benchmarks.pem -key-file benchmarks-key.pem localhost 127.0.0.1
       - name: Build with Gradle
         run: ./gradlew
 
@@ -78,13 +78,13 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Generate certificates
         run: |
-          choco install mkcert
+          choco install mkcert --version 1.4.0 --force
 
-          md certificates
+          md certificates && cd certificates
 
           set TRUST_STORES=java
 
-          mkcert -install -cert-file certificates\benchmarks.pem -key-file certificates\benchmarks-key.pem localhost 127.0.0.1
+          mkcert -install -cert-file benchmarks.pem -key-file benchmarks-key.pem localhost 127.0.0.1
       - name: Build with Gradle
         run: ./gradlew
 
