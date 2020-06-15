@@ -78,9 +78,9 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Generate certificates
         run: |
-          choco install mkcert --version 1.4.0 --force
+          choco install mkcert
 
-          mkdir certificates
+          md certificates
 
           set TRUST_STORES=java
 
