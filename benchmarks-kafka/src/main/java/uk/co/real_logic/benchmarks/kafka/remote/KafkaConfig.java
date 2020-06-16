@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.kafka.remote;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.metrics.Sensor;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -50,6 +51,12 @@ final class KafkaConfig
     {
         final Map<String, String> commonProps = new HashMap<>();
         commonProps.put(BOOTSTRAP_SERVERS_CONFIG, getBrokerList());
+        putIfProvided(commonProps, SECURITY_PROTOCOL_CONFIG);
+        putIfProvided(commonProps, SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG);
+        putIfProvided(commonProps, SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG);
+        putIfProvided(commonProps, SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG);
+        putIfProvided(commonProps, SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG);
+        putIfProvided(commonProps, SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG);
         putIfProvided(commonProps, SEND_BUFFER_CONFIG);
         putIfProvided(commonProps, RECEIVE_BUFFER_CONFIG);
         putIfProvided(commonProps, REQUEST_TIMEOUT_MS_CONFIG);

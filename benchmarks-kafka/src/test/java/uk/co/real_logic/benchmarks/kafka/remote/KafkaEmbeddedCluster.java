@@ -26,6 +26,7 @@ import org.apache.zookeeper.server.ZooKeeperServer;
 import scala.Option;
 import scala.collection.immutable.Seq;
 import scala.collection.immutable.Seq$;
+import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -43,9 +44,10 @@ class KafkaEmbeddedCluster implements AutoCloseable
     private final NIOServerCnxnFactory factory;
     private final ZooKeeperServer zookeeper;
 
-    KafkaEmbeddedCluster(final int zookeeperPort, final int port, final Path tempDir) throws Exception
+    KafkaEmbeddedCluster(
+        final int zookeeperPort, final int httpPort, final int sslPort, final Path tempDir) throws Exception
     {
-        this.port = port;
+        this.port = httpPort;
 
         logDir = tempDir.resolve("log-dir");
         Files.createDirectory(logDir);
@@ -61,22 +63,33 @@ class KafkaEmbeddedCluster implements AutoCloseable
         factory.configure(new InetSocketAddress("localhost", zookeeperPort), 0);
         factory.startup(zookeeper);
 
-        final KafkaConfig config = createConfig(port, zookeeperPort);
+        final KafkaConfig config = createConfig(httpPort, sslPort, zookeeperPort);
         @SuppressWarnings("unchecked") final Seq<KafkaMetricsReporter> metricsReporters =
             (Seq<KafkaMetricsReporter>)Seq$.MODULE$.empty();
         kafka = new KafkaServer(config, Time.SYSTEM, Option.empty(), metricsReporters);
         kafka.startup();
     }
 
-    private KafkaConfig createConfig(final int port, final int zookeeperPort)
+    private KafkaConfig createConfig(final int httpPort, final int sslPort, final int zookeeperPort)
     {
         final Properties props = new Properties();
         props.put(KafkaConfig$.MODULE$.LogDirProp(), logDir.toAbsolutePath().toString());
         props.put(KafkaConfig$.MODULE$.ZkConnectProp(), "localhost:" + zookeeperPort);
         props.put(KafkaConfig$.MODULE$.ZkSessionTimeoutMsProp(), valueOf(10000));
         props.put(KafkaConfig$.MODULE$.BrokerIdProp(), 0);
-        props.put(KafkaConfig$.MODULE$.HostNameProp(), "localhost");
-        props.put(KafkaConfig$.MODULE$.PortProp(), valueOf(port));
+        final String listeners = "PLAINTEXT://localhost:" + httpPort + ",SSL://localhost:" + sslPort;
+        props.put(KafkaConfig$.MODULE$.ListenersProp(), listeners);
+        props.put(KafkaConfig$.MODULE$.AdvertisedListenersProp(), listeners);
+        final Path certificatesPath = Configuration.certificatesDirectory();
+        props.put(KafkaConfig$.MODULE$.SslTruststoreLocationProp(),
+            certificatesPath.resolve("truststore.p12").toString());
+        props.put(KafkaConfig$.MODULE$.SslTruststoreTypeProp(), "PKCS12");
+        props.put(KafkaConfig$.MODULE$.SslTruststorePasswordProp(), "truststore");
+        props.put(KafkaConfig$.MODULE$.SslKeystoreLocationProp(),
+            certificatesPath.resolve("server.keystore").toString());
+        props.put(KafkaConfig$.MODULE$.SslKeystoreTypeProp(), "PKCS12");
+        props.put(KafkaConfig$.MODULE$.SslKeystorePasswordProp(), "server");
+        props.put(KafkaConfig$.MODULE$.SslClientAuthProp(), "required");
         props.put(KafkaConfig$.MODULE$.AutoCreateTopicsEnableProp(), valueOf(true));
         props.put(KafkaConfig$.MODULE$.MessageMaxBytesProp(), valueOf(1000000));
         props.put(KafkaConfig$.MODULE$.ControlledShutdownEnableProp(), valueOf(true));
@@ -91,11 +104,6 @@ class KafkaEmbeddedCluster implements AutoCloseable
         props.put(KafkaConfig$.MODULE$.NumRecoveryThreadsPerDataDirProp(), valueOf(1));
         props.put(KafkaConfig$.MODULE$.NumReplicaAlterLogDirsThreadsProp(), valueOf(1));
         return new KafkaConfig(props);
-    }
-
-    public String brokerList()
-    {
-        return "localhost:" + port;
     }
 
     public void close() throws Exception
