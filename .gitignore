@@ -6,4 +6,3 @@ build/
 cppbuild/Release/
 benchmark.properties
 results/
-certificates/

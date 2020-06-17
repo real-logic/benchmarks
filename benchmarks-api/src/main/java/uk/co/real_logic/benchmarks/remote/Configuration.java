@@ -533,6 +533,29 @@ public final class Configuration
         return builder.build();
     }
 
+    /**
+     * Returns directory where TLS certificates are stored.
+     *
+     * @return directory where TLS certificates are stored.
+     */
+    public static Path certificatesDirectory()
+    {
+        final Path userDir = Paths.get(getProperty("user.dir"));
+        Path certificatesDir = userDir.resolve("certificates");
+        if (exists(certificatesDir))
+        {
+            return certificatesDir;
+        }
+
+        certificatesDir = userDir.getParent().resolve("certificates");
+        if (exists(certificatesDir))
+        {
+            return certificatesDir;
+        }
+
+        throw new IllegalStateException("could not find 'certificates' directory under: " + userDir.toAbsolutePath());
+    }
+
     private static int checkMinValue(final int value, final int minValue, final String prefix)
     {
         if (value < minValue)

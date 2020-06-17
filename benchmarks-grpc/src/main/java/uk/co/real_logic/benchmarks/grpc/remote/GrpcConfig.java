@@ -16,12 +16,17 @@
 package uk.co.real_logic.benchmarks.grpc.remote;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
+import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
+import org.agrona.LangUtil;
+import uk.co.real_logic.benchmarks.remote.Configuration;
 
+import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Integer.getInteger;
@@ -39,9 +44,26 @@ final class GrpcConfig
 
     public static ManagedChannel getServerChannel()
     {
-        final ManagedChannelBuilder<?> channelBuilder =
-            ManagedChannelBuilder.forAddress(getServerHost(), getServerPort());
-        if (!getBoolean(TLS))
+        final NettyChannelBuilder channelBuilder =
+            NettyChannelBuilder.forAddress(getServerHost(), getServerPort());
+        if (getBoolean(TLS))
+        {
+            final Path certificatesDir = Configuration.certificatesDirectory();
+            final SslContextBuilder sslClientContextBuilder = GrpcSslContexts.forClient()
+                .trustManager(certificatesDir.resolve("ca.pem").toFile())
+                .keyManager(
+                certificatesDir.resolve("client.pem").toFile(), certificatesDir.resolve("client.key").toFile());
+
+            try
+            {
+                channelBuilder.sslContext(sslClientContextBuilder.build());
+            }
+            catch (final SSLException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+        }
+        else
         {
             channelBuilder.usePlaintext();
         }
@@ -54,19 +76,21 @@ final class GrpcConfig
             NettyServerBuilder.forAddress(new InetSocketAddress(getServerHost(), getServerPort()));
         if (getBoolean(TLS))
         {
-            final Path userDir = Paths.get(getProperty("user.dir"));
-            final Path certificatesDir;
-            if (userDir.endsWith("benchmarks-grpc") || userDir.endsWith("scripts"))
+            final Path certificatesDir = Configuration.certificatesDirectory();
+            final SslContextBuilder sslClientContextBuilder = SslContextBuilder.forServer(
+                certificatesDir.resolve("server.pem").toFile(), certificatesDir.resolve("server.key").toFile())
+                .trustManager(certificatesDir.resolve("ca.pem").toFile())
+                .clientAuth(ClientAuth.REQUIRE);
+            GrpcSslContexts.configure(sslClientContextBuilder);
+
+            try
             {
-                certificatesDir = userDir.getParent().resolve("certificates");
+                serverBuilder.sslContext(sslClientContextBuilder.build());
             }
-            else
+            catch (final SSLException ex)
             {
-                certificatesDir = userDir.resolve("certificates");
+                LangUtil.rethrowUnchecked(ex);
             }
-            serverBuilder.useTransportSecurity(
-                certificatesDir.resolve("benchmarks.pem").toFile(),
-                certificatesDir.resolve("benchmarks-key.pem").toFile());
         }
         return serverBuilder;
     }
