@@ -1,0 +1,25 @@
+[req]
+distinguished_name  = req_distinguished_name
+req_extensions      = v3_req
+
+[req_distinguished_name]
+countryName                 = Country Name (2 letter code)
+countryName_default         = UK
+stateOrProvinceName         = State or Province Name (full name)
+stateOrProvinceName_default = London
+localityName                = Locality Name (eg, city)
+localityName_default        = London
+organizationName            = Organization Name (eg, company)
+organizationName_default    = Real Logic Ltd
+commonName                  = Common Name (eg, YOUR name)
+commonName_default          = Aeron Benchmarks Server
+
+[v3_req]
+basicConstraints = critical, CA:FALSE
+keyUsage         = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = critical, serverAuth
+subjectAltName   = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+IP.1  = 127.0.0.1

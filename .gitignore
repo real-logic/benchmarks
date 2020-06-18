@@ -6,3 +6,6 @@ build/
 cppbuild/Release/
 benchmark.properties
 results/
+*.rsa
+*.csr
+*.srl

@@ -1,0 +1,45 @@
+Generated a self-signed CA certificate:
+---------------------------------------
+
+$ openssl req -x509 -new -newkey rsa:4096 -nodes -keyout ca.key -out ca.pem -config ca.cnf -extensions v3_req -days 3650
+
+Generate client certificate signed by CA:
+-----------------------------------------
+
+$ openssl genrsa -out client.key.rsa 4096
+$ openssl pkcs8 -topk8 -in client.key.rsa -out client.key -nocrypt
+$ openssl req -new -key client.key -out client.csr -config client.cnf
+$ openssl x509 -req -CA ca.pem -CAkey ca.key -CAcreateserial -in client.csr -out client.pem \
+  -extensions v3_req -extfile client.cnf -days 3650
+
+Generate server certificate signed by CA:
+-----------------------------------------
+
+$ openssl genrsa -out server.key.rsa 4096
+$ openssl pkcs8 -topk8 -in server.key.rsa -out server.key -nocrypt
+$ openssl req -new -key server.key -out server.csr -config server.cnf
+$ openssl x509 -req -CA ca.pem -CAkey ca.key -CAcreateserial -in server.csr -out server.pem \
+  -extensions v3_req -extfile server.cnf -days 3650
+
+Convert certificates into a Java' keystore compatible format
+------------------------------------------------------------
+
+$ openssl pkcs12 -export -in client.pem -inkey client.key -name client -password pass:client -out client.keystore
+$ openssl pkcs12 -export -in server.pem -inkey server.key -name server -password pass:server -out server.keystore
+
+Import certificates into a truststore
+-------------------------------------
+
+$ keytool -importcert -trustcacerts -alias client -file client.pem -storepass truststore \
+    -storetype PKCS12 -keystore truststore.p12
+$ keytool -importcert -trustcacerts -alias server -file server.pem -storepass truststore \
+  -storetype PKCS12 -keystore truststore.p12
+$ keytool -importcert -trustcacerts -alias CA -file ca.pem -storepass truststore \
+  -storetype PKCS12 -keystore truststore.p12
+
+Note: Answer `yes` when asked if a certificate should be trusted.
+
+Remove temporary files:
+-----------------------
+
+$ rm *.rsa && rm *.csr && rm ca.srl

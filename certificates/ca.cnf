@@ -1,0 +1,17 @@
+[req]
+distinguished_name  = req_distinguished_name
+req_extensions      = v3_req
+
+[req_distinguished_name]
+countryName                 = Country Name (2 letter code)
+countryName_default         = UK
+stateOrProvinceName         = State or Province Name (full name)
+stateOrProvinceName_default = London
+organizationName            = Organization Name (eg, company)
+organizationName_default    = Real Logic Ltd
+commonName                  = Common Name (eg, YOUR name)
+commonName_default          = Aeron Benchmarks CA
+
+[v3_req]
+basicConstraints = critical, CA:TRUE, pathlen:0
+keyUsage         = critical, keyCertSign
