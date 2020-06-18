@@ -87,18 +87,28 @@ if (NOT AERON_GIT_URL)
     set(AERON_GIT_URL "https://github.com/real-logic/aeron.git" CACHE STRING "Location of the Aeron git repo" FORCE)
 endif (NOT AERON_GIT_URL)
 
-if (NOT AERON_GIT_TAG)
-    set(AERON_GIT_TAG "origin/HEAD" CACHE STRING "Tag in the Aeron git repo" FORCE)
-endif (NOT AERON_GIT_TAG)
+if (NOT AERON_GIT_SHA)
+    if (NOT AERON_GIT_TAG)
+        set(AERON_GIT_TAG "origin/HEAD" CACHE STRING "Tag in the Aeron git repo" FORCE)
+    endif (NOT AERON_GIT_TAG)
 
-ExternalProject_Add(
-    aeron
-    GIT_REPOSITORY ${AERON_GIT_URL}
-    GIT_TAG ${AERON_GIT_TAG}
-    GIT_SHALLOW TRUE
-    CMAKE_ARGS "-DAERON_TESTS=OFF" "-DAERON_SYSTEM_TESTS=OFF" "-DAERON_SLOW_SYSTEM_TESTS=OFF" "-DCMAKE_BUILD_TYPE=Release"
-    INSTALL_COMMAND ""
-)
+    ExternalProject_Add(
+        aeron
+        GIT_REPOSITORY ${AERON_GIT_URL}
+        GIT_TAG ${AERON_GIT_TAG}
+        GIT_SHALLOW TRUE
+        CMAKE_ARGS "-DAERON_TESTS=OFF" "-DAERON_SYSTEM_TESTS=OFF" "-DAERON_SLOW_SYSTEM_TESTS=OFF" "-DCMAKE_BUILD_TYPE=Release"
+        INSTALL_COMMAND ""
+    )
+else ()
+    ExternalProject_Add(
+        aeron
+        GIT_REPOSITORY ${AERON_GIT_URL}
+        GIT_TAG ${AERON_GIT_SHA}
+        CMAKE_ARGS "-DAERON_TESTS=OFF" "-DAERON_SYSTEM_TESTS=OFF" "-DAERON_SLOW_SYSTEM_TESTS=OFF" "-DCMAKE_BUILD_TYPE=Release"
+        INSTALL_COMMAND ""
+    )
+endif ()
 
 ExternalProject_Get_Property(aeron source_dir)
 set(AERON_SOURCE_DIR ${source_dir})

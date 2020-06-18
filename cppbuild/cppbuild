@@ -43,8 +43,12 @@ do
       gitTag=1
       shift
       ;;
+    --aeron-git-sha)
+      gitSha=1
+      shift
+      ;;
     -h|--help)
-      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--no-parallel] [--aeron-git-url $GIT_URL] [--aeron-git-tag $GIT_TAG]"
+      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--no-parallel] [--aeron-git-url $GIT_URL] [--aeron-git-tag $GIT_TAG] [--aeron-git-sha $GIT_SHA]"
       exit
       ;;
     *)
@@ -57,6 +61,11 @@ do
         EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_TAG=${option}"
         echo "Setting -DAERON_GIT_TAG=${option}"
         unset gitTag
+        shift
+      elif [[ -n "$gitSha" ]]; then
+        EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_SHA=${option}"
+        echo "Setting -DAERON_GIT_SHA=${option}"
+        unset gitSha
         shift
       else
         echo "Unknown option $option"
