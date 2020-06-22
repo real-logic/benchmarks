@@ -28,7 +28,6 @@ import org.mockito.stubbing.Answer;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -72,10 +71,8 @@ class LoadTestRigTest
     {
         final long nanoTime = SECONDS.toNanos(123);
         final NanoClock clock = () -> nanoTime;
-        final AtomicLong receivedMessages = new AtomicLong(5);
 
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(1);
-        doAnswer(invocation -> receivedMessages.getAndAdd(3)).when(messageTransceiver).receive();
 
         configuration = new Configuration.Builder()
             .warmUpIterations(1)
@@ -92,10 +89,19 @@ class LoadTestRigTest
             clock,
             out,
             histogram,
-            messageTransceiver,
-            new AtomicLong(),
-            receivedMessages,
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            MINIMUM_NUMBER_OF_CPU_CORES * 2,
+            messageRecorder ->
+            {
+                doAnswer(invocation ->
+                {
+                    messageRecorder.record(1, CHECKSUM);
+                    messageRecorder.record(1, CHECKSUM);
+                    messageRecorder.record(1, CHECKSUM);
+                    return null;
+                }).when(messageTransceiver).receive();
+
+                return messageTransceiver;
+            });
 
         loadTestRig.run();
 
@@ -131,7 +137,6 @@ class LoadTestRigTest
     {
         final long nanoTime = SECONDS.toNanos(123);
         final NanoClock clock = () -> nanoTime;
-        final AtomicLong receivedMessages = new AtomicLong(5);
 
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(1);
 
@@ -140,10 +145,17 @@ class LoadTestRigTest
             clock,
             out,
             histogram,
-            messageTransceiver,
-            new AtomicLong(),
-            receivedMessages,
-            MINIMUM_NUMBER_OF_CPU_CORES + 1);
+            MINIMUM_NUMBER_OF_CPU_CORES + 1,
+            messageRecorder ->
+            {
+                doAnswer(invocation ->
+                {
+                    messageRecorder.record(1, CHECKSUM);
+                    return null;
+                }).when(messageTransceiver).receive();
+
+                return messageTransceiver;
+            });
 
         loadTestRig.run();
 
@@ -161,7 +173,6 @@ class LoadTestRigTest
     void runWarnsAboutMissedTargetRate() throws Exception
     {
         when(clock.nanoTime()).thenReturn(1L, 9_000_000_000L);
-        final AtomicLong receivedMessages = new AtomicLong(5);
 
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong()))
             .thenAnswer((Answer<Integer>)invocation -> invocation.getArgument(0));
@@ -182,10 +193,17 @@ class LoadTestRigTest
             clock,
             out,
             histogram,
-            messageTransceiver,
-            new AtomicLong(),
-            receivedMessages,
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            MINIMUM_NUMBER_OF_CPU_CORES * 2,
+            messageRecorder ->
+            {
+                doAnswer(invocation ->
+                {
+                    messageRecorder.record(1, CHECKSUM);
+                    return null;
+                }).when(messageTransceiver).receive();
+
+                return messageTransceiver;
+            });
 
         loadTestRig.run();
 
@@ -196,36 +214,56 @@ class LoadTestRigTest
     @Test
     void receiveShouldKeepReceivingMessagesUpToTheSentMessagesLimit()
     {
-        final AtomicLong sentMessages = new AtomicLong(3);
-        final AtomicLong receivedMessages = new AtomicLong(0);
+        configuration = new Configuration.Builder()
+            .warmUpIterations(0)
+            .iterations(1)
+            .numberOfMessages(3)
+            .batchSize(200)
+            .messageTransceiverClass(configuration.messageTransceiverClass())
+            .sendIdleStrategy(senderIdleStrategy)
+            .receiveIdleStrategy(receiverIdleStrategy)
+            .outputDirectory(configuration.outputDirectory())
+            .build();
 
-        doAnswer(new Answer<Long>()
-        {
-            private int invocationCount = 0;
-
-            public Long answer(final InvocationOnMock invocation)
-            {
-                if (++invocationCount == 2)
-                {
-                    return null;
-                }
-
-                return receivedMessages.getAndAdd(invocationCount);
-            }
-        }).when(messageTransceiver).receive();
+        when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong()))
+            .thenAnswer((Answer<Integer>)invocation -> invocation.getArgument(0));
 
         final LoadTestRig loadTestRig = new LoadTestRig(
             configuration,
             clock,
             out,
             histogram,
-            messageTransceiver,
-            sentMessages,
-            receivedMessages,
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            MINIMUM_NUMBER_OF_CPU_CORES * 2,
+            messageRecorder ->
+            {
+                doAnswer(new Answer<Void>()
+                {
+                    private int invocationCount = 0;
+
+                    public Void answer(final InvocationOnMock invocation)
+                    {
+                        if (++invocationCount == 2)
+                        {
+                            return null;
+                        }
+
+                        for (int i = 0; i < invocationCount; i++)
+                        {
+                            messageRecorder.record(i, CHECKSUM);
+                        }
+
+                        return null;
+                    }
+                }).when(messageTransceiver).receive();
+
+                return messageTransceiver;
+            });
+
+        loadTestRig.send(1, 3);
 
         loadTestRig.receive();
 
+        verify(messageTransceiver).send(anyInt(), anyInt(), anyLong(), anyLong());
         verify(messageTransceiver, times(3)).receive();
         verify(receiverIdleStrategy, times(2)).reset();
         verify(receiverIdleStrategy).idle();
@@ -258,10 +296,8 @@ class LoadTestRigTest
             clock,
             out,
             histogram,
-            messageTransceiver,
-            new AtomicLong(),
-            new AtomicLong(),
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            MINIMUM_NUMBER_OF_CPU_CORES * 2,
+            messageRecorder -> messageTransceiver);
 
         final long messages = loadTestRig.send(2, 25);
 
@@ -302,10 +338,8 @@ class LoadTestRigTest
             clock,
             out,
             histogram,
-            messageTransceiver,
-            new AtomicLong(),
-            new AtomicLong(),
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            MINIMUM_NUMBER_OF_CPU_CORES * 2,
+            messageRecorder -> messageTransceiver);
 
         final long messages = loadTestRig.send(10, 100);
 

@@ -24,7 +24,7 @@ import org.agrona.concurrent.SystemNanoClock;
 import java.io.PrintStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
@@ -47,39 +47,31 @@ public final class LoadTestRig
     private final NanoClock clock;
     private final PrintStream out;
     private final PersistedHistogram histogram;
-    private final AtomicLong sentMessages;
-    private final AtomicLong receivedMessages;
     private final int availableProcessors;
+    private volatile long sentMessages;
+    private long receivedMessages;
 
     public LoadTestRig(final Configuration configuration)
     {
-        this.configuration = requireNonNull(configuration);
-        final Class<? extends MessageTransceiver> messageTransceiverClass =
-            requireNonNull(configuration.messageTransceiverClass());
-        clock = SystemNanoClock.INSTANCE;
-        out = System.out;
-        availableProcessors = Runtime.getRuntime().availableProcessors();
-        histogram = new PersistedHistogram();
-        sentMessages = new AtomicLong();
-        receivedMessages = new AtomicLong();
-        try
-        {
-            messageTransceiver = messageTransceiverClass.getConstructor(MessageRecorder.class)
-                .newInstance((MessageRecorder)(timestamp, checksum) ->
+        this(
+            configuration,
+            SystemNanoClock.INSTANCE,
+            System.out, new PersistedHistogram(),
+            Runtime.getRuntime().availableProcessors(),
+            messageRecorder ->
+            {
+                final Class<? extends MessageTransceiver> messageTransceiverClass =
+                    requireNonNull(configuration.messageTransceiverClass());
+                try
                 {
-                    if (CHECKSUM != checksum)
-                    {
-                        throw new IllegalStateException("Invalid message checksum!");
-                    }
-                    histogram.recordValue(clock.nanoTime() - timestamp);
-                    receivedMessages.getAndIncrement();
-                });
-        }
-        catch (final ReflectiveOperationException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-            throw new Error();
-        }
+                    return messageTransceiverClass.getConstructor(MessageRecorder.class).newInstance(messageRecorder);
+                }
+                catch (final ReflectiveOperationException ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                    throw new Error();
+                }
+            });
     }
 
     LoadTestRig(
@@ -87,18 +79,23 @@ public final class LoadTestRig
         final NanoClock clock,
         final PrintStream out,
         final PersistedHistogram histogram,
-        final MessageTransceiver messageTransceiver,
-        final AtomicLong sentMessages,
-        final AtomicLong receivedMessages,
-        final int availableProcessors)
+        final int availableProcessors,
+        final Function<MessageRecorder, MessageTransceiver> messageTransceiverSupplier)
     {
-        this.configuration = configuration;
-        this.clock = clock;
-        this.out = out;
-        this.histogram = histogram;
-        this.messageTransceiver = messageTransceiver;
-        this.sentMessages = sentMessages;
-        this.receivedMessages = receivedMessages;
+        this.configuration = requireNonNull(configuration);
+        this.clock = requireNonNull(clock);
+        this.out = requireNonNull(out);
+        this.histogram = requireNonNull(histogram);
+        this.messageTransceiver = messageTransceiverSupplier.apply(
+            (timestamp, checksum) ->
+            {
+                if (CHECKSUM != checksum)
+                {
+                    throw new IllegalStateException("Invalid message checksum!");
+                }
+                histogram.recordValue(clock.nanoTime() - timestamp);
+                receivedMessages++;
+            });
         this.availableProcessors = availableProcessors;
     }
 
@@ -126,8 +123,8 @@ public final class LoadTestRig
                 doRun(configuration.warmUpIterations(), configuration.numberOfMessages());
 
                 histogram.reset();
-                sentMessages.set(0);
-                receivedMessages.set(0);
+                sentMessages = 0;
+                receivedMessages = 0;
             }
 
             // Measurement
@@ -156,7 +153,7 @@ public final class LoadTestRig
     private void doRun(final int iterations, final int messages)
     {
         final CompletableFuture<?> receiverTask = runAsync(this::receive);
-        sentMessages.set(send(iterations, messages));
+        send(iterations, messages);
         receiverTask.join();
     }
 
@@ -164,8 +161,6 @@ public final class LoadTestRig
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final IdleStrategy idleStrategy = configuration.receiveIdleStrategy();
-        final AtomicLong sentMessages = this.sentMessages;
-        final AtomicLong receivedMessages = this.receivedMessages;
 
         long sent = 0;
         long received = 0;
@@ -173,7 +168,7 @@ public final class LoadTestRig
         {
             messageTransceiver.receive();
 
-            final long receivedMessagesCount = receivedMessages.get();
+            final long receivedMessagesCount = receivedMessages;
             if (receivedMessagesCount != received)
             {
                 received = receivedMessagesCount;
@@ -186,7 +181,7 @@ public final class LoadTestRig
 
             if (0 == sent)
             {
-                sent = sentMessages.get();
+                sent = sentMessages;
             }
 
             if (0 != sent && received >= sent)
@@ -261,6 +256,8 @@ public final class LoadTestRig
             }
         }
 
+        this.sentMessages = sentMessages;
+
         return sentMessages;
     }
 
@@ -289,11 +286,11 @@ public final class LoadTestRig
     private void warnIfTargetRateNotAchieved()
     {
         final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.numberOfMessages();
-        if (sentMessages.get() < expectedTotalNumberOfMessages)
+        if (sentMessages < expectedTotalNumberOfMessages)
         {
             out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
                 "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
-                sentMessages.get());
+                sentMessages);
         }
     }
 

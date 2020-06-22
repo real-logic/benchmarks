@@ -73,8 +73,12 @@ public abstract class MessageTransceiver
     /**
      * Receive one or more messages.
      *
-     * @implSpec For every received message method {@link #onMessageReceived(long, long)} <strong>must</strong> be
+     * @implSpec For every received message method {@link #onMessageReceived(long, long)} <strong>must be</strong>
      * called.
+     * <p>
+     * <em>Note: If receive is multi-threaded then a call to {@link #onMessageReceived(long, long)}
+     * <strong>must be</strong> be synchronized by the caller.</em>
+     * </p>
      * @implNote Can be a no op if the send is <em>synchronous and blocking</em>.
      * @see #send(int, int, long, long)
      */
