@@ -119,6 +119,7 @@ class KafkaMessageTransceiverTest
             .numberOfMessages(numberOfMessages)
             .messageLength(messageLength)
             .messageTransceiverClass(messageTransceiver.getClass())
+            .outputFileNamePrefix("kafka")
             .build();
 
         messageTransceiver.init(configuration);
