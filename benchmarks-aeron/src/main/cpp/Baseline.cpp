@@ -58,8 +58,8 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
 
     values[burstLength - 1] = 0;
 
-    std::atomic<bool> start{false};
-    std::atomic<bool> running{true};
+    std::atomic<bool> start{ false };
+    std::atomic<bool> running{ true };
 
     std::thread t(
         [&]()
@@ -138,8 +138,8 @@ static void BM_C_SpscQueueThroughput(benchmark::State &state)
         throw std::runtime_error("could not init q: " + std::string(aeron_errmsg()));
     }
 
-    std::atomic<bool> start{false};
-    std::atomic<bool> running{true};
+    std::atomic<bool> start{ false };
+    std::atomic<bool> running{ true };
     std::int64_t totalMsgs = 0;
 
     std::thread t(
@@ -158,7 +158,7 @@ static void BM_C_SpscQueueThroughput(benchmark::State &state)
 
     while (!start)
     {
-        ; // Spin
+        std::this_thread::yield();
     }
 
     while (state.KeepRunning())
