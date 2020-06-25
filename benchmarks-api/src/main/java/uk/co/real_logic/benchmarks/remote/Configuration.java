@@ -144,16 +144,16 @@ public final class Configuration
      */
     public static final String OUTPUT_DIRECTORY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.outputDirectory";
 
-    private static final String API_PACKAGE_NAME_PREFIX;
-    private static final String TOP_LEVEL_PACKAGE_NAME_PREFIX;
+    /**
+     * Name of the required system property to configure the output file name prefix.
+     */
+    public static final String OUTPUT_FILE_NAME_PREFIX_PROP_NAME =
+        "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix";
+
     private static final MessageDigest SHA256;
 
     static
     {
-        final String className = Configuration.class.getName();
-        final int lastDotIndex = className.lastIndexOf('.');
-        API_PACKAGE_NAME_PREFIX = className.substring(0, lastDotIndex + 1);
-        TOP_LEVEL_PACKAGE_NAME_PREFIX = className.substring(0, className.lastIndexOf('.', lastDotIndex - 1) + 1);
         try
         {
             SHA256 = MessageDigest.getInstance("SHA-256");
@@ -186,7 +186,7 @@ public final class Configuration
         this.sendIdleStrategy = requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
         this.receiveIdleStrategy = requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
-        outputFileNamePrefix = computeFileNamePrefix(builder.systemProperties);
+        outputFileNamePrefix = computeFileNamePrefix(builder.outputFileNamePrefix, builder.systemProperties);
     }
 
     /**
@@ -313,28 +313,18 @@ public final class Configuration
             "\n}";
     }
 
-    private String computeFileNamePrefix(final Properties systemProperties)
+    private String computeFileNamePrefix(final String outputFileNamePrefix, final Properties systemProperties)
     {
-        final String messageTransceiverClassName = messageTransceiverClass.getName();
-        final StringBuilder builder = new StringBuilder(messageTransceiverClassName.length() + 98);
-
-        if (messageTransceiverClassName.startsWith(TOP_LEVEL_PACKAGE_NAME_PREFIX))
+        final String prefix = null != outputFileNamePrefix ? outputFileNamePrefix.trim() : "";
+        if (prefix.isEmpty())
         {
-            if (messageTransceiverClassName.startsWith(API_PACKAGE_NAME_PREFIX))
-            {
-                builder.append(messageTransceiverClassName.substring(API_PACKAGE_NAME_PREFIX.length()));
-            }
-            else
-            {
-                builder.append(messageTransceiverClassName.substring(TOP_LEVEL_PACKAGE_NAME_PREFIX.length()));
-            }
-        }
-        else
-        {
-            builder.append(messageTransceiverClassName);
+            throw new IllegalArgumentException("Output file name prefix cannot be empty!");
         }
 
-        builder.append("_").append(numberOfMessages)
+        final StringBuilder builder = new StringBuilder(prefix.length() + 98);
+
+        builder.append(prefix)
+            .append("_").append(numberOfMessages)
             .append("_").append(batchSize)
             .append("_").append(messageLength)
             .append("_").append(computeSha256(systemProperties));
@@ -356,6 +346,7 @@ public final class Configuration
         private IdleStrategy receiveIdleStrategy = NoOpIdleStrategy.INSTANCE;
         private Path outputDirectory = Paths.get("results");
         private Properties systemProperties = System.getProperties();
+        private String outputFileNamePrefix;
 
         /**
          * Set the number of warm up iterations.
@@ -467,6 +458,18 @@ public final class Configuration
         }
 
         /**
+         * Set the output file name prefix.
+         *
+         * @param outputFileNamePrefix output directory.
+         * @return this for a fluent API.
+         */
+        public Builder outputFileNamePrefix(final String outputFileNamePrefix)
+        {
+            this.outputFileNamePrefix = outputFileNamePrefix;
+            return this;
+        }
+
+        /**
          * Create a new instance of the {@link Configuration} class from this builder.
          *
          * @return a {@link Configuration} instance
@@ -528,7 +531,8 @@ public final class Configuration
 
         builder
             .numberOfMessages(intProperty(MESSAGES_PROP_NAME))
-            .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class));
+            .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class))
+            .outputFileNamePrefix(getPropertyValue(OUTPUT_FILE_NAME_PREFIX_PROP_NAME));
 
         return builder.build();
     }

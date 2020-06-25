@@ -28,10 +28,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.other.benchmark.impl.MessageTransceiverFromAnotherPackage;
-import uk.co.real_logic.benchmarks.remote.nested.NestedMessageTransceiver;
-import uk.co.real_logic.benchmarks.remotesibling.MessageTransceiverFromSiblingPackage;
-import uk.co.real_logic.benchmarks.remotesibling.nested.NestedSiblingMessageTransceiver;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -83,6 +79,7 @@ class ConfigurationTest
             .warmUpIterations(0)
             .numberOfMessages(1_000)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputFileNamePrefix("test")
             .build();
 
         assertEquals(0, configuration.warmUpIterations());
@@ -266,70 +263,34 @@ class ConfigurationTest
     }
 
     @Test
-    void outputFileNamePrefixShortensTransceiverClassNameByRemovingCommonPackagePrefix(final @TempDir Path tempDir)
+    void throwsIllegalArgumentExceptionIfOutputFileNamePrefixIsEmpty(final @TempDir Path tempDir) throws IOException
+    {
+        final Builder builder = new Builder()
+            .numberOfMessages(4)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(tempDir)
+            .outputFileNamePrefix(" \t");
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
+
+        assertEquals("Output file name prefix cannot be empty!", ex.getMessage());
+    }
+
+    @Test
+    void outputFileNamePrefixAddsHashValueComputedFromSystemProperties(final @TempDir Path tempDir)
     {
         final Configuration configuration = new Builder()
             .numberOfMessages(12)
             .batchSize(3)
             .messageLength(75)
-            .messageTransceiverClass(NestedMessageTransceiver.class)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
+            .outputFileNamePrefix("the-prefix")
             .systemProperties(props("E", "m*c^2"))
             .build();
 
         assertEquals(
-            "nested.NestedMessageTransceiver_12_3_75_a2bea3034417edbbe21e66dd9b68d43fe53e287e04a1f6b119741ab9e0729f60",
-            configuration.outputFileNamePrefix());
-    }
-
-    @Test
-    void outputFileNamePrefixShortensTransceiverClassNameByRemovingCommonPackagePrefixWhenInSiblingPackage(
-        final @TempDir Path tempDir)
-    {
-        final Configuration configuration = new Builder()
-            .numberOfMessages(8)
-            .batchSize(4)
-            .messageLength(25)
-            .messageTransceiverClass(MessageTransceiverFromSiblingPackage.class)
-            .outputDirectory(tempDir)
-            .systemProperties(new Properties())
-            .build();
-
-        assertEquals("remotesibling.MessageTransceiverFromSiblingPackage_8_4_25" +
-            "_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            configuration.outputFileNamePrefix());
-    }
-
-    @Test
-    void outputFileNamePrefixShortensTransceiverClassNameByRemovingCommonPackagePrefixWhenNestedInSiblingPackage(
-        final @TempDir Path tempDir)
-    {
-        final Configuration configuration = new Builder()
-            .numberOfMessages(100)
-            .batchSize(1)
-            .messageLength(100)
-            .messageTransceiverClass(NestedSiblingMessageTransceiver.class)
-            .outputDirectory(tempDir)
-            .systemProperties(new Properties())
-            .build();
-
-        assertEquals("remotesibling.nested.NestedSiblingMessageTransceiver_100_1_100" +
-            "_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            configuration.outputFileNamePrefix());
-    }
-
-    @Test
-    void outputFileNamePrefixUsesFullyQualifiedTransceiverClassNameWhenFromAnotherPackage(final @TempDir Path tempDir)
-    {
-        final Configuration configuration = new Builder()
-            .numberOfMessages(100)
-            .messageTransceiverClass(MessageTransceiverFromAnotherPackage.class)
-            .outputDirectory(tempDir)
-            .systemProperties(props("x", "5"))
-            .build();
-
-        assertEquals(MessageTransceiverFromAnotherPackage.class.getName() + "_100_1_16" +
-            "_29f2394eb92d0ded9247b8d7188ebddae3e13c71ebcf939302619b29604486b0",
+            "the-prefix_12_3_75_a2bea3034417edbbe21e66dd9b68d43fe53e287e04a1f6b119741ab9e0729f60",
             configuration.outputFileNamePrefix());
     }
 
@@ -339,6 +300,7 @@ class ConfigurationTest
         final Configuration configuration = new Builder()
             .numberOfMessages(123)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputFileNamePrefix("defaults")
             .systemProperties(new Properties())
             .build();
 
@@ -351,7 +313,7 @@ class ConfigurationTest
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
-        assertEquals("InMemoryMessageTransceiver_123_" + DEFAULT_BATCH_SIZE + "_" + MIN_MESSAGE_LENGTH +
+        assertEquals("defaults_123_" + DEFAULT_BATCH_SIZE + "_" + MIN_MESSAGE_LENGTH +
             "_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             configuration.outputFileNamePrefix());
     }
@@ -370,6 +332,7 @@ class ConfigurationTest
             .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .outputDirectory(outputDirectory)
+            .outputFileNamePrefix("explicit-opts")
             .build();
 
         assertEquals(3, configuration.warmUpIterations());
@@ -381,6 +344,7 @@ class ConfigurationTest
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
         assertSame(YieldingIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
+        assertTrue(configuration.outputFileNamePrefix().startsWith("explicit-opts"));
     }
 
     @Test
@@ -395,6 +359,7 @@ class ConfigurationTest
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
             .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .outputFileNamePrefix("my-file")
             .systemProperties(props("java", "25"))
             .build();
 
@@ -408,7 +373,7 @@ class ConfigurationTest
             "\n    sendIdleStrategy=NoOpIdleStrategy{alias=noop}" +
             "\n    receiveIdleStrategy=YieldingIdleStrategy{alias=yield}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
-            "\n    outputFileNamePrefix=InMemoryMessageTransceiver_777_2_64" +
+            "\n    outputFileNamePrefix=my-file_777_2_64" +
             "_73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
             "\n}",
             configuration.toString());
@@ -491,6 +456,7 @@ class ConfigurationTest
         setProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME, BusySpinIdleStrategy.class.getName());
         final Path outputDirectory = tempDir.resolve("my-output-dir-prop");
         setProperty(OUTPUT_DIRECTORY_PROP_NAME, outputDirectory.toAbsolutePath().toString());
+        setProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "my-out-file");
 
         final Configuration configuration = fromSystemProperties();
 
@@ -503,6 +469,7 @@ class ConfigurationTest
         assertTrue(configuration.sendIdleStrategy() instanceof YieldingIdleStrategy);
         assertTrue(configuration.receiveIdleStrategy() instanceof BusySpinIdleStrategy);
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
+        assertTrue(configuration.outputFileNamePrefix().startsWith("my-out-file"));
     }
 
     @ParameterizedTest

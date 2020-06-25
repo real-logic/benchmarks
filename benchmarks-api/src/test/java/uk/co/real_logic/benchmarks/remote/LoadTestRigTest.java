@@ -57,6 +57,7 @@ class LoadTestRigTest
             .sendIdleStrategy(senderIdleStrategy)
             .receiveIdleStrategy(receiverIdleStrategy)
             .outputDirectory(tempDir)
+            .outputFileNamePrefix("test")
             .build();
     }
 
@@ -82,6 +83,7 @@ class LoadTestRigTest
             .sendIdleStrategy(senderIdleStrategy)
             .receiveIdleStrategy(receiverIdleStrategy)
             .outputDirectory(configuration.outputDirectory())
+            .outputFileNamePrefix("test")
             .build();
 
         final LoadTestRig loadTestRig = new LoadTestRig(
@@ -186,6 +188,7 @@ class LoadTestRigTest
             .sendIdleStrategy(senderIdleStrategy)
             .receiveIdleStrategy(receiverIdleStrategy)
             .outputDirectory(configuration.outputDirectory())
+            .outputFileNamePrefix("test")
             .build();
 
         final LoadTestRig loadTestRig = new LoadTestRig(
@@ -223,6 +226,7 @@ class LoadTestRigTest
             .sendIdleStrategy(senderIdleStrategy)
             .receiveIdleStrategy(receiverIdleStrategy)
             .outputDirectory(configuration.outputDirectory())
+            .outputFileNamePrefix("test")
             .build();
 
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong()))
@@ -289,6 +293,7 @@ class LoadTestRigTest
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
+            .outputFileNamePrefix("test")
             .build();
 
         final LoadTestRig loadTestRig = new LoadTestRig(
@@ -331,6 +336,7 @@ class LoadTestRigTest
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
+            .outputFileNamePrefix("test")
             .build();
 
         final LoadTestRig loadTestRig = new LoadTestRig(
@@ -368,6 +374,7 @@ class LoadTestRigTest
             .warmUpIterations(0)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
+            .outputFileNamePrefix("test")
             .build();
         final LoadTestRig testRig = new LoadTestRig(configuration);
 

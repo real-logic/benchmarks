@@ -73,6 +73,7 @@ abstract class AbstractGrpcTest
                 .numberOfMessages(numberOfMessages)
                 .messageLength(messageLength)
                 .messageTransceiverClass(messageTransceiver.getClass())
+                .outputFileNamePrefix("grpc")
                 .build();
 
             messageTransceiver.init(configuration);
