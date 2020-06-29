@@ -15,23 +15,16 @@
 ## limitations under the License.
 ##
 
-export AERON_DIR_DELETE_ON_START="1"
-export AERON_DIR_DELETE_ON_SHUTDOWN="1"
-export AERON_TERM_BUFFER_SPARSE_FILE="0"
-export AERON_SOCKET_SO_RCVBUF="2m"
-export AERON_SOCKET_SO_SNDBUF="2m"
-export AERON_RCV_INITIAL_WINDOW_LENGTH="2m"
-export AERON_PUBLICATION_TERM_WINDOW_LENGTH="2m"
-export AERON_THREADING_MODE="DEDICATED"
-export AERON_CONDUCTOR_IDLE_STRATEGY="spin"
-export AERON_SENDER_IDLE_STRATEGY="noop"
-export AERON_RECEIVER_IDLE_STRATEGY="noop"
+AERON_DIR=$(pwd)
 
 if [ -z "${AERON_MD}" ];
 then
-   AERON_MD=../../cppbuild/Release/aeron-prefix/src/aeron-build/binaries/aeronmd
+   AERON_MD=${AERON_DIR}/../../cppbuild/Release/aeron-prefix/src/aeron-build/binaries/aeronmd
 fi
 
 echo "Starting C MediaDriver '${AERON_MD}' ..."
 
-${AERON_MD}
+${AERON_MD} \
+  "${AERON_DIR}/low-latency-driver.properties" \
+  "${AERON_DIR}/benchmark.properties" \
+  "$@"
