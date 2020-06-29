@@ -63,16 +63,23 @@ do
 done
 
 EXISTING_JVM_OPTS=$JVM_OPTS
+RUNS=5
 
-for messages in "${NUMBER_OF_MESSAGES[@]}"; do
-  for burst in "${BURST_SIZE[@]}"; do
-    for length in "${MESSAGE_LENGTH[@]}"; do
+for messages in "${NUMBER_OF_MESSAGES[@]}"
+do
+  for burst in "${BURST_SIZE[@]}"
+  do
+    for length in "${MESSAGE_LENGTH[@]}"
+    do
+      for (( i=1; i<=${RUNS}; i++ ))
+      do
         JVM_OPTS="$EXISTING_JVM_OPTS \
         -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${OUTPUT_FILE_NAME} \
         -Duk.co.real_logic.benchmarks.remote.messages=${messages# } \
         -Duk.co.real_logic.benchmarks.remote.batchSize=${burst# } \
         -Duk.co.real_logic.benchmarks.remote.messageLength=${length# }" \
          ${COMMAND}
+      done
     done
   done
 done
