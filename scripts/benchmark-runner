@@ -18,8 +18,11 @@
 ##
 # Example: Invoking `benchmark-runner` from the `scripts/aeron` directory.
 #
-# $ ../benchmark-runner --messages "1000, 5000" --burst-size "1, 10" --message-length "16, 200, 1400" "./echo-client"
+# $ ../benchmark-runner --output-file "echo-test" --messages "1000, 5000" --burst-size "1, 10" --message-length "16, 200, 1400" "./echo-client"
 ##
+
+RUNS=5
+ITERATIONS=10
 
 while [[ $# -gt 0 ]]
 do
@@ -51,8 +54,13 @@ do
       shift
       shift
       ;;
+    -i|--iterations)
+      ITERATIONS="$2";
+      shift
+      shift
+      ;;
     -h|--help)
-      echo "$0 (-o|--output-file) \"\$output-file-name-prefix\" (-m|--messages) \"\$number-of-messages-csv\" (-b|--burst-size) \"\$burst-size-csv\" (-l|--message-length) \"\$message-length-in-bytes-csv\" \"\$command \$cmdArg1 ...\""
+      echo "$0 (-o|--output-file) \"\$output-file-name-prefix\" (-m|--messages) \"\$number-of-messages-csv\" (-b|--burst-size) \"\$burst-size-csv\" (-l|--message-length) \"\$message-length-in-bytes-csv\" [(-i|--iterations) \$iterations] \"\$command \$cmdArg1 ...\""
       exit
       ;;
     *)
@@ -63,7 +71,6 @@ do
 done
 
 EXISTING_JVM_OPTS=$JVM_OPTS
-RUNS=5
 
 for messages in "${NUMBER_OF_MESSAGES[@]}"
 do
@@ -71,10 +78,11 @@ do
   do
     for length in "${MESSAGE_LENGTH[@]}"
     do
-      for (( i=1; i<=${RUNS}; i++ ))
+      for (( r=1; r<=${RUNS}; r++ ))
       do
         JVM_OPTS="$EXISTING_JVM_OPTS \
         -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${OUTPUT_FILE_NAME} \
+        -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
         -Duk.co.real_logic.benchmarks.remote.messages=${messages# } \
         -Duk.co.real_logic.benchmarks.remote.batchSize=${burst# } \
         -Duk.co.real_logic.benchmarks.remote.messageLength=${length# }" \
