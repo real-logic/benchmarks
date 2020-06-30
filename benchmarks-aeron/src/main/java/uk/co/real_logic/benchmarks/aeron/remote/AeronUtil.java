@@ -64,6 +64,7 @@ final class AeronUtil
         "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
     static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentLimit";
     static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idleStrategy";
+    static final String RECONNECT_IF_IMAGE_CLOSED = "uk.co.real_logic.benchmarks.aeron.remote.reconnetIfImageClosed";
 
     private AeronUtil()
     {
@@ -125,6 +126,11 @@ final class AeronUtil
         {
             throw new IllegalArgumentException("Invalid IdleStrategy: " + idleStrategy, ex);
         }
+    }
+
+    static boolean reconnectIfImageClosed()
+    {
+        return getBoolean(RECONNECT_IF_IMAGE_CLOSED);
     }
 
     static MediaDriver launchEmbeddedMediaDriverIfConfigured()
@@ -210,17 +216,31 @@ final class AeronUtil
                     .commit();
             };
 
-        final Image image = subscription.imageAtIndex(0);
         final int fragmentLimit = fragmentLimit();
+        final boolean reconnectIfImageClosed = reconnectIfImageClosed();
+
+        Image image = subscription.imageAtIndex(0);
 
         while (true)
         {
             final int fragmentsRead = image.poll(dataHandler, fragmentLimit);
             if (0 == fragmentsRead)
             {
-                if (image.isClosed() || !running.get())
+                if (!running.get())
                 {
                     break;
+                }
+                else if (image.isClosed())
+                {
+                    if (!reconnectIfImageClosed)
+                    {
+                        break;
+                    }
+                    while (!subscription.isConnected() || !publication.isConnected())
+                    {
+                        yieldUninterruptedly();
+                    }
+                    image = subscription.imageAtIndex(0);
                 }
             }
 

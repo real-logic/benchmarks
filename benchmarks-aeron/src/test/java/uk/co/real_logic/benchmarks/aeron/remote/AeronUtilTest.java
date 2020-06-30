@@ -40,6 +40,7 @@ class AeronUtilTest
         assertFalse(embeddedMediaDriver());
         assertEquals(10, fragmentLimit());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
+        assertFalse(reconnectIfImageClosed());
     }
 
     @Test
@@ -63,6 +64,7 @@ class AeronUtilTest
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
         setProperty(FRAGMENT_LIMIT_PROP_NAME, valueOf(fragmentLimit));
         setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
+        setProperty(RECONNECT_IF_IMAGE_CLOSED, "true");
 
         try
         {
@@ -73,6 +75,7 @@ class AeronUtilTest
             assertEquals(embeddedMediaDriver, embeddedMediaDriver());
             assertEquals(fragmentLimit, fragmentLimit());
             assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
+            assertTrue(reconnectIfImageClosed());
         }
         finally
         {
@@ -85,6 +88,7 @@ class AeronUtilTest
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
             clearProperty(FRAGMENT_LIMIT_PROP_NAME);
             clearProperty(IDLE_STRATEGY);
+            clearProperty(RECONNECT_IF_IMAGE_CLOSED);
         }
     }
 }
