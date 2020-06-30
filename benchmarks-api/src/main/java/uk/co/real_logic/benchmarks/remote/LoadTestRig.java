@@ -91,7 +91,7 @@ public final class LoadTestRig
             {
                 if (CHECKSUM != checksum)
                 {
-                    throw new IllegalStateException("Invalid message checksum!");
+                    throw new IllegalStateException("Invalid checksum: expected=" + CHECKSUM + ", actual=" + checksum);
                 }
                 histogram.recordValue(clock.nanoTime() - timestamp);
                 receivedMessages++;
