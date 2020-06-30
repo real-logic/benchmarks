@@ -427,6 +427,7 @@ class ConfigurationTest
     @Test
     void fromSystemPropertiesDefaults()
     {
+        setProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "test-out-prefix");
         setProperty(MESSAGES_PROP_NAME, "42");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
 
@@ -492,7 +493,13 @@ class ConfigurationTest
                 "75d681403cdcc3fd6ada5cdb383e18c7af2862b750ddc670895471cae30bf76b"),
             arguments(props("X", "-100", "B", "2", "z", "0", "\uD83E\uDD37", "42", "y", "2.25"),
                 "8bc055dc860587df8a9234d6721e6a482dd707e204f29895eee08aeeaaaf4432"),
-            arguments(props("\uD83E\uDD37", "42", "B", "2", "X", "-100", "y", "2.25", "z", "0"),
+            arguments(props(
+                "\uD83E\uDD37", "42",
+                "B", "2",
+                "X", "-100",
+                "y", "2.25",
+                "z", "0",
+                OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "ignore me"),
                 "8bc055dc860587df8a9234d6721e6a482dd707e204f29895eee08aeeaaaf4432"));
     }
 
@@ -518,7 +525,8 @@ class ConfigurationTest
             MESSAGE_TRANSCEIVER_PROP_NAME,
             SEND_IDLE_STRATEGY_PROP_NAME,
             RECEIVE_IDLE_STRATEGY_PROP_NAME,
-            OUTPUT_DIRECTORY_PROP_NAME)
+            OUTPUT_DIRECTORY_PROP_NAME,
+            OUTPUT_FILE_NAME_PREFIX_PROP_NAME)
             .forEach(System::clearProperty);
     }
 

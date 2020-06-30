@@ -696,7 +696,11 @@ public final class Configuration
         final TreeMap<String, String> sortedProperties = new TreeMap<>();
         for (final Map.Entry<Object, Object> entry : properties.entrySet())
         {
-            sortedProperties.put((String)entry.getKey(), (String)entry.getValue());
+            final String key = (String)entry.getKey();
+            if (!OUTPUT_FILE_NAME_PREFIX_PROP_NAME.equals(key))
+            {
+                sortedProperties.put(key, (String)entry.getValue());
+            }
         }
 
         return toHex(computeSha256Digest(sortedProperties));
