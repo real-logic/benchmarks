@@ -54,10 +54,11 @@ import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.laun
 
 final class AeronUtil
 {
-    static final String SEND_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.send.channel";
-    static final String SEND_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.send.streamId";
-    static final String RECEIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.receive.channel";
-    static final String RECEIVE_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.receive.streamId";
+    static final String DESTINATION_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.destination.channel";
+    static final String DESTINATION_STREAM_ID_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.destination.streamId";
+    static final String SOURCE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channel";
+    static final String SOURCE_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.streamId";
     static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
     static final String ARCHIVE_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.streamId";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
@@ -70,24 +71,24 @@ final class AeronUtil
     {
     }
 
-    static String sendChannel()
+    static String destinationChannel()
     {
-        return getProperty(SEND_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13333");
+        return getProperty(DESTINATION_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13333");
     }
 
-    static int sendStreamId()
+    static int destinationStreamId()
     {
-        return getInteger(SEND_STREAM_ID_PROP_NAME, 1_000_000_000);
+        return getInteger(DESTINATION_STREAM_ID_PROP_NAME, 1_000_000_000);
     }
 
-    static String receiveChannel()
+    static String sourceChannel()
     {
-        return getProperty(RECEIVE_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13334");
+        return getProperty(SOURCE_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13334");
     }
 
-    static int receiveStreamId()
+    static int sourceStreamId()
     {
-        return getInteger(RECEIVE_STREAM_ID_PROP_NAME, 1_000_000_001);
+        return getInteger(SOURCE_STREAM_ID_PROP_NAME, 1_000_000_001);
     }
 
     static String archiveChannel()

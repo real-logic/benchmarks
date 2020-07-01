@@ -60,7 +60,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
 
         final Aeron aeron = aeronArchive.context().aeron();
 
-        subscription = aeron.addSubscription(sendChannel(), sendStreamId());
+        subscription = aeron.addSubscription(destinationChannel(), destinationStreamId());
 
         final String archiveChannel = archiveChannel();
         final int archiveStreamId = archiveStreamId();

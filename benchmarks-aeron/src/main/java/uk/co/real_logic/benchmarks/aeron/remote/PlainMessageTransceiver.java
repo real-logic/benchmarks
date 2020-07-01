@@ -68,8 +68,8 @@ public final class PlainMessageTransceiver extends MessageTransceiverProducerSta
 
     public void init(final Configuration configuration)
     {
-        publication = aeron.addExclusivePublication(sendChannel(), sendStreamId());
-        subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
+        publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
+        subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
 
         while (!subscription.isConnected() || !publication.isConnected())
         {

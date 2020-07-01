@@ -31,10 +31,10 @@ class AeronUtilTest
     @Test
     void defaultConfigurationValues()
     {
-        assertEquals("aeron:udp?endpoint=localhost:13333", sendChannel());
-        assertEquals(1_000_000_000, sendStreamId());
-        assertEquals("aeron:udp?endpoint=localhost:13334", receiveChannel());
-        assertEquals(1_000_000_001, receiveStreamId());
+        assertEquals("aeron:udp?endpoint=localhost:13333", destinationChannel());
+        assertEquals(1_000_000_000, destinationStreamId());
+        assertEquals("aeron:udp?endpoint=localhost:13334", sourceChannel());
+        assertEquals(1_000_000_001, sourceStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_000_002, archiveStreamId());
         assertFalse(embeddedMediaDriver());
@@ -46,19 +46,19 @@ class AeronUtilTest
     @Test
     void explicitConfigurationValues()
     {
-        final String senderChannel = "sender";
-        final int senderStreamId = Integer.MIN_VALUE;
-        final String receiverChannel = "receiver";
-        final int receiverStreamId = Integer.MAX_VALUE;
+        final String destChannel = "sender";
+        final int destStreamId = Integer.MIN_VALUE;
+        final String srcChannel = "receiver";
+        final int srcStreamId = Integer.MAX_VALUE;
         final String archiveChannel = "archive";
         final int archiveStreamId = 777;
         final boolean embeddedMediaDriver = true;
         final int fragmentLimit = 111;
 
-        setProperty(SEND_CHANNEL_PROP_NAME, senderChannel);
-        setProperty(SEND_STREAM_ID_PROP_NAME, valueOf(senderStreamId));
-        setProperty(RECEIVE_CHANNEL_PROP_NAME, receiverChannel);
-        setProperty(RECEIVE_STREAM_ID_PROP_NAME, valueOf(receiverStreamId));
+        setProperty(DESTINATION_CHANNEL_PROP_NAME, destChannel);
+        setProperty(DESTINATION_STREAM_ID_PROP_NAME, valueOf(destStreamId));
+        setProperty(SOURCE_CHANNEL_PROP_NAME, srcChannel);
+        setProperty(SOURCE_STREAM_ID_PROP_NAME, valueOf(srcStreamId));
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, archiveChannel);
         setProperty(ARCHIVE_STREAM_ID_PROP_NAME, valueOf(archiveStreamId));
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
@@ -68,10 +68,10 @@ class AeronUtilTest
 
         try
         {
-            assertEquals(senderChannel, sendChannel());
-            assertEquals(senderStreamId, sendStreamId());
-            assertEquals(receiverChannel, receiveChannel());
-            assertEquals(receiverStreamId, receiveStreamId());
+            assertEquals(destChannel, destinationChannel());
+            assertEquals(destStreamId, destinationStreamId());
+            assertEquals(srcChannel, sourceChannel());
+            assertEquals(srcStreamId, sourceStreamId());
             assertEquals(embeddedMediaDriver, embeddedMediaDriver());
             assertEquals(fragmentLimit, fragmentLimit());
             assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
@@ -79,10 +79,10 @@ class AeronUtilTest
         }
         finally
         {
-            clearProperty(SEND_CHANNEL_PROP_NAME);
-            clearProperty(SEND_STREAM_ID_PROP_NAME);
-            clearProperty(RECEIVE_CHANNEL_PROP_NAME);
-            clearProperty(RECEIVE_STREAM_ID_PROP_NAME);
+            clearProperty(DESTINATION_CHANNEL_PROP_NAME);
+            clearProperty(DESTINATION_STREAM_ID_PROP_NAME);
+            clearProperty(SOURCE_CHANNEL_PROP_NAME);
+            clearProperty(SOURCE_STREAM_ID_PROP_NAME);
             clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
             clearProperty(ARCHIVE_STREAM_ID_PROP_NAME);
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);

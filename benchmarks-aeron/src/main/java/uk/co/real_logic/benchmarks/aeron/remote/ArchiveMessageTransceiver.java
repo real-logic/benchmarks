@@ -72,7 +72,7 @@ public final class ArchiveMessageTransceiver extends MessageTransceiverProducerS
     {
         final Aeron aeron = aeronArchive.context().aeron();
 
-        subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
+        subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
 
         final String archiveChannel = archiveChannel();
         final int archiveStreamId = archiveStreamId();

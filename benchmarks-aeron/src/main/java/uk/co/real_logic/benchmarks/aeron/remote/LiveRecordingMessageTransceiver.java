@@ -87,10 +87,10 @@ public final class LiveRecordingMessageTransceiver
 
         fragmentLimit = fragmentLimit();
 
-        subscription = aeron.addSubscription(receiveChannel(), receiveStreamId());
+        subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
 
-        final String sendChannel = sendChannel();
-        final int sendStreamId = sendStreamId();
+        final String sendChannel = destinationChannel();
+        final int sendStreamId = destinationStreamId();
         publication = aeron.addExclusivePublication(sendChannel, sendStreamId);
 
         recordingEventsSubscription = aeron.addSubscription(
