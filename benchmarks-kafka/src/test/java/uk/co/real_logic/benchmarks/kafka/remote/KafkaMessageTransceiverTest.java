@@ -31,8 +31,10 @@ import java.nio.file.Path;
 
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
+import static java.util.Arrays.sort;
 import static org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG;
 import static org.apache.kafka.clients.CommonClientConfigs.SECURITY_PROTOCOL_CONFIG;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.PARTITION_SELECTION_PROP_NAME;
 import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
@@ -125,16 +127,16 @@ class KafkaMessageTransceiverTest
         messageTransceiver.init(configuration);
         try
         {
-            int sent = 0;
+            int count = 0;
             long timestamp = 12345;
-            while (sent < numberOfMessages || receivedTimestamps.size() < numberOfMessages)
+            while (count < numberOfMessages || receivedTimestamps.size() < numberOfMessages)
             {
                 if (Thread.interrupted())
                 {
                     throw new IllegalStateException("run cancelled!");
                 }
 
-                if (sent < numberOfMessages)
+                if (count < numberOfMessages)
                 {
                     int sentBatch = 0;
                     do
@@ -150,7 +152,7 @@ class KafkaMessageTransceiverTest
                         sentTimestamps.add(timestamp);
                     }
 
-                    sent += burstSize;
+                    count += burstSize;
                     timestamp++;
                 }
 
@@ -160,7 +162,10 @@ class KafkaMessageTransceiverTest
                 }
             }
 
-            assertEquals(sentTimestamps, receivedTimestamps);
+            final long[] sent = sentTimestamps.toLongArray();
+            final long[] received = receivedTimestamps.toLongArray();
+            sort(received);
+            assertArrayEquals(sent, received);
         }
         finally
         {
