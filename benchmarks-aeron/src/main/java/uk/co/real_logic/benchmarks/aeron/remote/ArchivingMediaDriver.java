@@ -24,8 +24,8 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 final class ArchivingMediaDriver implements AutoCloseable
 {
-    private final MediaDriver driver;
-    private final Archive archive;
+    final MediaDriver driver;
+    final Archive archive;
 
     private ArchivingMediaDriver(final MediaDriver driver, final Archive archive)
     {
@@ -36,11 +36,6 @@ final class ArchivingMediaDriver implements AutoCloseable
     public void close() throws Exception
     {
         CloseHelper.closeAll(archive, driver);
-        archive.context().deleteDirectory();
-        if (null != driver)
-        {
-            driver.context().deleteDirectory();
-        }
     }
 
     static ArchivingMediaDriver launchArchiveWithStandaloneDriver()

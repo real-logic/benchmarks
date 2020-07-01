@@ -73,10 +73,6 @@ public final class EchoNode implements AutoCloseable, Runnable
         if (ownsAeronClient)
         {
             closeAll(aeron, mediaDriver);
-            if (null != mediaDriver)
-            {
-                mediaDriver.context().deleteAeronDirectory();
-            }
         }
     }
 

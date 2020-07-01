@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.driver.MediaDriver;
 import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +30,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DELETE_ON_START_PROP_NAME;
 import static io.aeron.archive.client.AeronArchive.Configuration.RECORDING_EVENTS_ENABLED_PROP_NAME;
+import static io.aeron.driver.Configuration.DIR_DELETE_ON_SHUTDOWN_PROP_NAME;
+import static io.aeron.driver.Configuration.DIR_DELETE_ON_START_PROP_NAME;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.CloseHelper.closeAll;
@@ -50,6 +52,9 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     {
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
         setProperty(RECORDING_EVENTS_ENABLED_PROP_NAME, "false");
+        setProperty(DIR_DELETE_ON_START_PROP_NAME, "true");
+        setProperty(DIR_DELETE_ON_SHUTDOWN_PROP_NAME, "true");
+        setProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME, "true");
     }
 
     @AfterEach
@@ -57,6 +62,9 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     {
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
         clearProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
+        clearProperty(DIR_DELETE_ON_START_PROP_NAME);
+        clearProperty(DIR_DELETE_ON_SHUTDOWN_PROP_NAME);
+        clearProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME);
     }
 
     @Timeout(30)
@@ -185,9 +193,9 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
         {
             closeAll(client, driver);
 
-            if (driver instanceof MediaDriver)
+            if (driver instanceof ArchivingMediaDriver)
             {
-                ((MediaDriver)driver).context().deleteAeronDirectory();
+                ((ArchivingMediaDriver)driver).archive.context().deleteDirectory();
             }
         }
 

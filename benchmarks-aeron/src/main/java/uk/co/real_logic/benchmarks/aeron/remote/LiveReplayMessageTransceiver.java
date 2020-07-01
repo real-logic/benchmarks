@@ -107,10 +107,6 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiverProduc
         if (ownsArchiveClient)
         {
             closeAll(aeronArchive, mediaDriver);
-            if (null != mediaDriver)
-            {
-                mediaDriver.context().deleteAeronDirectory();
-            }
         }
     }
 
