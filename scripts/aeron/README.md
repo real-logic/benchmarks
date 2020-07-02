@@ -17,21 +17,14 @@ Four different test scenarios are covered:
 
 Start the scripts in the following order: `echo-server` --> `echo-client`.
 
-2. Live replay from local archive
-
-The client publishes messages over IPC to local publication and has a recording running using local archive. The server
-replays messages over UDP from that archive and pipes them back to the client.
-
-Start the scripts in the following order: `live-replay-local-archive-client` --> `live-replay-local-archive-server`.
-
-3. Live replay from remote archive
+2. Live replay from remote archive
 
 The client publishes messages to the server using publication over UDP. The server pipes those messages into a local IPC
 publication which records them into an archive. Finally, the client subscribes to the replay from that archive over UDP.
 
 Start the scripts in the following order: `live-replay-remote-archive-server` --> `live-replay-remote-archive-client`.
 
-4. Live recording, i.e. client runs records a publication into local archive
+3. Live recording, i.e. client runs records a publication into local archive
 
 The client publishes messages over UDP to the server. It also has a recording running on that publication using local
 archive. The server simply pipes message back. Finally, the client performs a controlled poll on the subscription from
