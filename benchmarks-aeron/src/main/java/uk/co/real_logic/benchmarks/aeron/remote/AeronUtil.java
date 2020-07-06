@@ -19,14 +19,10 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
-import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
@@ -44,7 +40,6 @@ import static io.aeron.archive.status.RecordingPos.getRecordingId;
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Class.forName;
 import static java.lang.Integer.getInteger;
-import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -164,39 +159,6 @@ final class AeronUtil
         return getRecordingId(counters, counterId);
     }
 
-    static long findLastRecordingId(
-        final AeronArchive aeronArchive, final String recordingChannel, final int recordingStreamId)
-    {
-        final MutableLong lastRecordingId = new MutableLong();
-
-        final RecordingDescriptorConsumer consumer =
-            (controlSessionId,
-            correlationId,
-            recordingId,
-            startTimestamp,
-            stopTimestamp,
-            startPosition,
-            stopPosition,
-            initialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity) -> lastRecordingId.set(recordingId);
-
-        int foundCount;
-        do
-        {
-            foundCount = aeronArchive.listRecordingsForUri(0, 1, recordingChannel, recordingStreamId, consumer);
-        }
-        while (0 == foundCount);
-
-        return lastRecordingId.get();
-    }
-
     static void pipeMessages(
         final Subscription subscription, final ExclusivePublication publication, final AtomicBoolean running)
     {
@@ -291,22 +253,6 @@ final class AeronUtil
         if (Thread.currentThread().isInterrupted())
         {
             throw new IllegalStateException("Interrupted while yielding...");
-        }
-    }
-
-    static long replayFullRecording(
-        final AeronArchive aeronArchive, final long recordingId, final String replayChannel, final int replayStreamId)
-    {
-        while (true)
-        {
-            try
-            {
-                return aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
-            }
-            catch (final ArchiveException ignore)
-            {
-                yieldUninterruptedly();
-            }
         }
     }
 
