@@ -4,4 +4,5 @@ include (
     'benchmarks-api',
     'benchmarks-aeron',
     'benchmarks-grpc',
+    'benchmarks-kafka',
     'benchmarks-all')
