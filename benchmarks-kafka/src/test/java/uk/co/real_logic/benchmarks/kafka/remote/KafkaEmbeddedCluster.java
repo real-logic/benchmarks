@@ -44,8 +44,8 @@ class KafkaEmbeddedCluster implements AutoCloseable
     private final NIOServerCnxnFactory factory;
     private final ZooKeeperServer zookeeper;
 
-    KafkaEmbeddedCluster(
-        final int zookeeperPort, final int httpPort, final int sslPort, final Path tempDir) throws Exception
+    KafkaEmbeddedCluster(final int zookeeperPort, final int httpPort, final int sslPort, final Path tempDir)
+        throws Exception
     {
         this.port = httpPort;
 
@@ -73,6 +73,7 @@ class KafkaEmbeddedCluster implements AutoCloseable
     private KafkaConfig createConfig(final int httpPort, final int sslPort, final int zookeeperPort)
     {
         final Properties props = new Properties();
+
         props.put(KafkaConfig$.MODULE$.LogDirProp(), logDir.toAbsolutePath().toString());
         props.put(KafkaConfig$.MODULE$.ZkConnectProp(), "localhost:" + zookeeperPort);
         props.put(KafkaConfig$.MODULE$.ZkSessionTimeoutMsProp(), valueOf(10000));
@@ -103,10 +104,11 @@ class KafkaEmbeddedCluster implements AutoCloseable
         props.put(KafkaConfig$.MODULE$.LogCleanerThreadsProp(), valueOf(1));
         props.put(KafkaConfig$.MODULE$.NumRecoveryThreadsPerDataDirProp(), valueOf(1));
         props.put(KafkaConfig$.MODULE$.NumReplicaAlterLogDirsThreadsProp(), valueOf(1));
+
         return new KafkaConfig(props);
     }
 
-    public void close() throws Exception
+    public void close()
     {
         closeAll(
             () ->

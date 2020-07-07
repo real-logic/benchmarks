@@ -50,6 +50,7 @@ final class KafkaConfig
     public static Map<String, String> getCommonProperties()
     {
         final Map<String, String> commonProps = new HashMap<>();
+
         commonProps.put(BOOTSTRAP_SERVERS_CONFIG, getBrokerList());
         putIfProvided(commonProps, SECURITY_PROTOCOL_CONFIG);
         putIfProvided(commonProps, SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG);
@@ -61,31 +62,32 @@ final class KafkaConfig
         putIfProvided(commonProps, RECEIVE_BUFFER_CONFIG);
         putIfProvided(commonProps, REQUEST_TIMEOUT_MS_CONFIG);
         putIfProvided(commonProps, DEFAULT_API_TIMEOUT_MS_CONFIG);
-        commonProps.put(METRICS_SAMPLE_WINDOW_MS_CONFIG,
-            getProperty(METRICS_SAMPLE_WINDOW_MS_CONFIG, "30000"));
-        commonProps.put(METRICS_NUM_SAMPLES_CONFIG,
-            getProperty(METRICS_NUM_SAMPLES_CONFIG, "2"));
-        commonProps.put(METRICS_RECORDING_LEVEL_CONFIG,
+        commonProps.put(METRICS_SAMPLE_WINDOW_MS_CONFIG, getProperty(METRICS_SAMPLE_WINDOW_MS_CONFIG, "30000"));
+        commonProps.put(METRICS_NUM_SAMPLES_CONFIG, getProperty(METRICS_NUM_SAMPLES_CONFIG, "2"));
+        commonProps.put(
+            METRICS_RECORDING_LEVEL_CONFIG,
             getProperty(METRICS_RECORDING_LEVEL_CONFIG, Sensor.RecordingLevel.INFO.toString()));
-        commonProps.put(METRIC_REPORTER_CLASSES_CONFIG,
-            getProperty(METRIC_REPORTER_CLASSES_CONFIG, ""));
+        commonProps.put(METRIC_REPORTER_CLASSES_CONFIG, getProperty(METRIC_REPORTER_CLASSES_CONFIG, ""));
+
         return commonProps;
     }
 
     public static Map<String, String> getTopicConfig()
     {
         final Map<String, String> topicConfig = new HashMap<>();
+
         topicConfig.put(TopicConfig.COMPRESSION_TYPE_CONFIG, "producer");
-        topicConfig.put(TopicConfig.PREALLOCATE_CONFIG,
-            getProperty(TopicConfig.PREALLOCATE_CONFIG, "false"));
+        topicConfig.put(TopicConfig.PREALLOCATE_CONFIG, getProperty(TopicConfig.PREALLOCATE_CONFIG, "false"));
         putIfProvided(topicConfig, TopicConfig.FLUSH_MESSAGES_INTERVAL_CONFIG);
         putIfProvided(topicConfig, TopicConfig.FLUSH_MS_CONFIG);
+
         return topicConfig;
     }
 
     public static Properties getConsumerConfig()
     {
         final Properties config = new Properties();
+
         config.putAll(getCommonProperties());
         config.put(ConsumerConfig.GROUP_ID_CONFIG, "benchmark-consumer");
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
@@ -96,14 +98,15 @@ final class KafkaConfig
             getProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest"));
         config.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG,
             getProperty(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, "0")); //ensure we have no temporal batching
-        config.put(ConsumerConfig.CHECK_CRCS_CONFIG,
-            getProperty(ConsumerConfig.CHECK_CRCS_CONFIG, "false"));
+        config.put(ConsumerConfig.CHECK_CRCS_CONFIG, getProperty(ConsumerConfig.CHECK_CRCS_CONFIG, "false"));
+
         return config;
     }
 
     public static Properties getProducerConfig()
     {
         final Properties config = new Properties();
+
         config.putAll(getCommonProperties());
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
@@ -121,6 +124,7 @@ final class KafkaConfig
             getProperty(ProducerConfig.BUFFER_MEMORY_CONFIG, Long.toString(32 * 1024 * 1024)));
         config.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,
             getProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, Long.toString(1024 * 1024)));
+
         return config;
     }
 
@@ -134,9 +138,10 @@ final class KafkaConfig
         final String brokerList = getProperty(BOOTSTRAP_SERVERS_CONFIG);
         if (isEmpty(brokerList))
         {
-            throw new IllegalStateException("broker list is empty, please set the '" + BOOTSTRAP_SERVERS_CONFIG +
-                "' system property");
+            throw new IllegalStateException(
+                "broker list is empty, please set the '" + BOOTSTRAP_SERVERS_CONFIG + "' system property");
         }
+
         return brokerList;
     }
 

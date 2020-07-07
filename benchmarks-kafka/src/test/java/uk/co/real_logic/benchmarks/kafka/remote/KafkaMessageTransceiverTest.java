@@ -50,7 +50,7 @@ class KafkaMessageTransceiverTest
     }
 
     @AfterAll
-    static void afterAll(final @TempDir Path tempDir) throws Exception
+    static void afterAll(final @TempDir Path tempDir)
     {
         cluster.close();
     }
@@ -88,6 +88,7 @@ class KafkaMessageTransceiverTest
             certificatesPath.resolve("client.keystore").toString());
         setProperty(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, "PKCS12");
         setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, "client");
+
         try
         {
             test(50, 1024, 1);
@@ -125,6 +126,7 @@ class KafkaMessageTransceiverTest
             .build();
 
         messageTransceiver.init(configuration);
+
         try
         {
             int count = 0;
@@ -164,6 +166,7 @@ class KafkaMessageTransceiverTest
 
             final long[] sent = sentTimestamps.toLongArray();
             final long[] received = receivedTimestamps.toLongArray();
+
             sort(received);
             assertArrayEquals(sent, received);
         }

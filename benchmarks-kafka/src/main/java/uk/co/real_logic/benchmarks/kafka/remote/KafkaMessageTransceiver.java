@@ -52,20 +52,21 @@ abstract class KafkaMessageTransceiverProducerState extends MessageTransceiver
 {
     final AtomicInteger outstandingRequests = new AtomicInteger();
     final AtomicReference<Throwable> error = new AtomicReference<>();
-    final Callback sendCallback = (metadata, exception) ->
-    {
-        if (null != exception)
+    final Callback sendCallback =
+        (metadata, exception) ->
         {
-            if (!error.compareAndSet(null, exception))
+            if (null != exception)
             {
-                error.get().addSuppressed(exception);
+                if (!error.compareAndSet(null, exception))
+                {
+                    error.get().addSuppressed(exception);
+                }
             }
-        }
-        else
-        {
-            outstandingRequests.getAndDecrement();
-        }
-    };
+            else
+            {
+                outstandingRequests.getAndDecrement();
+            }
+        };
     KafkaProducer<byte[], byte[]> producer;
     String topic;
     Integer partition;
@@ -96,7 +97,7 @@ abstract class KafkaMessageTransceiverProducerStatePadding extends KafkaMessageT
 public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStatePadding
 {
     private static final int NUM_PARTITIONS = 2;
-    private static final short REPLICATION_FACTOR = (short)1;
+    private static final short REPLICATION_FACTOR = 1;
     private static final Duration POLL_TIMEOUT = ofMillis(100);
 
     private KafkaConsumer<byte[], byte[]> consumer;
@@ -107,7 +108,7 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
         super(messageRecorder);
     }
 
-    public void init(final Configuration configuration) throws Exception
+    public void init(final Configuration configuration)
     {
         createTopic(configuration);
         initConsumer();
@@ -115,24 +116,25 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
 
         partition = null;
         key = null;
-        final PartitionSelection partitionSelection = getPartitionSelection();
-        switch (partitionSelection)
+        switch (getPartitionSelection())
         {
             case EXPLICIT:
                 partition = 0;
                 break;
+
             case BY_KEY:
                 final byte[] bytes = new byte[32];
                 ThreadLocalRandom.current().nextBytes(bytes);
                 key = bytes;
                 break;
         }
+
         final int payloadLength = configuration.messageLength();
         sendBuffer = new UnsafeBuffer(new byte[payloadLength]);
         receiverBuffer = new UnsafeBuffer(new byte[payloadLength]);
     }
 
-    private void createTopic(final Configuration configuration) throws Exception
+    private void createTopic(final Configuration configuration)
     {
         final String outputFileNamePrefix = configuration.outputFileNamePrefix();
         topic = "benchmark-" + outputFileNamePrefix.substring(outputFileNamePrefix.lastIndexOf('_') + 1);
@@ -169,7 +171,7 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
         maxInFlightMessages = getMaxInFlightMessages();
     }
 
-    public void destroy() throws Exception
+    public void destroy()
     {
         consumer.commitSync();
         closeAll(producer, consumer);
@@ -196,6 +198,7 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
         final Callback callback = this.sendCallback;
         final KafkaProducer<byte[], byte[]> producer = this.producer;
         int sent = 0;
+
         for (int i = 0; i < numberOfMessages; i++)
         {
             if (maxInFlightMessages == outstandingRequests.getAndIncrement())
@@ -203,6 +206,7 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
                 outstandingRequests.getAndDecrement();
                 break;
             }
+
             final ProducerRecord<byte[], byte[]> record = new ProducerRecord<>(
                 topic,
                 partition,
@@ -211,6 +215,7 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
             producer.send(record, callback);
             sent++;
         }
+
         return sent;
     }
 
@@ -228,17 +233,17 @@ public class KafkaMessageTransceiver extends KafkaMessageTransceiverProducerStat
         {
             return future.get();
         }
-        catch (final InterruptedException e)
+        catch (final InterruptedException ex)
         {
             Thread.currentThread().interrupt();
-            LangUtil.rethrowUnchecked(e);
-            return null;
+            LangUtil.rethrowUnchecked(ex);
         }
-        catch (final ExecutionException e)
+        catch (final ExecutionException ex)
         {
-            LangUtil.rethrowUnchecked(e);
-            return null;
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return null;
     }
 
     public void receive()

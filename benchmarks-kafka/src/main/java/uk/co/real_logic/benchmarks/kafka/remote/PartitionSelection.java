@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.kafka.remote;
 
 import java.util.Map;
 
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Stream.of;
 
@@ -28,17 +29,17 @@ public enum PartitionSelection
     EXPLICIT,
 
     /**
-     * Indicates that a paritition should be selected using a key from the record.
+     * Indicates that a partition should be selected using a key from the record.
      */
     BY_KEY,
 
     /**
-     * Indicates that a paritition should be selected at random by the broker when message arrives.
+     * Indicates that a partition should be selected at random by the broker when message arrives.
      */
     RANDOM;
 
     private static final Map<String, PartitionSelection> BY_NAME = of(values())
-        .collect(toMap(Enum::name, x -> x));
+        .collect(toMap(Enum::name, identity()));
 
     public static PartitionSelection byName(final String name)
     {
