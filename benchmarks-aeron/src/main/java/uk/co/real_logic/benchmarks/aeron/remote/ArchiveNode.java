@@ -70,17 +70,12 @@ public final class ArchiveNode implements AutoCloseable, Runnable
         final String channel = addSessionId(archiveChannel, publicationSessionId);
         aeronArchive.startRecording(channel, archiveStreamId, LOCAL, true);
 
-        while (!publication.isConnected())
+        while (!subscription.isConnected() || !publication.isConnected())
         {
             yieldUninterruptedly();
         }
 
         awaitRecordingStart(aeron, publicationSessionId);
-
-        while (!subscription.isConnected())
-        {
-            yieldUninterruptedly();
-        }
     }
 
     public void run()

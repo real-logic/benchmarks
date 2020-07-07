@@ -20,9 +20,7 @@ import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
@@ -81,11 +79,11 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiverProduc
             yieldUninterruptedly();
         }
 
-        final long recordingId = findLastRecordingId(archiveChannel(), archiveStreamId());
+        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStreamId());
 
         final String replayChannel = sourceChannel();
         final int replayStreamId = sourceStreamId();
-        final long replaySessionId = startReplay(recordingId, replayChannel, replayStreamId);
+        final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
         subscription = aeron.addSubscription(channel, replayStreamId);
@@ -124,44 +122,5 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiverProduc
         {
             throw new IllegalStateException("image closed unexpectedly");
         }
-    }
-
-    private long findLastRecordingId(
-        final String recordingChannel, final int recordingStreamId)
-    {
-        final MutableLong lastRecordingId = new MutableLong();
-
-        final RecordingDescriptorConsumer consumer =
-            (controlSessionId,
-            correlationId,
-            recordingId,
-            startTimestamp,
-            stopTimestamp,
-            startPosition,
-            stopPosition,
-            initialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity) -> lastRecordingId.set(recordingId);
-
-        int foundCount;
-        do
-        {
-            foundCount = aeronArchive.listRecordingsForUri(0, 1, recordingChannel, recordingStreamId, consumer);
-        }
-        while (0 == foundCount);
-
-        return lastRecordingId.get();
-    }
-
-    private long startReplay(final long recordingId, final String replayChannel, final int replayStreamId)
-    {
-        final long recordingPosition = aeronArchive.getRecordingPosition(recordingId);
-        return aeronArchive.startReplay(recordingId, recordingPosition, Long.MAX_VALUE, replayChannel, replayStreamId);
     }
 }
