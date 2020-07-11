@@ -23,6 +23,9 @@
 
 RUNS=5
 ITERATIONS=10
+NUMBER_OF_MESSAGES=10000
+BURST_SIZE=1
+MESSAGE_LENGTH=16
 
 while [[ $# -gt 0 ]]
 do
@@ -59,8 +62,13 @@ do
       shift
       shift
       ;;
+    -r|--runs)
+      RUNS="$2";
+      shift
+      shift
+      ;;
     -h|--help)
-      echo "$0 (-o|--output-file) \"\$output-file-name-prefix\" (-m|--messages) \"\$number-of-messages-csv\" (-b|--burst-size) \"\$burst-size-csv\" (-l|--message-length) \"\$message-length-in-bytes-csv\" [(-i|--iterations) \$iterations] \"\$command \$cmdArg1 ...\""
+      echo "$0 (-o|--output-file) \"\$output-file-name-prefix\" [(-m|--messages) \"\$number-of-messages-csv\"] [(-b|--burst-size) \"\$burst-size-csv\"] [(-l|--message-length) \"\$message-length-in-bytes-csv\"] [(-i|--iterations) \$iterations] [(-r|--runs) \$runs] \"\$command \$cmdArg1 ...\""
       exit
       ;;
     *)
@@ -69,6 +77,12 @@ do
       ;;
   esac
 done
+
+if [ -z "$OUTPUT_FILE_NAME" ];
+then
+  echo 'Flag -o/--output-file is required'
+  exit -1
+fi
 
 EXISTING_JVM_OPTS=$JVM_OPTS
 
@@ -80,6 +94,8 @@ do
     do
       for (( r=1; r<=${RUNS}; r++ ))
       do
+        echo -e 'Run #'$r' ...\n'
+
         JVM_OPTS="$EXISTING_JVM_OPTS \
         -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${OUTPUT_FILE_NAME} \
         -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
