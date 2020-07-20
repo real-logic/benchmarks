@@ -16,13 +16,10 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-set GRPC_DIR=%CD%
+set "DIR=%~dp0"
 
-pushd %GRPC_DIR%\..
-
-call run-java.cmd -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.grpc.remote.StreamingMessageTransceiver ^
+call "%DIR%\..\run-java.cmd" ^
+  -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.grpc.remote.StreamingMessageTransceiver ^
   uk.co.real_logic.benchmarks.remote.LoadTestRig ^
-  "%GRPC_DIR%\benchmark.properties" ^
+  "%DIR%\benchmark.properties" ^
   %*
-
-popd

@@ -16,15 +16,15 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-set AERON_DIR=%CD%
+set "DIR=%~dp0"
 
 if [%AERON_MD%] == [] (
-  set "AERON_MD=%AERON_DIR%\..\..\cppbuild\Release\aeron-prefix\src\aeron-build\binaries\aeronmd"
+  set "AERON_MD=%DIR%\..\..\cppbuild\Release\aeron-prefix\src\aeron-build\binaries\aeronmd"
 )
 
 echo "Starting C MediaDriver '%AERON_MD%' ..."
 
 %AERON_MD% ^
-  "%AERON_DIR%\low-latency-driver.properties" ^
-  "%AERON_DIR%\benchmark.properties" ^
+  "%DIR%\low-latency-driver.properties" ^
+  "%DIR%\benchmark.properties" ^
   %*

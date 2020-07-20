@@ -14,10 +14,10 @@
 :: limitations under the License.
 ::
 
-set AERON_DIR=%CD%
+set "DIR=%~dp0"
 
-pushd %AERON_DIR%\..
-
-call run-java.cmd io.aeron.driver.MediaDriver "%AERON_DIR%\low-latency-driver.properties" %*
-
-popd
+call "%DIR%\..\run-java.cmd" ^
+  io.aeron.driver.MediaDriver ^
+  "%DIR%\low-latency-driver.properties" ^
+  "%DIR%\benchmark.properties" ^
+  %*

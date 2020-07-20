@@ -14,15 +14,12 @@
 :: limitations under the License.
 ::
 
-set AERON_DIR=%CD%
+set "DIR=%~dp0"
 
-pushd %AERON_DIR%\..
-
-call run-java.cmd -Daeron.archive.recording.events.enabled=false ^
+call "%DIR%\..\run-java.cmd" ^
+  -Daeron.archive.recording.events.enabled=false ^
   uk.co.real_logic.benchmarks.aeron.remote.ArchiveNode ^
-  "%AERON_DIR%\low-latency-driver.properties" ^
-  "%AERON_DIR%\low-latency-archive.properties" ^
-  "%AERON_DIR%\benchmark.properties" ^
+  "%DIR%\low-latency-driver.properties" ^
+  "%DIR%\low-latency-archive.properties" ^
+  "%DIR%\benchmark.properties" ^
   %*
-
-popd

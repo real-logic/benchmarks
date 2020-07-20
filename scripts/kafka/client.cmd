@@ -16,15 +16,12 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-set KAFKA_DIR=%CD%
+set "DIR=%~dp0"
 
-pushd %KAFKA_DIR%\..
-
-call run-java.cmd -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.kafka.remote.KafkaMessageTransceiver ^
-  "-Dlog4j.configuration=file:%KAFKA_DIR%\log4j.properties" ^
+call "%DIR%\..\run-java.cmd" ^
+  -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.kafka.remote.KafkaMessageTransceiver ^
+  "-Dlog4j.configuration=file:%DIR%\log4j.properties" ^
   uk.co.real_logic.benchmarks.remote.LoadTestRig ^
-  "%KAFKA_DIR%\client.properties" ^
-  "%KAFKA_DIR%\benchmark.properties" ^
+  "%DIR%\client.properties" ^
+  "%DIR%\benchmark.properties" ^
   %*
-
-popd

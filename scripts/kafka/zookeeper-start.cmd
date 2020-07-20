@@ -16,14 +16,11 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-set KAFKA_DIR=%CD%
+set "DIR=%~dp0"
 
-pushd %KAFKA_DIR%\..
-
-call run-java.cmd -Xms1g -Xmx1g ^
-  "-Dlog4j.configuration=file:%KAFKA_DIR%\log4j.properties" ^
+call "%DIR%\..\run-java.cmd" ^
+  -Xms1g -Xmx1g ^
+  "-Dlog4j.configuration=file:%DIR%\log4j.properties" ^
   org.apache.zookeeper.server.quorum.QuorumPeerMain ^
-  "%KAFKA_DIR%\zookeeper.properties" ^
+  "%DIR%\zookeeper.properties" ^
   %*
-
-popd

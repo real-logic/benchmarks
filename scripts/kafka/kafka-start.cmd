@@ -16,13 +16,10 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-set KAFKA_DIR=%CD%
+set "DIR=%~dp0"
 
-pushd %KAFKA_DIR%\..
-
-call run-java.cmd "-Dlog4j.configuration=file:%KAFKA_DIR%\log4j.properties" ^
+call "%DIR%\..\run-java.cmd" ^
+  "-Dlog4j.configuration=file:%DIR%\log4j.properties" ^
   kafka.Kafka ^
-  "%KAFKA_DIR%\server.properties" ^
+  "%DIR%\server.properties" ^
   %*
-
-popd

@@ -16,18 +16,20 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
+set "DIR=%~dp0"
+
 "%JAVA_HOME%\bin\java" ^
-    -cp ..\benchmarks-all\build\libs\benchmarks.jar ^
-    -XX:+UnlockExperimentalVMOptions ^
-    -XX:+TrustFinalNonStaticFields ^
-    -XX:+UnlockDiagnosticVMOptions ^
-    -XX:GuaranteedSafepointInterval=300000 ^
-    -XX:BiasedLockingStartupDelay=0 ^
-    -XX:+UseParallelOldGC ^
-    -Xms8G ^
-    -Xmx8G ^
-    -XX:+AlwaysPreTouch ^
-    -XX:MaxMetaspaceSize=1G ^
-    -XX:ReservedCodeCacheSize=1G ^
-    %JVM_OPTS% ^
-    %*
+  -cp "%DIR%\..\benchmarks-all\build\libs\benchmarks.jar" ^
+  -XX:+UnlockExperimentalVMOptions ^
+  -XX:+TrustFinalNonStaticFields ^
+  -XX:+UnlockDiagnosticVMOptions ^
+  -XX:GuaranteedSafepointInterval=300000 ^
+  -XX:BiasedLockingStartupDelay=0 ^
+  -XX:+UseParallelOldGC ^
+  -Xms8G ^
+  -Xmx8G ^
+  -XX:+AlwaysPreTouch ^
+  -XX:MaxMetaspaceSize=1G ^
+  -XX:ReservedCodeCacheSize=1G ^
+  %JVM_OPTS% ^
+  %*

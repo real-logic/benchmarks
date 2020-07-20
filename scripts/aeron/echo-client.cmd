@@ -16,14 +16,11 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-set AERON_DIR=%CD%
+set "DIR=%~dp0"
 
-pushd %AERON_DIR%\..
-
-call run-java.cmd -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.aeron.remote.PlainMessageTransceiver ^
+call "%DIR%\..\run-java.cmd" ^
+  -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.aeron.remote.PlainMessageTransceiver ^
   uk.co.real_logic.benchmarks.remote.LoadTestRig ^
-  "%AERON_DIR%\low-latency-driver.properties" ^
-  "%AERON_DIR%\benchmark.properties" ^
+  "%DIR%\low-latency-driver.properties" ^
+  "%DIR%\benchmark.properties" ^
   %*
-
-popd

@@ -15,16 +15,16 @@
 ## limitations under the License.
 ##
 
-AERON_DIR=$(pwd)
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 if [ -z "${AERON_MD}" ];
 then
-   AERON_MD=${AERON_DIR}/../../cppbuild/Release/aeron-prefix/src/aeron-build/binaries/aeronmd
+   AERON_MD=${DIR}/../../cppbuild/Release/aeron-prefix/src/aeron-build/binaries/aeronmd
 fi
 
 echo "Starting C MediaDriver '${AERON_MD}' ..."
 
 ${AERON_MD} \
-  "${AERON_DIR}/low-latency-driver.properties" \
-  "${AERON_DIR}/benchmark.properties" \
+  "${DIR}/low-latency-driver.properties" \
+  "${DIR}/benchmark.properties" \
   "$@"
