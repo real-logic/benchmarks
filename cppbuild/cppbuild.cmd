@@ -1,53 +1,48 @@
 @if "%DEBUG%" == "" @echo off
 setlocal EnableDelayedExpansion
 
-set SOURCE_DIR=%CD%
-set BUILD_DIR=%CD%\cppbuild\Release
-set ZLIB_ZIP=%CD%\cppbuild\zlib1211.zip
-set BUILD_DIR=%CD%\cppbuild\Release
+set "DIR=%~dp0"
+set SOURCE_DIR=%DIR%
+set BUILD_DIR=%DIR%\cppbuild\Release
+set ZLIB_ZIP=%DIR%\cppbuild\zlib1211.zip
+set BUILD_DIR=%DIR%\cppbuild\Release
 set ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build
 set ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64
 set EXTRA_CMAKE_ARGS=
 
-for %%o in (%*) do (
-
-    if "%%o"=="--help" (
-        echo %0 cppbuild.cmd [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--aeron-git-url $GIT_URL] [--aeron-git-tag $GIT_TAG]
+:loop
+if not "%1"=="" (
+    if "%1"=="--help" (
+        echo %0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--aeron-git-url $GIT_URL] [--aeron-git-tag $GIT_TAG]
         exit /b
     )
 
-    if "%%o"=="--c-warnings-as-errors" (
+    if "%1"=="--c-warnings-as-errors" (
         set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DC_WARNINGS_AS_ERRORS=ON
     )
 
-    if "%%o"=="--cxx-warnings-as-errors" (
+    if "%1"=="--cxx-warnings-as-errors" (
         set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCXX_WARNINGS_AS_ERRORS=ON
     )
 
-    if "%%o"=="--debug-build" (
+    if "%1"=="--debug-build" (
         set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCMAKE_BUILD_TYPE=Debug
     )
 
-    if defined gitUrl (
-        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_URL=%%o
-        set "gitUrl="
+    if "%1"=="--aeron-git-url" (
+        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_URL=%2
+        shift
     )
 
-    if "%%o"=="--aeron-git-url" (
-        set gitUrl=1
+    if "%1"=="--aeron-git-tag" (
+        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_TAG=%2
     )
 
-    if defined gitTag (
-        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_TAG=%%o
-        set "gitTag="
-    )
-
-    if "%%o"=="--aeron-git-tag" (
-        set gitTag=1
-    )
+    shift
+    goto :loop
 )
 
-call %CD%\cppbuild\vs-helper.cmd
+call %DIR%\cppbuild\vs-helper.cmd
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
