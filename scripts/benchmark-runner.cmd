@@ -90,25 +90,24 @@ if [%OUTPUT_FILE_NAME%] == [] (
   exit -1
 )
 
-set "EXISTING_JVM_OPTS=%JVM_OPTS%"
-
-for %%messages in (%NUMBER_OF_MESSAGES%) do (
-  for %%burst in (%BURST_SIZE%) do (
-    for %%length in (%MESSAGE_LENGTH%) do (
+for %%m in (%NUMBER_OF_MESSAGES%) do (
+  for %%b in (%BURST_SIZE%) do (
+    for %%l in (%MESSAGE_LENGTH%) do (
       for /L %%r in (1,1,%RUNS%) do (
-        echo -e 'Run #'%%r' ...\r\n'
+        echo Run #%%r ...
 
-        set "JVM_OPTS=%EXISTING_JVM_OPTS ^
-        -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=%OUTPUT_FILE_NAME% ^
+        setlocal
+
+        set JVM_OPTS=-Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=%OUTPUT_FILE_NAME% ^
         -Duk.co.real_logic.benchmarks.remote.iterations=%ITERATIONS% ^
-        -Duk.co.real_logic.benchmarks.remote.messages=%%messages ^
-        -Duk.co.real_logic.benchmarks.remote.batchSize=%%burst ^
-        -Duk.co.real_logic.benchmarks.remote.messageLength=%%length"
-         
+        -Duk.co.real_logic.benchmarks.remote.messages=%%m ^
+        -Duk.co.real_logic.benchmarks.remote.batchSize=%%b ^
+        -Duk.co.real_logic.benchmarks.remote.messageLength=%%l
+
          %COMMAND%
+
+         endlocal
       )
     )
   )
 )
-
-set "JVM_OPTS=%EXISTING_JVM_OPTS%"
