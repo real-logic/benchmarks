@@ -2,12 +2,11 @@
 setlocal EnableDelayedExpansion
 
 set "DIR=%~dp0"
-set SOURCE_DIR=%DIR%
-set BUILD_DIR=%DIR%\cppbuild\Release
-set ZLIB_ZIP=%DIR%\cppbuild\zlib1211.zip
-set BUILD_DIR=%DIR%\cppbuild\Release
-set ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build
-set ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64
+set "SOURCE_DIR=%DIR%\.."
+set "BUILD_DIR=%DIR%\Release"
+set "ZLIB_ZIP=%DIR%\zlib1211.zip"
+set "ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build"
+set "ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64"
 set EXTRA_CMAKE_ARGS=
 
 :loop
@@ -38,11 +37,15 @@ if not "%1"=="" (
         set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_TAG=%2
     )
 
+    if "%1"=="--aeron-git-sha" (
+        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_SHA=%2
+    )
+
     shift
     goto :loop
 )
 
-call %DIR%\cppbuild\vs-helper.cmd
+call "%DIR%\vs-helper.cmd"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
