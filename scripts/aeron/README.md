@@ -77,5 +77,5 @@ uk.co.real_logic.benchmarks.remote.messages=1000000
 ```
 export JVM_OPTS="${JVM_OPTS} -Duk.co.real_logic.benchmarks.aeron.remote.fragmentLimit=25"
 
-./run-with-embedded-media-driver ./live-replay-remote-archive-client
+./live-replay-client
 ```
