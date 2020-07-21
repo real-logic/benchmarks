@@ -7,7 +7,7 @@ set "BUILD_DIR=%DIR%\Release"
 set "ZLIB_ZIP=%DIR%\zlib1211.zip"
 set "ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build"
 set "ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64"
-set EXTRA_CMAKE_ARGS=
+set "EXTRA_CMAKE_ARGS="
 
 :loop
 if not "%1"=="" (
