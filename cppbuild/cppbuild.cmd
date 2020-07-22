@@ -36,10 +36,12 @@ if not "%1"=="" (
 
     if "%1"=="--aeron-git-tag" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_TAG=%2"
+        shift
     )
 
     if "%1"=="--aeron-git-sha" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_SHA=%2"
+        shift
     )
 
     shift
