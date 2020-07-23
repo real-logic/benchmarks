@@ -94,7 +94,9 @@ do
     do
       for (( r=1; r<=${RUNS}; r++ ))
       do
-        echo -e 'Run #'$r' ...\n'
+        echo -e '\n#######################'
+        echo 'Benchmark run #'$r' ...'
+        echo '#######################'
 
         JVM_OPTS="$EXISTING_JVM_OPTS \
         -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${OUTPUT_FILE_NAME} \

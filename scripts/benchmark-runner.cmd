@@ -94,7 +94,10 @@ for %%m in (%NUMBER_OF_MESSAGES%) do (
   for %%b in (%BURST_SIZE%) do (
     for %%l in (%MESSAGE_LENGTH%) do (
       for /L %%r in (1,1,%RUNS%) do (
-        echo Run #%%r ...
+        echo
+        echo #####################
+        echo Benchmark run #%%r ...
+        echo #####################
 
         setlocal
 
