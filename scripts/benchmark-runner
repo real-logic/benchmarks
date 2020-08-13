@@ -81,7 +81,7 @@ done
 if [ -z "$OUTPUT_FILE_NAME" ];
 then
   echo 'Flag -o/--output-file is required'
-  exit -1
+  exit 1
 fi
 
 EXISTING_JVM_OPTS=$JVM_OPTS
@@ -92,7 +92,7 @@ do
   do
     for length in "${MESSAGE_LENGTH[@]}"
     do
-      for (( r=1; r<=${RUNS}; r++ ))
+      for (( r=1; r<=RUNS; r++ ))
       do
         echo -e '\n#######################'
         echo 'Benchmark run #'$r' ...'
