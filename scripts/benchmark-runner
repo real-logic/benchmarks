@@ -18,14 +18,14 @@
 ##
 # Example: Invoking `benchmark-runner` from the `scripts` directory.
 #
-# $ ./benchmark-runner --output-file "echo-test" --messages "1000, 5000" --burst-size "1, 10" --message-length "16, 200, 1400" "aeron/echo-client"
+# $ ./benchmark-runner --output-file "echo-test" --messages "1000, 5000" --burst-size "1, 10" --message-length "32, 224, 1376" "aeron/echo-client"
 ##
 
 RUNS=5
 ITERATIONS=10
 NUMBER_OF_MESSAGES=10000
 BURST_SIZE=1
-MESSAGE_LENGTH=16
+MESSAGE_LENGTH=32
 
 while [[ $# -gt 0 ]]
 do
