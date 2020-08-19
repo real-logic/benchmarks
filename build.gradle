@@ -40,7 +40,7 @@ def mockitoVersion = '3.5.2'
 def checkstyleVersion = '8.35'
 def grpcVersion = '1.31.1'
 def protobufVersion = '3.13.0'
-def kafkaVersion = '2.5.0'
+def kafkaVersion = '2.6.0'
 def slf4jVersion = '1.7.30'
 
 allprojects {
