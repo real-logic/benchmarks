@@ -4,8 +4,10 @@ Overview
 This directory provides scripts to benchmark Kafka using the `uk.co.real_logic.benchmarks.remote.LoadTestRig`.
 
 All benchmarks require two nodes: "client" and "server", where "client" is the
-`uk.co.real_logic.benchmarks.remote.LoadTestRig` that uses one of the `uk.co.real_logic.benchmarks.remote.MessageTransceiver`
-implementations under the hood, and the "server" is the remote node that pipes messages through.
+`uk.co.real_logic.benchmarks.remote.LoadTestRig` that uses one of the
+`uk.co.real_logic.benchmarks.remote.MessageTransceiver` implementations under the hood, and the "server" is the
+remote node that pipes messages through.
+
 NOTE: It is advised to have "client" and "server" run on different machines.
 
 
@@ -37,19 +39,19 @@ To stop Zookeeper and Kafka use the `stop-all` script.
 
 Configuration
 -------------
-* `uk.co.real_logic.benchmarks.kafka.remote.partition` - parition selection for the client (i.e. 
+* `uk.co.real_logic.benchmarks.kafka.remote.partition` - partition selection for the client (i.e. 
 `uk.co.real_logic.benchmarks.kafka.remote.PartitionSelection`). One of the following:
   * `EXPLICIT` - an explicit partition will be assigned. Default if no other strategy is specified.
   * `BY_KEY` - a partition should be selected using a key from the record.
   * `RANDOM` - a partition should be selected at random by the broker when message arrives.
 * `uk.co.real_logic.benchmarks.kafka.remote.producer.max.in.flight.messages` - max number of the in-flight messages
-that can be sent by producer. Default value is `1000`. When this limit is reached the producer will stop sending
+that can be sent by the producer. Default value is `1000`. When this limit is reached the producer will stop sending
 new messages until the callback is invoked.
 * `bootstrap.servers` - Kafka server location, i.e. host/port pair, e.g. `localhost:13592`.
 * `security.protocol` - security protocol to use. Supported values:
   * `PLAINTEXT` - message will be sent over HTTP.
   * `SSL` - message will be sent over HTTPS.
-* `acks` - number of messsages after which the server must send the acknowledged response.
+* `acks` - number of messages after which the server must send the acknowledged response.
 * `flush.messages` - after how many messages server should flush data to disc. If the property is not specified then
 no explicit flush will be done.
 

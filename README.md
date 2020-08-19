@@ -63,8 +63,8 @@ $ ./benchmark-runner --output-file "echo-test" --messages "1000, 5000" --burst-s
 ```
 Will execute `aeron/echo-client` script for every permutation of the number of messages, burst size and the message 
 length. Each execution will run five times doing ten measurement iterations. 
-The first execution will be with `1000` messages, burst size of `1` and message payload length of `32` bytes. The second
-will have a different message length (i.e. `224` bytes) etc. 
+The first execution will be with `1000` messages, burst size of `1` and message payload length of `32` bytes. The
+second will have a different message length (i.e. `224` bytes) etc. 
 
 #### Aggregating the results
 
