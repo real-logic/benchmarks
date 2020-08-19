@@ -47,7 +47,7 @@ import static org.agrona.Strings.isEmpty;
  * A {@code Configuration} instance can be created using the {@link Builder} class, e.g.:
  * <pre>
  *    final Configuration.Builder builder = new Configuration.Builder();
- *    build.sendRate(1000);
+ *    build.numberOfMessages(1000);
  *    ...
  *    final Configuration configuration = builder.build();
  * </pre>

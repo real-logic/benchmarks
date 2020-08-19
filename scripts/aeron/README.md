@@ -12,29 +12,29 @@ NOTE: It is advised to have "client" and "server" run on different machines.
 Test scenarios
 --------------
 
-Four different test scenarios are covered:
+Three different test scenarios are covered:
 1. Echo benchmark (aka ping-pong)
 
-Start the scripts in the following order: `echo-server` --> `echo-client`.
+    Start the scripts in the following order: `echo-server` --> `echo-client`.
 
-2. Live replay from remote archive
+1. Live replay from remote archive
+    
+    The client publishes messages to the server using publication over UDP. The server pipes those messages into a local IPC
+    publication which records them into an archive. Finally, the client subscribes to the replay from that archive over UDP.
+    
+    Start the scripts in the following order: `live-replay-remote-archive-server` --> `live-replay-remote-archive-client`.
 
-The client publishes messages to the server using publication over UDP. The server pipes those messages into a local IPC
-publication which records them into an archive. Finally, the client subscribes to the replay from that archive over UDP.
-
-Start the scripts in the following order: `live-replay-remote-archive-server` --> `live-replay-remote-archive-client`.
-
-3. Live recording, i.e. client runs records a publication into local archive
-
-The client publishes messages over UDP to the server. It also has a recording running on that publication using local
-archive. The server simply pipes message back. Finally, the client performs a controlled poll on the subscription from
-the server limited by the "recording progress" which it gets via the recording events.
-
-The biggest difference between scenario 2 and this scenario is that there is no replay of recorded message and hence no
-reading from the disc of the saved data but still allowing consumption of those messages that were successfully
-persisted.
-
-Start the scripts in the following order: `echo-server` --> `live-recording-client`.
+1. Live recording, i.e. client runs records a publication into local archive
+    
+    The client publishes messages over UDP to the server. It also has a recording running on that publication using local
+    archive. The server simply pipes message back. Finally, the client performs a controlled poll on the subscription from
+    the server limited by the "recording progress" which it gets via the recording events.
+    
+    The biggest difference between scenario 2 and this scenario is that there is no replay of recorded message and hence no
+    reading from the disc of the saved data but still allowing consumption of those messages that were successfully
+    persisted.
+    
+    Start the scripts in the following order: `echo-server` --> `live-recording-client`.
 
 
 Helper scripts
@@ -59,23 +59,23 @@ Overriding properties
 There are three ways to define and/or override properties:
 
 1. Create a file named `benchmark.properties` and define your properties there.
+    
+    The example below illustrates setting property `uk.co.real_logic.benchmarks.remote.messages` to `1000000`:
+    
+    ```
+    uk.co.real_logic.benchmarks.remote.messages=1000000
+    ```
 
-The example below illustrates setting property `uk.co.real_logic.benchmarks.remote.messages` to `1000000`:
+1. Supply custom properties file(s) as the last argument to a script, e.g.:
+    
+    ```
+    ./echo-client my-custom-props.properties
+    ```
 
-```
-uk.co.real_logic.benchmarks.remote.messages=1000000
-```
-
-2. Supply custom properties file(s) as the last argument to a script, e.g.:
-
-```
-./echo-client my-custom-props.properties
-```
-
-3. Set system properties via `JVM_OPTS` environment variable, e.g.:
-
-```
-export JVM_OPTS="${JVM_OPTS} -Duk.co.real_logic.benchmarks.aeron.remote.fragmentLimit=25"
-
-./live-replay-client
-```
+1. Set system properties via `JVM_OPTS` environment variable, e.g.:
+    
+    ```
+    export JVM_OPTS="${JVM_OPTS} -Duk.co.real_logic.benchmarks.aeron.remote.fragmentLimit=25"
+    
+    ./live-replay-client
+    ```
