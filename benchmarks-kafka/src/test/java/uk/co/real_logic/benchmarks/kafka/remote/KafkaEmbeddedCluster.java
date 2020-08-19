@@ -58,7 +58,9 @@ class KafkaEmbeddedCluster implements AutoCloseable
         Files.createDirectories(dataDir);
         Files.createDirectories(snapshotDir);
 
-        zookeeper = new ZooKeeperServer(dataDir.toFile(), snapshotDir.toFile(), 60000);
+        zookeeper = new ZooKeeperServer(dataDir.toFile(), snapshotDir.toFile(), 30000);
+        zookeeper.setMinSessionTimeout(-1);
+        zookeeper.setMaxSessionTimeout(-1);
         factory = new NIOServerCnxnFactory();
         factory.configure(new InetSocketAddress("localhost", zookeeperPort), 0);
         factory.startup(zookeeper);
@@ -76,7 +78,8 @@ class KafkaEmbeddedCluster implements AutoCloseable
 
         props.put(KafkaConfig$.MODULE$.LogDirProp(), logDir.toAbsolutePath().toString());
         props.put(KafkaConfig$.MODULE$.ZkConnectProp(), "localhost:" + zookeeperPort);
-        props.put(KafkaConfig$.MODULE$.ZkSessionTimeoutMsProp(), valueOf(10000));
+        props.put(KafkaConfig$.MODULE$.ZkSessionTimeoutMsProp(), valueOf(300000));
+        props.put(KafkaConfig$.MODULE$.ZkConnectionTimeoutMsProp(), valueOf(60000));
         props.put(KafkaConfig$.MODULE$.BrokerIdProp(), 0);
         final String listeners = "PLAINTEXT://localhost:" + httpPort + ",SSL://localhost:" + sslPort;
         props.put(KafkaConfig$.MODULE$.ListenersProp(), listeners);
