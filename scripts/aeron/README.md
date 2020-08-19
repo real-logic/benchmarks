@@ -44,7 +44,7 @@ Besides the scripts to run the client and server for each case, there are severa
 - `media-driver` - starts a Java `MediaDriver` as a separate process.
 
 - `c-media-driver` - starts a C `MediaDriver` as a separate process.
-By default it will run locally built Aeron C driver. However, it is possible to specify an executable via the
+A locally built Aeron C driver will run by default. However, it is possible to specify an executable via the
 `AERON_MD` environment variable.
 
 For example:
