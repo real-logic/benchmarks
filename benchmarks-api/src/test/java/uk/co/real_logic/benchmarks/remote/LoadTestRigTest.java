@@ -370,6 +370,7 @@ class LoadTestRigTest
         final Configuration configuration = new Configuration.Builder()
             .iterations(3)
             .numberOfMessages(10_000)
+            .messageLength(32)
             .batchSize(5)
             .warmUpIterations(0)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)

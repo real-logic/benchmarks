@@ -37,7 +37,6 @@ import static org.apache.kafka.clients.CommonClientConfigs.SECURITY_PROTOCOL_CON
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.PARTITION_SELECTION_PROP_NAME;
-import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
 class KafkaMessageTransceiverTest
 {
@@ -58,13 +57,13 @@ class KafkaMessageTransceiverTest
     @Timeout(30)
     @ParameterizedTest
     @EnumSource(PartitionSelection.class)
-    void messageLength16bytes(final PartitionSelection partitionSelection) throws Exception
+    void messageLength32bytes(final PartitionSelection partitionSelection) throws Exception
     {
         setProperty(BOOTSTRAP_SERVERS_CONFIG, "localhost:13501");
         setProperty(PARTITION_SELECTION_PROP_NAME, partitionSelection.name());
         try
         {
-            test(500, MIN_MESSAGE_LENGTH, 10);
+            test(500, 32, 10);
         }
         finally
         {
@@ -75,7 +74,7 @@ class KafkaMessageTransceiverTest
 
     @Timeout(30)
     @Test
-    void messageLength1KB() throws Exception
+    void messageLength1376bytes() throws Exception
     {
         setProperty(BOOTSTRAP_SERVERS_CONFIG, "localhost:13502");
         setProperty(SECURITY_PROTOCOL_CONFIG, "SSL");
@@ -91,7 +90,7 @@ class KafkaMessageTransceiverTest
 
         try
         {
-            test(50, 1024, 1);
+            test(50, 1376, 1);
         }
         finally
         {

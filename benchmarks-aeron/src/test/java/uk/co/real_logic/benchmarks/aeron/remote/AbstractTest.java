@@ -40,7 +40,6 @@ import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
-import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
 abstract class AbstractTest<DRIVER extends AutoCloseable,
     CLIENT extends AutoCloseable,
@@ -69,23 +68,23 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
 
     @Timeout(30)
     @Test
-    void messageLength16bytes(final @TempDir Path tempDir) throws Exception
+    void messageLength32bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(10_000, MIN_MESSAGE_LENGTH, 10, tempDir);
+        test(10_000, 32, 10, tempDir);
     }
 
     @Timeout(30)
     @Test
-    void messageLength200bytes(final @TempDir Path tempDir) throws Exception
+    void messageLength224bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(1000, 200, 5, tempDir);
+        test(1000, 224, 5, tempDir);
     }
 
     @Timeout(30)
     @Test
-    void messageLength1KB(final @TempDir Path tempDir) throws Exception
+    void messageLength1376bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(100, 1024, 1, tempDir);
+        test(100, 1376, 1, tempDir);
     }
 
     @SuppressWarnings("MethodLength")

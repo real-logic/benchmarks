@@ -24,29 +24,28 @@ import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.getServerBuilder;
-import static uk.co.real_logic.benchmarks.remote.Configuration.MIN_MESSAGE_LENGTH;
 
 abstract class AbstractGrpcTest
 {
     @Timeout(30)
     @Test
-    void messageLength16bytes() throws Exception
+    void messageLength32bytes() throws Exception
     {
-        test(10_000, MIN_MESSAGE_LENGTH, 10);
+        test(10_000, 32, 10);
     }
 
     @Timeout(30)
     @Test
-    void messageLength200bytes() throws Exception
+    void messageLength224bytes() throws Exception
     {
-        test(1000, 200, 5);
+        test(1000, 224, 5);
     }
 
     @Timeout(30)
     @Test
-    void messageLength1KB() throws Exception
+    void messageLength1376bytes() throws Exception
     {
-        test(100, 1024, 1);
+        test(100, 1376, 1);
     }
 
     protected abstract MessageTransceiver createMessageTransceiver(MessageRecorder messageRecorder);
