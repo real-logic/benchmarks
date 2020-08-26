@@ -172,6 +172,6 @@ task runAeronJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') 
 }
 
 wrapper {
-    gradleVersion = '6.6'
+    gradleVersion = '6.6.1'
     distributionType = 'ALL'
 }
