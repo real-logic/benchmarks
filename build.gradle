@@ -75,7 +75,10 @@ subprojects {
         }
         options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
         options.fork = true
-        options.forkOptions.javaHome = file("${System.env.JAVA_HOME}")
+        def javaHome = System.env.JAVA_HOME
+        if (javaHome != null) {
+            options.forkOptions.javaHome = file(javaHome)
+        }
         options.encoding = 'UTF-8'
         options.deprecation = true
     }
