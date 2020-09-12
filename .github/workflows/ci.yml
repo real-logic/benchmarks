@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8' ]
+        java: [ '8', '11' ]
         os: ['ubuntu-latest', 'windows-latest']
     steps:
       - name: Checkout code
@@ -72,7 +72,6 @@ jobs:
       - name: Install compiler
         run: |
           sudo apt-get update
-
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild
@@ -105,9 +104,7 @@ jobs:
       - name: Install compiler
         run: |
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
-
           sudo apt-get update
-
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild
