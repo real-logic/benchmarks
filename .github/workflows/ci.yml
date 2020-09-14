@@ -12,6 +12,7 @@ on:
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  CMAKE_VERSION: "3.6.1"
 
 jobs:
   java-build:
@@ -73,8 +74,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
+
+          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
-        run: cppbuild/cppbuild
+        run: cmake --version && cppbuild/cppbuild
 
   cpp-clang-build:
     name: C++ Clang ${{ matrix.version }}
@@ -106,5 +111,9 @@ jobs:
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
+
+          curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+          echo "::add-path::cmake-${CMAKE_VERSION}-Linux-x86_64/bin"
       - name: Build
-        run: cppbuild/cppbuild
+        run: cmake --version && cppbuild/cppbuild
