@@ -33,6 +33,7 @@ repositories {
 def agronaVersion = '1.6.0'
 def aeronVersion = '1.29.0'
 def jmhVersion = '1.25.2'
+def joptVersion = '4.6'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.2'
 def junitVersion = '5.7.0'
@@ -41,6 +42,7 @@ def checkstyleVersion = '8.36'
 def grpcVersion = '1.32.1'
 def protobufVersion = '3.13.0'
 def kafkaVersion = '2.6.0'
+def scalaVersion = '2.13.2'
 def slf4jVersion = '1.7.30'
 def annotationsApiVersion = '6.0.53'
 
@@ -48,6 +50,22 @@ allprojects {
     repositories {
         mavenLocal()
         mavenCentral()
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            failOnVersionConflict()
+
+            force "org.agrona:agrona:${agronaVersion}",
+                  "org.junit.jupiter:junit-jupiter-api:${junitVersion}",
+                  "net.sf.jopt-simple:jopt-simple:${joptVersion}",
+                  "org.slf4j:slf4j-api:${slf4jVersion}",
+                  "org.scala-lang:scala-reflect:${scalaVersion}",
+                  "org.scala-lang:scala-library:${scalaVersion}",
+                  "org.junit.jupiter:junit-jupiter-params:${junitVersion}",
+                  "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+
+        }
     }
 }
 
