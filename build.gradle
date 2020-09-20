@@ -64,7 +64,6 @@ allprojects {
                   "org.scala-lang:scala-library:${scalaVersion}",
                   "org.junit.jupiter:junit-jupiter-params:${junitVersion}",
                   "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
-
         }
     }
 }
@@ -192,6 +191,19 @@ task runAeronJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') 
     '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
     'Aeron',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
+}
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+tasks.named("dependencyUpdates").configure {
+    // Reject all non stable versions
+    rejectVersionIf {
+        isNonStable(it.candidate.version)
+    }
 }
 
 wrapper {
