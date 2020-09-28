@@ -24,6 +24,7 @@ set "DIR=%~dp0"
   -XX:+TrustFinalNonStaticFields ^
   -XX:+UnlockDiagnosticVMOptions ^
   -XX:GuaranteedSafepointInterval=300000 ^
+  -XX:+UseBiasedLocking ^
   -XX:BiasedLockingStartupDelay=0 ^
   -XX:+UseParallelOldGC ^
   -Xms8G ^
