@@ -15,7 +15,6 @@
  */
 
 #include <iostream>
-#include <sstream>
 
 #include "NanoMark.h"
 
@@ -87,7 +86,7 @@ public:
     bool first = true;
 };
 
-NANOMARK(TestFixture, runTest)(std::size_t id)
+NANOMARK(TestFixture, runTest)(std::size_t)
 {
     std::string someSillyString("my silly string");
 }

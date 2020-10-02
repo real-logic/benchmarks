@@ -22,14 +22,15 @@
 #include <thread>
 #include <atomic>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <sstream>
 
 #if defined(__linux__) || defined(Darwin)
 #   include <unistd.h>
-#   include <time.h>
+#   include <ctime>
 #elif defined(WIN32)
 #   include <windows.h>
 #else
@@ -51,7 +52,7 @@ namespace nanomark
 
 static std::uint64_t nanoClock()
 {
-    struct timespec ts = {0, 0};
+    struct timespec ts = { 0, 0 };
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
     return (ts.tv_sec * 1000000000) + ts.tv_nsec;
@@ -192,7 +193,7 @@ public:
         m_numberMaxRepetitions = numberOfMaxRepetitions;
     }
 
-    std::size_t numberOfMaxRepetitions()
+    std::size_t numberOfMaxRepetitions() const
     {
         return m_numberMaxRepetitions;
     }
@@ -272,11 +273,7 @@ public:
         return impl;
     }
 
-    static void run(
-        Nanomark *nanomark,
-        std::size_t numThreads,
-        std::size_t repetitions,
-        std::uint64_t minRunLengthNs)
+    static void run(Nanomark *nanomark, std::size_t numThreads, std::size_t repetitions, std::uint64_t minRunLengthNs)
     {
         std::cout << "Running " << nanomark->fixtureName() << "::" << nanomark->name() << std::endl;
 

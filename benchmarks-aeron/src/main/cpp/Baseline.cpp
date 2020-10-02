@@ -36,7 +36,7 @@ int SENTINEL = 1000;
 
 static void BM_C_SpscQueueLatency(benchmark::State &state)
 {
-    const std::size_t burstLength = state.range(0);
+    const auto burstLength = static_cast<std::size_t>(state.range(0));
     aeron_spsc_concurrent_array_queue_t q_in;
     aeron_spsc_concurrent_array_queue_t q_out;
 
@@ -50,7 +50,7 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
         throw std::runtime_error("could not init q_out: " + std::string(aeron_errmsg()));
     }
 
-    std::int32_t *values = new std::int32_t[burstLength];
+    auto *values = new std::int32_t[burstLength];
     for (std::size_t i = 0; i < burstLength; i++)
     {
         values[i] = -(burstLength - i);
@@ -133,7 +133,7 @@ static void BM_C_SpscQueueThroughput(benchmark::State &state)
     int* i = new int{42};
     aeron_spsc_concurrent_array_queue_t q;
 
-    if (aeron_spsc_concurrent_array_queue_init(&q, state.range(0)) < 0)
+    if (aeron_spsc_concurrent_array_queue_init(&q, static_cast<std::size_t>(state.range(0))) < 0)
     {
         throw std::runtime_error("could not init q: " + std::string(aeron_errmsg()));
     }

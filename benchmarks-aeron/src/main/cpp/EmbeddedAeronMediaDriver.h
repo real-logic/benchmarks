@@ -42,13 +42,6 @@ namespace aeron
 class EmbeddedMediaDriver
 {
 public:
-    EmbeddedMediaDriver() :
-        m_running(true),
-        m_context(NULL),
-        m_driver(NULL)
-    {
-    }
-
     ~EmbeddedMediaDriver()
     {
         aeron_driver_close(m_driver);
@@ -93,7 +86,7 @@ protected:
         }
 
         aeron_driver_context_set_threading_mode(m_context, AERON_THREADING_MODE_SHARED);
-        aeron_driver_context_set_shared_idle_strategy(m_context, "spinning");
+        aeron_driver_context_set_shared_idle_strategy(m_context, "spin");
         aeron_driver_context_set_dir_delete_on_start(m_context, true);
         aeron_driver_context_set_term_buffer_sparse_file(m_context, false);
 
@@ -113,10 +106,10 @@ protected:
     }
 
 private:
-    std::atomic<bool> m_running;
+    std::atomic<bool> m_running = { true };
     std::thread m_thread;
-    aeron_driver_context_t *m_context;
-    aeron_driver_t *m_driver;
+    aeron_driver_context_t *m_context = nullptr;
+    aeron_driver_t *m_driver = nullptr;
 };
 
 }

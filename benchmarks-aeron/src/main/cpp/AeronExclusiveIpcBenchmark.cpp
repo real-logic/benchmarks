@@ -22,7 +22,7 @@
 #include <thread>
 #include <atomic>
 #include <array>
-#include <inttypes.h>
+#include <cinttypes>
 
 #include "Aeron.h"
 #include "concurrent/BusySpinIdleStrategy.h"
@@ -57,19 +57,18 @@ public:
         int id,
         std::shared_ptr<P> publication,
         aeron_spsc_concurrent_array_queue_t *responseQueue) :
-        m_src(),
         m_srcBuffer(m_src, 0),
         m_savedPublication(std::move(publication)),
-        m_values(),
         m_responseQueue(responseQueue),
         m_publication(m_savedPublication.get()),
         m_burstLength(burstLength)
     {
         m_src.fill(0);
 
-        for (std::size_t i = 0; i < burstLength; i++)
+        auto burstLengthValue = static_cast<std::int32_t>(burstLength);
+        for (std::int32_t i = 0; i < burstLengthValue; i++)
         {
-            m_values[i] = -(burstLength - i);
+            m_values[static_cast<std::size_t>(i)] = -(burstLengthValue - i);
         }
 
         m_values[burstLength - 1] = id;
@@ -108,15 +107,15 @@ public:
     }
 
 private:
-    AERON_DECL_ALIGNED(src_buffer_t m_src, 16);
+    AERON_DECL_ALIGNED(src_buffer_t m_src, 16) = {};
     AtomicBuffer m_srcBuffer;
     BufferClaim m_bufferClaim;
 
     std::shared_ptr<P> m_savedPublication;
-    std::array<std::int32_t, MAX_BURST_LENGTH> m_values;
+    std::array<std::int32_t, MAX_BURST_LENGTH> m_values = {};
 
-    aeron_spsc_concurrent_array_queue_t *m_responseQueue;
-    P *m_publication;
+    aeron_spsc_concurrent_array_queue_t *m_responseQueue = nullptr;
+    P *m_publication = nullptr;
     const std::size_t m_burstLength;
 };
 
@@ -195,7 +194,7 @@ public:
         }
     }
 
-    void awaitSetup()
+    void awaitSetup() const
     {
         while (!isSetup)
         {
@@ -235,7 +234,7 @@ public:
         }
     }
 
-    AERON_DECL_ALIGNED(aeron_spsc_concurrent_array_queue_t responseQueues[MAX_THREAD_COUNT], 16);
+    AERON_DECL_ALIGNED(aeron_spsc_concurrent_array_queue_t responseQueues[MAX_THREAD_COUNT], 16) = {};
     std::shared_ptr<Aeron> aeron;
     std::shared_ptr<ExclusivePublication> publication;
     std::shared_ptr<Subscription> subscription;
@@ -251,7 +250,7 @@ SharedState sharedState;
 
 static void BM_AeronExclusiveIpcBenchmark(benchmark::State &state)
 {
-    const std::size_t burstLength = state.range(0);
+    const auto burstLength = static_cast<std::size_t>(state.range(0));
 
     sharedState.setup();
 
