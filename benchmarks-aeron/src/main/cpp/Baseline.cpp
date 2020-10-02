@@ -59,8 +59,8 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
 
     values[burstLength - 1] = 0;
 
-    std::atomic<bool> start{ false };
-    std::atomic<bool> running{ true };
+    std::atomic<bool> start(false);
+    std::atomic<bool> running(true);
 
     std::thread t(
         [&]()
