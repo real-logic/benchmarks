@@ -41,7 +41,6 @@ def checkstyleVersion = '8.36'
 def grpcVersion = '1.32.1'
 def protobufVersion = '3.13.0'
 def kafkaVersion = '2.6.0'
-def scalaVersion = '2.13.2'
 def slf4jVersion = '1.7.30'
 def annotationsApiVersion = '6.0.53'
 
