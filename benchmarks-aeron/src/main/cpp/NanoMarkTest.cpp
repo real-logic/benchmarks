@@ -62,8 +62,8 @@ public:
         {
             std::ostringstream stream;
 
-            stream << "Thread " << std::to_string(id) << " First Measurement " <<
-                std::to_string(measurementNs) << std::endl;
+            stream << "Thread " << std::to_string(id) << " First Measurement "
+                   << std::to_string(measurementNs) << std::endl;
             std::cout << stream.str();
             first = false;
         }
@@ -75,10 +75,9 @@ public:
         std::ostringstream stream;
 
         Nanomark::recordRepetition(id, repetition, totalNs, numberOfRuns);
-        stream << "Thread " << std::to_string(id) << " repetition " << std::to_string(repetition + 1) << ": " <<
-            "nanos/op " << std::to_string((double)totalNs / (double)numberOfRuns) << " " <<
-            histogramSummary(histogram(id));
-        stream << std::endl;
+        stream << "Thread " << std::to_string(id) << " repetition " << std::to_string(repetition + 1) << ": "
+               << "nanos/op " << std::to_string((double)totalNs / (double)numberOfRuns) << " "
+               << histogramSummary(histogram(id)) << std::endl;
 
         std::cout << stream.str();
     }

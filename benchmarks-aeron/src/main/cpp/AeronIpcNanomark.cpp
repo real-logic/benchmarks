@@ -219,7 +219,8 @@ public:
                 const std::int32_t value = buffer.getInt32(offset);
                 if (value >= 0)
                 {
-                    while (aeron_spsc_concurrent_array_queue_offer(&responseQueues[value], &SENTINEL) != AERON_OFFER_SUCCESS)
+                    while (AERON_OFFER_SUCCESS != aeron_spsc_concurrent_array_queue_offer(
+                        &responseQueues[value], &SENTINEL))
                     {
                         BusySpinIdleStrategy::pause();
                     }
