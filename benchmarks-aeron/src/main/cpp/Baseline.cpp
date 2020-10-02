@@ -70,7 +70,7 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
 
             while (running)
             {
-                int* p = (int *)aeron_spsc_concurrent_array_queue_poll(&q_in);
+                int *p = (int *)aeron_spsc_concurrent_array_queue_poll(&q_in);
                 if (p != nullptr)
                 {
                     if (*p >= 0)
@@ -131,7 +131,7 @@ BENCHMARK(BM_C_SpscQueueLatency)
 
 static void BM_C_SpscQueueThroughput(benchmark::State &state)
 {
-    int* i = new int{42};
+    int *i = new int{ 42 };
     aeron_spsc_concurrent_array_queue_t q;
 
     if (aeron_spsc_concurrent_array_queue_init(&q, static_cast<std::size_t>(state.range(0))) < 0)
