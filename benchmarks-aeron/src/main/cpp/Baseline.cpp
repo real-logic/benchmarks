@@ -51,9 +51,10 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
     }
 
     auto *values = new std::int32_t[burstLength];
-    for (std::size_t i = 0; i < burstLength; i++)
+    auto burstLengthValue = static_cast<std::int32_t>(burstLength);
+    for (std::int32_t i = 0; i < burstLengthValue; i++)
     {
-        values[i] = -(burstLength - i);
+        values[static_cast<std::size_t>(i)] = -(burstLengthValue - i);
     }
 
     values[burstLength - 1] = 0;

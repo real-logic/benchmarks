@@ -261,7 +261,7 @@ public:
         for (std::size_t i = 0; i < MAX_THREAD_COUNT; i++)
         {
             bursters[i].reset(new Burster<Publication>(
-                benchmarkBurstLength, i, sharedState.publication, &sharedState.responseQueues[i]));
+                benchmarkBurstLength, static_cast<int>(i), sharedState.publication, &sharedState.responseQueues[i]));
         }
     }
 
