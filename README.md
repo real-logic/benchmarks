@@ -103,7 +103,7 @@ aggregated histogram that can be plotted using http://hdrhistogram.github.io/Hdr
 
 ### Systems under test
 
-System that implement remote benchmarks are listed in this section.
+This section lists the systems under test which implement remote benchmarks.
 
 #### Aeron
 
