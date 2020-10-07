@@ -20,6 +20,7 @@
 #include <benchmark/benchmark.h>
 #include <thread>
 #include <atomic>
+#include <stdexcept>
 
 #include "concurrent/Atomic64.h"
 #include "concurrent/BusySpinIdleStrategy.h"

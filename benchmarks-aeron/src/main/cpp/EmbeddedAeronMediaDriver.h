@@ -30,6 +30,7 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include <stdexcept>
 
 extern "C"
 {
