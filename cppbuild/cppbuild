@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-SOURCE_DIR=$(pwd)
-BUILD_DIR="$(pwd)/cppbuild/Release"
+SOURCE_DIR="`pwd`"
+export BUILD_DIR="`pwd`/cppbuild/Release"
+export BUILD_CONFIG=Release
 EXTRA_CMAKE_ARGS=""
 
 ncpus=1
@@ -30,6 +31,8 @@ do
       ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
+      export BUILD_DIR="`pwd`/cppbuild/Debug"
+      export BUILD_CONFIG=Debug
       shift
       ;;
     --no-parallel)
