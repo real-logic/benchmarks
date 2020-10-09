@@ -32,7 +32,7 @@ repositories {
 
 def agronaVersion = '1.7.2'
 def aeronVersion = '1.30.0'
-def jmhVersion = '1.25.2'
+def jmhVersion = '1.26'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.2'
 def junitVersion = '5.7.0'
