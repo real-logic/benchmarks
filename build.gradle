@@ -18,7 +18,7 @@ plugins {
     id 'java-library'
     id 'idea'
     id 'checkstyle'
-    id 'com.github.ben-manes.versions' version '0.33.0'
+    id 'com.github.ben-manes.versions' version '0.34.0'
     id 'com.github.johnrengelman.shadow' version '6.1.0' apply false
     id 'com.google.protobuf' version '0.8.13' apply false
 }
@@ -36,9 +36,9 @@ def jmhVersion = '1.26'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.2'
 def junitVersion = '5.7.0'
-def mockitoVersion = '3.5.15'
+def mockitoVersion = '3.6.0'
 def checkstyleVersion = '8.36.2'
-def grpcVersion = '1.32.2'
+def grpcVersion = '1.33.1'
 def protobufVersion = '3.13.0'
 def kafkaVersion = '2.6.0'
 def slf4jVersion = '1.7.30'
