@@ -37,7 +37,7 @@ def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.2'
 def junitVersion = '5.7.0'
 def mockitoVersion = '3.6.0'
-def checkstyleVersion = '8.36.2'
+def checkstyleVersion = '8.37'
 def grpcVersion = '1.33.1'
 def protobufVersion = '3.13.0'
 def kafkaVersion = '2.6.0'
@@ -190,6 +190,6 @@ tasks.named("dependencyUpdates").configure {
 }
 
 wrapper {
-    gradleVersion = '6.6.1'
+    gradleVersion = '6.7'
     distributionType = 'ALL'
 }
