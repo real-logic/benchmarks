@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.Aeron.connect;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
 
-class EchoTest extends AbstractTest<MediaDriver, Aeron, PlainMessageTransceiver, EchoNode>
+class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, EchoNode>
 {
     protected EchoNode createNode(final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron)
     {
@@ -41,14 +41,14 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, PlainMessageTransceiver,
         return connect();
     }
 
-    protected Class<PlainMessageTransceiver> messageTransceiverClass()
+    protected Class<EchoMessageTransceiver> messageTransceiverClass()
     {
-        return PlainMessageTransceiver.class;
+        return EchoMessageTransceiver.class;
     }
 
-    protected PlainMessageTransceiver createMessageTransceiver(
+    protected EchoMessageTransceiver createMessageTransceiver(
         final MediaDriver mediaDriver, final Aeron aeron, final MessageRecorder messageRecorder)
     {
-        return new PlainMessageTransceiver(mediaDriver, aeron, false, messageRecorder);
+        return new EchoMessageTransceiver(mediaDriver, aeron, false, messageRecorder);
     }
 }

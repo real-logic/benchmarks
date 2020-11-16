@@ -32,7 +32,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
-public final class PlainMessageTransceiver extends MessageTransceiverProducerStatePadded
+public final class EchoMessageTransceiver extends MessageTransceiverProducerStatePadded
 {
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
@@ -49,12 +49,12 @@ public final class PlainMessageTransceiver extends MessageTransceiverProducerSta
             onMessageReceived(timestamp, checksum);
         });
 
-    public PlainMessageTransceiver(final MessageRecorder messageRecorder)
+    public EchoMessageTransceiver(final MessageRecorder messageRecorder)
     {
         this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
     }
 
-    PlainMessageTransceiver(
+    EchoMessageTransceiver(
         final MediaDriver mediaDriver,
         final Aeron aeron,
         final boolean ownsAeronClient,
