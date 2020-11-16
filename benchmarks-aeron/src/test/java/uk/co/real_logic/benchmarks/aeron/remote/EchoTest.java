@@ -17,12 +17,19 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
+import static java.lang.System.clearProperty;
+import static java.lang.System.setProperty;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, EchoNode>
 {
@@ -51,4 +58,28 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
     {
         return new EchoMessageTransceiver(mediaDriver, aeron, false, messageRecorder);
     }
+
+    @AfterEach
+    void after()
+    {
+        super.after();
+        clearProperty(PASSIVE_CHANNELS_PROP_NAME);
+        clearProperty(PASSIVE_STREAMS_PROP_NAME);
+        clearProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME);
+        clearProperty(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME);
+    }
+
+    @Timeout(30)
+    @Test
+    void passiveChannels(final @TempDir Path tempDir) throws Exception
+    {
+        setProperty(
+            PASSIVE_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13000,aeron:udp?endpoint=localhost:13001");
+        setProperty(PASSIVE_STREAMS_PROP_NAME, "13000,13001");
+        setProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, "500ms");
+        setProperty(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, "70");
+
+        test(1000, 32, 1, tempDir);
+    }
+
 }

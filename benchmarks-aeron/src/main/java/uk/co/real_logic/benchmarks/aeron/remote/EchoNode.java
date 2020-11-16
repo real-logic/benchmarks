@@ -17,10 +17,15 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
+import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
+import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.SystemUtil;
+import org.agrona.concurrent.IdleStrategy;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
@@ -34,6 +39,8 @@ public final class EchoNode implements AutoCloseable, Runnable
 {
     private final ExclusivePublication publication;
     private final Subscription subscription;
+    private final Subscription[] passiveSubscriptions;
+    private final Image[] passiveImages;
     private final AtomicBoolean running;
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
@@ -55,24 +62,123 @@ public final class EchoNode implements AutoCloseable, Runnable
         publication = aeron.addExclusivePublication(sourceChannels()[0], sourceStreams()[0]);
         subscription = aeron.addSubscription(destinationChannels()[0], destinationStreams()[0]);
 
-        while (!subscription.isConnected() || !publication.isConnected())
+        final String[] passiveChannels = passiveChannels();
+        final int[] passiveStreams = passiveStreams();
+        if (passiveChannels.length != passiveStreams.length)
+        {
+            throw new IllegalStateException("Number of passive channels does not match with passive streams: " +
+                Arrays.toString(passiveChannels) + ", " + Arrays.toString(passiveStreams));
+        }
+
+        if (passiveChannels.length > 0)
+        {
+            passiveSubscriptions = new Subscription[passiveChannels.length];
+            passiveImages = new Image[passiveChannels.length];
+            for (int i = 0; i < passiveChannels.length; i++)
+            {
+                passiveSubscriptions[i] = aeron.addSubscription(passiveChannels[i], passiveStreams[i]);
+            }
+        }
+        else
+        {
+            passiveSubscriptions = EMPTY_SUBSCRIPTIONS;
+            passiveImages = EMPTY_IMAGES;
+        }
+
+        while (!subscription.isConnected() || !publication.isConnected() || !allConnected(passiveSubscriptions))
         {
             yieldUninterruptedly();
         }
+
+        reloadImages(passiveSubscriptions, passiveImages);
     }
 
     public void run()
     {
-        pipeMessages(subscription, publication, running);
+        final ExclusivePublication publication = this.publication;
+        final Subscription subscription = this.subscription;
+        final Subscription[] passiveSubscriptions = this.passiveSubscriptions;
+        final Image[] passiveImages = this.passiveImages;
+
+        final IdleStrategy idleStrategy = idleStrategy();
+        final BufferClaim bufferClaim = new BufferClaim();
+        final FragmentHandler dataHandler =
+            (buffer, offset, length, header) ->
+            {
+                long result;
+                while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
+                {
+                    checkPublicationResult(result);
+                }
+
+                bufferClaim
+                    .flags(header.flags())
+                    .putBytes(buffer, offset, length)
+                    .commit();
+            };
+
+        final boolean reconnectIfImageClosed = reconnectIfImageClosed();
+        final int passiveChannelsPollFrequency = passiveChannelsPollFrequency();
+        final AtomicBoolean running = this.running;
+
+        Image image = subscription.imageAtIndex(0);
+        int iterationsSinceLastPoll = 0;
+        while (true)
+        {
+            final int fragmentsRead = image.poll(dataHandler, FRAGMENT_LIMIT);
+            if (0 == fragmentsRead)
+            {
+                if (!running.get())
+                {
+                    break;
+                }
+                else if (image.isClosed())
+                {
+                    if (!reconnectIfImageClosed)
+                    {
+                        break;
+                    }
+                    while (!subscription.isConnected() ||
+                        !publication.isConnected() ||
+                        !allConnected(passiveSubscriptions))
+                    {
+                        yieldUninterruptedly();
+                    }
+                    image = subscription.imageAtIndex(0);
+                    reloadImages(passiveSubscriptions, passiveImages);
+                }
+            }
+
+            iterationsSinceLastPoll++;
+            if (EMPTY_IMAGES != passiveImages && iterationsSinceLastPoll >= passiveChannelsPollFrequency)
+            {
+                iterationsSinceLastPoll = 0;
+                for (int i = 0; i < passiveImages.length; i++)
+                {
+                    passiveImages[i].poll(NULL_FRAGMENT_HANDLER, FRAGMENT_LIMIT);
+                }
+            }
+
+            idleStrategy.idle(fragmentsRead);
+        }
     }
 
     public void close()
     {
+        closeAll(passiveSubscriptions);
         closeAll(subscription, publication);
 
         if (ownsAeronClient)
         {
             closeAll(aeron, mediaDriver);
+        }
+    }
+
+    private static void reloadImages(final Subscription[] subscriptions, final Image[] images)
+    {
+        for (int i = 0; i < subscriptions.length; i++)
+        {
+            images[i] = subscriptions[i].imageAtIndex(0);
         }
     }
 

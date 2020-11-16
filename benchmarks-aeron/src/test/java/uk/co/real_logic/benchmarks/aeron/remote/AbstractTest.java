@@ -39,7 +39,7 @@ import static java.lang.System.setProperty;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 abstract class AbstractTest<DRIVER extends AutoCloseable,
     CLIENT extends AutoCloseable,
@@ -88,7 +88,7 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     }
 
     @SuppressWarnings("MethodLength")
-    private void test(
+    protected final void test(
         final int messages, final int messageLength, final int burstSize, final Path tempDir) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
@@ -105,25 +105,24 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
 
         final DRIVER driver = createDriver();
         final CLIENT client = connectToDriver();
+        final AtomicBoolean running = new AtomicBoolean(true);
+        final CountDownLatch remoteNodeStarted = new CountDownLatch(1);
+        final Thread remoteNode = new Thread(
+            () ->
+            {
+                remoteNodeStarted.countDown();
+
+                try (NODE node = createNode(running, driver, client))
+                {
+                    node.run();
+                }
+                catch (final Throwable t)
+                {
+                    error.set(t);
+                }
+            });
         try
         {
-            final AtomicBoolean running = new AtomicBoolean(true);
-
-            final CountDownLatch remoteNodeStarted = new CountDownLatch(1);
-            final Thread remoteNode = new Thread(
-                () ->
-                {
-                    remoteNodeStarted.countDown();
-
-                    try (NODE node = createNode(running, driver, client))
-                    {
-                        node.run();
-                    }
-                    catch (final Throwable t)
-                    {
-                        error.set(t);
-                    }
-                });
             remoteNode.setName("remote-node");
             remoteNode.setDaemon(true);
             remoteNode.start();
@@ -183,13 +182,13 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             }
             finally
             {
-                running.set(false);
-                remoteNode.join();
                 messageTransceiver.destroy();
             }
         }
         finally
         {
+            running.set(false);
+            remoteNode.join();
             closeAll(client, driver);
 
             if (driver instanceof ArchivingMediaDriver)

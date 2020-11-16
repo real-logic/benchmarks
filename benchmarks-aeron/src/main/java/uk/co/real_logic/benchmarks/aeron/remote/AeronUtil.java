@@ -48,6 +48,9 @@ import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.SystemUtil.parseDuration;
+import static org.agrona.collections.ArrayUtil.EMPTY_INT_ARRAY;
+import static org.agrona.collections.ArrayUtil.EMPTY_STRING_ARRAY;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithEmbeddedDriver;
 import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithStandaloneDriver;
@@ -60,14 +63,25 @@ final class AeronUtil
         "uk.co.real_logic.benchmarks.aeron.remote.destination.streams";
     static final String SOURCE_CHANNELS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channels";
     static final String SOURCE_STREAMS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.streams";
+    static final String PASSIVE_CHANNELS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.passive.channels";
+    static final String PASSIVE_STREAMS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.passive.streams";
+    static final String PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels.keepAliveInterval";
+    static final String PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels.pollFrequency";
     static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
-    static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.streamId";
+    static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.stream";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
     static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentLimit";
     static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idleStrategy";
     static final String RECONNECT_IF_IMAGE_CLOSED = "uk.co.real_logic.benchmarks.aeron.remote.reconnetIfImageClosed";
     static final int FRAGMENT_LIMIT = getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
+    static final ExclusivePublication[] EMPTY_PUBLICATIONS = new ExclusivePublication[0];
+    static final Subscription[] EMPTY_SUBSCRIPTIONS = new Subscription[0];
+    static final Image[] EMPTY_IMAGES = new Image[0];
+    static final FragmentHandler NULL_FRAGMENT_HANDLER = (buffer, offset, length, header) -> {};
+    private static final String MULTI_VALUE_SEPARATOR = ",";
 
     private AeronUtil()
     {
@@ -75,22 +89,79 @@ final class AeronUtil
 
     static String[] destinationChannels()
     {
-        return parseMultiValueProperty(DESTINATION_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13333");
+        final String property = getProperty(DESTINATION_CHANNELS_PROP_NAME);
+        if (null == property)
+        {
+            return new String[]{ "aeron:udp?endpoint=localhost:13333" };
+        }
+
+        return property.split(MULTI_VALUE_SEPARATOR);
     }
 
     static int[] destinationStreams()
     {
-        return parseMultiValueIntegerProperty(DESTINATION_STREAMS_PROP_NAME, 1_000_000_000);
+        final String property = getProperty(DESTINATION_STREAMS_PROP_NAME);
+        if (null == property)
+        {
+            return new int[]{ 1_000_000_000 };
+        }
+
+        return parseStreamIds(property);
     }
 
     static String[] sourceChannels()
     {
-        return parseMultiValueProperty(SOURCE_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13334");
+        final String property = getProperty(SOURCE_CHANNELS_PROP_NAME);
+        if (null == property)
+        {
+            return new String[]{ "aeron:udp?endpoint=localhost:13334" };
+        }
+
+        return property.split(MULTI_VALUE_SEPARATOR);
     }
 
     static int[] sourceStreams()
     {
-        return parseMultiValueIntegerProperty(SOURCE_STREAMS_PROP_NAME, 1_000_000_001);
+        final String property = getProperty(SOURCE_STREAMS_PROP_NAME);
+        if (null == property)
+        {
+            return new int[]{ 1_000_000_001 };
+        }
+
+        return parseStreamIds(property);
+    }
+
+    static String[] passiveChannels()
+    {
+        final String property = getProperty(PASSIVE_CHANNELS_PROP_NAME);
+        if (null == property)
+        {
+            return EMPTY_STRING_ARRAY;
+        }
+
+        return property.split(MULTI_VALUE_SEPARATOR);
+    }
+
+    static int[] passiveStreams()
+    {
+        final String property = getProperty(PASSIVE_STREAMS_PROP_NAME);
+        if (null == property)
+        {
+            return EMPTY_INT_ARRAY;
+        }
+
+        return parseStreamIds(property);
+    }
+
+    static long passiveChannelsKeepAliveIntervalNanos()
+    {
+        return parseDuration(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME,
+            getProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, "1s"));
+    }
+
+    static int passiveChannelsPollFrequency()
+    {
+        return getInteger(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, 100);
     }
 
     static String archiveChannel()
@@ -306,30 +377,33 @@ final class AeronUtil
         }
     }
 
-    private static String[] parseMultiValueProperty(final String properName, final String defaultValue)
+    static boolean allConnected(final ExclusivePublication[] publications)
     {
-        final String property = getProperty(properName, defaultValue);
-        return property.split(",");
-    }
-
-    private static int[] parseMultiValueIntegerProperty(final String properName, final int defaultValue)
-    {
-        final String property = getProperty(properName);
-        if (null == property)
+        for (int i = 0; i < publications.length; i++)
         {
-            return new int[]{ defaultValue };
+            if (!publications[i].isConnected())
+            {
+                return false;
+            }
         }
 
-        final String[] values = property.split(",");
-        final int[] result = new int[values.length];
-        for (int i = 0; i < values.length; i++)
-        {
-            result[i] = Integer.parseInt(values[i]);
-        }
-        return result;
+        return true;
     }
 
-    private static void checkPublicationResult(final long result)
+    static boolean allConnected(final Subscription[] subscriptions)
+    {
+        for (int i = 0; i < subscriptions.length; i++)
+        {
+            if (!subscriptions[i].isConnected())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static void checkPublicationResult(final long result)
     {
         if (result == CLOSED ||
             result == NOT_CONNECTED ||
@@ -337,5 +411,16 @@ final class AeronUtil
         {
             throw new AeronException("Publication error: " + result);
         }
+    }
+
+    private static int[] parseStreamIds(final String property)
+    {
+        final String[] values = property.split(MULTI_VALUE_SEPARATOR);
+        final int[] result = new int[values.length];
+        for (int i = 0; i < values.length; i++)
+        {
+            result[i] = Integer.parseInt(values[i]);
+        }
+        return result;
     }
 }

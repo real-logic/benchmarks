@@ -19,8 +19,9 @@ import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.TimeUnit;
+
 import static io.aeron.CommonContext.IPC_CHANNEL;
-import static java.lang.String.valueOf;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,6 +36,10 @@ class AeronUtilTest
         assertArrayEquals(new int[]{ 1_000_000_000 }, destinationStreams());
         assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13334" }, sourceChannels());
         assertArrayEquals(new int[]{ 1_000_000_001 }, sourceStreams());
+        assertArrayEquals(new String[0], passiveChannels());
+        assertArrayEquals(new int[0], passiveStreams());
+        assertEquals(TimeUnit.SECONDS.toNanos(1), passiveChannelsKeepAliveIntervalNanos());
+        assertEquals(100, passiveChannelsPollFrequency());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());
@@ -45,17 +50,17 @@ class AeronUtilTest
     @Test
     void explicitConfigurationValues()
     {
-        final String archiveChannel = "archive";
-        final int archiveStreamId = 777;
-        final boolean embeddedMediaDriver = true;
-
         setProperty(DESTINATION_CHANNELS_PROP_NAME, "ch1:5001,ch2:5002,ch3:5003");
         setProperty(DESTINATION_STREAMS_PROP_NAME, "100,101,102,");
         setProperty(SOURCE_CHANNELS_PROP_NAME, "ch1:8001,ch2:8002,ch3:8003");
         setProperty(SOURCE_STREAMS_PROP_NAME, "200,201,202,");
-        setProperty(ARCHIVE_CHANNEL_PROP_NAME, archiveChannel);
-        setProperty(ARCHIVE_STREAM_PROP_NAME, valueOf(archiveStreamId));
-        setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
+        setProperty(PASSIVE_CHANNELS_PROP_NAME, "ch4:4444,ch7:7777");
+        setProperty(PASSIVE_STREAMS_PROP_NAME, "1,2");
+        setProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, "125us");
+        setProperty(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, "22");
+        setProperty(ARCHIVE_CHANNEL_PROP_NAME, "localhost");
+        setProperty(ARCHIVE_STREAM_PROP_NAME, "777");
+        setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
         setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
         setProperty(RECONNECT_IF_IMAGE_CLOSED, "true");
 
@@ -65,7 +70,13 @@ class AeronUtilTest
             assertArrayEquals(new int[]{ 100, 101, 102 }, destinationStreams());
             assertArrayEquals(new String[]{ "ch1:8001", "ch2:8002", "ch3:8003" }, sourceChannels());
             assertArrayEquals(new int[]{ 200, 201, 202 }, sourceStreams());
-            assertEquals(embeddedMediaDriver, embeddedMediaDriver());
+            assertArrayEquals(new String[]{ "ch4:4444", "ch7:7777" }, passiveChannels());
+            assertArrayEquals(new int[]{ 1, 2 }, passiveStreams());
+            assertEquals("localhost", archiveChannel());
+            assertEquals(777, archiveStream());
+            assertEquals(TimeUnit.MICROSECONDS.toNanos(125), passiveChannelsKeepAliveIntervalNanos());
+            assertEquals(22, passiveChannelsPollFrequency());
+            assertTrue(embeddedMediaDriver());
             assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
             assertTrue(reconnectIfImageClosed());
         }
@@ -75,6 +86,8 @@ class AeronUtilTest
             clearProperty(DESTINATION_STREAMS_PROP_NAME);
             clearProperty(SOURCE_CHANNELS_PROP_NAME);
             clearProperty(SOURCE_STREAMS_PROP_NAME);
+            clearProperty(PASSIVE_CHANNELS_PROP_NAME);
+            clearProperty(PASSIVE_STREAMS_PROP_NAME);
             clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
             clearProperty(ARCHIVE_STREAM_PROP_NAME);
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);

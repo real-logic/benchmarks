@@ -15,14 +15,13 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.Aeron;
-import io.aeron.FragmentAssembler;
-import io.aeron.Image;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+
+import java.util.Arrays;
 
 import static io.aeron.Aeron.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -32,8 +31,11 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
-public final class EchoMessageTransceiver extends MessageTransceiverProducerStatePadded
+public final class EchoMessageTransceiver extends EchoMessageTransceiverProducerStatePadded
 {
+    static final int NUMBER_OF_KEEP_ALIVE_MESSAGES = 1;
+    static final int KEEP_ALIVE_MESSAGE_LENGTH = 32;
+
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
@@ -70,7 +72,26 @@ public final class EchoMessageTransceiver extends MessageTransceiverProducerStat
         publication = aeron.addExclusivePublication(destinationChannels()[0], destinationStreams()[0]);
         subscription = aeron.addSubscription(sourceChannels()[0], sourceStreams()[0]);
 
-        while (!subscription.isConnected() || !publication.isConnected())
+        final String[] passiveChannels = passiveChannels();
+        final int[] passiveStreams = passiveStreams();
+        if (passiveChannels.length != passiveStreams.length)
+        {
+            throw new IllegalStateException("Number of passive channels does not match with passive streams: " +
+                Arrays.toString(passiveChannels) + ", " + Arrays.toString(passiveStreams));
+        }
+
+        passivePublications = EMPTY_PUBLICATIONS;
+        if (passiveChannels.length > 0)
+        {
+            passivePublications = new ExclusivePublication[passiveChannels.length];
+            for (int i = 0; i < passiveChannels.length; i++)
+            {
+                passivePublications[i] = aeron.addExclusivePublication(passiveChannels[i], passiveStreams[i]);
+            }
+            keepAliveIntervalNs = passiveChannelsKeepAliveIntervalNanos();
+        }
+
+        while (!subscription.isConnected() || !publication.isConnected() || !allConnected(passivePublications))
         {
             yieldUninterruptedly();
         }
@@ -82,6 +103,7 @@ public final class EchoMessageTransceiver extends MessageTransceiverProducerStat
 
     public void destroy()
     {
+        closeAll(passivePublications);
         closeAll(publication, subscription);
 
         if (ownsAeronClient)
@@ -92,7 +114,15 @@ public final class EchoMessageTransceiver extends MessageTransceiverProducerStat
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
+        final int sent =
+            sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
+
+        if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - timestamp < 0)
+        {
+            sendKeepAliveMessages(timestamp, checksum);
+            timeOfLastKeepAliveNs = timestamp;
+        }
+        return sent;
     }
 
     public void receive()
@@ -101,6 +131,21 @@ public final class EchoMessageTransceiver extends MessageTransceiverProducerStat
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
+        }
+    }
+
+    private void sendKeepAliveMessages(final long timestamp, final long checksum)
+    {
+        final ExclusivePublication[] passivePublications = this.passivePublications;
+        for (int i = 0; i < passivePublications.length; i++)
+        {
+            sendMessages(
+                passivePublications[i],
+                offerBuffer,
+                NUMBER_OF_KEEP_ALIVE_MESSAGES,
+                KEEP_ALIVE_MESSAGE_LENGTH,
+                timestamp,
+                checksum);
         }
     }
 }
