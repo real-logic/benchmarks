@@ -66,6 +66,7 @@ final class AeronUtil
     static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentLimit";
     static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idleStrategy";
     static final String RECONNECT_IF_IMAGE_CLOSED = "uk.co.real_logic.benchmarks.aeron.remote.reconnetIfImageClosed";
+    static final int FRAGMENT_LIMIT = getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
 
     private AeronUtil()
     {
@@ -104,11 +105,6 @@ final class AeronUtil
     static boolean embeddedMediaDriver()
     {
         return getBoolean(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
-    }
-
-    static int fragmentLimit()
-    {
-        return getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
     }
 
     static IdleStrategy idleStrategy()
@@ -217,14 +213,13 @@ final class AeronUtil
                     .commit();
             };
 
-        final int fragmentLimit = fragmentLimit();
         final boolean reconnectIfImageClosed = reconnectIfImageClosed();
 
         Image image = subscription.imageAtIndex(0);
 
         while (true)
         {
-            final int fragmentsRead = image.poll(dataHandler, fragmentLimit);
+            final int fragmentsRead = image.poll(dataHandler, FRAGMENT_LIMIT);
             if (0 == fragmentsRead)
             {
                 if (!running.get())

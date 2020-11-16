@@ -42,7 +42,6 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiverProduc
 
     private Subscription subscription;
     private Image image;
-    private int fragmentLimit;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
@@ -96,8 +95,6 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiverProduc
         image = subscription.imageAtIndex(0);
 
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
-
-        fragmentLimit = fragmentLimit();
     }
 
     public void destroy()
@@ -117,7 +114,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiverProduc
 
     public void receive()
     {
-        final int fragments = image.poll(dataHandler, fragmentLimit);
+        final int fragments = image.poll(dataHandler, FRAGMENT_LIMIT);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");

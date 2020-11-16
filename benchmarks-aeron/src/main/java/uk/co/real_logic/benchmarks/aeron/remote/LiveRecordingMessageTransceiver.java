@@ -52,7 +52,6 @@ public final class LiveRecordingMessageTransceiver
     private long recordingPosition = NULL_POSITION;
     private long recordingPositionConsumed = NULL_POSITION;
     private long recordingId;
-    private int fragmentLimit;
     private final boolean ownsArchiveClient;
 
     private final ImageControlledFragmentAssembler messageHandler = new ImageControlledFragmentAssembler(this);
@@ -85,8 +84,6 @@ public final class LiveRecordingMessageTransceiver
         final AeronArchive.Context context = aeronArchive.context();
         final Aeron aeron = context.aeron();
 
-        fragmentLimit = fragmentLimit();
-
         subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
 
         final String sendChannel = destinationChannel();
@@ -97,7 +94,7 @@ public final class LiveRecordingMessageTransceiver
             context.recordingEventsChannel(), context.recordingEventsStreamId());
 
         recordingEventsAdapter = new RecordingEventsAdapter(
-            new LiveRecordingEventsListener(this), recordingEventsSubscription, fragmentLimit);
+            new LiveRecordingEventsListener(this), recordingEventsSubscription, FRAGMENT_LIMIT);
 
         while (!recordingEventsSubscription.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
@@ -139,7 +136,7 @@ public final class LiveRecordingMessageTransceiver
             }
         }
 
-        final int fragments = image.controlledPoll(messageHandler, fragmentLimit);
+        final int fragments = image.controlledPoll(messageHandler, FRAGMENT_LIMIT);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");

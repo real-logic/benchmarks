@@ -38,7 +38,6 @@ class AeronUtilTest
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_000_002, archiveStreamId());
         assertFalse(embeddedMediaDriver());
-        assertEquals(10, fragmentLimit());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
         assertFalse(reconnectIfImageClosed());
     }
@@ -53,7 +52,6 @@ class AeronUtilTest
         final String archiveChannel = "archive";
         final int archiveStreamId = 777;
         final boolean embeddedMediaDriver = true;
-        final int fragmentLimit = 111;
 
         setProperty(DESTINATION_CHANNEL_PROP_NAME, destChannel);
         setProperty(DESTINATION_STREAM_ID_PROP_NAME, valueOf(destStreamId));
@@ -62,7 +60,6 @@ class AeronUtilTest
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, archiveChannel);
         setProperty(ARCHIVE_STREAM_ID_PROP_NAME, valueOf(archiveStreamId));
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
-        setProperty(FRAGMENT_LIMIT_PROP_NAME, valueOf(fragmentLimit));
         setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
         setProperty(RECONNECT_IF_IMAGE_CLOSED, "true");
 
@@ -73,7 +70,6 @@ class AeronUtilTest
             assertEquals(srcChannel, sourceChannel());
             assertEquals(srcStreamId, sourceStreamId());
             assertEquals(embeddedMediaDriver, embeddedMediaDriver());
-            assertEquals(fragmentLimit, fragmentLimit());
             assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
             assertTrue(reconnectIfImageClosed());
         }
@@ -86,7 +82,6 @@ class AeronUtilTest
             clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
             clearProperty(ARCHIVE_STREAM_ID_PROP_NAME);
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
-            clearProperty(FRAGMENT_LIMIT_PROP_NAME);
             clearProperty(IDLE_STRATEGY);
             clearProperty(RECONNECT_IF_IMAGE_CLOSED);
         }

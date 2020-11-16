@@ -37,7 +37,6 @@ public final class EchoMessageTransceiver extends MessageTransceiverProducerStat
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
-    private int fragmentLimit;
 
     private Subscription subscription;
     private Image image;
@@ -79,7 +78,6 @@ public final class EchoMessageTransceiver extends MessageTransceiverProducerStat
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
         image = subscription.imageAtIndex(0);
-        fragmentLimit = fragmentLimit();
     }
 
     public void destroy()
@@ -99,7 +97,7 @@ public final class EchoMessageTransceiver extends MessageTransceiverProducerStat
 
     public void receive()
     {
-        final int fragments = image.poll(dataHandler, fragmentLimit);
+        final int fragments = image.poll(dataHandler, FRAGMENT_LIMIT);
         if (0 == fragments && image.isClosed())
         {
             throw new IllegalStateException("image closed unexpectedly");
