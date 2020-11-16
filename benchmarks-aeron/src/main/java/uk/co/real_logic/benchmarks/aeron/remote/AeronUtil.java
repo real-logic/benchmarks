@@ -54,13 +54,14 @@ import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.laun
 
 final class AeronUtil
 {
-    static final String DESTINATION_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.destination.channel";
-    static final String DESTINATION_STREAM_ID_PROP_NAME =
-        "uk.co.real_logic.benchmarks.aeron.remote.destination.streamId";
-    static final String SOURCE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channel";
-    static final String SOURCE_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.streamId";
+    static final String DESTINATION_CHANNELS_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.destination.channels";
+    static final String DESTINATION_STREAMS_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.destination.streams";
+    static final String SOURCE_CHANNELS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channels";
+    static final String SOURCE_STREAMS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.streams";
     static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
-    static final String ARCHIVE_STREAM_ID_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.streamId";
+    static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.streamId";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
     static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentLimit";
@@ -72,24 +73,24 @@ final class AeronUtil
     {
     }
 
-    static String destinationChannel()
+    static String[] destinationChannels()
     {
-        return getProperty(DESTINATION_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13333");
+        return parseMultiValueProperty(DESTINATION_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13333");
     }
 
-    static int destinationStreamId()
+    static int[] destinationStreams()
     {
-        return getInteger(DESTINATION_STREAM_ID_PROP_NAME, 1_000_000_000);
+        return parseMultiValueIntegerProperty(DESTINATION_STREAMS_PROP_NAME, 1_000_000_000);
     }
 
-    static String sourceChannel()
+    static String[] sourceChannels()
     {
-        return getProperty(SOURCE_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13334");
+        return parseMultiValueProperty(SOURCE_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13334");
     }
 
-    static int sourceStreamId()
+    static int[] sourceStreams()
     {
-        return getInteger(SOURCE_STREAM_ID_PROP_NAME, 1_000_000_001);
+        return parseMultiValueIntegerProperty(SOURCE_STREAMS_PROP_NAME, 1_000_000_001);
     }
 
     static String archiveChannel()
@@ -97,9 +98,9 @@ final class AeronUtil
         return getProperty(ARCHIVE_CHANNEL_PROP_NAME, IPC_CHANNEL);
     }
 
-    static int archiveStreamId()
+    static int archiveStream()
     {
-        return getInteger(ARCHIVE_STREAM_ID_PROP_NAME, 1_000_000_002);
+        return getInteger(ARCHIVE_STREAM_PROP_NAME, 1_000_100_000);
     }
 
     static boolean embeddedMediaDriver()
@@ -303,6 +304,29 @@ final class AeronUtil
                 yieldUninterruptedly();
             }
         }
+    }
+
+    private static String[] parseMultiValueProperty(final String properName, final String defaultValue)
+    {
+        final String property = getProperty(properName, defaultValue);
+        return property.split(",");
+    }
+
+    private static int[] parseMultiValueIntegerProperty(final String properName, final int defaultValue)
+    {
+        final String property = getProperty(properName);
+        if (null == property)
+        {
+            return new int[]{ defaultValue };
+        }
+
+        final String[] values = property.split(",");
+        final int[] result = new int[values.length];
+        for (int i = 0; i < values.length; i++)
+        {
+            result[i] = Integer.parseInt(values[i]);
+        }
+        return result;
     }
 
     private static void checkPublicationResult(final long result)

@@ -31,12 +31,12 @@ class AeronUtilTest
     @Test
     void defaultConfigurationValues()
     {
-        assertEquals("aeron:udp?endpoint=localhost:13333", destinationChannel());
-        assertEquals(1_000_000_000, destinationStreamId());
-        assertEquals("aeron:udp?endpoint=localhost:13334", sourceChannel());
-        assertEquals(1_000_000_001, sourceStreamId());
+        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333" }, destinationChannels());
+        assertArrayEquals(new int[]{ 1_000_000_000 }, destinationStreams());
+        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13334" }, sourceChannels());
+        assertArrayEquals(new int[]{ 1_000_000_001 }, sourceStreams());
         assertEquals(IPC_CHANNEL, archiveChannel());
-        assertEquals(1_000_000_002, archiveStreamId());
+        assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
         assertFalse(reconnectIfImageClosed());
@@ -45,42 +45,38 @@ class AeronUtilTest
     @Test
     void explicitConfigurationValues()
     {
-        final String destChannel = "sender";
-        final int destStreamId = Integer.MIN_VALUE;
-        final String srcChannel = "receiver";
-        final int srcStreamId = Integer.MAX_VALUE;
         final String archiveChannel = "archive";
         final int archiveStreamId = 777;
         final boolean embeddedMediaDriver = true;
 
-        setProperty(DESTINATION_CHANNEL_PROP_NAME, destChannel);
-        setProperty(DESTINATION_STREAM_ID_PROP_NAME, valueOf(destStreamId));
-        setProperty(SOURCE_CHANNEL_PROP_NAME, srcChannel);
-        setProperty(SOURCE_STREAM_ID_PROP_NAME, valueOf(srcStreamId));
+        setProperty(DESTINATION_CHANNELS_PROP_NAME, "ch1:5001,ch2:5002,ch3:5003");
+        setProperty(DESTINATION_STREAMS_PROP_NAME, "100,101,102,");
+        setProperty(SOURCE_CHANNELS_PROP_NAME, "ch1:8001,ch2:8002,ch3:8003");
+        setProperty(SOURCE_STREAMS_PROP_NAME, "200,201,202,");
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, archiveChannel);
-        setProperty(ARCHIVE_STREAM_ID_PROP_NAME, valueOf(archiveStreamId));
+        setProperty(ARCHIVE_STREAM_PROP_NAME, valueOf(archiveStreamId));
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, valueOf(embeddedMediaDriver));
         setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
         setProperty(RECONNECT_IF_IMAGE_CLOSED, "true");
 
         try
         {
-            assertEquals(destChannel, destinationChannel());
-            assertEquals(destStreamId, destinationStreamId());
-            assertEquals(srcChannel, sourceChannel());
-            assertEquals(srcStreamId, sourceStreamId());
+            assertArrayEquals(new String[]{ "ch1:5001", "ch2:5002", "ch3:5003" }, destinationChannels());
+            assertArrayEquals(new int[]{ 100, 101, 102 }, destinationStreams());
+            assertArrayEquals(new String[]{ "ch1:8001", "ch2:8002", "ch3:8003" }, sourceChannels());
+            assertArrayEquals(new int[]{ 200, 201, 202 }, sourceStreams());
             assertEquals(embeddedMediaDriver, embeddedMediaDriver());
             assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
             assertTrue(reconnectIfImageClosed());
         }
         finally
         {
-            clearProperty(DESTINATION_CHANNEL_PROP_NAME);
-            clearProperty(DESTINATION_STREAM_ID_PROP_NAME);
-            clearProperty(SOURCE_CHANNEL_PROP_NAME);
-            clearProperty(SOURCE_STREAM_ID_PROP_NAME);
+            clearProperty(DESTINATION_CHANNELS_PROP_NAME);
+            clearProperty(DESTINATION_STREAMS_PROP_NAME);
+            clearProperty(SOURCE_CHANNELS_PROP_NAME);
+            clearProperty(SOURCE_STREAMS_PROP_NAME);
             clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
-            clearProperty(ARCHIVE_STREAM_ID_PROP_NAME);
+            clearProperty(ARCHIVE_STREAM_PROP_NAME);
             clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
             clearProperty(IDLE_STRATEGY);
             clearProperty(RECONNECT_IF_IMAGE_CLOSED);

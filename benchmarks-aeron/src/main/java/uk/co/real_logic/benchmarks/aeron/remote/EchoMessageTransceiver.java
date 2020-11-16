@@ -67,8 +67,8 @@ public final class EchoMessageTransceiver extends MessageTransceiverProducerStat
 
     public void init(final Configuration configuration)
     {
-        publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
-        subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
+        publication = aeron.addExclusivePublication(destinationChannels()[0], destinationStreams()[0]);
+        subscription = aeron.addSubscription(sourceChannels()[0], sourceStreams()[0]);
 
         while (!subscription.isConnected() || !publication.isConnected())
         {
