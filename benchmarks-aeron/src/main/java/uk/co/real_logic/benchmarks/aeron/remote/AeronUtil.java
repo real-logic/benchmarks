@@ -49,6 +49,7 @@ import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.Strings.isEmpty;
 import static org.agrona.SystemUtil.parseDuration;
 import static org.agrona.collections.ArrayUtil.EMPTY_INT_ARRAY;
 import static org.agrona.collections.ArrayUtil.EMPTY_STRING_ARRAY;
@@ -91,7 +92,7 @@ final class AeronUtil
     static String[] destinationChannels()
     {
         final String property = getProperty(DESTINATION_CHANNELS_PROP_NAME);
-        if (null == property)
+        if (isEmpty(property))
         {
             return new String[]{ "aeron:udp?endpoint=localhost:13333" };
         }
@@ -102,7 +103,7 @@ final class AeronUtil
     static int[] destinationStreams()
     {
         final String property = getProperty(DESTINATION_STREAMS_PROP_NAME);
-        if (null == property)
+        if (isEmpty(property))
         {
             return new int[]{ 1_000_000_000 };
         }
@@ -113,7 +114,7 @@ final class AeronUtil
     static String[] sourceChannels()
     {
         final String property = getProperty(SOURCE_CHANNELS_PROP_NAME);
-        if (null == property)
+        if (isEmpty(property))
         {
             return new String[]{ "aeron:udp?endpoint=localhost:13334" };
         }
@@ -124,7 +125,7 @@ final class AeronUtil
     static int[] sourceStreams()
     {
         final String property = getProperty(SOURCE_STREAMS_PROP_NAME);
-        if (null == property)
+        if (isEmpty(property))
         {
             return new int[]{ 1_000_000_001 };
         }
@@ -135,7 +136,7 @@ final class AeronUtil
     static String[] passiveChannels()
     {
         final String property = getProperty(PASSIVE_CHANNELS_PROP_NAME);
-        if (null == property)
+        if (isEmpty(property))
         {
             return EMPTY_STRING_ARRAY;
         }
@@ -146,7 +147,7 @@ final class AeronUtil
     static int[] passiveStreams()
     {
         final String property = getProperty(PASSIVE_STREAMS_PROP_NAME);
-        if (null == property)
+        if (isEmpty(property))
         {
             return EMPTY_INT_ARRAY;
         }
@@ -156,8 +157,12 @@ final class AeronUtil
 
     static long passiveChannelsKeepAliveIntervalNanos()
     {
-        return parseDuration(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME,
-            getProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, "1s"));
+        String property = getProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME);
+        if (isEmpty(property))
+        {
+            property = "1s";
+        }
+        return parseDuration(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, property);
     }
 
     static int passiveChannelsPollFrequency()
@@ -167,12 +172,22 @@ final class AeronUtil
 
     static String archiveChannel()
     {
-        return getProperty(ARCHIVE_CHANNEL_PROP_NAME, IPC_CHANNEL);
+        final String property = getProperty(ARCHIVE_CHANNEL_PROP_NAME);
+        if (isEmpty(property))
+        {
+            return IPC_CHANNEL;
+        }
+        return property;
     }
 
     static int archiveStream()
     {
-        return getInteger(ARCHIVE_STREAM_PROP_NAME, 1_000_100_000);
+        final String property = getProperty(ARCHIVE_STREAM_PROP_NAME);
+        if (isEmpty(property))
+        {
+            return 1_000_100_000;
+        }
+        return Integer.parseInt(property);
     }
 
     static boolean embeddedMediaDriver()
@@ -183,7 +198,7 @@ final class AeronUtil
     static IdleStrategy idleStrategy()
     {
         final String idleStrategy = getProperty(IDLE_STRATEGY);
-        if (null == idleStrategy)
+        if (isEmpty(idleStrategy))
         {
             return NoOpIdleStrategy.INSTANCE;
         }
