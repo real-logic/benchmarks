@@ -122,7 +122,7 @@ public final class EchoNode implements AutoCloseable, Runnable
         final AtomicBoolean running = this.running;
 
         Image image = subscription.imageAtIndex(0);
-        int iterationsSinceLastPoll = 0;
+        int fragmentsSinceLastPoll = 0;
         while (true)
         {
             final int fragmentsRead = image.poll(dataHandler, FRAGMENT_LIMIT);
@@ -149,10 +149,10 @@ public final class EchoNode implements AutoCloseable, Runnable
                 }
             }
 
-            iterationsSinceLastPoll++;
-            if (EMPTY_IMAGES != passiveImages && iterationsSinceLastPoll >= passiveChannelsPollFrequency)
+            fragmentsSinceLastPoll += fragmentsRead;
+            if (fragmentsSinceLastPoll >= passiveChannelsPollFrequency)
             {
-                iterationsSinceLastPoll = 0;
+                fragmentsSinceLastPoll = 0;
                 for (int i = 0; i < passiveImages.length; i++)
                 {
                     passiveImages[i].poll(NULL_FRAGMENT_HANDLER, FRAGMENT_LIMIT);

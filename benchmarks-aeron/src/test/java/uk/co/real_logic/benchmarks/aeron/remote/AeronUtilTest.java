@@ -39,7 +39,7 @@ class AeronUtilTest
         assertArrayEquals(new String[0], passiveChannels());
         assertArrayEquals(new int[0], passiveStreams());
         assertEquals(TimeUnit.SECONDS.toNanos(1), passiveChannelsKeepAliveIntervalNanos());
-        assertEquals(100, passiveChannelsPollFrequency());
+        assertEquals(1000, passiveChannelsPollFrequency());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());

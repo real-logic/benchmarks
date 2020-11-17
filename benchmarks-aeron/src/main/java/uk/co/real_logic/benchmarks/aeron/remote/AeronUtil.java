@@ -161,7 +161,7 @@ final class AeronUtil
 
     static int passiveChannelsPollFrequency()
     {
-        return getInteger(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, 100);
+        return getInteger(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, 1000);
     }
 
     static String archiveChannel()
