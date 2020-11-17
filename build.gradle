@@ -190,6 +190,6 @@ tasks.named("dependencyUpdates").configure {
 }
 
 wrapper {
-    gradleVersion = '6.7'
+    gradleVersion = '6.7.1'
     distributionType = 'ALL'
 }
