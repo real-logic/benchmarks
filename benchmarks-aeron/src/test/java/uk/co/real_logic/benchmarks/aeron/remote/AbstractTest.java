@@ -39,7 +39,7 @@ import static java.lang.System.setProperty;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
 abstract class AbstractTest<DRIVER extends AutoCloseable,
     CLIENT extends AutoCloseable,
@@ -70,26 +70,30 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
     @Test
     void messageLength32bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(10_000, 32, 10, tempDir);
+        test(10_000, 32, 10, tempDir, false);
     }
 
     @Timeout(30)
     @Test
     void messageLength224bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(1000, 224, 5, tempDir);
+        test(1000, 224, 5, tempDir, false);
     }
 
     @Timeout(30)
     @Test
     void messageLength1376bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(100, 1376, 1, tempDir);
+        test(100, 1376, 1, tempDir, false);
     }
 
     @SuppressWarnings("MethodLength")
     protected final void test(
-        final int messages, final int messageLength, final int burstSize, final Path tempDir) throws Exception
+        final int messages,
+        final int messageLength,
+        final int burstSize,
+        final Path tempDir,
+        final boolean outOfOrderReceive) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
@@ -202,6 +206,10 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             rethrowUnchecked(error.get());
         }
 
+        if (outOfOrderReceive)
+        {
+            receivedTimestamps.sort(Long::compareTo);
+        }
         assertEquals(sentTimestamps, receivedTimestamps);
     }
 

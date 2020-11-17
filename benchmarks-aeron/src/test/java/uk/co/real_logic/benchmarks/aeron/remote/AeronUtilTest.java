@@ -95,4 +95,13 @@ class AeronUtilTest
             clearProperty(RECONNECT_IF_IMAGE_CLOSED);
         }
     }
+
+    @Test
+    void testAssertChannelsAndStreamsMatch()
+    {
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> assertChannelsAndStreamsMatch(new String[]{ "a" }, new int[]{ 1, 2 }, "channels", "streams"));
+
+        assertEquals("Number of 'channels' does not match with 'streams':\n [a]\n [1, 2]", exception.getMessage());
+    }
 }

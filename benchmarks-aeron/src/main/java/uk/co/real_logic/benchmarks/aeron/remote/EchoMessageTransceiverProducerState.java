@@ -24,10 +24,11 @@ abstract class EchoMessageTransceiverProducerState extends MessageTransceiver
 {
 
     UnsafeBuffer offerBuffer;
-    ExclusivePublication publication;
+    ExclusivePublication[] publications;
     ExclusivePublication[] passivePublications;
     long keepAliveIntervalNs;
     long timeOfLastKeepAliveNs;
+    int sendIndex;
 
     EchoMessageTransceiverProducerState(final MessageRecorder messageRecorder)
     {

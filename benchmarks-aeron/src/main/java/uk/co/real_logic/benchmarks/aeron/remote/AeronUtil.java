@@ -35,6 +35,7 @@ import org.agrona.concurrent.status.CountersReader;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
@@ -410,6 +411,16 @@ final class AeronUtil
             result == MAX_POSITION_EXCEEDED)
         {
             throw new AeronException("Publication error: " + result);
+        }
+    }
+
+    static void assertChannelsAndStreamsMatch(
+        final String[] channels, final int[] streams, final String channelsProp, final String streamsProp)
+    {
+        if (channels.length != streams.length)
+        {
+            throw new IllegalArgumentException("Number of '" + channelsProp + "' does not match with '" + streamsProp +
+                "':\n " + Arrays.toString(channels) + "\n " + Arrays.toString(streams));
         }
     }
 

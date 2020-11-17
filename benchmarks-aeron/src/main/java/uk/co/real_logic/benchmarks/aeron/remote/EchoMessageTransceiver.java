@@ -40,8 +40,9 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
     private final Aeron aeron;
     private final boolean ownsAeronClient;
 
-    private Subscription subscription;
-    private Image image;
+    private Subscription[] subscriptions;
+    private Image[] images;
+    private int receiveIndex;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
@@ -69,15 +70,35 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
 
     public void init(final Configuration configuration)
     {
-        publication = aeron.addExclusivePublication(destinationChannels()[0], destinationStreams()[0]);
-        subscription = aeron.addSubscription(sourceChannels()[0], sourceStreams()[0]);
+        final String[] destinationChannels = destinationChannels();
+        final int[] destinationStreams = destinationStreams();
+        assertChannelsAndStreamsMatch(
+            destinationChannels, destinationStreams, DESTINATION_CHANNELS_PROP_NAME, DESTINATION_STREAMS_PROP_NAME);
+
+        final String[] sourceChannels = sourceChannels();
+        final int[] sourceStreams = sourceStreams();
+        assertChannelsAndStreamsMatch(
+            sourceChannels, sourceStreams, SOURCE_CHANNELS_PROP_NAME, SOURCE_STREAMS_PROP_NAME);
+
+        if (destinationChannels.length != sourceChannels.length)
+        {
+            throw new IllegalArgumentException("Number of destinations does not match the number of sources:\n " +
+                Arrays.toString(destinationChannels) + "\n " + Arrays.toString(sourceChannels));
+        }
 
         final String[] passiveChannels = passiveChannels();
         final int[] passiveStreams = passiveStreams();
-        if (passiveChannels.length != passiveStreams.length)
+        assertChannelsAndStreamsMatch(
+            passiveChannels, passiveStreams, PASSIVE_CHANNELS_PROP_NAME, PASSIVE_STREAMS_PROP_NAME);
+
+        final int numActiveChannels = destinationChannels.length;
+        publications = new ExclusivePublication[numActiveChannels];
+        subscriptions = new Subscription[numActiveChannels];
+        images = new Image[numActiveChannels];
+        for (int i = 0; i < numActiveChannels; i++)
         {
-            throw new IllegalStateException("Number of passive channels does not match with passive streams: " +
-                Arrays.toString(passiveChannels) + ", " + Arrays.toString(passiveStreams));
+            publications[i] = aeron.addExclusivePublication(destinationChannels[i], destinationStreams[i]);
+            subscriptions[i] = aeron.addSubscription(sourceChannels[i], sourceStreams[i]);
         }
 
         passivePublications = EMPTY_PUBLICATIONS;
@@ -91,20 +112,24 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
             keepAliveIntervalNs = passiveChannelsKeepAliveIntervalNanos();
         }
 
-        while (!subscription.isConnected() || !publication.isConnected() || !allConnected(passivePublications))
+        while (!allConnected(subscriptions) || !allConnected(publications) || !allConnected(passivePublications))
         {
             yieldUninterruptedly();
         }
 
         offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
 
-        image = subscription.imageAtIndex(0);
+        for (int i = 0; i < numActiveChannels; i++)
+        {
+            images[i] = subscriptions[i].imageAtIndex(0);
+        }
     }
 
     public void destroy()
     {
         closeAll(passivePublications);
-        closeAll(publication, subscription);
+        closeAll(publications);
+        closeAll(subscriptions);
 
         if (ownsAeronClient)
         {
@@ -114,8 +139,15 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
+        final ExclusivePublication[] publications = this.publications;
+        int index = sendIndex++;
+        if (index >= publications.length)
+        {
+            sendIndex = index = 0;
+        }
+
         final int sent =
-            sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
+            sendMessages(publications[index], offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
 
         if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - timestamp < 0)
         {
@@ -127,10 +159,24 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
 
     public void receive()
     {
-        final int fragments = image.poll(dataHandler, FRAGMENT_LIMIT);
-        if (0 == fragments && image.isClosed())
+        final Image[] images = this.images;
+        final int length = images.length;
+        final FragmentAssembler dataHandler = this.dataHandler;
+        int startingIndex = receiveIndex++;
+        if (startingIndex >= length)
         {
-            throw new IllegalStateException("image closed unexpectedly");
+            receiveIndex = startingIndex = 0;
+        }
+
+        int fragments = 0;
+        for (int i = startingIndex; i < length && fragments < FRAGMENT_LIMIT; i++)
+        {
+            fragments += images[i].poll(dataHandler, FRAGMENT_LIMIT - fragments);
+        }
+
+        for (int i = 0; i < startingIndex && fragments < FRAGMENT_LIMIT; i++)
+        {
+            fragments += images[i].poll(dataHandler, FRAGMENT_LIMIT - fragments);
         }
     }
 
