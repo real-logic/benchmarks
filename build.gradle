@@ -73,9 +73,12 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
 
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+    if (buildJavaVersion >= 9)
+    {
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+            }
         }
     }
 
@@ -87,8 +90,17 @@ subprojects {
     }
 
     tasks.withType(JavaCompile) {
-        if (buildJavaVersion >= 9) {
+        if (buildJavaVersion >= 9)
+        {
             options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
+        }
+        else
+        {
+            options.fork = true
+            def javaHome = System.env.JAVA_HOME
+            if (javaHome != null) {
+                options.forkOptions.javaHome = file(javaHome)
+            }
         }
         options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
         options.encoding = 'UTF-8'
