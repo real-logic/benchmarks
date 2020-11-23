@@ -98,6 +98,10 @@ subprojects {
     tasks.withType(Test) {
         useJUnitPlatform()
 
+        if (buildJavaVersion >= 16) {
+            systemProperty "net.bytebuddy.experimental", "true"
+        }
+
         testLogging {
             showStandardStreams = true
             exceptionFormat = 'full'
