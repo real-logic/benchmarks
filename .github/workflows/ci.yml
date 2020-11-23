@@ -38,16 +38,18 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Print ENV before
-        run: echo "JAVA_HOME=${JAVA_HOME}" && echo "JAVA_HOME_8_X64=${JAVA_HOME_8_X64}" && echo "JAVA_HOME_11_X64=${JAVA_HOME_11_X64}"
+      - name: Preserve original JAVA_HOME
+        run: echo "ORIGINAL_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
       - name: Setup java
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - name: Print ENV after
-        run: echo "JAVA_HOME=${JAVA_HOME}"
+      - name: Restore original JAVA_HOME and setup BUILD_JAVA_HOME
+        run: |
+          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          echo "JAVA_HOME=${ORIGINAL_JAVA_HOME}" >> $GITHUB_ENV
       - name: Build with Gradle
-        run: ./gradlew
+        run: ${JAVA_HOME}/bin/java -version && ./gradlew
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}
