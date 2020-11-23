@@ -49,6 +49,7 @@ jobs:
           elif [ "$RUNNER_OS" == "Windows" ]; then
             echo "BUILD_JAVA_HOME=$env:JAVA_HOME" >> $GITHUB_ENV
           fi
+        shell: bash
       - name: Setup java 8 to run the script
         uses: actions/setup-java@v1
         with:
