@@ -43,10 +43,10 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Setup BUILD_JAVA_HOME (Linux)
-        if: ${{ runner.os == "Linux" }}
+        if: runner.os == 'Linux'
         run: echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
       - name: Setup BUILD_JAVA_HOME (Windows)
-        if: ${{ runner.os == "Windows" }}
+        if: runner.os == 'Windows'
         run: echo "BUILD_JAVA_HOME=$env:JAVA_HOME" >> $GITHUB_ENV
       - name: Setup java 8 to run the script
         uses: actions/setup-java@v1
