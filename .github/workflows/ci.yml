@@ -49,7 +49,7 @@ jobs:
         with:
           java-version: 8
       - name: Build with Gradle
-        run: ./gradlew
+        run: echo "BUILD_JAVA_HOME=${BUILD_JAVA_HOME}" && ./gradlew
         env:
           BUILD_JAVA_VERSION: ${{ matrix.java }}
 
