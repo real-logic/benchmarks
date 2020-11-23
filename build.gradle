@@ -83,7 +83,7 @@ subprojects {
     }
 
     tasks.withType(JavaCompile) {
-        if (JavaVersion.current().isJava9Compatible()) {
+        if (Integer.parseInt(buildJavaVersion) >= 9) {
             options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
         }
         options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
