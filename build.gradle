@@ -20,7 +20,7 @@ plugins {
     id 'checkstyle'
     id 'com.github.ben-manes.versions' version '0.36.0'
     id 'com.github.johnrengelman.shadow' version '6.1.0' apply false
-    id 'com.google.protobuf' version '0.8.13' apply false
+    id 'com.google.protobuf' version '0.8.14' apply false
 }
 
 defaultTasks 'clean', 'build'
