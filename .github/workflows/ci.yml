@@ -43,9 +43,12 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Setup BUILD_JAVA_HOME
-        run: echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-      - name: Verify BUILD_JAVA_HOME
-        run: echo "${BUILD_JAVA_HOME}"
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            echo "BUILD_JAVA_HOME=$env:JAVA_HOME" >> $GITHUB_ENV
+          fi
       - name: Setup java 8 to run the script
         uses: actions/setup-java@v1
         with:
