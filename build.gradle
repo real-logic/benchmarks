@@ -25,10 +25,16 @@ plugins {
 
 defaultTasks 'clean', 'build'
 
-repositories {
-    mavenLocal()
-    mavenCentral()
+def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
+if (buildJavaVersion.indexOf('.') > 0)
+{
+    buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
 }
+if (buildJavaVersion.indexOf('-') > 0)
+{
+    buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('-'))
+}
+println "BUILD_JAVA_VERSION=$buildJavaVersion"
 
 def agronaVersion = '1.8.0'
 def aeronVersion = '1.31.1'
@@ -61,6 +67,12 @@ subprojects {
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+        }
     }
 
     checkstyle.toolVersion = "${checkstyleVersion}"
