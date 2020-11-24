@@ -25,7 +25,7 @@ plugins {
 
 defaultTasks 'clean', 'build'
 
-def getBuildJavaVersion()
+static def getBuildJavaVersion()
 {
     def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
     if (buildJavaVersion.indexOf('.') > 0)
