@@ -25,15 +25,12 @@ plugins {
 
 defaultTasks 'clean', 'build'
 
-static def getBuildJavaVersion()
-{
+static def getBuildJavaVersion() {
     def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
-    if (buildJavaVersion.indexOf('.') > 0)
-    {
+    if (buildJavaVersion.indexOf('.') > 0) {
         buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
     }
-    if (buildJavaVersion.indexOf('-') > 0)
-    {
+    if (buildJavaVersion.indexOf('-') > 0) {
         buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('-'))
     }
     Integer.parseInt(buildJavaVersion)
@@ -47,7 +44,7 @@ def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.2'
 def junitVersion = '5.7.0'
 def mockitoVersion = '3.6.28'
-def checkstyleVersion = '8.37'
+def checkstyleVersion = '8.38'
 def grpcVersion = '1.33.1'
 def protobufVersion = '3.14.0'
 def kafkaVersion = '2.6.0'
@@ -73,8 +70,7 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
 
-    if (buildJavaVersion >= 9)
-    {
+    if (buildJavaVersion >= 9) {
         java {
             toolchain {
                 languageVersion = JavaLanguageVersion.of(buildJavaVersion)
@@ -90,12 +86,10 @@ subprojects {
     }
 
     tasks.withType(JavaCompile) {
-        if (buildJavaVersion >= 9)
-        {
+        if (buildJavaVersion >= 9) {
             options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
         }
-        else
-        {
+        else {
             options.fork = true
             def javaHome = System.env.JAVA_HOME
             if (javaHome != null) {
