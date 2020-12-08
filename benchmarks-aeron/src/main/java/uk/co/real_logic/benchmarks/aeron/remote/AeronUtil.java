@@ -341,11 +341,10 @@ final class AeronUtil
         final long checksum)
     {
         int count = 0;
+        offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
+        offerBuffer.putLong(messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
         for (int i = 0; i < numberOfMessages; i++)
         {
-            offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
-            offerBuffer.putLong(messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
-
             final long result = publication.offer(offerBuffer, 0, messageLength, null);
             if (result < 0)
             {
