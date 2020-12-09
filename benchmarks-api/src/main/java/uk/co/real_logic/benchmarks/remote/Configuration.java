@@ -116,21 +116,12 @@ public final class Configuration
     public static final String MESSAGE_LENGTH_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messageLength";
 
     /**
-     * Name of the system property to configure the {@link IdleStrategy} to use when sending messages.
+     * Name of the system property to configure the {@link IdleStrategy} to use when sending and receiving messages.
      * Must be a fully qualified class name. Default value is {@link NoOpIdleStrategy}.
      *
-     * @see #sendIdleStrategy()
+     * @see #idleStrategy()
      */
-    public static final String SEND_IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.send.idleStrategy";
-
-    /**
-     * Name of the system property to configure the {@link IdleStrategy} to use when receiving messages.
-     * Must be a fully qualified class name. Default value is {@link NoOpIdleStrategy}.
-     *
-     * @see #receiveIdleStrategy()
-     */
-    public static final String RECEIVE_IDLE_STRATEGY_PROP_NAME =
-        "uk.co.real_logic.benchmarks.remote.receive.idleStrategy";
+    public static final String IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.idleStrategy";
 
     /**
      * Name of the required system property to configure the {@link MessageTransceiver} class (i.e. system under test) to be
@@ -170,8 +161,7 @@ public final class Configuration
     private final int batchSize;
     private final int messageLength;
     private final Class<? extends MessageTransceiver> messageTransceiverClass;
-    private final IdleStrategy sendIdleStrategy;
-    private final IdleStrategy receiveIdleStrategy;
+    private final IdleStrategy idleStrategy;
     private final Path outputDirectory;
     private final String outputFileNamePrefix;
 
@@ -183,8 +173,7 @@ public final class Configuration
         this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
         this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
-        this.sendIdleStrategy = requireNonNull(builder.sendIdleStrategy, "Send IdleStrategy cannot be null");
-        this.receiveIdleStrategy = requireNonNull(builder.receiveIdleStrategy, "Receive IdleStrategy cannot be null");
+        this.idleStrategy = requireNonNull(builder.idleStrategy, "IdleStrategy cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
         outputFileNamePrefix = computeFileNamePrefix(builder.outputFileNamePrefix, builder.systemProperties);
     }
@@ -258,23 +247,13 @@ public final class Configuration
     }
 
     /**
-     * {@link IdleStrategy} to use when sending messages.
+     * {@link IdleStrategy} to use when sending and receiving messages.
      *
      * @return sender {@link IdleStrategy}, defaults to {@link NoOpIdleStrategy}.
      */
-    public IdleStrategy sendIdleStrategy()
+    public IdleStrategy idleStrategy()
     {
-        return sendIdleStrategy;
-    }
-
-    /**
-     * {@link IdleStrategy} to use when receiving messages.
-     *
-     * @return receiver {@link IdleStrategy}, defaults to {@link NoOpIdleStrategy}.
-     */
-    public IdleStrategy receiveIdleStrategy()
-    {
-        return receiveIdleStrategy;
+        return idleStrategy;
     }
 
     /**
@@ -306,8 +285,7 @@ public final class Configuration
             "\n    batchSize=" + batchSize +
             "\n    messageLength=" + messageLength +
             "\n    messageTransceiverClass=" + messageTransceiverClass.getName() +
-            "\n    sendIdleStrategy=" + sendIdleStrategy +
-            "\n    receiveIdleStrategy=" + receiveIdleStrategy +
+            "\n    idleStrategy=" + idleStrategy +
             "\n    outputDirectory=" + outputDirectory +
             "\n    outputFileNamePrefix=" + outputFileNamePrefix +
             "\n}";
@@ -342,8 +320,7 @@ public final class Configuration
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
         private Class<? extends MessageTransceiver> messageTransceiverClass;
-        private IdleStrategy sendIdleStrategy = NoOpIdleStrategy.INSTANCE;
-        private IdleStrategy receiveIdleStrategy = NoOpIdleStrategy.INSTANCE;
+        private IdleStrategy idleStrategy = NoOpIdleStrategy.INSTANCE;
         private Path outputDirectory = Paths.get("results");
         private Properties systemProperties = System.getProperties();
         private String outputFileNamePrefix;
@@ -422,26 +399,14 @@ public final class Configuration
         }
 
         /**
-         * Set the {@link IdleStrategy} for sending the messages.
+         * Set the {@link IdleStrategy} for sending and receiving the messages.
          *
-         * @param sendIdleStrategy idle strategy for the sender.
+         * @param idleStrategy idle strategy for the sender.
          * @return this for a fluent API.
          */
-        public Builder sendIdleStrategy(final IdleStrategy sendIdleStrategy)
+        public Builder idleStrategy(final IdleStrategy idleStrategy)
         {
-            this.sendIdleStrategy = sendIdleStrategy;
-            return this;
-        }
-
-        /**
-         * Set the {@link IdleStrategy} for receiving the messages.
-         *
-         * @param receiveIdleStrategy idle strategy for the receiver.
-         * @return this for a fluent API.
-         */
-        public Builder receiveIdleStrategy(final IdleStrategy receiveIdleStrategy)
-        {
-            this.receiveIdleStrategy = receiveIdleStrategy;
+            this.idleStrategy = idleStrategy;
             return this;
         }
 
@@ -514,14 +479,9 @@ public final class Configuration
             builder.messageLength(intProperty(MESSAGE_LENGTH_PROP_NAME));
         }
 
-        if (isPropertyProvided(SEND_IDLE_STRATEGY_PROP_NAME))
+        if (isPropertyProvided(IDLE_STRATEGY_PROP_NAME))
         {
-            builder.sendIdleStrategy(idleStrategyProperty(SEND_IDLE_STRATEGY_PROP_NAME));
-        }
-
-        if (isPropertyProvided(RECEIVE_IDLE_STRATEGY_PROP_NAME))
-        {
-            builder.receiveIdleStrategy(idleStrategyProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME));
+            builder.idleStrategy(resolveIdleStrategy());
         }
 
         if (isPropertyProvided(OUTPUT_DIRECTORY_PROP_NAME))
@@ -639,9 +599,9 @@ public final class Configuration
         }
     }
 
-    private static IdleStrategy idleStrategyProperty(final String propName)
+    private static IdleStrategy resolveIdleStrategy()
     {
-        final Class<? extends IdleStrategy> klass = classProperty(propName, IdleStrategy.class);
+        final Class<? extends IdleStrategy> klass = classProperty(IDLE_STRATEGY_PROP_NAME, IdleStrategy.class);
         try
         {
             return klass.getConstructor().newInstance();
@@ -649,12 +609,13 @@ public final class Configuration
         catch (final InstantiationException | IllegalAccessException | NoSuchMethodException ex)
         {
             throw new IllegalArgumentException(
-                "invalid IdleStrategy property '" + propName + "', cause: " + ex.getMessage());
+                "invalid IdleStrategy property '" + IDLE_STRATEGY_PROP_NAME + "', cause: " + ex.getMessage());
         }
         catch (final InvocationTargetException ex)
         {
             throw new IllegalArgumentException(
-                "invalid IdleStrategy property '" + propName + "', cause: " + ex.getCause().getMessage());
+                "invalid IdleStrategy property '" + IDLE_STRATEGY_PROP_NAME + "', cause: " +
+                ex.getCause().getMessage());
         }
     }
 

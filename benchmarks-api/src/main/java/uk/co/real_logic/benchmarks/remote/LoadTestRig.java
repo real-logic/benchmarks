@@ -48,7 +48,7 @@ public final class LoadTestRig
     private final PrintStream out;
     private final PersistedHistogram histogram;
     private final int availableProcessors;
-    private volatile long sentMessages;
+    private long sentMessages;
     private long receivedMessages;
 
     public LoadTestRig(final Configuration configuration)
@@ -160,7 +160,7 @@ public final class LoadTestRig
     void receive()
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
-        final IdleStrategy idleStrategy = configuration.receiveIdleStrategy();
+        final IdleStrategy idleStrategy = configuration.idleStrategy();
 
         long sent = 0;
         long received = 0;
@@ -197,7 +197,7 @@ public final class LoadTestRig
         final NanoClock clock = this.clock;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
-        final IdleStrategy idleStrategy = configuration.sendIdleStrategy();
+        final IdleStrategy idleStrategy = configuration.idleStrategy();
         final long sendInterval = NANOS_PER_SECOND * burstSize / numberOfMessages;
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
 

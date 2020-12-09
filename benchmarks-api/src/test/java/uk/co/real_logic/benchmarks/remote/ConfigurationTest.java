@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
-import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
@@ -174,29 +173,16 @@ class ConfigurationTest
     }
 
     @Test
-    void throwsNullPointerExceptionIfSenderIdleStrategyIsNull()
+    void throwsNullPointerExceptionIfIdleStrategyIsNull()
     {
         final Builder builder = new Builder()
             .numberOfMessages(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .sendIdleStrategy(null);
+            .idleStrategy(null);
 
         final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
 
-        assertEquals("Send IdleStrategy cannot be null", ex.getMessage());
-    }
-
-    @Test
-    void throwsNullPointerExceptionIfReceiverIdleStrategyIsNull()
-    {
-        final Builder builder = new Builder()
-            .numberOfMessages(4)
-            .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .receiveIdleStrategy(null);
-
-        final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
-
-        assertEquals("Receive IdleStrategy cannot be null", ex.getMessage());
+        assertEquals("IdleStrategy cannot be null", ex.getMessage());
     }
 
     @Test
@@ -310,8 +296,7 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.idleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
         assertEquals("defaults_123_" + DEFAULT_BATCH_SIZE + "_" + MIN_MESSAGE_LENGTH +
             "_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -329,8 +314,7 @@ class ConfigurationTest
             .batchSize(4)
             .messageLength(119)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
-            .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .idleStrategy(YieldingIdleStrategy.INSTANCE)
             .outputDirectory(outputDirectory)
             .outputFileNamePrefix("explicit-opts")
             .build();
@@ -341,8 +325,7 @@ class ConfigurationTest
         assertEquals(4, configuration.batchSize());
         assertEquals(119, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
-        assertSame(YieldingIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
+        assertSame(YieldingIdleStrategy.INSTANCE, configuration.idleStrategy());
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
         assertTrue(configuration.outputFileNamePrefix().startsWith("explicit-opts"));
     }
@@ -357,8 +340,7 @@ class ConfigurationTest
             .batchSize(2)
             .messageLength(64)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .sendIdleStrategy(NoOpIdleStrategy.INSTANCE)
-            .receiveIdleStrategy(YieldingIdleStrategy.INSTANCE)
+            .idleStrategy(NoOpIdleStrategy.INSTANCE)
             .outputFileNamePrefix("my-file")
             .systemProperties(props("java", "25"))
             .build();
@@ -370,8 +352,7 @@ class ConfigurationTest
             "\n    batchSize=2" +
             "\n    messageLength=64" +
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
-            "\n    sendIdleStrategy=NoOpIdleStrategy{alias=noop}" +
-            "\n    receiveIdleStrategy=YieldingIdleStrategy{alias=yield}" +
+            "\n    idleStrategy=NoOpIdleStrategy{alias=noop}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
             "\n    outputFileNamePrefix=my-file_777_2_64" +
             "_73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
@@ -439,8 +420,7 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.sendIdleStrategy());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.receiveIdleStrategy());
+        assertSame(NoOpIdleStrategy.INSTANCE, configuration.idleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
     }
 
@@ -453,8 +433,7 @@ class ConfigurationTest
         setProperty(BATCH_SIZE_PROP_NAME, "3");
         setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
-        setProperty(SEND_IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
-        setProperty(RECEIVE_IDLE_STRATEGY_PROP_NAME, BusySpinIdleStrategy.class.getName());
+        setProperty(IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
         final Path outputDirectory = tempDir.resolve("my-output-dir-prop");
         setProperty(OUTPUT_DIRECTORY_PROP_NAME, outputDirectory.toAbsolutePath().toString());
         setProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "my-out-file");
@@ -467,8 +446,7 @@ class ConfigurationTest
         assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertTrue(configuration.sendIdleStrategy() instanceof YieldingIdleStrategy);
-        assertTrue(configuration.receiveIdleStrategy() instanceof BusySpinIdleStrategy);
+        assertTrue(configuration.idleStrategy() instanceof YieldingIdleStrategy);
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
         assertTrue(configuration.outputFileNamePrefix().startsWith("my-out-file"));
     }
@@ -523,8 +501,7 @@ class ConfigurationTest
             BATCH_SIZE_PROP_NAME,
             MESSAGE_LENGTH_PROP_NAME,
             MESSAGE_TRANSCEIVER_PROP_NAME,
-            SEND_IDLE_STRATEGY_PROP_NAME,
-            RECEIVE_IDLE_STRATEGY_PROP_NAME,
+            IDLE_STRATEGY_PROP_NAME,
             OUTPUT_DIRECTORY_PROP_NAME,
             OUTPUT_FILE_NAME_PREFIX_PROP_NAME)
             .forEach(System::clearProperty);

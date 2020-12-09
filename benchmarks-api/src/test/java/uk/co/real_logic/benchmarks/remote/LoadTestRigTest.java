@@ -38,8 +38,7 @@ import static uk.co.real_logic.benchmarks.remote.LoadTestRig.MINIMUM_NUMBER_OF_C
 
 class LoadTestRigTest
 {
-    private final IdleStrategy senderIdleStrategy = mock(IdleStrategy.class);
-    private final IdleStrategy receiverIdleStrategy = mock(IdleStrategy.class);
+    private final IdleStrategy idleStrategy = mock(IdleStrategy.class);
     private final NanoClock clock = mock(NanoClock.class);
     private final PrintStream out = mock(PrintStream.class);
     private final PersistedHistogram histogram = mock(PersistedHistogram.class);
@@ -54,8 +53,7 @@ class LoadTestRigTest
             .iterations(1)
             .numberOfMessages(1)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .sendIdleStrategy(senderIdleStrategy)
-            .receiveIdleStrategy(receiverIdleStrategy)
+            .idleStrategy(idleStrategy)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("test")
             .build();
@@ -80,8 +78,7 @@ class LoadTestRigTest
             .iterations(1)
             .numberOfMessages(1)
             .messageTransceiverClass(configuration.messageTransceiverClass())
-            .sendIdleStrategy(senderIdleStrategy)
-            .receiveIdleStrategy(receiverIdleStrategy)
+            .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
             .outputFileNamePrefix("test")
             .build();
@@ -185,8 +182,7 @@ class LoadTestRigTest
             .numberOfMessages(5)
             .batchSize(2)
             .messageTransceiverClass(configuration.messageTransceiverClass())
-            .sendIdleStrategy(senderIdleStrategy)
-            .receiveIdleStrategy(receiverIdleStrategy)
+            .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
             .outputFileNamePrefix("test")
             .build();
@@ -223,8 +219,7 @@ class LoadTestRigTest
             .numberOfMessages(3)
             .batchSize(200)
             .messageTransceiverClass(configuration.messageTransceiverClass())
-            .sendIdleStrategy(senderIdleStrategy)
-            .receiveIdleStrategy(receiverIdleStrategy)
+            .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
             .outputFileNamePrefix("test")
             .build();
@@ -269,9 +264,9 @@ class LoadTestRigTest
 
         verify(messageTransceiver).send(anyInt(), anyInt(), anyLong(), anyLong());
         verify(messageTransceiver, times(3)).receive();
-        verify(receiverIdleStrategy, times(2)).reset();
-        verify(receiverIdleStrategy).idle();
-        verifyNoMoreInteractions(messageTransceiver, receiverIdleStrategy);
+        verify(idleStrategy, times(2)).reset();
+        verify(idleStrategy).idle();
+        verifyNoMoreInteractions(messageTransceiver, idleStrategy);
     }
 
     @Test
@@ -288,7 +283,7 @@ class LoadTestRigTest
 
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
-            .sendIdleStrategy(senderIdleStrategy)
+            .idleStrategy(idleStrategy)
             .batchSize(15)
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -314,7 +309,7 @@ class LoadTestRigTest
         verify(messageTransceiver).send(5, 24, MILLISECONDS.toNanos(2800), CHECKSUM);
         verify(out).format("Send rate %,d msg/sec%n", 30L);
         verify(out).format("Send rate %,d msg/sec%n", 25L);
-        verifyNoMoreInteractions(out, clock, senderIdleStrategy, messageTransceiver);
+        verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
     @Test
@@ -331,7 +326,7 @@ class LoadTestRigTest
 
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
-            .sendIdleStrategy(senderIdleStrategy)
+            .idleStrategy(idleStrategy)
             .batchSize(30)
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -351,8 +346,8 @@ class LoadTestRigTest
 
         assertEquals(90, messages);
         verify(clock, times(5)).nanoTime();
-        verify(senderIdleStrategy, times(2)).reset();
-        verify(senderIdleStrategy, times(3)).idle();
+        verify(idleStrategy, times(2)).reset();
+        verify(idleStrategy, times(3)).idle();
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(5, 100, MILLISECONDS.toNanos(500), CHECKSUM);
@@ -360,7 +355,7 @@ class LoadTestRigTest
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(1100), CHECKSUM);
         verify(out).format("Send rate %,d msg/sec%n", 5L);
         verify(out).format("Send rate %,d msg/sec%n", 6L);
-        verifyNoMoreInteractions(out, clock, senderIdleStrategy, messageTransceiver);
+        verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
     @Timeout(10)
