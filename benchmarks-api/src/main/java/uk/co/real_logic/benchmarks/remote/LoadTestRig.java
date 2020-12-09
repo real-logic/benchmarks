@@ -22,14 +22,12 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -48,7 +46,6 @@ public final class LoadTestRig
     private final PrintStream out;
     private final PersistedHistogram histogram;
     private final int availableProcessors;
-    private long sentMessages;
     private long receivedMessages;
 
     public LoadTestRig(final Configuration configuration)
@@ -120,11 +117,10 @@ public final class LoadTestRig
                     configuration.numberOfMessages(),
                     configuration.messageLength(),
                     configuration.batchSize());
-                doRun(configuration.warmUpIterations(), configuration.numberOfMessages());
+                send(configuration.warmUpIterations(), configuration.numberOfMessages());
 
-                histogram.reset();
-                sentMessages = 0;
                 receivedMessages = 0;
+                histogram.reset();
             }
 
             // Measurement
@@ -134,60 +130,19 @@ public final class LoadTestRig
                 configuration.numberOfMessages(),
                 configuration.messageLength(),
                 configuration.batchSize());
-            doRun(configuration.iterations(), configuration.numberOfMessages());
+            final long sentMessages = send(configuration.iterations(), configuration.numberOfMessages());
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
             histogram.outputPercentileDistribution(out, 1000.0);
 
             warnIfInsufficientCpu();
-            warnIfTargetRateNotAchieved();
+            warnIfTargetRateNotAchieved(sentMessages);
 
             histogram.saveToFile(configuration.outputDirectory(), configuration.outputFileNamePrefix());
         }
         finally
         {
             messageTransceiver.destroy();
-        }
-    }
-
-    private void doRun(final int iterations, final int messages)
-    {
-        final CompletableFuture<?> receiverTask = runAsync(this::receive);
-        send(iterations, messages);
-        receiverTask.join();
-    }
-
-    void receive()
-    {
-        final MessageTransceiver messageTransceiver = this.messageTransceiver;
-        final IdleStrategy idleStrategy = configuration.idleStrategy();
-
-        long sent = 0;
-        long received = 0;
-        while (true)
-        {
-            messageTransceiver.receive();
-
-            final long receivedMessagesCount = receivedMessages;
-            if (receivedMessagesCount != received)
-            {
-                received = receivedMessagesCount;
-                idleStrategy.reset();
-            }
-            else
-            {
-                idleStrategy.idle();
-            }
-
-            if (0 == sent)
-            {
-                sent = sentMessages;
-            }
-
-            if (0 != sent && received >= sent)
-            {
-                break;
-            }
         }
     }
 
@@ -208,40 +163,47 @@ public final class LoadTestRig
         long now = startTime;
         long nextReportTime = startTime + NANOS_PER_SECOND;
 
+        int batchSize = (int)min(totalNumberOfMessages, burstSize);
         while (true)
         {
-            final int batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
-            int sent = messageTransceiver.send(batchSize, messageSize, timestamp, CHECKSUM);
-            if (sent < batchSize)
-            {
-                idleStrategy.reset();
-                do
-                {
-                    idleStrategy.idle();
-                    sent += messageTransceiver.send(batchSize - sent, messageSize, timestamp, CHECKSUM);
-                }
-                while (sent < batchSize);
-            }
+            final int sent = messageTransceiver.send(batchSize, messageSize, timestamp, CHECKSUM);
+            messageTransceiver.receive();
 
-            sentMessages += batchSize;
+            sentMessages += sent;
             if (totalNumberOfMessages == sentMessages)
             {
                 reportProgress(startTime, now, sentMessages);
                 break;
             }
 
-            timestamp += sendInterval;
             now = clock.nanoTime();
-
-            if (now < timestamp && now < endTime)
+            if (sent == batchSize)
             {
-                idleStrategy.reset();
-                do
+                batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
+                timestamp += sendInterval;
+                if (now < timestamp && now < endTime)
                 {
-                    idleStrategy.idle();
-                    now = clock.nanoTime();
+                    idleStrategy.reset();
+                    do
+                    {
+                        final long receivedMessages = this.receivedMessages;
+                        messageTransceiver.receive();
+                        if (receivedMessages == this.receivedMessages)
+                        {
+                            idleStrategy.idle();
+                        }
+                        else
+                        {
+                            idleStrategy.reset();
+                        }
+                        now = clock.nanoTime();
+                    }
+                    while (now < timestamp && now < endTime);
                 }
-                while (now < timestamp && now < endTime);
+            }
+            else
+            {
+                batchSize -= sent;
             }
 
             if (now >= endTime)
@@ -256,7 +218,24 @@ public final class LoadTestRig
             }
         }
 
-        this.sentMessages = sentMessages;
+        while (true)
+        {
+            final long receivedMessages = this.receivedMessages;
+            if (receivedMessages >= sentMessages)
+            {
+                break;
+            }
+
+            messageTransceiver.receive();
+            if (receivedMessages == this.receivedMessages)
+            {
+                idleStrategy.idle();
+            }
+            else
+            {
+                idleStrategy.reset();
+            }
+        }
 
         return sentMessages;
     }
@@ -283,7 +262,7 @@ public final class LoadTestRig
         }
     }
 
-    private void warnIfTargetRateNotAchieved()
+    private void warnIfTargetRateNotAchieved(final long sentMessages)
     {
         final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.numberOfMessages();
         if (sentMessages < expectedTotalNumberOfMessages)

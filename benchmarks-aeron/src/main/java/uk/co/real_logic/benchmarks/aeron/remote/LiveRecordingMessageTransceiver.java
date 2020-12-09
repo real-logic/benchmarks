@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.Aeron;
-import io.aeron.Image;
-import io.aeron.ImageControlledFragmentAssembler;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.client.RecordingEventsListener;
@@ -28,6 +25,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -46,8 +44,7 @@ import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
  * Implementation of the {@link uk.co.real_logic.benchmarks.remote.MessageTransceiver} interface for benchmarking
  * live recording of the remote stream to local archive. Used together with the {@link EchoNode}.
  */
-public final class LiveRecordingMessageTransceiver
-    extends MessageTransceiverProducerStatePadded implements ControlledFragmentHandler
+public final class LiveRecordingMessageTransceiver extends MessageTransceiver implements ControlledFragmentHandler
 {
     private long recordingPosition = NULL_POSITION;
     private long recordingPositionConsumed = NULL_POSITION;
@@ -57,6 +54,10 @@ public final class LiveRecordingMessageTransceiver
     private final ImageControlledFragmentAssembler messageHandler = new ImageControlledFragmentAssembler(this);
     private final ArchivingMediaDriver archivingMediaDriver;
     private final AeronArchive aeronArchive;
+
+    private ExclusivePublication publication;
+    private UnsafeBuffer offerBuffer;
+
     private Subscription recordingEventsSubscription;
     private RecordingEventsAdapter recordingEventsAdapter;
     private Subscription subscription;

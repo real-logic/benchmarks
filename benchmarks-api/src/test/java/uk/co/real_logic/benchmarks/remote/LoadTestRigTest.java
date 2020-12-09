@@ -260,11 +260,9 @@ class LoadTestRigTest
 
         loadTestRig.send(1, 3);
 
-        loadTestRig.receive();
-
         verify(messageTransceiver).send(anyInt(), anyInt(), anyLong(), anyLong());
         verify(messageTransceiver, times(3)).receive();
-        verify(idleStrategy, times(2)).reset();
+        verify(idleStrategy).reset();
         verify(idleStrategy).idle();
         verifyNoMoreInteractions(messageTransceiver, idleStrategy);
     }
@@ -278,8 +276,7 @@ class LoadTestRigTest
             MILLISECONDS.toNanos(1000),
             MILLISECONDS.toNanos(1750),
             MILLISECONDS.toNanos(2400),
-            MILLISECONDS.toNanos(2950))
-            .thenThrow(new IllegalStateException("Unexpected call!"));
+            MILLISECONDS.toNanos(2950));
 
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
@@ -297,17 +294,29 @@ class LoadTestRigTest
             out,
             histogram,
             MINIMUM_NUMBER_OF_CPU_CORES * 2,
-            messageRecorder -> messageTransceiver);
+            messageRecorder ->
+            {
+                doAnswer(invocation ->
+                {
+                    messageRecorder.record(1, CHECKSUM);
+                    messageRecorder.record(1, CHECKSUM);
+                    return null;
+                }).when(messageTransceiver).receive();
+
+                return messageTransceiver;
+            });
 
         final long messages = loadTestRig.send(2, 25);
 
         assertEquals(50, messages);
-        verify(clock, times(4)).nanoTime();
+        verify(clock, times(54)).nanoTime();
+        verify(idleStrategy, times(21)).reset();
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1000), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1600), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(2200), CHECKSUM);
         verify(messageTransceiver).send(5, 24, MILLISECONDS.toNanos(2800), CHECKSUM);
-        verify(out).format("Send rate %,d msg/sec%n", 30L);
+        verify(messageTransceiver, times(25)).receive();
+        verify(out).format("Send rate %,d msg/sec%n", 7L);
         verify(out).format("Send rate %,d msg/sec%n", 25L);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
@@ -318,11 +327,16 @@ class LoadTestRigTest
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(15, 10, 5, 30);
         when(clock.nanoTime()).thenReturn(
             MILLISECONDS.toNanos(500),
+            MILLISECONDS.toNanos(501),
             MILLISECONDS.toNanos(777),
+            MILLISECONDS.toNanos(778),
             MILLISECONDS.toNanos(6750),
+            MILLISECONDS.toNanos(6751),
             MILLISECONDS.toNanos(9200),
-            MILLISECONDS.toNanos(12000)
-        ).thenThrow(new IllegalStateException("Unexpected call!"));
+            MILLISECONDS.toNanos(9201),
+            MILLISECONDS.toNanos(12000),
+            MILLISECONDS.toNanos(12001)
+        );
 
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
@@ -340,21 +354,29 @@ class LoadTestRigTest
             out,
             histogram,
             MINIMUM_NUMBER_OF_CPU_CORES * 2,
-            messageRecorder -> messageTransceiver);
+            messageRecorder ->
+            {
+                doAnswer(invocation ->
+                {
+                    messageRecorder.record(1, CHECKSUM);
+                    return null;
+                }).when(messageTransceiver).receive();
+
+                return messageTransceiver;
+            });
 
         final long messages = loadTestRig.send(10, 100);
 
-        assertEquals(90, messages);
-        verify(clock, times(5)).nanoTime();
-        verify(idleStrategy, times(2)).reset();
-        verify(idleStrategy, times(3)).idle();
+        assertEquals(60, messages);
+        verify(clock, times(65)).nanoTime();
+        verify(idleStrategy, times(56)).reset();
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(5, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(800), CHECKSUM);
-        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(1100), CHECKSUM);
-        verify(out).format("Send rate %,d msg/sec%n", 5L);
-        verify(out).format("Send rate %,d msg/sec%n", 6L);
+        verify(messageTransceiver, times(60)).receive();
+        verify(out).format("Send rate %,d msg/sec%n", 4L);
+        verify(out).format("Send rate %,d msg/sec%n", 3L);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
