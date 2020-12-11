@@ -18,7 +18,7 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
@@ -26,9 +26,7 @@ import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
@@ -39,7 +37,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
     private final boolean ownsArchiveClient;
 
     private ExclusivePublication publication;
-    private UnsafeBuffer offerBuffer;
+    private final BufferClaim bufferClaim = new BufferClaim();
 
     private Subscription subscription;
     private Image image;
@@ -94,8 +92,6 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         }
 
         image = subscription.imageAtIndex(0);
-
-        offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
     }
 
     public void destroy()
@@ -110,7 +106,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
+        return sendMessages(publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
     }
 
     public void receive()

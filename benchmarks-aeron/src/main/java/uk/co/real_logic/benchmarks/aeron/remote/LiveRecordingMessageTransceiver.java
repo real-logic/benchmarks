@@ -19,10 +19,10 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.client.RecordingEventsListener;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
@@ -35,8 +35,8 @@ import static io.aeron.logbuffer.ControlledFragmentHandler.Action.ABORT;
 import static io.aeron.logbuffer.ControlledFragmentHandler.Action.COMMIT;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
@@ -56,7 +56,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     private final AeronArchive aeronArchive;
 
     private ExclusivePublication publication;
-    private UnsafeBuffer offerBuffer;
+    private final BufferClaim bufferClaim = new BufferClaim();
 
     private Subscription recordingEventsSubscription;
     private RecordingEventsAdapter recordingEventsAdapter;
@@ -107,7 +107,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
         aeronArchive.startRecording(channel, sendStreamId, LOCAL, true);
         recordingId = awaitRecordingStart(aeron, publicationSessionId);
 
-        offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
         image = subscription.imageAtIndex(0);
     }
 
@@ -123,7 +122,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
+        return sendMessages(publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
     }
 
     public void receive()
