@@ -130,7 +130,7 @@ project(':benchmarks-aeron') {
         api project(':benchmarks-api')
         annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
         implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
-        implementation "io.aeron:aeron-archive:${aeronVersion}"
+        implementation "io.aeron:aeron-cluster:${aeronVersion}"
         implementation "com.lmax:disruptor:${disruptorVersion}"
     }
 }
