@@ -61,14 +61,14 @@ public class EchoClusterMessageTransceiver extends MessageTransceiver implements
         while (true)
         {
             final Publication publication = aeronCluster.ingressPublication();
-            if (null == publication || !publication.isConnected())
+            if (null != publication && publication.isConnected())
             {
-                aeronCluster.pollEgress();
-                yieldUninterruptedly();
+                break;
             }
             else
             {
-                break;
+                aeronCluster.pollEgress();
+                yieldUninterruptedly();
             }
         }
     }
