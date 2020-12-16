@@ -32,19 +32,19 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
-public class EchoClusterMessageTransceiver extends MessageTransceiver implements EgressListener
+public class ClusterMessageTransceiver extends MessageTransceiver implements EgressListener
 {
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MediaDriver mediaDriver;
     private final AeronCluster.Context aeronClusterContext;
     private AeronCluster aeronCluster;
 
-    public EchoClusterMessageTransceiver(final MessageRecorder messageRecorder)
+    public ClusterMessageTransceiver(final MessageRecorder messageRecorder)
     {
         this(launchEmbeddedMediaDriverIfConfigured(), new AeronCluster.Context(), messageRecorder);
     }
 
-    public EchoClusterMessageTransceiver(
+    public ClusterMessageTransceiver(
         final MediaDriver mediaDriver,
         final AeronCluster.Context aeronClusterContext,
         final MessageRecorder messageRecorder)

@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchArchivingMediaDriver;
 
-class EchoClusterTest
+class ClusterTest
 {
     @BeforeEach
     void before()
@@ -107,7 +107,7 @@ class EchoClusterTest
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(messages)
             .messageLength(messageLength)
-            .messageTransceiverClass(EchoClusterMessageTransceiver.class)
+            .messageTransceiverClass(ClusterMessageTransceiver.class)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("aeron")
             .build();
@@ -152,7 +152,7 @@ class EchoClusterTest
             ClusteredServiceContainer clusteredServiceContainer =
                 ClusteredServiceContainer.launch(serviceContainerContext))
         {
-            final MessageTransceiver messageTransceiver = new EchoClusterMessageTransceiver(
+            final MessageTransceiver messageTransceiver = new ClusterMessageTransceiver(
                 null,
                 aeronClusterContext,
                 (timestamp, checksum) ->
