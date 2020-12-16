@@ -20,8 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
 import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.NoOpLock;
 import org.junit.jupiter.api.AfterEach;
@@ -33,7 +31,6 @@ import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.CommonContext.AERON_DIR_PROP_NAME;
@@ -41,13 +38,12 @@ import static io.aeron.driver.Configuration.DIR_DELETE_ON_SHUTDOWN_PROP_NAME;
 import static io.aeron.driver.Configuration.DIR_DELETE_ON_START_PROP_NAME;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
-import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchArchivingMediaDriver;
 
-class ClusterTest
+class EchoClusterTest
 {
     @BeforeEach
     void before()
@@ -120,8 +116,6 @@ class ClusterTest
         final LongArrayList receivedTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
         final LongArrayList sentTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
 
-        final ArchivingMediaDriver driver = launchArchivingMediaDriver();
-
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(AeronArchive.Configuration.controlChannel())
@@ -130,31 +124,37 @@ class ClusterTest
             .aeronDirectoryName(aeronDirectoryName);
 
         final String clusterDirectoryName = tempDir.resolve("consensus-module").toString();
-        final ConsensusModule consensusModule = ConsensusModule.launch(new ConsensusModule.Context()
+
+        final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
             .clusterMemberId(0)
             .clusterMembers("0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:8010")
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel("aeron:udp?term-length=64k|control-mode=manual|control=localhost:20002")
-            .errorHandler(errorHandler("consensus-module"))
+            .errorHandler(AeronUtil.rethrowingErrorHandler("consensus-module"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
-            .clusterDirectoryName(clusterDirectoryName));
-        final ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
-            new ClusteredServiceContainer.Context()
+            .clusterDirectoryName(clusterDirectoryName);
+
+        final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
             .clusteredService(new EchoClusteredService())
-            .errorHandler(errorHandler("service-container"))
+            .errorHandler(AeronUtil.rethrowingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
-            .clusterDirectoryName(clusterDirectoryName));
-        final AtomicBoolean running = new AtomicBoolean(true);
-        try
+            .clusterDirectoryName(clusterDirectoryName);
+
+        final AeronCluster.Context aeronClusterContext = new AeronCluster.Context()
+            .ingressChannel("aeron:udp?term-length=64k")
+            .ingressEndpoints("0=localhost:20000")
+            .egressChannel("aeron:udp?endpoint=localhost:0|term-length=64k");
+
+        try (ArchivingMediaDriver driver = launchArchivingMediaDriver();
+            ConsensusModule consensusModule = ConsensusModule.launch(consensusModuleContext);
+            ClusteredServiceContainer clusteredServiceContainer =
+                ClusteredServiceContainer.launch(serviceContainerContext))
         {
             final MessageTransceiver messageTransceiver = new EchoClusterMessageTransceiver(
                 null,
-                new AeronCluster.Context()
-                .ingressChannel("aeron:udp?term-length=64k")
-                .ingressEndpoints("0=localhost:20000")
-                .egressChannel("aeron:udp?endpoint=localhost:0|term-length=64k"),
+                aeronClusterContext,
                 (timestamp, checksum) ->
                 {
                     assertEquals(-timestamp, checksum);
@@ -209,11 +209,6 @@ class ClusterTest
                 messageTransceiver.destroy();
             }
         }
-        finally
-        {
-            running.set(false);
-            closeAll(clusteredServiceContainer, consensusModule, driver);
-        }
 
         if (null != error.get())
         {
@@ -223,13 +218,4 @@ class ClusterTest
         assertEquals(sentTimestamps, receivedTimestamps);
     }
 
-    private static ErrorHandler errorHandler(final String context)
-    {
-        return (Throwable throwable) ->
-        {
-            System.err.println(context);
-            throwable.printStackTrace(System.err);
-            LangUtil.rethrowUnchecked(throwable);
-        };
-    }
 }

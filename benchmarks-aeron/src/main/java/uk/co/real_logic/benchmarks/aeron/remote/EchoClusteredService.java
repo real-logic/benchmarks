@@ -90,8 +90,4 @@ public final class EchoClusteredService implements ClusteredService
     public void onTerminate(final Cluster cluster)
     {
     }
-
-    public static void main(final String[] args)
-    {
-    }
 }

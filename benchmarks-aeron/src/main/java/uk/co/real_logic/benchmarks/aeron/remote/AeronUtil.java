@@ -26,6 +26,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.IdleStrategy;
@@ -439,6 +441,16 @@ final class AeronUtil
             throw new IllegalArgumentException("Number of '" + channelsProp + "' does not match with '" + streamsProp +
                 "':\n " + Arrays.toString(channels) + "\n " + Arrays.toString(streams));
         }
+    }
+
+    static ErrorHandler rethrowingErrorHandler(final String context)
+    {
+        return (Throwable throwable) ->
+        {
+            System.err.println(context);
+            throwable.printStackTrace(System.err);
+            LangUtil.rethrowUnchecked(throwable);
+        };
     }
 
     private static int[] parseStreamIds(final String property)
