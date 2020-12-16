@@ -32,7 +32,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.logbuffer.ControlledFragmentHandler.Action.ABORT;
-import static io.aeron.logbuffer.ControlledFragmentHandler.Action.COMMIT;
+import static io.aeron.logbuffer.ControlledFragmentHandler.Action.CONTINUE;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -156,7 +156,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
         onMessageReceived(timestamp, checksum);
         recordingPositionConsumed += align(length, FRAME_ALIGNMENT);
 
-        return COMMIT;
+        return CONTINUE;
     }
 
     static final class LiveRecordingEventsListener implements RecordingEventsListener
