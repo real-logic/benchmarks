@@ -56,6 +56,11 @@ public final class EchoClusteredService implements ClusteredService
         final int length,
         final Header header)
     {
+        if (null == session)
+        {
+            return; // skip non-client calls
+        }
+
         final IdleStrategy idleStrategy = this.idleStrategy;
         final BufferClaim bufferClaim = this.bufferClaim;
 
