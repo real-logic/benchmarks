@@ -54,9 +54,9 @@ Three different test scenarios are covered:
    - `aeron.cluster.member.id` - unique ID of the cluster node, must be one of the IDs in the cluster members list.
    - `aeron.archive.control.channel` - `Archive` control channel, must match the last part of the corresponding cluster
      members entry.
-   - `aeron.archive.control.stream.id` - `Archive` control channel stream ID, must be unique accross cluster nodes on
+   - `aeron.archive.control.stream.id` - `Archive` control channel stream ID, must be unique across cluster nodes on
      the same machine.
-   - `aeron.cluster.log.channel` - log channel for distributing  cluster log. Usually configured as multicast or as
+   - `aeron.cluster.log.channel` - log channel for distributing cluster log. Usually configured as multicast or as
      multi destination cast. Must match the third part of the corresponding cluster members entry.
    - `aeron.cluster.ingress.channel` - an ingress channel to which messages to the cluster will be sent. Can be
      configured as multicast for efficiency. Must match the first part of the corresponding cluster members entry.
