@@ -91,13 +91,14 @@ class LoadTestRigTest
             MINIMUM_NUMBER_OF_CPU_CORES * 2,
             messageRecorder ->
             {
-                doAnswer(invocation ->
-                {
-                    messageRecorder.record(1, CHECKSUM);
-                    messageRecorder.record(1, CHECKSUM);
-                    messageRecorder.record(1, CHECKSUM);
-                    return null;
-                }).when(messageTransceiver).receive();
+                doAnswer(
+                    invocation ->
+                    {
+                        messageRecorder.record(1, CHECKSUM);
+                        messageRecorder.record(1, CHECKSUM);
+                        messageRecorder.record(1, CHECKSUM);
+                        return null;
+                    }).when(messageTransceiver).receive();
 
                 return messageTransceiver;
             });
@@ -195,11 +196,12 @@ class LoadTestRigTest
             MINIMUM_NUMBER_OF_CPU_CORES * 2,
             messageRecorder ->
             {
-                doAnswer(invocation ->
-                {
-                    messageRecorder.record(1, CHECKSUM);
-                    return null;
-                }).when(messageTransceiver).receive();
+                doAnswer(
+                    invocation ->
+                    {
+                        messageRecorder.record(1, CHECKSUM);
+                        return null;
+                    }).when(messageTransceiver).receive();
 
                 return messageTransceiver;
             });

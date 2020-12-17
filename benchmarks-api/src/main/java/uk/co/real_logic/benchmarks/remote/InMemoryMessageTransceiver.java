@@ -88,7 +88,7 @@ public final class InMemoryMessageTransceiver extends MessageTransceiver
             UNSAFE.putLong(messages, timestampOffset, 0L);
             UNSAFE.putOrderedLong(messages, checksumOffset, 0L);
             onMessageReceived(timestamp, checksum);
-            receiveIndex += 1 + PADDING;
+            receiveIndex += (1 + PADDING);
         }
     }
 
