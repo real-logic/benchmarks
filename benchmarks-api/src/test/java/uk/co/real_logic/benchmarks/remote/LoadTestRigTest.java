@@ -38,8 +38,7 @@ import static uk.co.real_logic.benchmarks.remote.LoadTestRig.MINIMUM_NUMBER_OF_C
 
 class LoadTestRigTest
 {
-    private final IdleStrategy senderIdleStrategy = mock(IdleStrategy.class);
-    private final IdleStrategy receiverIdleStrategy = mock(IdleStrategy.class);
+    private final IdleStrategy idleStrategy = mock(IdleStrategy.class);
     private final NanoClock clock = mock(NanoClock.class);
     private final PrintStream out = mock(PrintStream.class);
     private final PersistedHistogram histogram = mock(PersistedHistogram.class);
@@ -54,8 +53,7 @@ class LoadTestRigTest
             .iterations(1)
             .numberOfMessages(1)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
-            .sendIdleStrategy(senderIdleStrategy)
-            .receiveIdleStrategy(receiverIdleStrategy)
+            .idleStrategy(idleStrategy)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("test")
             .build();
@@ -80,8 +78,7 @@ class LoadTestRigTest
             .iterations(1)
             .numberOfMessages(1)
             .messageTransceiverClass(configuration.messageTransceiverClass())
-            .sendIdleStrategy(senderIdleStrategy)
-            .receiveIdleStrategy(receiverIdleStrategy)
+            .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
             .outputFileNamePrefix("test")
             .build();
@@ -94,13 +91,14 @@ class LoadTestRigTest
             MINIMUM_NUMBER_OF_CPU_CORES * 2,
             messageRecorder ->
             {
-                doAnswer(invocation ->
-                {
-                    messageRecorder.record(1, CHECKSUM);
-                    messageRecorder.record(1, CHECKSUM);
-                    messageRecorder.record(1, CHECKSUM);
-                    return null;
-                }).when(messageTransceiver).receive();
+                doAnswer(
+                    invocation ->
+                    {
+                        messageRecorder.record(1, CHECKSUM);
+                        messageRecorder.record(1, CHECKSUM);
+                        messageRecorder.record(1, CHECKSUM);
+                        return null;
+                    }).when(messageTransceiver).receive();
 
                 return messageTransceiver;
             });
@@ -185,8 +183,7 @@ class LoadTestRigTest
             .numberOfMessages(5)
             .batchSize(2)
             .messageTransceiverClass(configuration.messageTransceiverClass())
-            .sendIdleStrategy(senderIdleStrategy)
-            .receiveIdleStrategy(receiverIdleStrategy)
+            .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
             .outputFileNamePrefix("test")
             .build();
@@ -199,11 +196,12 @@ class LoadTestRigTest
             MINIMUM_NUMBER_OF_CPU_CORES * 2,
             messageRecorder ->
             {
-                doAnswer(invocation ->
-                {
-                    messageRecorder.record(1, CHECKSUM);
-                    return null;
-                }).when(messageTransceiver).receive();
+                doAnswer(
+                    invocation ->
+                    {
+                        messageRecorder.record(1, CHECKSUM);
+                        return null;
+                    }).when(messageTransceiver).receive();
 
                 return messageTransceiver;
             });
@@ -223,8 +221,7 @@ class LoadTestRigTest
             .numberOfMessages(3)
             .batchSize(200)
             .messageTransceiverClass(configuration.messageTransceiverClass())
-            .sendIdleStrategy(senderIdleStrategy)
-            .receiveIdleStrategy(receiverIdleStrategy)
+            .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
             .outputFileNamePrefix("test")
             .build();
@@ -265,13 +262,11 @@ class LoadTestRigTest
 
         loadTestRig.send(1, 3);
 
-        loadTestRig.receive();
-
         verify(messageTransceiver).send(anyInt(), anyInt(), anyLong(), anyLong());
         verify(messageTransceiver, times(3)).receive();
-        verify(receiverIdleStrategy, times(2)).reset();
-        verify(receiverIdleStrategy).idle();
-        verifyNoMoreInteractions(messageTransceiver, receiverIdleStrategy);
+        verify(idleStrategy).reset();
+        verify(idleStrategy).idle();
+        verifyNoMoreInteractions(messageTransceiver, idleStrategy);
     }
 
     @Test
@@ -283,12 +278,11 @@ class LoadTestRigTest
             MILLISECONDS.toNanos(1000),
             MILLISECONDS.toNanos(1750),
             MILLISECONDS.toNanos(2400),
-            MILLISECONDS.toNanos(2950))
-            .thenThrow(new IllegalStateException("Unexpected call!"));
+            MILLISECONDS.toNanos(2950));
 
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
-            .sendIdleStrategy(senderIdleStrategy)
+            .idleStrategy(idleStrategy)
             .batchSize(15)
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -302,19 +296,31 @@ class LoadTestRigTest
             out,
             histogram,
             MINIMUM_NUMBER_OF_CPU_CORES * 2,
-            messageRecorder -> messageTransceiver);
+            messageRecorder ->
+            {
+                doAnswer(invocation ->
+                {
+                    messageRecorder.record(1, CHECKSUM);
+                    messageRecorder.record(1, CHECKSUM);
+                    return null;
+                }).when(messageTransceiver).receive();
+
+                return messageTransceiver;
+            });
 
         final long messages = loadTestRig.send(2, 25);
 
         assertEquals(50, messages);
-        verify(clock, times(4)).nanoTime();
+        verify(clock, times(54)).nanoTime();
+        verify(idleStrategy, times(21)).reset();
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1000), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1600), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(2200), CHECKSUM);
         verify(messageTransceiver).send(5, 24, MILLISECONDS.toNanos(2800), CHECKSUM);
-        verify(out).format("Send rate %,d msg/sec%n", 30L);
+        verify(messageTransceiver, times(25)).receive();
+        verify(out).format("Send rate %,d msg/sec%n", 7L);
         verify(out).format("Send rate %,d msg/sec%n", 25L);
-        verifyNoMoreInteractions(out, clock, senderIdleStrategy, messageTransceiver);
+        verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
     @Test
@@ -323,15 +329,20 @@ class LoadTestRigTest
         when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(15, 10, 5, 30);
         when(clock.nanoTime()).thenReturn(
             MILLISECONDS.toNanos(500),
+            MILLISECONDS.toNanos(501),
             MILLISECONDS.toNanos(777),
+            MILLISECONDS.toNanos(778),
             MILLISECONDS.toNanos(6750),
+            MILLISECONDS.toNanos(6751),
             MILLISECONDS.toNanos(9200),
-            MILLISECONDS.toNanos(12000)
-        ).thenThrow(new IllegalStateException("Unexpected call!"));
+            MILLISECONDS.toNanos(9201),
+            MILLISECONDS.toNanos(12000),
+            MILLISECONDS.toNanos(12001)
+        );
 
         final Configuration configuration = new Configuration.Builder()
             .numberOfMessages(1)
-            .sendIdleStrategy(senderIdleStrategy)
+            .idleStrategy(idleStrategy)
             .batchSize(30)
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -345,22 +356,30 @@ class LoadTestRigTest
             out,
             histogram,
             MINIMUM_NUMBER_OF_CPU_CORES * 2,
-            messageRecorder -> messageTransceiver);
+            messageRecorder ->
+            {
+                doAnswer(invocation ->
+                {
+                    messageRecorder.record(1, CHECKSUM);
+                    return null;
+                }).when(messageTransceiver).receive();
+
+                return messageTransceiver;
+            });
 
         final long messages = loadTestRig.send(10, 100);
 
-        assertEquals(90, messages);
-        verify(clock, times(5)).nanoTime();
-        verify(senderIdleStrategy, times(2)).reset();
-        verify(senderIdleStrategy, times(3)).idle();
+        assertEquals(60, messages);
+        verify(clock, times(65)).nanoTime();
+        verify(idleStrategy, times(56)).reset();
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(5, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(800), CHECKSUM);
-        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(1100), CHECKSUM);
-        verify(out).format("Send rate %,d msg/sec%n", 5L);
-        verify(out).format("Send rate %,d msg/sec%n", 6L);
-        verifyNoMoreInteractions(out, clock, senderIdleStrategy, messageTransceiver);
+        verify(messageTransceiver, times(60)).receive();
+        verify(out).format("Send rate %,d msg/sec%n", 4L);
+        verify(out).format("Send rate %,d msg/sec%n", 3L);
+        verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
     @Timeout(10)

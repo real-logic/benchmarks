@@ -26,11 +26,13 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -334,7 +336,7 @@ final class AeronUtil
 
     static int sendMessages(
         final ExclusivePublication publication,
-        final UnsafeBuffer offerBuffer,
+        final BufferClaim bufferClaim,
         final int numberOfMessages,
         final int messageLength,
         final long timestamp,
@@ -343,15 +345,17 @@ final class AeronUtil
         int count = 0;
         for (int i = 0; i < numberOfMessages; i++)
         {
-            offerBuffer.putLong(0, timestamp, LITTLE_ENDIAN);
-            offerBuffer.putLong(messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
-
-            final long result = publication.offer(offerBuffer, 0, messageLength, null);
+            final long result = publication.tryClaim(messageLength, bufferClaim);
             if (result < 0)
             {
                 checkPublicationResult(result);
                 break;
             }
+            final MutableDirectBuffer buffer = bufferClaim.buffer();
+            final int offset = bufferClaim.offset();
+            buffer.putLong(offset, timestamp, LITTLE_ENDIAN);
+            buffer.putLong(offset + messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
+            bufferClaim.commit();
             count++;
         }
 
@@ -437,6 +441,16 @@ final class AeronUtil
             throw new IllegalArgumentException("Number of '" + channelsProp + "' does not match with '" + streamsProp +
                 "':\n " + Arrays.toString(channels) + "\n " + Arrays.toString(streams));
         }
+    }
+
+    static ErrorHandler rethrowingErrorHandler(final String context)
+    {
+        return (Throwable throwable) ->
+        {
+            System.err.println(context);
+            throwable.printStackTrace(System.err);
+            LangUtil.rethrowUnchecked(throwable);
+        };
     }
 
     private static int[] parseStreamIds(final String property)

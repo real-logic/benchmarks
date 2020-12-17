@@ -17,21 +17,20 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.*;
 import io.aeron.driver.MediaDriver;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import java.util.Arrays;
 
 import static io.aeron.Aeron.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
-public final class EchoMessageTransceiver extends EchoMessageTransceiverProducerStatePadded
+public final class EchoMessageTransceiver extends MessageTransceiver
 {
     static final int NUMBER_OF_KEEP_ALIVE_MESSAGES = 1;
     static final int KEEP_ALIVE_MESSAGE_LENGTH = 32;
@@ -39,6 +38,13 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
+
+    private final BufferClaim bufferClaim = new BufferClaim();
+    ExclusivePublication[] publications;
+    ExclusivePublication[] passivePublications;
+    long keepAliveIntervalNs;
+    long timeOfLastKeepAliveNs;
+    int sendIndex;
 
     private Subscription[] subscriptions;
     private Image[] images;
@@ -117,8 +123,6 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
             yieldUninterruptedly();
         }
 
-        offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
-
         for (int i = 0; i < numActiveChannels; i++)
         {
             images[i] = subscriptions[i].imageAtIndex(0);
@@ -147,7 +151,7 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
         }
 
         final int sent =
-            sendMessages(publications[index], offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
+            sendMessages(publications[index], bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
 
         if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - timestamp < 0)
         {
@@ -187,7 +191,7 @@ public final class EchoMessageTransceiver extends EchoMessageTransceiverProducer
         {
             sendMessages(
                 passivePublications[i],
-                offerBuffer,
+                bufferClaim,
                 NUMBER_OF_KEEP_ALIVE_MESSAGES,
                 KEEP_ALIVE_MESSAGE_LENGTH,
                 timestamp,

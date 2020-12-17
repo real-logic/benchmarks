@@ -15,30 +15,28 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.Aeron;
-import io.aeron.Image;
-import io.aeron.ImageControlledFragmentAssembler;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.client.RecordingEventsListener;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.logbuffer.ControlledFragmentHandler.Action.ABORT;
-import static io.aeron.logbuffer.ControlledFragmentHandler.Action.COMMIT;
+import static io.aeron.logbuffer.ControlledFragmentHandler.Action.CONTINUE;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.*;
-import static org.agrona.BufferUtil.allocateDirectAligned;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 import static org.agrona.CloseHelper.closeAll;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
@@ -46,8 +44,7 @@ import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
  * Implementation of the {@link uk.co.real_logic.benchmarks.remote.MessageTransceiver} interface for benchmarking
  * live recording of the remote stream to local archive. Used together with the {@link EchoNode}.
  */
-public final class LiveRecordingMessageTransceiver
-    extends MessageTransceiverProducerStatePadded implements ControlledFragmentHandler
+public final class LiveRecordingMessageTransceiver extends MessageTransceiver implements ControlledFragmentHandler
 {
     private long recordingPosition = NULL_POSITION;
     private long recordingPositionConsumed = NULL_POSITION;
@@ -57,6 +54,10 @@ public final class LiveRecordingMessageTransceiver
     private final ImageControlledFragmentAssembler messageHandler = new ImageControlledFragmentAssembler(this);
     private final ArchivingMediaDriver archivingMediaDriver;
     private final AeronArchive aeronArchive;
+
+    private ExclusivePublication publication;
+    private final BufferClaim bufferClaim = new BufferClaim();
+
     private Subscription recordingEventsSubscription;
     private RecordingEventsAdapter recordingEventsAdapter;
     private Subscription subscription;
@@ -106,7 +107,6 @@ public final class LiveRecordingMessageTransceiver
         aeronArchive.startRecording(channel, sendStreamId, LOCAL, true);
         recordingId = awaitRecordingStart(aeron, publicationSessionId);
 
-        offerBuffer = new UnsafeBuffer(allocateDirectAligned(configuration.messageLength(), CACHE_LINE_LENGTH));
         image = subscription.imageAtIndex(0);
     }
 
@@ -122,7 +122,7 @@ public final class LiveRecordingMessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, offerBuffer, numberOfMessages, messageLength, timestamp, checksum);
+        return sendMessages(publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
     }
 
     public void receive()
@@ -156,7 +156,7 @@ public final class LiveRecordingMessageTransceiver
         onMessageReceived(timestamp, checksum);
         recordingPositionConsumed += align(length, FRAME_ALIGNMENT);
 
-        return COMMIT;
+        return CONTINUE;
     }
 
     static final class LiveRecordingEventsListener implements RecordingEventsListener
