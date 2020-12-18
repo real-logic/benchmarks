@@ -106,7 +106,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
 
     @Timeout(30)
     @Test
-    void failIfNumberOfDestinationChannelsDoesNotMatchSourceChannels(final @TempDir Path tempDir) throws Exception
+    void failIfNumberOfDestinationChannelsDoesNotMatchSourceChannels(final @TempDir Path tempDir)
     {
         setProperty(
             DESTINATION_CHANNELS_PROP_NAME,
@@ -123,5 +123,4 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
             "[aeron:udp?endpoint=localhost:13200]",
             exception.getMessage());
     }
-
 }

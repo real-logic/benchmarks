@@ -60,8 +60,8 @@ public final class ClusterNode
 
         try (Archive archive = Archive.launch(archiveContext);
             ConsensusModule consensusModule = ConsensusModule.launch(consensusModuleContext);
-            ClusteredServiceContainer clusteredServiceContainer =
-                ClusteredServiceContainer.launch(serviceContainerContext))
+            ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
+                serviceContainerContext))
         {
             new ShutdownSignalBarrier().await();
         }

@@ -86,6 +86,7 @@ public final class EchoNode implements AutoCloseable, Runnable
         subscriptions = new Subscription[numActiveChannels];
         images = new Image[numActiveChannels];
         final BufferClaim bufferClaim = new BufferClaim();
+
         for (int i = 0; i < numActiveChannels; i++)
         {
             final ExclusivePublication publication = aeron.addExclusivePublication(sourceChannels[i], sourceStreams[i]);
@@ -149,6 +150,7 @@ public final class EchoNode implements AutoCloseable, Runnable
         final int numImages = images.length;
         int pollIndex = 0;
         int fragmentsSinceLastPassivePoll = 0;
+
         while (true)
         {
             if (++pollIndex >= numImages)
@@ -173,6 +175,7 @@ public final class EchoNode implements AutoCloseable, Runnable
                 {
                     return; // Abort execution
                 }
+
                 for (int i = 0; i < numImages; i++)
                 {
                     if (images[i].isClosed())
@@ -197,9 +200,9 @@ public final class EchoNode implements AutoCloseable, Runnable
             if (fragmentsSinceLastPassivePoll >= passiveChannelsPollFrequency)
             {
                 fragmentsSinceLastPassivePoll = 0;
-                for (int i = 0; i < passiveImages.length; i++)
+                for (final Image passiveImage : passiveImages)
                 {
-                    passiveImages[i].poll(NULL_FRAGMENT_HANDLER, FRAGMENT_LIMIT);
+                    passiveImage.poll(NULL_FRAGMENT_HANDLER, FRAGMENT_LIMIT);
                 }
             }
 

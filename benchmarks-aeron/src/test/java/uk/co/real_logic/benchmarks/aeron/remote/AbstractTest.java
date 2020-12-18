@@ -41,7 +41,8 @@ import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
-abstract class AbstractTest<DRIVER extends AutoCloseable,
+abstract class AbstractTest<
+    DRIVER extends AutoCloseable,
     CLIENT extends AutoCloseable,
     MESSAGE_TRANSCEIVER extends MessageTransceiver,
     NODE extends AutoCloseable & Runnable>
@@ -131,13 +132,14 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
             remoteNode.setDaemon(true);
             remoteNode.start();
 
-            final MessageTransceiver messageTransceiver =
-                createMessageTransceiver(driver, client, (timestamp, checksum) ->
+            final MessageTransceiver messageTransceiver = createMessageTransceiver(
+                driver,
+                client,
+                (timestamp, checksum) ->
                 {
                     assertEquals(-timestamp, checksum);
                     receivedTimestamps.addLong(timestamp);
                 });
-
 
             Thread.currentThread().setName("message-transceiver");
             messageTransceiver.init(configuration);
@@ -158,8 +160,8 @@ abstract class AbstractTest<DRIVER extends AutoCloseable,
                         int sentBatch = 0;
                         do
                         {
-                            sentBatch +=
-                                messageTransceiver.send(burstSize - sentBatch, messageLength, timestamp, -timestamp);
+                            sentBatch += messageTransceiver.send(
+                                burstSize - sentBatch, messageLength, timestamp, -timestamp);
                             messageTransceiver.receive();
                         }
                         while (sentBatch < burstSize);

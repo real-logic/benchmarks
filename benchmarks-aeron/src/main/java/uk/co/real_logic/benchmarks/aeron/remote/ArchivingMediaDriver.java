@@ -33,7 +33,7 @@ final class ArchivingMediaDriver implements AutoCloseable
         this.archive = archive;
     }
 
-    public void close() throws Exception
+    public void close()
     {
         CloseHelper.closeAll(archive, driver);
     }
@@ -71,6 +71,7 @@ final class ArchivingMediaDriver implements AutoCloseable
                 .aeronDirectoryName(driverCtx.aeronDirectoryName())
                 .errorHandler(errorHandler)
                 .errorCounter(errorCounter));
+
             return new ArchivingMediaDriver(driver, archive);
         }
         catch (final Exception ex)

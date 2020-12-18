@@ -79,7 +79,7 @@ final class AeronUtil
         "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
     static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentLimit";
     static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idleStrategy";
-    static final String RECONNECT_IF_IMAGE_CLOSED = "uk.co.real_logic.benchmarks.aeron.remote.reconnetIfImageClosed";
+    static final String RECONNECT_IF_IMAGE_CLOSED = "uk.co.real_logic.benchmarks.aeron.remote.reconnectIfImageClosed";
     static final int FRAGMENT_LIMIT = getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
     static final ExclusivePublication[] EMPTY_PUBLICATIONS = new ExclusivePublication[0];
     static final Subscription[] EMPTY_SUBSCRIPTIONS = new Subscription[0];
@@ -399,9 +399,9 @@ final class AeronUtil
 
     static boolean allConnected(final ExclusivePublication[] publications)
     {
-        for (int i = 0; i < publications.length; i++)
+        for (final ExclusivePublication publication : publications)
         {
-            if (!publications[i].isConnected())
+            if (!publication.isConnected())
             {
                 return false;
             }
@@ -412,9 +412,9 @@ final class AeronUtil
 
     static boolean allConnected(final Subscription[] subscriptions)
     {
-        for (int i = 0; i < subscriptions.length; i++)
+        for (final Subscription subscription : subscriptions)
         {
-            if (!subscriptions[i].isConnected())
+            if (!subscription.isConnected())
             {
                 return false;
             }
@@ -461,6 +461,7 @@ final class AeronUtil
         {
             result[i] = Integer.parseInt(values[i]);
         }
+
         return result;
     }
 }

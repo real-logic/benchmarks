@@ -186,11 +186,10 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     private void sendKeepAliveMessages(final long timestamp, final long checksum)
     {
-        final ExclusivePublication[] passivePublications = this.passivePublications;
-        for (int i = 0; i < passivePublications.length; i++)
+        for (final ExclusivePublication passivePublication : passivePublications)
         {
             sendMessages(
-                passivePublications[i],
+                passivePublication,
                 bufferClaim,
                 NUMBER_OF_KEEP_ALIVE_MESSAGES,
                 KEEP_ALIVE_MESSAGE_LENGTH,

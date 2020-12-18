@@ -73,7 +73,7 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
         }
     }
 
-    public void destroy() throws Exception
+    public void destroy()
     {
         CloseHelper.closeAll(aeronCluster, mediaDriver);
     }
@@ -83,6 +83,7 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
         int count = 0;
         final AeronCluster aeronCluster = this.aeronCluster;
         final BufferClaim bufferClaim = this.bufferClaim;
+
         for (int i = 0; i < numberOfMessages; i++)
         {
             final long result = aeronCluster.tryClaim(messageLength, bufferClaim);
@@ -99,6 +100,7 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
             bufferClaim.commit();
             count++;
         }
+
         return count;
     }
 
