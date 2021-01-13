@@ -15,6 +15,8 @@
 ## limitations under the License.
 ##
 
+AERON_MD=/home/test/dev/aeron/cppbuild/Release/binaries/aeronmd
+
 function pin_all_threads()
 {
   echo "taskset -p -a -c $2 $1"
@@ -29,22 +31,48 @@ function get_thread_id()
 {
   local pid=$1
   local thread_name=$2
-
+  echo "\$(ps Ho tid,fname -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
 }
 
-function exec_command()
+function build_command()
 {
-  local command=$1
-  local all_cores=$2
+  local executable=$1
+  local other_cores=$2
 
-  $command&
-  local command_pid=$!
+  local command=""
+  command+="$executable& "
+  command+="command_pid=\$!; "
 
-  pin_all_threads "$command_pid"
-  for thread_name in "$@:2"
-  do
-    pin_thread "$command_pid" "$thread_name"
-  done
+  command+="$(pin_all_threads \$command_pid "$other_cores"); "
+
+#  shift
+#  shift
+#  local count=0
+#  while [[ $# -gt 0 ]]
+#  do
+#    count=$((count + 1))
+#    local thread_name=$1
+#    local core=$2
+#    local thread_id="$(get_thread_id \$command_pid "$thread_name")"
+#    command+="thread_$count=$thread_id; "
+#    command+="$(pin_thread \$thread_$count "$core"); "
+#    shift
+#    shift
+#  done
+
+  echo $command
+}
+
+function launch_c_driver()
+{
+  local path_on_remote_node=$1
+#  local exec="$path_on_remote_node/scripts/aeron/c-media-driver"
+  local exec="$AERON_MD"
+  local core0=$2
+  local core1=$3
+  local core2=$4
+  local core3=$5
+  echo $(build_command $exec "$core0" "aeronmd" "$core1" "sender" "$core2" "receiver" "$core3")
 }
 
 function run_over_ssh()
@@ -58,7 +86,8 @@ function run_over_ssh()
   #EOF
 }
 
-var=$(pin_all_threads "3440" "6-30:2")
-echo $var
-var=$(pin_thread "3447" "0")
-echo $var
+echo $(launch_c_driver "/Users/gezr/projects/oss/aeron-benchmarks" "3-5" "0" "1" "2")
+#var=$(pin_all_threads "3440" "6-30:2")
+#echo $var
+#var=$(pin_thread "3447" "0")
+#echo $var
