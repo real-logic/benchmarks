@@ -24,7 +24,7 @@ fi
 
 echo "Starting C MediaDriver '${AERON_MD}' ..."
 
-${AERON_MD} \
+exec ${AERON_MD} \
   "${DIR}/low-latency-driver.properties" \
   "${DIR}/benchmark.properties" \
   "$@"

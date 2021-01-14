@@ -15,4 +15,4 @@
 ## limitations under the License.
 ##
 
-./run-java uk.co.real_logic.benchmarks.remote.ResultsAggregator "$@"
+exec ./run-java uk.co.real_logic.benchmarks.remote.ResultsAggregator "$@"
