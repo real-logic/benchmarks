@@ -15,7 +15,38 @@
 ## limitations under the License.
 ##
 
-AERON_MD=/home/test/dev/aeron/cppbuild/Release/binaries/aeronmd
+SSH_USER=test
+SSH_HOST_1=192.168.56.101
+NODE_1_BENCHMARKS_PATH=/home/test/dev/benchmarks
+NODE_1_CORE_0="3-5"
+NODE_1_CORE_1=0
+NODE_1_CORE_2=1
+NODE_1_CORE_3=2
+
+if [ -z "$RUNS" ];
+then
+  RUNS=5
+fi
+
+if [ -z "$ITERATIONS" ];
+then
+  ITERATIONS=10
+fi
+
+if [ -z "$NUMBER_OF_MESSAGES" ];
+then
+  NUMBER_OF_MESSAGES=10000
+fi
+
+if [ -z "$BURST_SIZE" ];
+then
+  BURST_SIZE=1
+fi
+
+if [ -z "$MESSAGE_LENGTH" ];
+then
+  MESSAGE_LENGTH=32
+fi
 
 function pin_all_threads()
 {
@@ -34,28 +65,25 @@ function get_thread_id()
   echo "\$(ps Ho tid,fname -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
 }
 
-function build_command()
+function background_command()
 {
   local executable=$1
   local other_cores=$2
 
   local command=""
-  command+="$executable& "
-  command+="command_pid=\$!; "
+  command+="$executable& sleep 5 && command_pid=\$!"
 
-  command+="$(pin_all_threads \$command_pid "$other_cores"); "
+  command+=" && $(pin_all_threads \$command_pid "$other_cores")"
 
   shift
   shift
-  local count=0
   while [[ $# -gt 0 ]]
   do
-    count=$((count + 1))
     local thread_name=$1
     local core=$2
     local thread_id="$(get_thread_id \$command_pid "$thread_name")"
-    command+="thread_$count=$thread_id; "
-    command+="$(pin_thread \$thread_$count "$core"); "
+    command+=" && tid=$thread_id && echo \"tid=\$tid\" && "
+    command+="$(pin_thread \$tid "$core")"
     shift
     shift
   done
@@ -65,28 +93,27 @@ function build_command()
 
 function launch_c_driver()
 {
-  local path_on_remote_node=$1
-#  local exec="$path_on_remote_node/scripts/aeron/c-media-driver"
-  local exec="$AERON_MD"
+  local exec=$1
   local core0=$2
   local core1=$3
   local core2=$4
   local core3=$5
-  echo $(build_command $exec "$core0" "aeronmd" "$core1" "sender" "$core2" "receiver" "$core3")
+  echo $(background_command "$exec" "$core0" "aeronmd" "$core1" "sender" "$core2" "receiver" "$core3")
 }
 
 function run_over_ssh()
 {
   local command=$1;
-  local user=$2;
-  local host=$4;
+  local host=$2;
+  local user=$3;
   ssh $user@$host "$command"
-  #ssh vivek@server1.cyberciti.biz << EOF
-  #$command
-  #EOF
 }
 
-echo $(launch_c_driver "/Users/gezr/projects/oss/aeron-benchmarks" "3-5" "0" "1" "2")
+echo -e "Starting command:\n"
+ssh_command="$(launch_c_driver "$NODE_1_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
+ "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3") && sleep 10 && kill -9 \$command_pid"
+echo -e "$ssh_command\n"
+#run_over_ssh "$ssh_command" "$SSH_HOST_1" "$SSH_USER"
 #var=$(pin_all_threads "3440" "6-30:2")
 #echo $var
 #var=$(pin_thread "3447" "0")
