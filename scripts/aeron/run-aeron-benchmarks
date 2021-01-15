@@ -15,13 +15,53 @@
 ## limitations under the License.
 ##
 
+# temp
 SSH_USER=test
 SSH_HOST_1=192.168.56.101
+SSH_HOST_2=192.168.56.102
 NODE_1_BENCHMARKS_PATH=/home/test/dev/aeron-benchmarks
 NODE_1_CORE_0="3-5"
 NODE_1_CORE_1=0
 NODE_1_CORE_2=1
 NODE_1_CORE_3=2
+NODE_2_BENCHMARKS_PATH=/home/test/dev/aeron-benchmarks
+NODE_2_CORE_0="3-5"
+NODE_2_CORE_1=0
+NODE_2_CORE_2=1
+NODE_2_CORE_3=2
+
+ITERATIONS=2
+NUMBER_OF_MESSAGES=1000
+BURST_SIZE=1
+MESSAGE_LENGTH=32
+
+required_vars=(
+"SSH_USER" \
+"SSH_HOST_1" \
+"SSH_HOST_2" \
+"NODE_1_BENCHMARKS_PATH" \
+"NODE_1_CORE_0" \
+"NODE_1_CORE_2" \
+"NODE_1_CORE_3" \
+"NODE_2_BENCHMARKS_PATH" \
+"NODE_2_CORE_0" \
+"NODE_2_CORE_2" \
+"NODE_2_CORE_3" \
+)
+
+for var in "${required_vars[@]}"; do
+  if [[ -z "${!var}" ]]
+  then
+    echo "env var $var is required"
+    required_var_missing=true
+  fi
+done
+
+if [ -n "$required_var_missing" ];
+then
+  exit 1
+fi
+
 
 if [ -z "$RUNS" ];
 then
@@ -40,12 +80,12 @@ fi
 
 if [ -z "$BURST_SIZE" ];
 then
-  BURST_SIZE=1
+  BURST_SIZE="1,10"
 fi
 
 if [ -z "$MESSAGE_LENGTH" ];
 then
-  MESSAGE_LENGTH=32
+  MESSAGE_LENGTH="32,224,1378"
 fi
 
 function pin_all_threads()
@@ -100,16 +140,43 @@ function launch_c_driver()
   echo $(background_command "$exec" "$core0" "aeronmd" "$core1" "sender" "$core2" "receiver" "$core3")
 }
 
-function run_over_ssh()
-{
-  local command=$1;
-  local host=$2;
-  local user=$3;
-  ssh $user@$host "$command"
-}
+file_name="test-ssh"
+for messages in "${NUMBER_OF_MESSAGES[@]}"
+do
+  for burst in "${BURST_SIZE[@]}"
+  do
+    for length in "${MESSAGE_LENGTH[@]}"
+    do
+      for (( i=1; i<=RUNS; i++ ))
+      do
+        echo -e '\n#######################'
+        echo 'Benchmark run #'$i' ...'
+        echo '#######################'
 
-echo -e "Starting command:\n"
-ssh_command="$(launch_c_driver "$NODE_1_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
- "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3") && kill -9 \$command_pid && wait \$command_pid"
-echo -e "$ssh_command\n---------------------------\n\n"
-run_over_ssh "$ssh_command" "$SSH_HOST_1" "$SSH_USER"
+        jvm_opts="\
+        -Duk.co.real_logic.benchmarks.aeron.remote.reconnectIfImageClosed=false \
+        -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${file_name} \
+        -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
+        -Duk.co.real_logic.benchmarks.remote.messages=${messages# } \
+        -Duk.co.real_logic.benchmarks.remote.batchSize=${burst# } \
+        -Duk.co.real_logic.benchmarks.remote.messageLength=${length# }";
+
+        server_command="$(launch_c_driver "$NODE_2_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
+         "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3") \
+         && JVM_OPTS=\"${jvm_opts}\" $NODE_2_BENCHMARKS_PATH/scripts/aeron/echo-server \
+         && kill -9 \$command_pid && wait \$command_pid";
+
+        client_command="$(launch_c_driver "$NODE_1_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
+         "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3") \
+         && JVM_OPTS=\"${jvm_opts}\" $NODE_1_BENCHMARKS_PATH/scripts/aeron/echo-client \
+         && kill -9 \$command_pid && wait \$command_pid";
+
+        ssh $SSH_USER:$SSH_HOST_2 "$server_command" &
+        server_pid=$!
+        echo "server_pid=$server_pid"
+        ssh $SSH_USER:$SSH_HOST_1 "$client_command"
+        wait $server_pid
+      done
+    done
+  done
+done
