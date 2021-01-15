@@ -140,43 +140,54 @@ function launch_c_driver()
   echo $(background_command "$exec" "$core0" "aeronmd" "$core1" "sender" "$core2" "receiver" "$core3")
 }
 
-file_name="test-ssh"
-for messages in "${NUMBER_OF_MESSAGES[@]}"
-do
-  for burst in "${BURST_SIZE[@]}"
+function run_benchmarks()
+{
+  local client_command="$1"
+  local server_command="$2"
+  local config_options="$3"
+
+  for messages in "${NUMBER_OF_MESSAGES[@]}"
   do
-    for length in "${MESSAGE_LENGTH[@]}"
+    for burst in "${BURST_SIZE[@]}"
     do
-      for (( i=1; i<=RUNS; i++ ))
+      for length in "${MESSAGE_LENGTH[@]}"
       do
-        echo -e '\n#######################'
-        echo 'Benchmark run #'$i' ...'
-        echo '#######################'
+        for (( i=1; i<=RUNS; i++ ))
+        do
+          echo -e '\n#######################'
+          echo 'Benchmark run #'$i' ...'
+          echo '#######################'
 
-        jvm_opts="\
-        -Duk.co.real_logic.benchmarks.aeron.remote.reconnectIfImageClosed=false \
-        -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${file_name} \
-        -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
-        -Duk.co.real_logic.benchmarks.remote.messages=${messages# } \
-        -Duk.co.real_logic.benchmarks.remote.batchSize=${burst# } \
-        -Duk.co.real_logic.benchmarks.remote.messageLength=${length# }";
+          local jvm_opts="$config_options \
+          -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
+          -Duk.co.real_logic.benchmarks.remote.messages=${messages# } \
+          -Duk.co.real_logic.benchmarks.remote.batchSize=${burst# } \
+          -Duk.co.real_logic.benchmarks.remote.messageLength=${length# }";
 
-        server_command="$(launch_c_driver "$NODE_2_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
-         "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3") \
-         && JVM_OPTS=\"${jvm_opts}\" $NODE_2_BENCHMARKS_PATH/scripts/aeron/echo-server \
-         && kill -9 \$command_pid && wait \$command_pid";
-
-        client_command="$(launch_c_driver "$NODE_1_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
-         "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3") \
-         && JVM_OPTS=\"${jvm_opts}\" $NODE_1_BENCHMARKS_PATH/scripts/aeron/echo-client \
-         && kill -9 \$command_pid && wait \$command_pid";
-
-        ssh $SSH_USER:$SSH_HOST_2 "$server_command" &
-        server_pid=$!
-        echo "server_pid=$server_pid"
-        ssh $SSH_USER:$SSH_HOST_1 "$client_command"
-        wait $server_pid
+          ssh $SSH_USER@$SSH_HOST_2 "JVM_OPTS=\"$jvm_opts\" $server_command" &
+          server_pid=$!
+          echo "server_pid=$server_pid"
+          ssh $SSH_USER@$SSH_HOST_1 "JVM_OPTS=\"$jvm_opts\" $client_command"
+          wait $server_pid
+        done
       done
     done
   done
-done
+}
+
+run_benchmarks \
+           "$(launch_c_driver "$NODE_2_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
+           "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3") \
+           && $NODE_2_BENCHMARKS_PATH/scripts/aeron/echo-server \
+           && kill -9 \$command_pid && wait \$command_pid" \
+           \
+           "$(launch_c_driver "$NODE_1_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
+           "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3") \
+           && $NODE_1_BENCHMARKS_PATH/scripts/aeron/echo-client \
+           && kill -9 \$command_pid && wait \$command_pid" \
+           \
+           "-Duk.co.real_logic.benchmarks.aeron.remote.reconnectIfImageClosed=false \
+           -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=ssh-test \
+           -Daeron.dir=/dev/shm/aeron \
+           -Daeron.threading.mode=SHARED \
+           -Daeron.archive.threading.mode=SHARED"
