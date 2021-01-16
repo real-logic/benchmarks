@@ -19,31 +19,32 @@
 SSH_USER=test
 SSH_HOST_1=192.168.56.101
 SSH_HOST_2=192.168.56.102
-NODE_1_BENCHMARKS_PATH=/home/test/dev/aeron-benchmarks
+BENCHMARKS_PATH=/home/test/dev/aeron-benchmarks
+HOST_1_JAVA_HOME="/home/test/dev/zulu8.50.0.51-ca-jdk8.0.275-linux_x64"
+HOST_2_JAVA_HOME="/home/test/dev/zulu8.50.0.51-ca-jdk8.0.275-linux_x64"
 NODE_1_CORE_0="3-5"
 NODE_1_CORE_1=0
 NODE_1_CORE_2=1
 NODE_1_CORE_3=2
-NODE_2_BENCHMARKS_PATH=/home/test/dev/aeron-benchmarks
 NODE_2_CORE_0="3-5"
 NODE_2_CORE_1=0
 NODE_2_CORE_2=1
 NODE_2_CORE_3=2
 
-ITERATIONS=2
+ITERATIONS=3
 NUMBER_OF_MESSAGES=1000
 BURST_SIZE=1
 MESSAGE_LENGTH=32
+RUNS=2
 
 required_vars=(
 "SSH_USER" \
 "SSH_HOST_1" \
 "SSH_HOST_2" \
-"NODE_1_BENCHMARKS_PATH" \
+"BENCHMARKS_PATH" \
 "NODE_1_CORE_0" \
 "NODE_1_CORE_2" \
 "NODE_1_CORE_3" \
-"NODE_2_BENCHMARKS_PATH" \
 "NODE_2_CORE_0" \
 "NODE_2_CORE_2" \
 "NODE_2_CORE_3" \
@@ -61,7 +62,6 @@ if [ -n "$required_var_missing" ];
 then
   exit 1
 fi
-
 
 if [ -z "$RUNS" ];
 then
@@ -111,7 +111,8 @@ function background_command()
   local other_cores=$2
 
   local command=""
-  command+="$executable& command_pid=\$! && sleep 5"
+  command+="$executable& script_pid=\$! && command_pid=\$script_pid && sleep 1"
+  command+="&& pid=\$command_pid; while [ \"\$pid\" ]; do command_pid=\$pid; echo \"command_pid=\$command_pid\"; pid=\$(ps -o pid= --ppid \$pid | sed 's/^ *//;s/ *$//'); done"
 
   command+=" && $(pin_all_threads \$command_pid "$other_cores")"
 
@@ -144,7 +145,8 @@ function run_benchmarks()
 {
   local client_command="$1"
   local server_command="$2"
-  local config_options="$3"
+  local config_file="$3"
+  local config_options=("${@:4}")
 
   for messages in "${NUMBER_OF_MESSAGES[@]}"
   do
@@ -158,17 +160,22 @@ function run_benchmarks()
           echo 'Benchmark run #'$i' ...'
           echo '#######################'
 
-          local jvm_opts="$config_options \
-          -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
-          -Duk.co.real_logic.benchmarks.remote.messages=${messages# } \
-          -Duk.co.real_logic.benchmarks.remote.batchSize=${burst# } \
-          -Duk.co.real_logic.benchmarks.remote.messageLength=${length# }";
+          config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.messages=${messages# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burst# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${length# }")
 
-          ssh $SSH_USER@$SSH_HOST_2 "JVM_OPTS=\"$jvm_opts\" $server_command" &
-          server_pid=$!
-          echo "server_pid=$server_pid"
-          ssh $SSH_USER@$SSH_HOST_1 "JVM_OPTS=\"$jvm_opts\" $client_command"
-          wait $server_pid
+          local jvm_opts="echo '${config_options[0]}' > $config_file"
+          for opt in "${config_options[@]:1}";
+          do
+            jvm_opts+=" && echo '$opt' >> $config_file"
+          done
+
+          ssh $SSH_USER@$SSH_HOST_2 "bash -c $jvm_opts && $server_command" &
+          ssh $SSH_USER@$SSH_HOST_1 "bash -c $jvm_opts && $client_command"
+          wait
+          echo 'Iteration one complete!'
+          exit 1
         done
       done
     done
@@ -176,18 +183,19 @@ function run_benchmarks()
 }
 
 run_benchmarks \
-           "$(launch_c_driver "$NODE_2_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
-           "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3") \
-           && $NODE_2_BENCHMARKS_PATH/scripts/aeron/echo-server \
-           && kill -9 \$command_pid && wait \$command_pid" \
-           \
-           "$(launch_c_driver "$NODE_1_BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
+           "$(launch_c_driver "$BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
            "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3") \
-           && $NODE_1_BENCHMARKS_PATH/scripts/aeron/echo-client \
-           && kill -9 \$command_pid && wait \$command_pid" \
+           && export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && \$JAVA_HOME/bin/java -version && $BENCHMARKS_PATH/scripts/aeron/echo-client \
+           && kill -9 \$command_pid && wait" \
            \
-           "-Duk.co.real_logic.benchmarks.aeron.remote.reconnectIfImageClosed=false \
-           -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=ssh-test \
-           -Daeron.dir=/dev/shm/aeron \
-           -Daeron.threading.mode=SHARED \
-           -Daeron.archive.threading.mode=SHARED"
+           "$(launch_c_driver "$BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
+           "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3") \
+           && export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && \$JAVA_HOME/bin/java -version && $BENCHMARKS_PATH/scripts/aeron/echo-server \
+           && kill -9 \$command_pid && wait" \
+           \
+           "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
+           "uk.co.real_logic.benchmarks.aeron.remote.reconnectIfImageClosed=false" \
+           "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=ssh-test" \
+           "aeron.dir=/dev/shm/aeron" \
+           "aeron.threading.mode=SHARED" \
+           "aeron.archive.threading.mode=SHARED"
