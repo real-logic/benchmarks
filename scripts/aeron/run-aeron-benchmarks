@@ -165,17 +165,15 @@ function run_benchmarks()
           config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burst# }")
           config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${length# }")
 
-          local jvm_opts="echo '${config_options[0]}' > $config_file"
-          for opt in "${config_options[@]:1}";
+          local jvm_opts="rm -f $config_file"
+          for opt in "${config_options[@]}";
           do
             jvm_opts+=" && echo '$opt' >> $config_file"
           done
 
-          ssh $SSH_USER@$SSH_HOST_2 "bash -c $jvm_opts && $server_command" &
-          ssh $SSH_USER@$SSH_HOST_1 "bash -c $jvm_opts && $client_command"
-          wait
-          echo 'Iteration one complete!'
-          exit 1
+          ssh $SSH_USER@$SSH_HOST_2 "$jvm_opts && $server_command" &
+          ssh $SSH_USER@$SSH_HOST_1 "$jvm_opts && $client_command"
+          wait # wait for the server command to complete
         done
       done
     done
@@ -185,17 +183,16 @@ function run_benchmarks()
 run_benchmarks \
            "$(launch_c_driver "$BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
            "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3") \
-           && export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && \$JAVA_HOME/bin/java -version && $BENCHMARKS_PATH/scripts/aeron/echo-client \
+           && export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && $BENCHMARKS_PATH/scripts/aeron/echo-client \
            && kill -9 \$command_pid && wait" \
            \
            "$(launch_c_driver "$BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
            "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3") \
-           && export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && \$JAVA_HOME/bin/java -version && $BENCHMARKS_PATH/scripts/aeron/echo-server \
+           && export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && $BENCHMARKS_PATH/scripts/aeron/echo-server \
            && kill -9 \$command_pid && wait" \
-           \
            "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
-           "uk.co.real_logic.benchmarks.aeron.remote.reconnectIfImageClosed=false" \
            "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=ssh-test" \
-           "aeron.dir=/dev/shm/aeron" \
            "aeron.threading.mode=SHARED" \
-           "aeron.archive.threading.mode=SHARED"
+           "aeron.archive.threading.mode=SHARED" \
+           "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=192.168.56.102:13333|interface=192.168.56.0/24" \
+           "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=192.168.56.101:13334|interface=192.168.56.0/24"
