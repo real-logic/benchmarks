@@ -30,6 +30,8 @@ NODE_2_CORE_0="3-5"
 NODE_2_CORE_1=0
 NODE_2_CORE_2=1
 NODE_2_CORE_3=2
+AERON_DESTINATION_CHANNELS="uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=192.168.56.102:13333|interface=192.168.56.0/24"
+AERON_SOURCE_CHANNELS="uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=192.168.56.101:13334|interface=192.168.56.0/24"
 
 ITERATIONS=3
 NUMBER_OF_MESSAGES=1000
@@ -48,6 +50,8 @@ required_vars=(
 "NODE_2_CORE_0" \
 "NODE_2_CORE_2" \
 "NODE_2_CORE_3" \
+"AERON_DESTINATION_CHANNELS" \
+"AERON_SOURCE_CHANNELS" \
 )
 
 for var in "${required_vars[@]}"; do
@@ -180,19 +184,91 @@ function run_benchmarks()
   done
 }
 
-run_benchmarks \
-           "$(launch_c_driver "$BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
-           "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3") \
-           && export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && $BENCHMARKS_PATH/scripts/aeron/echo-client \
-           && kill -9 \$command_pid && wait" \
-           \
-           "$(launch_c_driver "$BENCHMARKS_PATH/scripts/aeron/c-media-driver"\
-           "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3") \
-           && export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && $BENCHMARKS_PATH/scripts/aeron/echo-server \
-           && kill -9 \$command_pid && wait" \
-           "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
-           "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=ssh-test" \
-           "aeron.threading.mode=SHARED" \
-           "aeron.archive.threading.mode=SHARED" \
-           "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=192.168.56.102:13333|interface=192.168.56.0/24" \
-           "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=192.168.56.101:13334|interface=192.168.56.0/24"
+function build_drivers()
+{
+  local commands=()
+
+  # Java driver
+  commands+=("$(background_command \
+  "$BENCHMARKS_PATH/scripts/aeron/media-driver" "$1" "driver-conductor" "$2" "sender" "$3" "receiver" "$4")")
+
+  # Java driver with Onload
+  commands+=("$(background_command \
+  "onload --profile=latency --force-profiles $BENCHMARKS_PATH/scripts/aeron/media-driver" \
+  "$1" "driver-conductor" "$2" "sender" "$3" "receiver" "$4")")
+
+  # C driver
+  commands+=("$(background_command \
+  "$BENCHMARKS_PATH/scripts/aeron/c-media-driver" "$1" "aeronmd" "$2" "sender" "$3" "receiver" "$4")")
+
+  # C driver with Onload
+  commands+=("$(background_command \
+  "onload --profile=latency --force-profiles $BENCHMARKS_PATH/scripts/aeron/c-media-driver" \
+  "$1" "aeronmd" "$2" "sender" "$3" "receiver" "$4")")
+
+  # C driver with ef_vi
+  commands+=("$(background_command \
+  "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+  AERON_DRIVER_DYNAMIC_LIBRARIES=\"$BENCHMARKS_PATH/scripts/aeron/libaeron_ef_vi.so\" \
+  $BENCHMARKS_PATH/scripts/aeron/c-media-driver" \
+  "$1" "aeronmd" "$2" "sender" "$3" "receiver" "$4")")
+
+  # C driver with ATS
+  commands+=("$(background_command \
+  "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$BENCHMARKS_PATH/scripts/aeron\" \
+  AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+  AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+  AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+  AERON_DRIVER_DYNAMIC_LIBRARIES=\"$BENCHMARKS_PATH/scripts/aeron/libaeron_transport_security.so\" \
+  $BENCHMARKS_PATH/scripts/aeron/c-media-driver" \
+  "$1" "aeronmd" "$2" "sender" "$3" "receiver" "$4")")
+
+  # C driver with ATS and Onload
+  commands+=("$(background_command \
+  "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$BENCHMARKS_PATH/scripts/aeron\" \
+  AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+  AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+  AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+  AERON_DRIVER_DYNAMIC_LIBRARIES=\"$BENCHMARKS_PATH/scripts/aeron/libaeron_transport_security.so\" \
+  onload --profile=latency --force-profiles $BENCHMARKS_PATH/scripts/aeron/c-media-driver" \
+  "$1" "aeronmd" "$2" "sender" "$3" "receiver" "$4")")
+
+  # C driver with ATS and ef_vi
+  commands+=("$(background_command \
+  "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$BENCHMARKS_PATH/scripts/aeron\" \
+  AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+  AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+  AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+  AERON_DRIVER_DYNAMIC_LIBRARIES=\"$BENCHMARKS_PATH/scripts/aeron/libaeron_transport_security.so\",\"$BENCHMARKS_PATH/scripts/aeron/libaeron_ef_vi.so\" \
+  AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+  $BENCHMARKS_PATH/scripts/aeron/c-media-driver" \
+  "$1" "aeronmd" "$2" "sender" "$3" "receiver" "$4")")
+
+  local IFS=$'\n'
+  echo "${commands[*]}"
+}
+
+IFS=$'\n'
+client_drivers=($(build_drivers "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3"))
+server_drivers=($(build_drivers "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3"))
+
+scenarios=("java" "java-onload" "c" "c-onload" "c-ef_vi" "c-ats" "c-ats-onload" "c-ats-ef_vi")
+for index in "${!scenarios[@]}";
+do
+  scenario="${scenarios[index]}"
+  client_driver="${client_drivers[index]}"
+  server_driver="${server_drivers[index]}"
+
+  echo scenario
+  echo "$client_driver"
+
+  run_benchmarks\
+    "export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && $client_driver && $BENCHMARKS_PATH/scripts/aeron/echo-client && kill -9 \$command_pid && wait" \
+    "export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && $server_driver && $BENCHMARKS_PATH/scripts/aeron/echo-server && kill -9 \$command_pid && wait" \
+    "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
+    "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=echo-$scenario" \
+    "aeron.threading.mode=SHARED" \
+    "aeron.archive.threading.mode=SHARED" \
+    "$AERON_DESTINATION_CHANNELS" \
+    "$AERON_SOURCE_CHANNELS"
+done
