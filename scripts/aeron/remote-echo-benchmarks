@@ -106,7 +106,7 @@ function get_thread_id()
 {
   local pid=$1
   local thread_name=$2
-  echo "\$(ps Ho tid,fname -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
+  echo "\$(ps Ho tid,comm -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
 }
 
 function background_command()
@@ -190,7 +190,7 @@ function build_drivers()
 
   # Java driver
   commands+=("$(background_command \
-  "$BENCHMARKS_PATH/scripts/aeron/media-driver" "$1" "driver-conductor" "$2" "sender" "$3" "receiver" "$4")")
+  "$BENCHMARKS_PATH/scripts/aeron/media-driver" "$1" "driver-conducto" "$2" "sender" "$3" "receiver" "$4")")
 
   # Java driver with Onload
   commands+=("$(background_command \
