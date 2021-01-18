@@ -135,16 +135,6 @@ function background_command()
   echo $command
 }
 
-function launch_c_driver()
-{
-  local exec=$1
-  local core0=$2
-  local core1=$3
-  local core2=$4
-  local core3=$5
-  echo $(background_command "$exec" "$core0" "aeronmd" "$core1" "sender" "$core2" "receiver" "$core3")
-}
-
 function run_benchmarks()
 {
   local client_command="$1"
@@ -250,7 +240,7 @@ function build_drivers()
 
 IFS=$'\n'
 client_drivers=($(build_drivers "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3"))
-server_drivers=($(build_drivers "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3"))
+server_drivers=($(build_drivers "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3"))
 
 scenarios=("java" "java-onload" "c" "c-onload" "c-ef_vi" "c-ats" "c-ats-onload" "c-ats-ef_vi")
 for index in "${!scenarios[@]}";
@@ -258,9 +248,6 @@ do
   scenario="${scenarios[index]}"
   client_driver="${client_drivers[index]}"
   server_driver="${server_drivers[index]}"
-
-  echo scenario
-  echo "$client_driver"
 
   run_benchmarks\
     "export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && $client_driver && $BENCHMARKS_PATH/scripts/aeron/echo-client && kill -9 \$command_pid && wait" \
