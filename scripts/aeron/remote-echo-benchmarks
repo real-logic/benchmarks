@@ -15,6 +15,8 @@
 ## limitations under the License.
 ##
 
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
 # temp
 SSH_USER=test
 SSH_HOST_1=192.168.56.101
@@ -39,10 +41,9 @@ BURST_SIZE=1
 MESSAGE_LENGTH=32
 RUNS=2
 
+source "${DIR}/../remote-benchmarks-helper"
+
 required_vars=(
-  "SSH_USER"
-  "SSH_HOST_1"
-  "SSH_HOST_2"
   "BENCHMARKS_PATH"
   "NODE_1_CORE_0"
   "NODE_1_CORE_1"
@@ -67,113 +68,6 @@ if [ -n "$required_var_missing" ];
 then
   exit 1
 fi
-
-if [ -z "$RUNS" ];
-then
-  RUNS=5
-fi
-
-if [ -z "$ITERATIONS" ];
-then
-  ITERATIONS=10
-fi
-
-if [ -z "$NUMBER_OF_MESSAGES" ];
-then
-  NUMBER_OF_MESSAGES=10000
-fi
-
-if [ -z "$BURST_SIZE" ];
-then
-  BURST_SIZE="1,10"
-fi
-
-if [ -z "$MESSAGE_LENGTH" ];
-then
-  MESSAGE_LENGTH="32,224,1378"
-fi
-
-function pin_all_threads()
-{
-  echo "taskset -p -a -c $2 $1"
-}
-
-function pin_thread()
-{
-  echo "taskset -p -c $2 $1"
-}
-
-function get_thread_id()
-{
-  local pid=$1
-  local thread_name=$2
-  echo "\$(ps Ho tid,comm -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
-}
-
-function background_command()
-{
-  local executable=$1
-  local other_cores=$2
-
-  local command=""
-  command+="$executable& script_pid=\$! && command_pid=\$script_pid && sleep 1"
-  command+="&& pid=\$command_pid; while [ \"\$pid\" ]; do command_pid=\$pid; echo \"command_pid=\$command_pid\"; pid=\$(ps -o pid= --ppid \$pid | sed 's/^ *//;s/ *$//'); done"
-
-  command+=" && $(pin_all_threads \$command_pid "$other_cores")"
-
-  shift
-  shift
-  while [[ $# -gt 0 ]]
-  do
-    local thread_name=$1
-    local core=$2
-    local thread_id="$(get_thread_id \$command_pid "$thread_name")"
-    command+=" && tid=$thread_id && $(pin_thread \$tid "$core")"
-    shift
-    shift
-  done
-
-  echo $command
-}
-
-function run_benchmarks()
-{
-  local client_command="$1"
-  local server_command="$2"
-  local config_file="$3"
-  local config_options=("${@:4}")
-
-  for messages in "${NUMBER_OF_MESSAGES[@]}"
-  do
-    for burst in "${BURST_SIZE[@]}"
-    do
-      for length in "${MESSAGE_LENGTH[@]}"
-      do
-        for (( i=1; i<=RUNS; i++ ))
-        do
-          echo -e '\n#######################'
-          echo 'Benchmark run #'$i' ...'
-          echo '#######################'
-
-          config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.messages=${messages# }")
-          config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burst# }")
-          config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${length# }")
-
-          local jvm_opts="rm -f $config_file"
-          for opt in "${config_options[@]}";
-          do
-            jvm_opts+=" && echo '$opt' >> $config_file"
-          done
-
-          ssh $SSH_USER@$SSH_HOST_2 "$jvm_opts && $server_command" &
-          ssh $SSH_USER@$SSH_HOST_1 "$jvm_opts && $client_command"
-          wait # wait for the server command to complete
-        done
-      done
-    done
-  done
-}
 
 function build_drivers()
 {
@@ -244,7 +138,7 @@ client_drivers=($(build_drivers "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_
 server_drivers=($(build_drivers "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3"))
 
 scenarios=("java" "java-onload" "c" "c-onload" "c-ef_vi" "c-ats" "c-ats-onload" "c-ats-ef_vi")
-for index in "${!scenarios[@]}";
+for index in "${!scenarios[@]}"
 do
   scenario="${scenarios[index]}"
   client_driver="${client_drivers[index]}"
