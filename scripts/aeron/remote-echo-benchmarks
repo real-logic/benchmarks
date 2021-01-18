@@ -133,9 +133,11 @@ function build_drivers()
   echo "${commands[*]}"
 }
 
+OLD_IFS=$IFS
 IFS=$'\n'
 client_drivers=($(build_drivers "$NODE_1_CORE_0" "$NODE_1_CORE_1" "$NODE_1_CORE_2" "$NODE_1_CORE_3"))
 server_drivers=($(build_drivers "$NODE_2_CORE_0" "$NODE_2_CORE_1" "$NODE_2_CORE_2" "$NODE_2_CORE_3"))
+IFS=$OLD_IFS
 
 scenarios=("java" "java-onload" "c" "c-onload" "c-ef_vi" "c-ats" "c-ats-onload" "c-ats-ef_vi")
 for index in "${!scenarios[@]}"
@@ -145,12 +147,10 @@ do
   server_driver="${server_drivers[index]}"
 
   run_benchmarks \
-    "export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && $client_driver && $BENCHMARKS_PATH/scripts/aeron/echo-client && kill -9 \$command_pid && wait" \
-    "export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && $server_driver && $BENCHMARKS_PATH/scripts/aeron/echo-server && kill -9 \$command_pid && wait" \
+    "JAVA_HOME=\"$HOST_1_JAVA_HOME\" $client_driver && JAVA_HOME=\"$HOST_1_JAVA_HOME\" $BENCHMARKS_PATH/scripts/aeron/echo-client && kill -9 \$command_pid && wait" \
+    "JAVA_HOME=\"$HOST_2_JAVA_HOME\" $server_driver && JAVA_HOME=\"$HOST_2_JAVA_HOME\" $BENCHMARKS_PATH/scripts/aeron/echo-server && kill -9 \$command_pid && wait" \
     "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
     "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=echo-$scenario" \
-    "aeron.threading.mode=SHARED" \
-    "aeron.archive.threading.mode=SHARED" \
     "$AERON_DESTINATION_CHANNELS" \
     "$AERON_SOURCE_CHANNELS"
 done
