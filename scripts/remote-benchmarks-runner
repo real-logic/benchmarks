@@ -58,45 +58,6 @@ then
   MESSAGE_LENGTH=(32 224 1376)
 fi
 
-function pin_all_threads()
-{
-  echo "taskset -p -a -c $2 $1"
-}
-
-function pin_thread()
-{
-  local pid=$1
-  local thread_name=$2
-  local core=$3
-  local tid="tid=\$(ps Ho tid,comm -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
-  echo "$tid; while [ -z \"\$tid\" ]; do $tid; sleep 0.1; done; taskset -p -c $core \$tid"
-}
-
-function background_command()
-{
-  local executable=$1
-  local other_cores=$2
-
-  local command=""
-  command+="$executable& script_pid=\$!"
-  command+="; pid=\$script_pid; while [ \"\$pid\" ]; do command_pid=\$pid; pid=\$(ps -o pid= --ppid \$pid | sed 's/^ *//;s/ *$//'); done"
-
-  command+="; $(pin_all_threads \$command_pid "$other_cores")"
-
-  shift
-  shift
-  while [[ $# -gt 0 ]]
-  do
-    local thread_name=$1
-    local core=$2
-    command+="; $(pin_thread \$command_pid "$thread_name" "$core")"
-    shift
-    shift
-  done
-
-  echo $command
-}
-
 function run_benchmarks()
 {
   local client_command="$1"
