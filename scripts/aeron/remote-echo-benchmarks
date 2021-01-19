@@ -122,6 +122,8 @@ do
   client_driver="${client_drivers[index]}"
   server_driver="${server_drivers[index]}"
 
+  echo -e '\n Testing scenario: '$scenario'\n'
+
   run_benchmarks \
     "JAVA_HOME=\"$HOST_1_JAVA_HOME\" $client_driver && JAVA_HOME=\"$HOST_1_JAVA_HOME\" $BENCHMARKS_PATH/scripts/aeron/echo-client && kill -9 \$command_pid && wait" \
     "JAVA_HOME=\"$HOST_2_JAVA_HOME\" $server_driver && JAVA_HOME=\"$HOST_2_JAVA_HOME\" $BENCHMARKS_PATH/scripts/aeron/echo-server && kill -9 \$command_pid && wait" \
