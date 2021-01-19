@@ -102,7 +102,7 @@ function run_benchmarks()
   local client_command="$1"
   local server_command="$2"
   local config_file="$3"
-  local config_options=("${@:4}")
+  local config=("${@:4}")
 
   for messages in "${NUMBER_OF_MESSAGES[@]}"
   do
@@ -112,10 +112,9 @@ function run_benchmarks()
       do
         for (( i=1; i<=RUNS; i++ ))
         do
-          echo -e '\n#######################'
-          echo 'Benchmark run #'$i' ...'
-          echo '#######################'
+          echo -e '\n### Benchmark run #'$i' ...\n'
 
+          local config_options=("${config[@]}")
           config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
           config_options+=("uk.co.real_logic.benchmarks.remote.messages=${messages# }")
           config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burst# }")
