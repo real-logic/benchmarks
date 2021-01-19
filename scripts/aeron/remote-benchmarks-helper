@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2021 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+function pin_thread()
+{
+  local pid=$1
+  local thread_name=$2
+  local core=$3
+  local tid="\$(ps Ho tid,comm -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
+  echo "tid=$tid; while [ -z \"\$tid\" ]; do sleep 0.5; tid=$tid; done; echo \"$thread_name TID=\$tid\"; taskset -p -c $core \$tid"
+}
+
+function start_media_driver()
+{
+  local executable=$1
+  local driver_pid
+  local driver_thread
+
+  if [[ "$executable" =~ "/media-driver$" ]]
+  then
+    driver_pid="\$(\$JAVA_HOME/bin/jcmd | grep \"io.aeron.driver.MediaDriver\" | awk '{print \$1}')"
+    driver_thread="driver-conducto"
+  else
+    driver_pid="\$(pgrep aeronmd)"
+    driver_thread="aeronmd"
+  fi
+
+  local command="killall aeronmd; killall java; \"$executable\" &"
+  command+=" driver_pid=$driver_pid; while [ -z \"\$driver_pid\" ]; do sleep 0.5; driver_pid=$driver_pid; done"
+
+  command+="; echo \"driver PID=\$driver_pid\"; taskset -p -a -c $2 \$driver_pid"
+  command+="; $(pin_thread \$driver_pid "$driver_thread" "$3")"
+  command+="; $(pin_thread \$driver_pid "sender" "$4")"
+  command+="; $(pin_thread \$driver_pid "receiver" "$5")"
+
+  echo $command
+}
