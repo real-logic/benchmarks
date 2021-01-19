@@ -55,7 +55,7 @@ fi
 
 if [ -z "$MESSAGE_LENGTH" ];
 then
-  MESSAGE_LENGTH=(32 224 1378)
+  MESSAGE_LENGTH=(32 224 1376)
 fi
 
 function pin_all_threads()
