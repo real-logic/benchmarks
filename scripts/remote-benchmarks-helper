@@ -126,8 +126,8 @@ function run_benchmarks()
             jvm_opts+=" && echo '$opt' >> $config_file"
           done
 
-          ssh $SSH_USER@$SSH_HOST_2 "$jvm_opts && $server_command" &
-          ssh $SSH_USER@$SSH_HOST_1 "$jvm_opts && $client_command"
+          ssh $SSH_USER@$SSH_HOST_2 "$jvm_opts && $server_command && exit" &
+          ssh $SSH_USER@$SSH_HOST_1 "$jvm_opts && $client_command && exit"
           wait # wait for the server command to complete
         done
       done
