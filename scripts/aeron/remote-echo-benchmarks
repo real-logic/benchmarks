@@ -17,30 +17,6 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-# temp
-SSH_USER=test
-SSH_HOST_1=192.168.56.101
-SSH_HOST_2=192.168.56.102
-BENCHMARKS_PATH=/home/test/dev/aeron-benchmarks
-HOST_1_JAVA_HOME="/home/test/dev/zulu8.50.0.51-ca-jdk8.0.275-linux_x64"
-HOST_2_JAVA_HOME="/home/test/dev/zulu8.50.0.51-ca-jdk8.0.275-linux_x64"
-NODE_1_CORE_0="3-5"
-NODE_1_CORE_1=0
-NODE_1_CORE_2=1
-NODE_1_CORE_3=2
-NODE_2_CORE_0="3-5"
-NODE_2_CORE_1=0
-NODE_2_CORE_2=1
-NODE_2_CORE_3=2
-AERON_DESTINATION_CHANNELS="uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=192.168.56.102:13333|interface=192.168.56.0/24"
-AERON_SOURCE_CHANNELS="uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=192.168.56.101:13334|interface=192.168.56.0/24"
-
-ITERATIONS=3
-NUMBER_OF_MESSAGES=1000
-BURST_SIZE=1
-MESSAGE_LENGTH=32
-RUNS=2
-
 source "${DIR}/../remote-benchmarks-helper"
 
 required_vars=(
