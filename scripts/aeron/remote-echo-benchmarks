@@ -122,7 +122,10 @@ do
     "export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && $server_driver && $BENCHMARKS_PATH/scripts/aeron/echo-server && kill \$driver_pid; wait" \
     "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
     "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=echo-$scenario" \
+    "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
     "aeron.threading.mode=DEDICATED" \
     "$AERON_DESTINATION_CHANNELS" \
     "$AERON_SOURCE_CHANNELS"
 done
+
+download_results "echo-results.zip" "$BENCHMARKS_PATH/scripts/results" "$DIR/.."

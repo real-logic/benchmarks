@@ -95,3 +95,13 @@ function run_benchmarks()
     done
   done
 }
+
+function download_results()
+{
+  local archive="/home/$SSH_USER/$1"
+  local results_dir="$2"
+  local dest_dir="$3"
+
+  ssh $SSH_USER@$SSH_HOST_1 "rm -f \"$archive\"; cd \"$results_dir\" && zip -r \"$archive\" . && exit"
+  scp $SSH_USER@$SSH_HOST_1:"$archive" "$dest_dir"
+}
