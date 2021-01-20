@@ -118,8 +118,8 @@ do
   echo -e '\n Testing scenario: '$scenario'\n'
 
   run_benchmarks \
-    "JAVA_HOME=\"$HOST_1_JAVA_HOME\" $client_driver && JAVA_HOME=\"$HOST_1_JAVA_HOME\" $BENCHMARKS_PATH/scripts/aeron/echo-client && kill \$driver_pid; wait" \
-    "JAVA_HOME=\"$HOST_2_JAVA_HOME\" $server_driver && JAVA_HOME=\"$HOST_2_JAVA_HOME\" $BENCHMARKS_PATH/scripts/aeron/echo-server && kill \$driver_pid; wait" \
+    "export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && $client_driver && $BENCHMARKS_PATH/scripts/aeron/echo-client && kill \$driver_pid; wait" \
+    "export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && $server_driver && $BENCHMARKS_PATH/scripts/aeron/echo-server && kill \$driver_pid; wait" \
     "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
     "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=echo-$scenario" \
     "$AERON_DESTINATION_CHANNELS" \
