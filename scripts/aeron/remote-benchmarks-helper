@@ -30,7 +30,7 @@ function start_media_driver()
   local driver_pid
   local driver_thread
 
-  if [[ "$executable" =~ "/media-driver$" ]]
+  if [[ "$executable" =~ /media-driver$ ]]
   then
     driver_pid="\$(\$JAVA_HOME/bin/jcmd | grep \"io.aeron.driver.MediaDriver\" | awk '{print \$1}')"
     driver_thread="driver-conducto"
