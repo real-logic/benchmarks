@@ -27,8 +27,8 @@ set "DIR=%~dp0"
   -XX:+UseBiasedLocking ^
   -XX:BiasedLockingStartupDelay=0 ^
   -XX:+UseParallelOldGC ^
-  -Xms8G ^
-  -Xmx8G ^
+  -Xms4G ^
+  -Xmx4G ^
   -XX:+AlwaysPreTouch ^
   -XX:MaxMetaspaceSize=1G ^
   -XX:ReservedCodeCacheSize=1G ^
