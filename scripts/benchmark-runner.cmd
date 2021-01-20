@@ -23,7 +23,7 @@ rem $ benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --bu
 rem
 
 set RUNS=5
-set ITERATIONS=10
+set ITERATIONS=5
 set MESSAGE_RATE=100000
 set BURST_SIZE="1,10"
 set MESSAGE_LENGTH="32,224,1376"

@@ -40,7 +40,7 @@ fi
 
 if [ -z "$ITERATIONS" ];
 then
-  ITERATIONS=10
+  ITERATIONS=5
 fi
 
 if [ -z "$MESSAGE_RATE" ];
