@@ -31,5 +31,6 @@ exec "${JAVA_HOME}/bin/java" \
   -XX:+AlwaysPreTouch \
   -XX:MaxMetaspaceSize=1G \
   -XX:ReservedCodeCacheSize=1G \
+  -XX:+PerfDisableSharedMem \
   ${JVM_OPTS} \
   "$@"

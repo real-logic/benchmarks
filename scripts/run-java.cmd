@@ -32,5 +32,6 @@ set "DIR=%~dp0"
   -XX:+AlwaysPreTouch ^
   -XX:MaxMetaspaceSize=1G ^
   -XX:ReservedCodeCacheSize=1G ^
+  -XX:+PerfDisableSharedMem ^
   %JVM_OPTS% ^
   %*
