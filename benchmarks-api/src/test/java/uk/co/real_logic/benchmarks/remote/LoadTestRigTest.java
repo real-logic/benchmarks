@@ -51,7 +51,7 @@ class LoadTestRigTest
         configuration = new Configuration.Builder()
             .warmUpIterations(0)
             .iterations(1)
-            .numberOfMessages(1)
+            .messageRate(1)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .idleStrategy(idleStrategy)
             .outputDirectory(tempDir)
@@ -76,7 +76,7 @@ class LoadTestRigTest
         configuration = new Configuration.Builder()
             .warmUpIterations(1)
             .iterations(1)
-            .numberOfMessages(1)
+            .messageRate(1)
             .messageTransceiverClass(configuration.messageTransceiverClass())
             .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
@@ -112,7 +112,7 @@ class LoadTestRigTest
         inOrder.verify(out).printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload" +
             " and a burst size of %,d...%n",
             configuration.warmUpIterations(),
-            configuration.numberOfMessages(),
+            configuration.messageRate(),
             configuration.messageLength(),
             configuration.batchSize());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);
@@ -121,7 +121,7 @@ class LoadTestRigTest
         inOrder.verify(out).printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes" +
             " payload and a burst size of %,d...%n",
             configuration.iterations(),
-            configuration.numberOfMessages(),
+            configuration.messageRate(),
             configuration.messageLength(),
             configuration.batchSize());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);
@@ -180,7 +180,7 @@ class LoadTestRigTest
         configuration = new Configuration.Builder()
             .warmUpIterations(0)
             .iterations(3)
-            .numberOfMessages(5)
+            .messageRate(5)
             .batchSize(2)
             .messageTransceiverClass(configuration.messageTransceiverClass())
             .idleStrategy(idleStrategy)
@@ -218,7 +218,7 @@ class LoadTestRigTest
         configuration = new Configuration.Builder()
             .warmUpIterations(0)
             .iterations(1)
-            .numberOfMessages(3)
+            .messageRate(3)
             .batchSize(200)
             .messageTransceiverClass(configuration.messageTransceiverClass())
             .idleStrategy(idleStrategy)
@@ -281,7 +281,7 @@ class LoadTestRigTest
             MILLISECONDS.toNanos(2950));
 
         final Configuration configuration = new Configuration.Builder()
-            .numberOfMessages(1)
+            .messageRate(1)
             .idleStrategy(idleStrategy)
             .batchSize(15)
             .messageLength(24)
@@ -341,7 +341,7 @@ class LoadTestRigTest
         );
 
         final Configuration configuration = new Configuration.Builder()
-            .numberOfMessages(1)
+            .messageRate(1)
             .idleStrategy(idleStrategy)
             .batchSize(30)
             .messageLength(100)
@@ -388,7 +388,7 @@ class LoadTestRigTest
     {
         final Configuration configuration = new Configuration.Builder()
             .iterations(3)
-            .numberOfMessages(10_000)
+            .messageRate(10_000)
             .messageLength(32)
             .batchSize(5)
             .warmUpIterations(0)

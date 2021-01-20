@@ -97,7 +97,7 @@ abstract class AbstractTest<
         final boolean outOfOrderReceive) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
-            .numberOfMessages(messages)
+            .messageRate(messages)
             .messageLength(messageLength)
             .messageTransceiverClass(messageTransceiverClass())
             .outputDirectory(tempDir)

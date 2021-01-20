@@ -43,9 +43,9 @@ then
   ITERATIONS=10
 fi
 
-if [ -z "$NUMBER_OF_MESSAGES" ];
+if [ -z "$MESSAGE_RATE" ];
 then
-  NUMBER_OF_MESSAGES=(5000 25000 100000)
+  MESSAGE_RATE=(100000)
 fi
 
 if [ -z "$BURST_SIZE" ];
@@ -65,11 +65,11 @@ function run_benchmarks()
   local config_file="$3"
   local config=("${@:4}")
 
-  for messages in "${NUMBER_OF_MESSAGES[@]}"
+  for messageRate in "${MESSAGE_RATE[@]}"
   do
-    for burst in "${BURST_SIZE[@]}"
+    for burstSize in "${BURST_SIZE[@]}"
     do
-      for length in "${MESSAGE_LENGTH[@]}"
+      for messageLength in "${MESSAGE_LENGTH[@]}"
       do
         for (( i=1; i<=RUNS; i++ ))
         do
@@ -77,9 +77,9 @@ function run_benchmarks()
 
           local config_options=("${config[@]}")
           config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.messages=${messages# }")
-          config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burst# }")
-          config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${length# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.messageRate=${messageRate# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burstSize# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${messageLength# }")
 
           local jvm_opts="rm -f $config_file"
           for opt in "${config_options[@]}";

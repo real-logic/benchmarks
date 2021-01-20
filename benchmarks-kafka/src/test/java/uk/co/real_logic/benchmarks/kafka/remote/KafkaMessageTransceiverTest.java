@@ -118,7 +118,7 @@ class KafkaMessageTransceiverTest
             });
 
         final Configuration configuration = new Configuration.Builder()
-            .numberOfMessages(numberOfMessages)
+            .messageRate(numberOfMessages)
             .messageLength(messageLength)
             .messageTransceiverClass(messageTransceiver.getClass())
             .outputFileNamePrefix("kafka")

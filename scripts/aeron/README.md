@@ -136,10 +136,10 @@ There are three ways to define and/or override properties:
 
 1. Create a file named `benchmark.properties` and define your properties there.
     
-    The example below illustrates setting property `uk.co.real_logic.benchmarks.remote.messages` to `1000000`:
+    The example below illustrates setting property `uk.co.real_logic.benchmarks.remote.messageRate` to `1000000`:
     
     ```
-    uk.co.real_logic.benchmarks.remote.messages=1000000
+    uk.co.real_logic.benchmarks.remote.messageRate=1000000
     ```
 
 1. Supply custom properties file(s) as the last argument to a script, e.g.:

@@ -105,7 +105,7 @@ class ClusterTest
         setProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME, "aeron:ipc?term-length=64k");
 
         final Configuration configuration = new Configuration.Builder()
-            .numberOfMessages(messages)
+            .messageRate(messages)
             .messageLength(messageLength)
             .messageTransceiverClass(ClusterMessageTransceiver.class)
             .outputDirectory(tempDir)

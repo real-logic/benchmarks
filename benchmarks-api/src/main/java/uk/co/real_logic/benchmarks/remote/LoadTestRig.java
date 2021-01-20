@@ -114,10 +114,10 @@ public final class LoadTestRig
                 out.printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload and a" +
                     " burst size of %,d...%n",
                     configuration.warmUpIterations(),
-                    configuration.numberOfMessages(),
+                    configuration.messageRate(),
                     configuration.messageLength(),
                     configuration.batchSize());
-                send(configuration.warmUpIterations(), configuration.numberOfMessages());
+                send(configuration.warmUpIterations(), configuration.messageRate());
 
                 receivedMessages = 0;
                 histogram.reset();
@@ -127,10 +127,10 @@ public final class LoadTestRig
             out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload and a" +
                 " burst size of %,d...%n",
                 configuration.iterations(),
-                configuration.numberOfMessages(),
+                configuration.messageRate(),
                 configuration.messageLength(),
                 configuration.batchSize());
-            final long sentMessages = send(configuration.iterations(), configuration.numberOfMessages());
+            final long sentMessages = send(configuration.iterations(), configuration.messageRate());
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
             histogram.outputPercentileDistribution(out, 1000.0);
@@ -264,7 +264,7 @@ public final class LoadTestRig
 
     private void warnIfTargetRateNotAchieved(final long sentMessages)
     {
-        final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.numberOfMessages();
+        final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.messageRate();
         if (sentMessages < expectedTotalNumberOfMessages)
         {
             out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +

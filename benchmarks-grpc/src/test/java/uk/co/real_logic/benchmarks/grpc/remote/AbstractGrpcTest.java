@@ -69,7 +69,7 @@ abstract class AbstractGrpcTest
                 });
 
             final Configuration configuration = new Configuration.Builder()
-                .numberOfMessages(numberOfMessages)
+                .messageRate(numberOfMessages)
                 .messageLength(messageLength)
                 .messageTransceiverClass(messageTransceiver.getClass())
                 .outputFileNamePrefix("grpc")
