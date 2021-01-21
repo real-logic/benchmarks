@@ -14,6 +14,9 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 ##
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+source "$DIR/../remote-benchmarks-runner"
 
 function pin_thread()
 {
@@ -32,7 +35,7 @@ function start_media_driver()
 
   if [[ "$executable" =~ /media-driver$ ]]
   then
-    driver_pid="\$(pgrep -l -f 'io.aeron.driver.MediaDriver' | grep java | awk '{print \$1}')"
+    driver_pid="$(find_java_process_by_class_name "io.aeron.driver.MediaDriver")"
     driver_thread="driver-conducto"
   else
     driver_pid="\$(pgrep -x aeronmd)"
@@ -53,5 +56,5 @@ function start_media_driver()
 
 function stop_media_driver()
 {
-  echo "pkill -x aeronmd; kill \$(pgrep -l -f 'io.aeron.driver.MediaDriver' | grep java | awk '{print \$1}')"
+  echo "pkill -x aeronmd; kill $(find_java_process_by_class_name "io.aeron.driver.MediaDriver")"
 }

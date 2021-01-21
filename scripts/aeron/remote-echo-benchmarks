@@ -17,8 +17,7 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-source "${DIR}/remote-benchmarks-helper"
-source "${DIR}/../remote-benchmarks-runner"
+source "$DIR/remote-benchmarks-helper"
 
 required_vars=(
   "BENCHMARKS_PATH"
