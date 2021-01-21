@@ -61,9 +61,10 @@ fi
 function run_benchmarks()
 {
   local client_command="$1"
-  local server_command="$2"
-  local config_file="$3"
-  local config=("${@:4}")
+  local server_start_command="$2"
+  local server_stop_command="$3"
+  local config_file="$4"
+  local config=("${@:5}")
 
   for messageRate in "${MESSAGE_RATE[@]}"
   do
@@ -87,9 +88,14 @@ function run_benchmarks()
             jvm_opts+=" && echo '$opt' >> $config_file"
           done
 
-          ssh $SSH_USER@$SSH_HOST_2 "$jvm_opts && $server_command && exit" &
+          echo -e "\nStarting server..."
+          ssh $SSH_USER@$SSH_HOST_2 "($jvm_opts && $server_start_command &) > /dev/null 2>&1 && exit"
+
+          echo -e "\nStarting client..."
           ssh $SSH_USER@$SSH_HOST_1 "$jvm_opts && $client_command && exit"
-          wait # wait for the server command to complete
+
+          echo -e "\nStopping server..."
+          ssh $SSH_USER@$SSH_HOST_2 "$server_stop_command && exit"
         done
       done
     done
