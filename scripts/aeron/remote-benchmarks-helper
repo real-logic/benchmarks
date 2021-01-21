@@ -32,10 +32,10 @@ function start_media_driver()
 
   if [[ "$executable" =~ /media-driver$ ]]
   then
-    driver_pid="\$(pgrep -f \"io.aeron.driver.MediaDriver\")"
+    driver_pid="\$(pgrep -l -f 'io.aeron.driver.MediaDriver' | grep java | awk '{print \$1}')"
     driver_thread="driver-conducto"
   else
-    driver_pid="\$(pgrep aeronmd)"
+    driver_pid="\$(pgrep -x aeronmd)"
     driver_thread="aeronmd"
   fi
 
@@ -53,5 +53,5 @@ function start_media_driver()
 
 function stop_media_driver()
 {
-  echo "pkill aeronmd; pkill -f \"io.aeron.driver.MediaDriver\""
+  echo "pkill -x aeronmd; kill \$(pgrep -l -f 'io.aeron.driver.MediaDriver' | grep java | awk '{print \$1}')"
 }
