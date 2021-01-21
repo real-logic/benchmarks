@@ -22,7 +22,6 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth;
 import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
 import org.agrona.LangUtil;
-import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
@@ -79,7 +78,7 @@ final class GrpcConfig
             NettyServerBuilder.forAddress(new InetSocketAddress(getServerHost(), getServerPort()));
         if (getBoolean(TLS_PROP_NAME))
         {
-            final Path certificatesDir = Configuration.tryResolveCertificatesDirectory();
+            final Path certificatesDir = certificatesDir();
             final SslContextBuilder sslClientContextBuilder = SslContextBuilder.forServer(
                 certificatesDir.resolve("server.pem").toFile(), certificatesDir.resolve("server.key").toFile())
                 .trustManager(certificatesDir.resolve("ca.pem").toFile())
