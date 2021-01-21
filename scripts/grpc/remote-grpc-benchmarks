@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2021 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+export MESSAGE_RATE=25000
+
+if [ -z "$SERVER_PORT" ];
+then
+  SERVER_PORT=13400
+fi
+
+source "${DIR}/../remote-benchmarks-runner"
+
+required_vars=(
+  "BENCHMARKS_PATH"
+  "SERVER_HOST"
+  "SERVER_PORT")
+
+for var in "${required_vars[@]}"; do
+  if [[ -z "${!var}" ]]
+  then
+    echo "env var $var must be set"
+    required_var_missing=true
+  fi
+done
+
+if [ -n "$required_var_missing" ];
+then
+  exit 1
+fi
+
+for client in "blocking" "streaming"
+do
+  for onload in "false" "true"
+  do
+    scenario="$client"
+    command_prefix=""
+
+    if [ "$onload" == "true" ]
+    then
+        command_prefix="onload --profile=latency --force-profiles"
+        scenario="$scenario-onload"
+    fi
+
+    for tls in "false" "true"
+    do
+
+      if [ "$tls" == "true" ]
+      then
+          scenario="$scenario-tls"
+      fi
+
+      echo -e "\n Testing scenario: '$scenario'\n"
+
+      # shellcheck disable=SC2153
+      run_benchmarks \
+        "export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && $command_prefix $BENCHMARKS_PATH/scripts/grpc/$client-client" \
+        "export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && $command_prefix $BENCHMARKS_PATH/scripts/grpc/server" \
+        "kill $(find_java_process_by_class_name "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")" \
+        "$BENCHMARKS_PATH/scripts/grpc/benchmark.properties" \
+        "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=grpc-$scenario" \
+        "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
+        "uk.co.real_logic.benchmarks.grpc.remote.server.host=$SERVER_HOST" \
+        "uk.co.real_logic.benchmarks.grpc.remote.server.port=$SERVER_PORT" \
+        "uk.co.real_logic.benchmarks.grpc.remote.tls=$tls" \
+        "uk.co.real_logic.benchmarks.grpc.remote.certificates=$BENCHMARKS_PATH/certificates"
+    done
+  done
+done
+
+download_results "grpc-results.zip" "$BENCHMARKS_PATH/scripts/results" "$DIR/.."
