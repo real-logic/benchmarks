@@ -502,7 +502,7 @@ public final class Configuration
      *
      * @return directory where TLS certificates are stored.
      */
-    public static Path certificatesDirectory()
+    public static Path tryResolveCertificatesDirectory()
     {
         final Path userDir = Paths.get(getProperty("user.dir"));
         Path certificatesDir = userDir.resolve("certificates");

@@ -78,7 +78,7 @@ class KafkaMessageTransceiverTest
     {
         setProperty(BOOTSTRAP_SERVERS_CONFIG, "localhost:13502");
         setProperty(SECURITY_PROTOCOL_CONFIG, "SSL");
-        final Path certificatesPath = Configuration.certificatesDirectory();
+        final Path certificatesPath = Configuration.tryResolveCertificatesDirectory();
         setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
             certificatesPath.resolve("truststore.p12").toString());
         setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, "PKCS12");

@@ -27,6 +27,7 @@ import uk.co.real_logic.benchmarks.remote.Configuration;
 import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static java.lang.Boolean.getBoolean;
 import static java.lang.Integer.getInteger;
@@ -34,9 +35,10 @@ import static java.lang.System.getProperty;
 
 final class GrpcConfig
 {
-    public static final String SERVER_HOST = "uk.co.real_logic.benchmarks.grpc.remote.server.host";
-    public static final String SERVER_PORT = "uk.co.real_logic.benchmarks.grpc.remote.server.port";
-    public static final String TLS = "uk.co.real_logic.benchmarks.grpc.remote.tls";
+    public static final String SERVER_HOST_PROP_NAME = "uk.co.real_logic.benchmarks.grpc.remote.server.host";
+    public static final String SERVER_PORT_PROP_NAME = "uk.co.real_logic.benchmarks.grpc.remote.server.port";
+    public static final String TLS_PROP_NAME = "uk.co.real_logic.benchmarks.grpc.remote.tls";
+    public static final String CERTIFICATES_DIR_PROP_NAME = "uk.co.real_logic.benchmarks.grpc.remote.certificates";
 
     private GrpcConfig()
     {
@@ -46,13 +48,14 @@ final class GrpcConfig
     {
         final NettyChannelBuilder channelBuilder =
             NettyChannelBuilder.forAddress(getServerHost(), getServerPort());
-        if (getBoolean(TLS))
+        if (getBoolean(TLS_PROP_NAME))
         {
-            final Path certificatesDir = Configuration.certificatesDirectory();
+            final Path certificatesDir = certificatesDir();
             final SslContextBuilder sslClientContextBuilder = GrpcSslContexts.forClient()
                 .trustManager(certificatesDir.resolve("ca.pem").toFile())
                 .keyManager(
-                certificatesDir.resolve("client.pem").toFile(), certificatesDir.resolve("client.key").toFile());
+                certificatesDir.resolve("client.pem").toFile(),
+                certificatesDir.resolve("client.key").toFile());
 
             try
             {
@@ -74,9 +77,9 @@ final class GrpcConfig
     {
         final NettyServerBuilder serverBuilder =
             NettyServerBuilder.forAddress(new InetSocketAddress(getServerHost(), getServerPort()));
-        if (getBoolean(TLS))
+        if (getBoolean(TLS_PROP_NAME))
         {
-            final Path certificatesDir = Configuration.certificatesDirectory();
+            final Path certificatesDir = Configuration.tryResolveCertificatesDirectory();
             final SslContextBuilder sslClientContextBuilder = SslContextBuilder.forServer(
                 certificatesDir.resolve("server.pem").toFile(), certificatesDir.resolve("server.key").toFile())
                 .trustManager(certificatesDir.resolve("ca.pem").toFile())
@@ -97,12 +100,17 @@ final class GrpcConfig
 
     private static String getServerHost()
     {
-        final String host = getProperty(SERVER_HOST);
+        final String host = getProperty(SERVER_HOST_PROP_NAME);
         return null != host ? host : "127.0.0.1";
     }
 
     private static int getServerPort()
     {
-        return getInteger(SERVER_PORT, 13400);
+        return getInteger(SERVER_PORT_PROP_NAME, 13400);
+    }
+
+    private static Path certificatesDir()
+    {
+        return Paths.get(getProperty(CERTIFICATES_DIR_PROP_NAME));
     }
 }

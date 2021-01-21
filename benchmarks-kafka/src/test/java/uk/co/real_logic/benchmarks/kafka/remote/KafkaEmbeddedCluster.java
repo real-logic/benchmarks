@@ -84,7 +84,7 @@ class KafkaEmbeddedCluster implements AutoCloseable
         final String listeners = "PLAINTEXT://localhost:" + httpPort + ",SSL://localhost:" + sslPort;
         props.put(KafkaConfig$.MODULE$.ListenersProp(), listeners);
         props.put(KafkaConfig$.MODULE$.AdvertisedListenersProp(), listeners);
-        final Path certificatesPath = Configuration.certificatesDirectory();
+        final Path certificatesPath = Configuration.tryResolveCertificatesDirectory();
         props.put(KafkaConfig$.MODULE$.SslTruststoreLocationProp(),
             certificatesPath.resolve("truststore.p12").toString());
         props.put(KafkaConfig$.MODULE$.SslTruststoreTypeProp(), "PKCS12");
