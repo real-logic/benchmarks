@@ -16,12 +16,14 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
+set "DIR=%~dp0"
+
 rem Kill Kafka process
-call :killJavaProcess Kafka
+call :killJavaProcess "kafka.Kafka"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 rem Kill Zookeeper process
-call :killJavaProcess QuorumPeerMain
+call :killJavaProcess "org.apache.zookeeper.server.quorum.QuorumPeerMain"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 rem Finally delete the data directory
