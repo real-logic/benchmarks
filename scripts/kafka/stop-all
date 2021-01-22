@@ -32,8 +32,13 @@ killJavaProcess() {
 # Kill Kafka process
 killJavaProcess "kafka.Kafka"
 
-# Kill Zookeeper proces
+# Kill Zookeeper process
 killJavaProcess "org.apache.zookeeper.server.quorum.QuorumPeerMain"
 
 # Delete data directory
-rm -rf "${DIR}/../kafka-data"
+if [ -z "$KAFKA_DATA_DIR" ]
+then
+  KAFKA_DATA_DIR="$DIR/../kafka-data"
+fi
+
+rm -rf "$KAFKA_DATA_DIR"

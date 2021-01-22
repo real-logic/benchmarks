@@ -27,9 +27,12 @@ call :killJavaProcess "org.apache.zookeeper.server.quorum.QuorumPeerMain"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 rem Finally delete the data directory
-set "DATA_DIR=%CD%\..\kafka-data"
-if exist "%DATA_DIR%" (
-  rmdir /S /Q %DATA_DIR%
+if "%KAFKA_DATA_DIR%" == "" (
+  set "KAFKA_DATA_DIR=%DIR%\..\kafka-data"
+)
+
+if exist "%KAFKA_DATA_DIR%" (
+  rmdir /S /Q "%KAFKA_DATA_DIR%"
 )
 
 goto :eof
