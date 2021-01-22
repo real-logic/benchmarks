@@ -22,8 +22,8 @@ rem
 rem $ benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,224,1376" "aeron\echo-client"
 rem
 
-set RUNS=5
-set ITERATIONS=5
+set RUNS=3
+set ITERATIONS=10
 set MESSAGE_RATE=100000
 set BURST_SIZE="1,10"
 set MESSAGE_LENGTH="32,224,1376"

@@ -21,8 +21,8 @@
 # $ ./benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,224,1376" "aeron/echo-client"
 ##
 
-RUNS=5
-ITERATIONS=5
+RUNS=3
+ITERATIONS=10
 MESSAGE_RATE=(100000)
 BURST_SIZE=(1 10)
 MESSAGE_LENGTH=(32 224 1376)

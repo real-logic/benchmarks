@@ -35,12 +35,12 @@ fi
 
 if [ -z "$RUNS" ];
 then
-  RUNS=5
+  RUNS=3
 fi
 
 if [ -z "$ITERATIONS" ];
 then
-  ITERATIONS=5
+  ITERATIONS=10
 fi
 
 if [ -z "$MESSAGE_RATE" ];
