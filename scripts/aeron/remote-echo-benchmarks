@@ -154,7 +154,7 @@ do
       run_benchmarks \
         "export JAVA_HOME=\"$HOST_1_JAVA_HOME\" && $client_driver && $BENCHMARKS_PATH/scripts/aeron/echo-client && kill \$driver_pid; wait" \
         "export JAVA_HOME=\"$HOST_2_JAVA_HOME\" && $server_driver && $BENCHMARKS_PATH/scripts/aeron/echo-server" \
-        "$(stop_media_driver)" \
+        "kill -9 $(find_java_process_by_class_name "uk.co.real_logic.benchmarks.aeron.remote.EchoNode"); $(stop_media_driver)" \
         "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
         "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=echo-$scenario-active-$active-passive-$passive" \
         "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
