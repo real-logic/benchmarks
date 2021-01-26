@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2021 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+export MESSAGE_RATE=25000
+
+source "${DIR}/../remote-benchmarks-runner"
+
+required_vars=(
+  "BENCHMARKS_PATH"
+  "CLIENT_JAVA_HOME"
+  "CLIENT_CPU_CORES"
+  "SERVER_HOST"
+  "SERVER_JAVA_HOME"
+  "SERVER_ZOOKEEPER_CPU_CORES"
+  "SERVER_KAFKA_CPU_CORES"
+  "SERVER_KAFKA_DIR")
+
+for var in "${required_vars[@]}"; do
+  if [[ -z "${!var}" ]]
+  then
+    echo "env var $var must be set"
+    required_var_missing=true
+  fi
+done
+
+if [ -n "$required_var_missing" ];
+then
+  exit 1
+fi
+
+for security in "PLAINTEXT" "SSL"
+do
+  for onload in "" "onload --profile=latency --force-profiles"
+  do
+    for flush in "" "1"
+    do
+      scenario="kafka"
+      if [ -z "$flush" ]
+      then
+          scenario="$scenario-no-flush"
+      else
+          scenario="$scenario-flush-1"
+      fi
+
+      if [ -z "$onload" ]
+      then
+          scenario="$scenario-onload"
+      fi
+
+      scenario="$scenario-${security}"
+
+      if [ "$security" == "PLAINTEXT" ]
+      then
+        port=13592
+      else
+        port=13593
+      fi
+
+      echo -e "\n Testing scenario: '$scenario'\n"
+
+      start_zookeeper="cp $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties.bak \
+      && echo \"dataDir=$SERVER_KAFKA_DIR/zookeeper\" >> $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties \
+      && taskset -c $SERVER_ZOOKEEPER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/zookeeper-start"
+
+      start_kafka="cp $BENCHMARKS_PATH/scripts/kafka/server.properties $BENCHMARKS_PATH/scripts/kafka/server.properties.bak \
+      && echo \"log.dirs=$SERVER_KAFKA_DIR/logs\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
+      && echo \"ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
+      && echo \"ssl.keystore.location=$BENCHMARKS_PATH/certificates/server.keystore\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
+      && taskset -c $SERVER_KAFKA_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/kafka-start"
+
+      stop_all="KAFKA_DATA_DIR=\"$SERVER_KAFKA_DIR\" $BENCHMARKS_PATH/scripts/kafka/stop-all; \
+      mv $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties.bak $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties; \
+      mv $BENCHMARKS_PATH/scripts/kafka/server.properties.bak $BENCHMARKS_PATH/scripts/kafka/server.properties"
+
+      run_benchmarks \
+        "export JAVA_HOME=\"$CLIENT_JAVA_HOME\" && taskset -c $CLIENT_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/client" \
+        "export JAVA_HOME=\"$SERVER_JAVA_HOME\" && $start_zookeeper & $start_kafka" \
+        "$stop_all" \
+        "$BENCHMARKS_PATH/scripts/kafka/benchmark.properties" \
+        "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
+        "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
+        "bootstrap.servers=$SERVER_HOST:$port" \
+        "security.protocol=$security" \
+        "ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12" \
+        "ssl.keystore.location=$BENCHMARKS_PATH/certificates/client.keystore"
+    done
+  done
+done
+download_results "kafka-results.zip" "$BENCHMARKS_PATH/scripts/results" "$DIR/.."
