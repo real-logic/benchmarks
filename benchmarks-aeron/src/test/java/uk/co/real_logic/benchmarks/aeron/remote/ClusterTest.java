@@ -118,9 +118,9 @@ class ClusterTest
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(AeronArchive.Configuration.controlChannel())
-            .controlRequestStreamId(AeronArchive.Configuration.controlStreamId())
-            .controlResponseChannel("aeron:udp?endpoint=localhost:0|term-length=64k")
+            .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
+            .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
+            .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
             .aeronDirectoryName(aeronDirectoryName);
 
         final String clusterDirectoryName = tempDir.resolve("consensus-module").toString();
@@ -149,8 +149,8 @@ class ClusterTest
 
         try (ArchivingMediaDriver driver = launchArchivingMediaDriver();
             ConsensusModule consensusModule = ConsensusModule.launch(consensusModuleContext);
-            ClusteredServiceContainer clusteredServiceContainer =
-                ClusteredServiceContainer.launch(serviceContainerContext))
+            ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
+                serviceContainerContext))
         {
             final MessageTransceiver messageTransceiver = new ClusterMessageTransceiver(
                 null,
