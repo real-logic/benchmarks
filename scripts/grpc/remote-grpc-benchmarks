@@ -28,12 +28,12 @@ source "${DIR}/../remote-benchmarks-runner"
 
 required_vars=(
   "BENCHMARKS_PATH"
+  "CLIENT_JAVA_HOME"
+  "CLIENT_CPU_CORES"
   "SERVER_HOST"
   "SERVER_PORT"
-  "NODE_1_JAVA_HOME"
-  "NODE_1_CLIENT_CPU_CORES"
-  "NODE_2_JAVA_HOME"
-  "NODE_2_SERVER_CPU_CORES")
+  "SERVER_JAVA_HOME"
+  "SERVER_CPU_CORES")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var}" ]]
@@ -49,14 +49,12 @@ then
 fi
 
 client="streaming"
-for onload in "false" "true"
+for onload in "" "onload --profile=latency --force-profiles"
 do
-  scenario="$client"
-  command_prefix=""
+  scenario="grpc-$client"
 
-  if [ "$onload" == "true" ]
+  if [ -z "$onload" ]
   then
-      command_prefix="onload --profile=latency --force-profiles"
       scenario="$scenario-onload"
   fi
 
@@ -72,11 +70,11 @@ do
 
     # shellcheck disable=SC2153
     run_benchmarks \
-      "export JAVA_HOME=\"$NODE_1_JAVA_HOME\" && taskset -c $NODE_1_CLIENT_CPU_CORES $command_prefix $BENCHMARKS_PATH/scripts/grpc/$client-client" \
-      "export JAVA_HOME=\"$NODE_2_JAVA_HOME\" && taskset -c $NODE_2_SERVER_CPU_CORES $command_prefix $BENCHMARKS_PATH/scripts/grpc/server" \
+      "export JAVA_HOME=\"$CLIENT_JAVA_HOME\" && taskset -c $CLIENT_CPU_CORES $onload $BENCHMARKS_PATH/scripts/grpc/$client-client" \
+      "export JAVA_HOME=\"$SERVER_JAVA_HOME\" && taskset -c $SERVER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/grpc/server" \
       "kill $(find_java_process_by_class_name "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")" \
       "$BENCHMARKS_PATH/scripts/grpc/benchmark.properties" \
-      "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=grpc-$scenario" \
+      "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
       "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.host=$SERVER_HOST" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.port=$SERVER_PORT" \
