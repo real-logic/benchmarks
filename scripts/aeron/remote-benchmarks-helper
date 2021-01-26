@@ -43,10 +43,10 @@ function start_media_driver()
   fi
 
   local command=""
-  command="$(stop_media_driver); \"$executable\" &"
+  command="$(stop_media_driver); taskset -c $2 \"$executable\" &"
   command+=" driver_pid=$driver_pid; while [ -z \"\$driver_pid\" ]; do sleep 0.5; driver_pid=$driver_pid; done"
 
-  command+="; echo \"driver PID=\$driver_pid\"; taskset -p -a -c $2 \$driver_pid"
+  command+="; echo \"driver PID=\$driver_pid\""
   command+="; $(pin_thread \$driver_pid "$driver_thread" "$3")"
   command+="; $(pin_thread \$driver_pid "sender" "$4")"
   command+="; $(pin_thread \$driver_pid "receiver" "$5")"

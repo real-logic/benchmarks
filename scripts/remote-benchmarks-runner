@@ -17,8 +17,8 @@
 
 required_vars=(
   "SSH_USER"
-  "SSH_HOST_1"
-  "SSH_HOST_2")
+  "SSH_NODE_1"
+  "SSH_NODE_2")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var}" ]]
@@ -89,13 +89,13 @@ function run_benchmarks()
           done
 
           echo -e "\nStarting server..."
-          ssh $SSH_USER@$SSH_HOST_2 "($jvm_opts && $server_start_command &) > /dev/null 2>&1 && exit"
+          ssh $SSH_USER@$SSH_NODE_2 "($jvm_opts && $server_start_command &) > /dev/null 2>&1 && exit"
 
           echo -e "\nStarting client..."
-          ssh $SSH_USER@$SSH_HOST_1 "$jvm_opts && $client_command && exit"
+          ssh $SSH_USER@$SSH_NODE_1 "$jvm_opts && $client_command && exit"
 
           echo -e "\nStopping server..."
-          ssh $SSH_USER@$SSH_HOST_2 "$server_stop_command && exit"
+          ssh $SSH_USER@$SSH_NODE_2 "$server_stop_command && exit"
         done
       done
     done
@@ -108,8 +108,8 @@ function download_results()
   local results_dir="$2"
   local dest_dir="$3"
 
-  ssh $SSH_USER@$SSH_HOST_1 "rm -f \"$archive\"; cd \"$results_dir\" && zip -r \"$archive\" . && exit"
-  scp $SSH_USER@$SSH_HOST_1:"$archive" "$dest_dir"
+  ssh $SSH_USER@$SSH_NODE_1 "rm -f \"$archive\"; cd \"$results_dir\" && zip -r \"$archive\" . && exit"
+  scp $SSH_USER@$SSH_NODE_1:"$archive" "$dest_dir"
 }
 
 function find_java_process_by_class_name()
