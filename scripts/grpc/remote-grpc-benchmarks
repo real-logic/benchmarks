@@ -31,9 +31,9 @@ required_vars=(
   "SERVER_HOST"
   "SERVER_PORT"
   "NODE_1_JAVA_HOME"
-  "NODE_1_CLIENT_CORES"
+  "NODE_1_CLIENT_CPU_CORES"
   "NODE_2_JAVA_HOME"
-  "NODE_2_SERVER_CORES")
+  "NODE_2_SERVER_CPU_CORES")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var}" ]]
@@ -72,8 +72,8 @@ do
 
     # shellcheck disable=SC2153
     run_benchmarks \
-      "export JAVA_HOME=\"$NODE_1_JAVA_HOME\" && taskset -c $NODE_1_CLIENT_CORES $command_prefix $BENCHMARKS_PATH/scripts/grpc/$client-client" \
-      "export JAVA_HOME=\"$NODE_2_JAVA_HOME\" && taskset -c $NODE_2_SERVER_CORES $command_prefix $BENCHMARKS_PATH/scripts/grpc/server" \
+      "export JAVA_HOME=\"$NODE_1_JAVA_HOME\" && taskset -c $NODE_1_CLIENT_CPU_CORES $command_prefix $BENCHMARKS_PATH/scripts/grpc/$client-client" \
+      "export JAVA_HOME=\"$NODE_2_JAVA_HOME\" && taskset -c $NODE_2_SERVER_CPU_CORES $command_prefix $BENCHMARKS_PATH/scripts/grpc/server" \
       "kill $(find_java_process_by_class_name "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")" \
       "$BENCHMARKS_PATH/scripts/grpc/benchmark.properties" \
       "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=grpc-$scenario" \
