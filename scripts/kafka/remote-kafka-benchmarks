@@ -82,6 +82,8 @@ do
       if [ -n "$flush" ]
       then
           scenario="$scenario-flush-$flush"
+      else
+          scenario="$scenario-no-flush"
       fi
 
       if [ -n "$onload" ]
