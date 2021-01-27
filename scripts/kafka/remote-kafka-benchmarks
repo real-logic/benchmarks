@@ -102,7 +102,7 @@ do
         "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
         "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
         "bootstrap.servers=$SERVER_HOST:$port" \
-        "protocol.protocol=$protocol" \
+        "security.protocol=$protocol" \
         "ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12" \
         "ssl.keystore.location=$BENCHMARKS_PATH/certificates/client.keystore"
     done
