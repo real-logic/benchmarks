@@ -107,7 +107,8 @@ do
         "bootstrap.servers=$SERVER_HOST:$port" \
         "security.protocol=$protocol" \
         "ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12" \
-        "ssl.keystore.location=$BENCHMARKS_PATH/certificates/client.keystore"
+        "ssl.keystore.location=$BENCHMARKS_PATH/certificates/client.keystore" \
+        "flush.messages=$flush"
     done
   done
 done
