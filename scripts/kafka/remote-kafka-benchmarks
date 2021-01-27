@@ -47,18 +47,41 @@ then
   exit 1
 fi
 
-for protocol in "PLAINTEXT" "SSL"
+security_protocols=("PLAINTEXT" "SSL")
+command_wrappers=("" "onload --profile=latency --force-profiles")
+
+while [[ $# -gt 0 ]]
 do
-  for onload in "" "onload --profile=latency --force-profiles"
+  case "$1" in
+    --no-ssl)
+      security_protocols=("PLAINTEXT")
+      shift
+      ;;
+    --no-onload)
+      command_wrappers=("")
+      shift
+      ;;
+    -h|--help)
+      echo "$0 [--no-ssl] [--no-onload]"
+      exit
+      ;;
+    *)
+      echo "Invalid parameter. Use --help to get a list of supported parameters."
+      exit 1
+      ;;
+  esac
+done
+
+for protocol in "${security_protocols[@]}"
+do
+  for onload in "${command_wrappers[@]}"
   do
     for flush in "" "1"
     do
       scenario="kafka"
-      if [ -z "$flush" ]
+      if [ -n "$flush" ]
       then
-          scenario="$scenario-no-flush"
-      else
-          scenario="$scenario-flush-1"
+          scenario="$scenario-flush-$flush"
       fi
 
       if [ -n "$onload" ]
@@ -66,12 +89,11 @@ do
           scenario="$scenario-onload"
       fi
 
-      scenario="$scenario-$protocol"
-
       if [ "$protocol" == "PLAINTEXT" ]
       then
         port=13592
       else
+        scenario="$scenario-ssl"
         port=13593
       fi
 
@@ -98,7 +120,7 @@ do
       mv $BENCHMARKS_PATH/scripts/kafka/server.properties.bak $BENCHMARKS_PATH/scripts/kafka/server.properties"
 
       run_benchmarks \
-        "export JAVA_HOME=\"$CLIENT_JAVA_HOME\" && taskset -c $CLIENT_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/client" \
+        "$start_client" \
         "$start_zookeeper & $start_kafka" \
         "$stop_all" \
         "$BENCHMARKS_PATH/scripts/kafka/benchmark.properties" \
@@ -112,4 +134,5 @@ do
     done
   done
 done
+
 download_results "kafka-results.zip" "$BENCHMARKS_PATH/scripts/results" "$DIR/.."
