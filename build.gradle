@@ -70,17 +70,19 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
 
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-        }
-    }
-
     checkstyle.toolVersion = "${checkstyleVersion}"
 
     tasks.withType(Jar) {
         enabled = true
         includeEmptyDirs = false
+    }
+
+    def launcher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+    }
+
+    def compiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(buildJavaVersion)
     }
 
     tasks.withType(JavaCompile) {
@@ -89,13 +91,12 @@ subprojects {
             // -- Workaround for https://github.com/gradle/gradle/issues/15538
             options.forkOptions.jvmArgs.addAll( ['--add-opens', 'jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'] )
             // --
+            javaCompiler = compiler
         }
         else {
             options.fork = true
-            def javaHome = System.env.JAVA_HOME
-            if (javaHome != null) {
-                options.forkOptions.javaHome = file(javaHome)
-            }
+            def javaHome = compiler.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
+            options.forkOptions.javaHome = javaHome.toFile()
         }
         options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
         options.encoding = 'UTF-8'
@@ -113,6 +114,8 @@ subprojects {
             showStandardStreams = true
             exceptionFormat = 'full'
         }
+
+        javaLauncher = launcher
     }
 }
 
