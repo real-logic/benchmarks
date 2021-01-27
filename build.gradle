@@ -109,10 +109,6 @@ subprojects {
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
         }
 
-        if (buildJavaVersion >= 16) {
-            systemProperty "net.bytebuddy.experimental", "true"
-        }
-
         testLogging {
             showStandardStreams = true
             exceptionFormat = 'full'
