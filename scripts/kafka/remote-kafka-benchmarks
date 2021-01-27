@@ -123,7 +123,7 @@ do
 
       run_benchmarks \
         "$start_client" \
-        "$start_zookeeper & $start_kafka" \
+        "$stop_all; $start_zookeeper & $start_kafka" \
         "$stop_all" \
         "$BENCHMARKS_PATH/scripts/kafka/benchmark.properties" \
         "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
