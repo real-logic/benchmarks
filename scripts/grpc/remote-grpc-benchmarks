@@ -51,22 +51,48 @@ then
   exit 1
 fi
 
-client="streaming"
-for onload in "" "onload --profile=latency --force-profiles"
+
+tls_options=("false" "true")
+command_wrappers=("" "onload --profile=latency --force-profiles")
+
+while [[ $# -gt 0 ]]
 do
-  scenario="grpc-$client"
+  case "$1" in
+    --no-tls)
+      tls_options=("false")
+      shift
+      ;;
+    --no-onload)
+      command_wrappers=("")
+      shift
+      ;;
+    -h|--help)
+      echo "$0 [--no-tls] [--no-onload]"
+      exit
+      ;;
+    *)
+      echo "Invalid parameter. Use --help to get a list of supported parameters."
+      exit 1
+      ;;
+  esac
+done
 
-  if [ -n "$onload" ]
-  then
-      scenario="$scenario-onload"
-  fi
+client="streaming"
 
-  for tls in "false" "true"
+for tls in "${tls_options[@]}"
+do
+  for onload in "${command_wrappers[@]}"
   do
+    scenario="grpc-$client"
 
     if [ "$tls" == "true" ]
     then
         scenario="$scenario-tls"
+    fi
+
+    if [ -n "$onload" ]
+    then
+        scenario="$scenario-onload"
     fi
 
     echo -e "\n Testing scenario: '$scenario'\n"
