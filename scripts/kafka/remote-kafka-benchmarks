@@ -79,8 +79,11 @@ do
     for flush in "" "1"
     do
       scenario="kafka"
+      flush_messages_prop=""
+
       if [ -n "$flush" ]
       then
+          flush_messages_prop="flush.messages=$flush"
           scenario="$scenario-flush-$flush"
       else
           scenario="$scenario-no-flush"
@@ -132,7 +135,7 @@ do
         "security.protocol=$protocol" \
         "ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12" \
         "ssl.keystore.location=$BENCHMARKS_PATH/certificates/client.keystore" \
-        "flush.messages=$flush"
+        "$flush_messages_prop"
     done
   done
 done
