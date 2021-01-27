@@ -37,6 +37,14 @@ static def getBuildJavaVersion() {
 }
 int buildJavaVersion = getBuildJavaVersion()
 
+def toolchainLauncher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+}
+
+def toolchainCompiler = javaToolchains.compilerFor {
+    languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+}
+
 def agronaVersion = '1.9.0'
 def aeronVersion = '1.32.0'
 def jmhVersion = '1.27'
@@ -77,24 +85,16 @@ subprojects {
         includeEmptyDirs = false
     }
 
-    def launcher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-    }
-
-    def compiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-    }
-
     tasks.withType(JavaCompile) {
         if (buildJavaVersion >= 9) {
             // -- Workaround for https://github.com/gradle/gradle/issues/15538
             options.forkOptions.jvmArgs.addAll( ['--add-opens', 'jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'] )
             // --
-            javaCompiler = compiler
+            javaCompiler = toolchainCompiler
         }
         else {
             options.fork = true
-            def javaHome = compiler.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
+            def javaHome = toolchainCompiler.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
             options.forkOptions.javaHome = javaHome.toFile()
         }
         options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
@@ -114,7 +114,7 @@ subprojects {
             exceptionFormat = 'full'
         }
 
-        javaLauncher = launcher
+        javaLauncher = toolchainLauncher
     }
 }
 
@@ -185,17 +185,28 @@ project(':benchmarks-all') {
     jar.finalizedBy shadowJar
 }
 
+def benchmarkJvmArgs() {
+    StringBuilder args = new StringBuilder("-Dagrona.disable.bounds.checks=true")
+    if (buildJavaVersion < 16) {
+        args.append(" -XX:+UseParallelOldGC")
+    }
+    if (buildJavaVersion > 8) {
+        args.append(" --add-opens java.base/sun.nio.ch=ALL-UNNAMED")
+    }
+    return args.toString()
+}
+
 task runJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') {
-    commandLine 'java',
+    commandLine toolchainLauncher.get().executablePath,
     '-jar', 'benchmarks-all/build/libs/benchmarks.jar',
-    '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
+    '-jvmArgs', benchmarkJvmArgs(),
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
 
 task runAeronJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') {
-    commandLine 'java',
+    commandLine toolchainLauncher.get().executablePath,
     '-jar', 'benchmarks-all/build/libs/benchmarks.jar',
-    '-jvmArgs', '-Dagrona.disable.bounds.checks=true -XX:+UseParallelOldGC',
+    '-jvmArgs', benchmarkJvmArgs(),
     'Aeron',
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
