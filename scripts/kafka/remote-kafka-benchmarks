@@ -74,8 +74,12 @@ do
 
       echo -e "\n Testing scenario: '$scenario'\n"
 
+      start_client="export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
+      && taskset -c $CLIENT_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/client"
+
       start_zookeeper="cp $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties.bak \
       && echo \"dataDir=$SERVER_KAFKA_DIR/zookeeper\" >> $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties \
+      && export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
       && taskset -c $SERVER_ZOOKEEPER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/zookeeper-start"
 
       start_kafka="cp $BENCHMARKS_PATH/scripts/kafka/server.properties $BENCHMARKS_PATH/scripts/kafka/server.properties.bak \
@@ -83,6 +87,7 @@ do
       && echo \"ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && echo \"ssl.keystore.location=$BENCHMARKS_PATH/certificates/server.keystore\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && echo \"advertised.listeners=$protocol://$SERVER_HOST:$port\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
+      && export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
       && taskset -c $SERVER_KAFKA_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/kafka-start"
 
       stop_all="KAFKA_DATA_DIR=\"$SERVER_KAFKA_DIR\" $BENCHMARKS_PATH/scripts/kafka/stop-all; \
@@ -91,7 +96,7 @@ do
 
       run_benchmarks \
         "export JAVA_HOME=\"$CLIENT_JAVA_HOME\" && taskset -c $CLIENT_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/client" \
-        "export JAVA_HOME=\"$SERVER_JAVA_HOME\" && $start_zookeeper & $start_kafka" \
+        "$start_zookeeper & $start_kafka" \
         "$stop_all" \
         "$BENCHMARKS_PATH/scripts/kafka/benchmark.properties" \
         "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
