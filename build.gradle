@@ -70,11 +70,9 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
 
-    if (buildJavaVersion >= 9) {
-        java {
-            toolchain {
-                languageVersion = JavaLanguageVersion.of(buildJavaVersion)
-            }
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
         }
     }
 
@@ -106,6 +104,10 @@ subprojects {
 
     tasks.withType(Test) {
         useJUnitPlatform()
+
+        if (buildJavaVersion >= 9) {
+            jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
+        }
 
         if (buildJavaVersion >= 16) {
             systemProperty "net.bytebuddy.experimental", "true"
