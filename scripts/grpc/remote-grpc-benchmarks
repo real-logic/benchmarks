@@ -17,7 +17,10 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-export MESSAGE_RATE=25000
+if [ -z "$MESSAGE_RATE" ];
+then
+  export MESSAGE_RATE=25000
+fi
 
 if [ -z "$SERVER_PORT" ];
 then
