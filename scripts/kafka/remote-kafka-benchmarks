@@ -44,7 +44,7 @@ then
   exit 1
 fi
 
-for security in "PLAINTEXT" "SSL"
+for protocol in "PLAINTEXT" "SSL"
 do
   for onload in "" "onload --profile=latency --force-profiles"
   do
@@ -58,14 +58,14 @@ do
           scenario="$scenario-flush-1"
       fi
 
-      if [ -z "$onload" ]
+      if [ -n "$onload" ]
       then
           scenario="$scenario-onload"
       fi
 
-      scenario="$scenario-${security}"
+      scenario="$scenario-$protocol"
 
-      if [ "$security" == "PLAINTEXT" ]
+      if [ "$protocol" == "PLAINTEXT" ]
       then
         port=13592
       else
@@ -82,6 +82,7 @@ do
       && echo \"log.dirs=$SERVER_KAFKA_DIR/logs\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && echo \"ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && echo \"ssl.keystore.location=$BENCHMARKS_PATH/certificates/server.keystore\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
+      && echo \"advertised.listeners=$protocol://$SERVER_HOST:$port\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && taskset -c $SERVER_KAFKA_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/kafka-start"
 
       stop_all="KAFKA_DATA_DIR=\"$SERVER_KAFKA_DIR\" $BENCHMARKS_PATH/scripts/kafka/stop-all; \
@@ -96,7 +97,7 @@ do
         "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
         "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
         "bootstrap.servers=$SERVER_HOST:$port" \
-        "security.protocol=$security" \
+        "protocol.protocol=$protocol" \
         "ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12" \
         "ssl.keystore.location=$BENCHMARKS_PATH/certificates/client.keystore"
     done
