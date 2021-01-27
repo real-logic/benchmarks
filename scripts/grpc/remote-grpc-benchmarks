@@ -56,7 +56,7 @@ for onload in "" "onload --profile=latency --force-profiles"
 do
   scenario="grpc-$client"
 
-  if [ -z "$onload" ]
+  if [ -n "$onload" ]
   then
       scenario="$scenario-onload"
   fi
