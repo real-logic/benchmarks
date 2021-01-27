@@ -72,6 +72,8 @@ do
   esac
 done
 
+plain_text_port=13592
+ssl_port=13593
 for protocol in "${security_protocols[@]}"
 do
   for onload in "${command_wrappers[@]}"
@@ -96,10 +98,10 @@ do
 
       if [ "$protocol" == "PLAINTEXT" ]
       then
-        port=13592
+        port=$plain_text_port
       else
         scenario="$scenario-ssl"
-        port=13593
+        port=$ssl_port
       fi
 
       echo -e "\n Testing scenario: '$scenario'\n"
@@ -116,7 +118,7 @@ do
       && echo \"log.dirs=$SERVER_KAFKA_DIR/logs\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && echo \"ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && echo \"ssl.keystore.location=$BENCHMARKS_PATH/certificates/server.keystore\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
-      && echo \"advertised.listeners=$protocol://$SERVER_HOST:$port\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
+      && echo \"advertised.listeners=PLAINTEXT://$SERVER_HOST:$plain_text_port,SSL://$SERVER_HOST:$ssl_port\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
       && taskset -c $SERVER_KAFKA_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/kafka-start"
 
