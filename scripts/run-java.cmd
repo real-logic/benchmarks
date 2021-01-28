@@ -26,7 +26,7 @@ set "DIR=%~dp0"
   -XX:GuaranteedSafepointInterval=300000 ^
   -XX:+UseBiasedLocking ^
   -XX:BiasedLockingStartupDelay=0 ^
-  -XX:+UseParallelOldGC ^
+  -XX:+UseParallelGC ^
   -XX:ParallelGCThreads=2 ^
   -Xms4G ^
   -Xmx4G ^

@@ -186,10 +186,7 @@ project(':benchmarks-all') {
 }
 
 def benchmarkJvmArgs() {
-    StringBuilder args = new StringBuilder("-Dagrona.disable.bounds.checks=true")
-    if (buildJavaVersion < 16) {
-        args.append(" -XX:+UseParallelOldGC")
-    }
+    StringBuilder args = new StringBuilder("-Dagrona.disable.bounds.checks=true -XX:+UseParallelGC")
     if (buildJavaVersion > 8) {
         args.append(" --add-opens java.base/sun.nio.ch=ALL-UNNAMED")
     }
