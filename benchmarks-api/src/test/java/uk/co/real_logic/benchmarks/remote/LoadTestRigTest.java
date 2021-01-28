@@ -264,7 +264,7 @@ class LoadTestRigTest
 
         verify(messageTransceiver).send(anyInt(), anyInt(), anyLong(), anyLong());
         verify(messageTransceiver, times(3)).receive();
-        verify(idleStrategy).reset();
+        verify(idleStrategy, times(2)).reset();
         verify(idleStrategy).idle();
         verifyNoMoreInteractions(messageTransceiver, idleStrategy);
     }
@@ -312,7 +312,7 @@ class LoadTestRigTest
 
         assertEquals(50, messages);
         verify(clock, times(54)).nanoTime();
-        verify(idleStrategy, times(21)).reset();
+        verify(idleStrategy, times(22)).reset();
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1000), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1600), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(2200), CHECKSUM);
@@ -371,7 +371,7 @@ class LoadTestRigTest
 
         assertEquals(60, messages);
         verify(clock, times(65)).nanoTime();
-        verify(idleStrategy, times(56)).reset();
+        verify(idleStrategy, times(57)).reset();
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(5, 100, MILLISECONDS.toNanos(500), CHECKSUM);

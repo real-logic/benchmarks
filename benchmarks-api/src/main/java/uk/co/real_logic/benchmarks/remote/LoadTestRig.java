@@ -23,6 +23,7 @@ import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import static java.lang.Math.min;
@@ -46,7 +47,7 @@ public final class LoadTestRig
     private final PrintStream out;
     private final PersistedHistogram histogram;
     private final int availableProcessors;
-    private long receivedMessages;
+    private final AtomicLong receivedMessages = new AtomicLong(0);
 
     public LoadTestRig(final Configuration configuration)
     {
@@ -91,7 +92,7 @@ public final class LoadTestRig
                     throw new IllegalStateException("Invalid checksum: expected=" + CHECKSUM + ", actual=" + checksum);
                 }
                 histogram.recordValue(clock.nanoTime() - timestamp);
-                receivedMessages++;
+                receivedMessages.getAndIncrement();
             });
         this.availableProcessors = availableProcessors;
     }
@@ -119,7 +120,7 @@ public final class LoadTestRig
                     configuration.batchSize());
                 send(configuration.warmUpIterations(), configuration.messageRate());
 
-                receivedMessages = 0;
+                receivedMessages.set(0);
                 histogram.reset();
             }
 
@@ -150,6 +151,7 @@ public final class LoadTestRig
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final NanoClock clock = this.clock;
+        final AtomicLong receivedMessages = this.receivedMessages;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.idleStrategy();
@@ -186,9 +188,9 @@ public final class LoadTestRig
                     idleStrategy.reset();
                     do
                     {
-                        final long receivedMessages = this.receivedMessages;
+                        final long received = receivedMessages.get();
                         messageTransceiver.receive();
-                        if (receivedMessages == this.receivedMessages)
+                        if (received == receivedMessages.get())
                         {
                             idleStrategy.idle();
                         }
@@ -218,21 +220,19 @@ public final class LoadTestRig
             }
         }
 
-        while (true)
+        idleStrategy.reset();
+        long received = receivedMessages.get();
+        while (received < sentMessages)
         {
-            final long receivedMessages = this.receivedMessages;
-            if (receivedMessages >= sentMessages)
-            {
-                break;
-            }
-
             messageTransceiver.receive();
-            if (receivedMessages == this.receivedMessages)
+            final long tmp = receivedMessages.get();
+            if (tmp == received)
             {
                 idleStrategy.idle();
             }
             else
             {
+                received = tmp;
                 idleStrategy.reset();
             }
         }
