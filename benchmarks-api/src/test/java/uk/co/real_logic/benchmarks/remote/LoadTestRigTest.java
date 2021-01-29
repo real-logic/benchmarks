@@ -222,7 +222,7 @@ class LoadTestRigTest
         verify(messageTransceiver).send(anyInt(), anyInt(), anyLong(), anyLong());
         verify(messageTransceiver, times(3)).receive();
         verify(messageTransceiver, times(3)).onMessageReceived(anyLong(), anyLong());
-        verify(idleStrategy, times(3)).reset();
+        verify(idleStrategy, times(4)).reset();
         verifyNoMoreInteractions(messageTransceiver, idleStrategy);
     }
 
@@ -266,14 +266,14 @@ class LoadTestRigTest
 
         assertEquals(50, messages);
         verify(clock, times(54)).nanoTime();
-        verify(idleStrategy, times(22)).reset();
+        verify(idleStrategy, times(26)).reset();
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1000), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1600), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(2200), CHECKSUM);
         verify(messageTransceiver).send(5, 24, MILLISECONDS.toNanos(2800), CHECKSUM);
         verify(messageTransceiver, times(25)).receive();
         verify(messageTransceiver, times(50)).onMessageReceived(anyLong(), anyLong());
-        verify(out).format("Send rate %,d msg/sec%n", 7L);
+        verify(out).format("Send rate %,d msg/sec%n", 30L);
         verify(out).format("Send rate %,d msg/sec%n", 25L);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
@@ -314,17 +314,19 @@ class LoadTestRigTest
 
         final long messages = loadTestRig.send(10, 100);
 
-        assertEquals(60, messages);
-        verify(clock, times(65)).nanoTime();
-        verify(idleStrategy, times(57)).reset();
+        assertEquals(120, messages);
+        verify(clock, times(127)).nanoTime();
+        verify(idleStrategy, times(119)).reset();
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(5, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(800), CHECKSUM);
-        verify(messageTransceiver, times(60)).receive();
-        verify(messageTransceiver, times(60)).onMessageReceived(anyLong(), anyLong());
-        verify(out).format("Send rate %,d msg/sec%n", 4L);
-        verify(out).format("Send rate %,d msg/sec%n", 3L);
+        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(1100), CHECKSUM);
+        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(1400), CHECKSUM);
+        verify(messageTransceiver, times(120)).receive();
+        verify(messageTransceiver, times(120)).onMessageReceived(anyLong(), anyLong());
+        verify(out).format("Send rate %,d msg/sec%n", 5L);
+        verify(out).format("Send rate %,d msg/sec%n", 6L);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 

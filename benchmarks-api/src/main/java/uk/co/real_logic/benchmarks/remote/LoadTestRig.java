@@ -27,6 +27,7 @@ import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static uk.co.real_logic.benchmarks.remote.MessageTransceiverBase.CHECKSUM;
 
 /**
  * {@code LoadTestRig} class is the core of the RTT benchmark. It is responsible for running benchmark against provided
@@ -151,8 +152,7 @@ public final class LoadTestRig
         int batchSize = (int)min(totalNumberOfMessages, burstSize);
         while (true)
         {
-            final int sent = messageTransceiver.send(batchSize, messageSize, timestamp, MessageTransceiver.CHECKSUM);
-            messageTransceiver.receive();
+            final int sent = messageTransceiver.send(batchSize, messageSize, timestamp, CHECKSUM);
 
             sentMessages += sent;
             if (totalNumberOfMessages == sentMessages)
@@ -189,6 +189,7 @@ public final class LoadTestRig
             else
             {
                 batchSize -= sent;
+                messageTransceiver.receive();
             }
 
             if (now >= endTime)
