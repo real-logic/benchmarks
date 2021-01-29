@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
+import org.HdrHistogram.Histogram;
 import org.agrona.collections.MutableInteger;
-import org.agrona.hints.ThreadHints;
+import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.Long.MAX_VALUE;
@@ -27,11 +27,13 @@ import static java.lang.Long.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.benchmarks.remote.MessageTransceiverBase.CHECKSUM;
 
 class InMemoryMessageTransceiverTest
 {
-    private final MessageRecorder messageRecorder = mock(MessageRecorder.class);
-    private final InMemoryMessageTransceiver messageTransceiver = new InMemoryMessageTransceiver(messageRecorder);
+    private final NanoClock clock = mock(NanoClock.class);
+    private final Histogram histogram = mock(Histogram.class);
+    private final InMemoryMessageTransceiver messageTransceiver = new InMemoryMessageTransceiver(clock, histogram);
 
     @Test
     void sendASingleMessage()
@@ -64,13 +66,15 @@ class InMemoryMessageTransceiverTest
     {
         messageTransceiver.receive();
 
-        verifyNoInteractions(messageRecorder);
+        verifyNoInteractions(clock, histogram);
     }
 
     @Test
     void receiveIsANoOpAfterAllMessagesWereConsumed()
     {
-        messageTransceiver.send(5, 128, 1111, 300);
+        when(clock.nanoTime()).thenReturn(1500L);
+
+        messageTransceiver.send(5, 128, 1111, CHECKSUM);
 
         for (int i = 0; i < 5; i++)
         {
@@ -78,67 +82,37 @@ class InMemoryMessageTransceiverTest
         }
         messageTransceiver.receive();
 
-        verify(messageRecorder, times(5)).record(1111, 300);
+        verify(histogram, times(5)).recordValue(389L);
+        verify(clock, times(5)).nanoTime();
     }
 
     @Test
-    void concurrentSendAndReceive() throws InterruptedException
+    void sendAndReceive()
     {
-        for (int i = 0; i < 10; i++)
-        {
-            testConcurrentSendAndReceive(100_000);
-        }
-    }
-
-    private void testConcurrentSendAndReceive(final int messages) throws InterruptedException
-    {
-        final long[] timestamps = ThreadLocalRandom.current().longs(messages, 1, MAX_VALUE).toArray();
-        final Phaser phaser = new Phaser(3);
+        final long[] timestamps = ThreadLocalRandom.current().longs(100_000, 1, MAX_VALUE).toArray();
 
         final long[] receivedTimestamps = new long[timestamps.length];
         final MutableInteger receiveIndex = new MutableInteger();
-        final MessageTransceiver messageTransceiver = new InMemoryMessageTransceiver(
-            (timestamp, checksum) ->
+        doAnswer(invocation ->
+        {
+            final long timestamp = invocation.getArgument(0);
+            return receivedTimestamps[receiveIndex.getAndIncrement()] = -timestamp;
+        }).when(histogram).recordValue(anyLong());
+
+        for (final long timestamp : timestamps)
+        {
+            while (0 == messageTransceiver.send(1, 24, timestamp, CHECKSUM))
             {
-                assertEquals(-timestamp / 2, checksum);
-                receivedTimestamps[receiveIndex.getAndIncrement()] = timestamp;
-            });
-
-        final Thread senderThread = new Thread(
-            () ->
-            {
-                phaser.arriveAndAwaitAdvance();
-
-                for (final long timestamp : timestamps)
-                {
-                    while (0 == messageTransceiver.send(1, 24, timestamp, -timestamp / 2))
-                    {
-                        ThreadHints.onSpinWait();
-                    }
-                }
-            });
-
-        final Thread receiverThread = new Thread(
-            () ->
-            {
-                phaser.arriveAndAwaitAdvance();
-
-                final int size = timestamps.length;
-                do
-                {
-                    messageTransceiver.receive();
-                }
-                while (receiveIndex.get() < size);
+                messageTransceiver.receive();
             }
-        );
+        }
 
-        senderThread.start();
-        receiverThread.start();
-
-        phaser.arriveAndDeregister();
-
-        senderThread.join();
-        receiverThread.join();
+        final int size = timestamps.length;
+        do
+        {
+            messageTransceiver.receive();
+        }
+        while (receiveIndex.get() < size);
 
         assertArrayEquals(timestamps, receivedTimestamps);
     }

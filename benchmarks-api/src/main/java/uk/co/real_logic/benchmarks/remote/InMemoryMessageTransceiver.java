@@ -15,6 +15,9 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
+import org.HdrHistogram.Histogram;
+import org.agrona.concurrent.NanoClock;
+
 import static java.lang.Integer.numberOfLeadingZeros;
 import static java.util.Arrays.fill;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
@@ -34,9 +37,14 @@ public final class InMemoryMessageTransceiver extends MessageTransceiver
     private long sendIndex = 0;
     private long receiveIndex = 0;
 
-    public InMemoryMessageTransceiver(final MessageRecorder messageRecorder)
+    public InMemoryMessageTransceiver(final NanoClock clock)
     {
-        super(messageRecorder);
+        super(clock);
+    }
+
+    InMemoryMessageTransceiver(final NanoClock clock, final Histogram histogram)
+    {
+        super(clock, histogram);
     }
 
     public void init(final Configuration configuration)

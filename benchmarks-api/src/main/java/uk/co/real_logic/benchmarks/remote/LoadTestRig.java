@@ -22,9 +22,7 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
@@ -38,62 +36,48 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public final class LoadTestRig
 {
     static final int MINIMUM_NUMBER_OF_CPU_CORES = 6;
-    static final long CHECKSUM = ThreadLocalRandom.current().nextLong();
 
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
     private final Configuration configuration;
     private final MessageTransceiver messageTransceiver;
-    private final NanoClock clock;
     private final PrintStream out;
-    private final PersistedHistogram histogram;
+    private final NanoClock clock;
+    private final PersistedHistogram persistedHistogram;
     private final int availableProcessors;
-    private final AtomicLong receivedMessages = new AtomicLong(0);
 
     public LoadTestRig(final Configuration configuration)
     {
+        this(configuration, createTransceiver(configuration), System.out);
+    }
+
+    public LoadTestRig(
+        final Configuration configuration,
+        final MessageTransceiver messageTransceiver,
+        final PrintStream out)
+    {
         this(
             configuration,
-            SystemNanoClock.INSTANCE,
-            System.out, new PersistedHistogram(),
-            Runtime.getRuntime().availableProcessors(),
-            messageRecorder ->
-            {
-                final Class<? extends MessageTransceiver> messageTransceiverClass =
-                    requireNonNull(configuration.messageTransceiverClass());
-                try
-                {
-                    return messageTransceiverClass.getConstructor(MessageRecorder.class).newInstance(messageRecorder);
-                }
-                catch (final ReflectiveOperationException ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                    throw new Error();
-                }
-            });
+            messageTransceiver,
+            out,
+            messageTransceiver.clock,
+            new PersistedHistogram(messageTransceiver.histogram),
+            Runtime.getRuntime().availableProcessors()
+        );
     }
 
     LoadTestRig(
         final Configuration configuration,
-        final NanoClock clock,
+        final MessageTransceiver messageTransceiver,
         final PrintStream out,
-        final PersistedHistogram histogram,
-        final int availableProcessors,
-        final Function<MessageRecorder, MessageTransceiver> messageTransceiverSupplier)
+        final NanoClock clock,
+        final PersistedHistogram persistedHistogram,
+        final int availableProcessors)
     {
         this.configuration = requireNonNull(configuration);
-        this.clock = requireNonNull(clock);
+        this.messageTransceiver = requireNonNull(messageTransceiver);
         this.out = requireNonNull(out);
-        this.histogram = requireNonNull(histogram);
-        this.messageTransceiver = messageTransceiverSupplier.apply(
-            (timestamp, checksum) ->
-            {
-                if (CHECKSUM != checksum)
-                {
-                    throw new IllegalStateException("Invalid checksum: expected=" + CHECKSUM + ", actual=" + checksum);
-                }
-                histogram.recordValue(clock.nanoTime() - timestamp);
-                receivedMessages.getAndIncrement();
-            });
+        this.clock = requireNonNull(clock);
+        this.persistedHistogram = requireNonNull(persistedHistogram);
         this.availableProcessors = availableProcessors;
     }
 
@@ -120,8 +104,7 @@ public final class LoadTestRig
                     configuration.batchSize());
                 send(configuration.warmUpIterations(), configuration.messageRate());
 
-                receivedMessages.set(0);
-                histogram.reset();
+                messageTransceiver.reset();
             }
 
             // Measurement
@@ -134,6 +117,7 @@ public final class LoadTestRig
             final long sentMessages = send(configuration.iterations(), configuration.messageRate());
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
+            final PersistedHistogram histogram = persistedHistogram;
             histogram.outputPercentileDistribution(out, 1000.0);
 
             warnIfInsufficientCpu();
@@ -151,7 +135,7 @@ public final class LoadTestRig
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final NanoClock clock = this.clock;
-        final AtomicLong receivedMessages = this.receivedMessages;
+        final AtomicLong receivedMessages = messageTransceiver.receivedMessages;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.idleStrategy();
@@ -168,7 +152,7 @@ public final class LoadTestRig
         int batchSize = (int)min(totalNumberOfMessages, burstSize);
         while (true)
         {
-            final int sent = messageTransceiver.send(batchSize, messageSize, timestamp, CHECKSUM);
+            final int sent = messageTransceiver.send(batchSize, messageSize, timestamp, MessageTransceiver.CHECKSUM);
             messageTransceiver.receive();
 
             sentMessages += sent;
@@ -270,6 +254,21 @@ public final class LoadTestRig
             out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
                 "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
                 sentMessages);
+        }
+    }
+
+    private static MessageTransceiver createTransceiver(final Configuration configuration)
+    {
+        try
+        {
+            return configuration.messageTransceiverClass()
+                .getConstructor(NanoClock.class)
+                .newInstance(SystemNanoClock.INSTANCE);
+        }
+        catch (final ReflectiveOperationException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+            throw new Error();
         }
     }
 

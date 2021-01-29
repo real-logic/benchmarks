@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
@@ -514,9 +515,9 @@ class ConfigurationTest
 
     public static final class TestNoPublicConstructorMessageTransceiver extends MessageTransceiver
     {
-        private TestNoPublicConstructorMessageTransceiver(final MessageRecorder messageRecorder)
+        private TestNoPublicConstructorMessageTransceiver(final NanoClock clock)
         {
-            super(messageRecorder);
+            super(clock);
         }
 
         public void init(final Configuration configuration)

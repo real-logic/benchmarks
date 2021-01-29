@@ -15,13 +15,13 @@
  */
 package uk.co.real_logic.benchmarks.grpc.remote;
 
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 class StreamingMessageTransceiverTest extends AbstractGrpcTest
 {
-    protected MessageTransceiver createMessageTransceiver(final MessageRecorder messageRecorder)
+    protected MessageTransceiver createMessageTransceiver(final NanoClock clock)
     {
-        return new StreamingMessageTransceiver(messageRecorder);
+        return new StreamingMessageTransceiver(clock);
     }
 }

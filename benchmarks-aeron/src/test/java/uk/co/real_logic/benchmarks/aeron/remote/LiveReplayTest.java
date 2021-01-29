@@ -16,7 +16,7 @@
 package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.client.AeronArchive;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import org.agrona.concurrent.NanoClock;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,8 +50,8 @@ class LiveReplayTest extends
     protected LiveReplayMessageTransceiver createMessageTransceiver(
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
-        final MessageRecorder messageRecorder)
+        final NanoClock clock)
     {
-        return new LiveReplayMessageTransceiver(null, aeronArchive, false, messageRecorder);
+        return new LiveReplayMessageTransceiver(null, aeronArchive, false, clock);
     }
 }

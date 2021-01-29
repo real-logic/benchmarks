@@ -39,26 +39,6 @@ class PersistedHistogramTest
     private final PersistedHistogram persistedHistogram = new PersistedHistogram(histogram);
 
     @Test
-    void reset()
-    {
-        persistedHistogram.reset();
-
-        verify(histogram).reset();
-        verifyNoMoreInteractions(histogram);
-    }
-
-    @Test
-    void recordValue()
-    {
-        final long value = 131;
-
-        persistedHistogram.recordValue(value);
-
-        verify(histogram).recordValue(value);
-        verifyNoMoreInteractions(histogram);
-    }
-
-    @Test
     void outputPercentileDistribution()
     {
         final PrintStream out = System.out;

@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.benchmarks.grpc.remote;
 
+import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static java.lang.System.clearProperty;
@@ -42,8 +42,8 @@ class BlockingMessageTransceiverTest extends AbstractGrpcTest
         clearProperty(CERTIFICATES_DIR_PROP_NAME);
     }
 
-    protected MessageTransceiver createMessageTransceiver(final MessageRecorder messageRecorder)
+    protected MessageTransceiver createMessageTransceiver(final NanoClock clock)
     {
-        return new BlockingMessageTransceiver(messageRecorder);
+        return new BlockingMessageTransceiver(clock);
     }
 }

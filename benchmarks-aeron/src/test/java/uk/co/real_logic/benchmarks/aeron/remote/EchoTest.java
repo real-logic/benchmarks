@@ -17,11 +17,11 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
+import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,9 +56,9 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
     }
 
     protected EchoMessageTransceiver createMessageTransceiver(
-        final MediaDriver mediaDriver, final Aeron aeron, final MessageRecorder messageRecorder)
+        final MediaDriver mediaDriver, final Aeron aeron, final NanoClock clock)
     {
-        return new EchoMessageTransceiver(mediaDriver, aeron, false, messageRecorder);
+        return new EchoMessageTransceiver(mediaDriver, aeron, false, clock);
     }
 
     @AfterEach

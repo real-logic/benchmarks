@@ -15,16 +15,18 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import org.agrona.collections.LongArrayList;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
+import uk.co.real_logic.benchmarks.remote.LoadTestRig;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +40,7 @@ import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 
 abstract class AbstractTest<
@@ -90,23 +92,24 @@ abstract class AbstractTest<
 
     @SuppressWarnings("MethodLength")
     protected final void test(
-        final int messages,
+        final int messageRate,
         final int messageLength,
         final int burstSize,
         final Path tempDir,
         final boolean outOfOrderReceive) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
-            .messageRate(messages)
+            .warmUpIterations(0)
+            .iterations(1)
+            .messageRate(messageRate)
             .messageLength(messageLength)
             .messageTransceiverClass(messageTransceiverClass())
+            .batchSize(burstSize)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("aeron")
             .build();
 
         final AtomicReference<Throwable> error = new AtomicReference<>();
-        final LongArrayList receivedTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final LongArrayList sentTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
 
         final DRIVER driver = createDriver();
         final CLIENT client = connectToDriver();
@@ -135,61 +138,12 @@ abstract class AbstractTest<
             final MessageTransceiver messageTransceiver = createMessageTransceiver(
                 driver,
                 client,
-                (timestamp, checksum) ->
-                {
-                    assertEquals(-timestamp, checksum);
-                    receivedTimestamps.addLong(timestamp);
-                });
+                SystemNanoClock.INSTANCE);
 
-            Thread.currentThread().setName("message-transceiver");
-            messageTransceiver.init(configuration);
-            try
-            {
-                remoteNodeStarted.await();
-                int sent = 0;
-                long timestamp = 1_000;
-                while (sent < messages || receivedTimestamps.size() < messages)
-                {
-                    if (Thread.interrupted())
-                    {
-                        throw new IllegalStateException("run cancelled!");
-                    }
+            final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
 
-                    if (sent < messages)
-                    {
-                        int sentBatch = 0;
-                        do
-                        {
-                            sentBatch += messageTransceiver.send(
-                                burstSize - sentBatch, messageLength, timestamp, -timestamp);
-                            messageTransceiver.receive();
-                        }
-                        while (sentBatch < burstSize);
-
-                        for (int i = 0; i < burstSize; i++)
-                        {
-                            sentTimestamps.add(timestamp);
-                        }
-
-                        sent += burstSize;
-                        timestamp++;
-                    }
-
-                    if (receivedTimestamps.size() < messages)
-                    {
-                        messageTransceiver.receive();
-                    }
-
-                    if (null != error.get())
-                    {
-                        rethrowUnchecked(error.get());
-                    }
-                }
-            }
-            finally
-            {
-                messageTransceiver.destroy();
-            }
+            remoteNodeStarted.await();
+            loadTestRig.run();
         }
         finally
         {
@@ -207,12 +161,6 @@ abstract class AbstractTest<
         {
             rethrowUnchecked(error.get());
         }
-
-        if (outOfOrderReceive)
-        {
-            receivedTimestamps.sort(Long::compareTo);
-        }
-        assertEquals(sentTimestamps, receivedTimestamps);
     }
 
     abstract NODE createNode(AtomicBoolean running, DRIVER driver, CLIENT client);
@@ -224,5 +172,5 @@ abstract class AbstractTest<
     abstract Class<MESSAGE_TRANSCEIVER> messageTransceiverClass();
 
     abstract MESSAGE_TRANSCEIVER createMessageTransceiver(
-        DRIVER driver, CLIENT client, MessageRecorder messageRecorder);
+        DRIVER driver, CLIENT client, NanoClock nanoClock);
 }
