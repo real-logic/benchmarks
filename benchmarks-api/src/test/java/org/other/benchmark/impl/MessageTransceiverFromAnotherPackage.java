@@ -15,17 +15,11 @@
  */
 package org.other.benchmark.impl;
 
-import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 public class MessageTransceiverFromAnotherPackage extends MessageTransceiver
 {
-    public MessageTransceiverFromAnotherPackage(final NanoClock clock)
-    {
-        super(clock);
-    }
-
     public void init(final Configuration configuration)
     {
     }

@@ -24,7 +24,6 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
@@ -39,17 +38,15 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
     private final AeronCluster.Context aeronClusterContext;
     private AeronCluster aeronCluster;
 
-    public ClusterMessageTransceiver(final NanoClock clock)
+    public ClusterMessageTransceiver()
     {
-        this(launchEmbeddedMediaDriverIfConfigured(), new AeronCluster.Context(), clock);
+        this(launchEmbeddedMediaDriverIfConfigured(), new AeronCluster.Context());
     }
 
     public ClusterMessageTransceiver(
         final MediaDriver mediaDriver,
-        final AeronCluster.Context aeronClusterContext,
-        final NanoClock clock)
+        final AeronCluster.Context aeronClusterContext)
     {
-        super(clock);
         this.mediaDriver = mediaDriver;
         this.aeronClusterContext = aeronClusterContext.egressListener(this).clone();
     }

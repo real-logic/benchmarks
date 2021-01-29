@@ -23,7 +23,6 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
@@ -63,18 +62,16 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     private Subscription subscription;
     private Image image;
 
-    public LiveRecordingMessageTransceiver(final NanoClock clock)
+    public LiveRecordingMessageTransceiver()
     {
-        this(launchArchivingMediaDriver(), connect(), true, clock);
+        this(launchArchivingMediaDriver(), connect(), true);
     }
 
     LiveRecordingMessageTransceiver(
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
-        final boolean ownsArchiveClient,
-        final NanoClock clock)
+        final boolean ownsArchiveClient)
     {
-        super(clock);
         this.archivingMediaDriver = archivingMediaDriver;
         this.aeronArchive = aeronArchive;
         this.ownsArchiveClient = ownsArchiveClient;

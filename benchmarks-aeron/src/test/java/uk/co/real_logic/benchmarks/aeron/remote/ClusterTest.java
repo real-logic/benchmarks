@@ -21,7 +21,6 @@ import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.concurrent.NoOpLock;
-import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -155,10 +154,7 @@ class ClusterTest
             ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
                 serviceContainerContext))
         {
-            final MessageTransceiver messageTransceiver = new ClusterMessageTransceiver(
-                null,
-                aeronClusterContext,
-                SystemNanoClock.INSTANCE);
+            final MessageTransceiver messageTransceiver = new ClusterMessageTransceiver(null, aeronClusterContext);
 
             final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
             loadTestRig.run();

@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.kafka.remote;
 
-import org.agrona.concurrent.SystemNanoClock;
 import org.apache.kafka.common.config.SslConfigs;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -105,7 +104,7 @@ class KafkaMessageTransceiverTest
 
     private void test(final int numberOfMessages, final int messageLength, final int burstSize) throws Exception
     {
-        final MessageTransceiver messageTransceiver = new KafkaMessageTransceiver(SystemNanoClock.INSTANCE);
+        final MessageTransceiver messageTransceiver = new KafkaMessageTransceiver();
 
         final Configuration configuration = new Configuration.Builder()
             .warmUpIterations(0)

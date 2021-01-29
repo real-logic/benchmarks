@@ -20,7 +20,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.grpc.remote.EchoBenchmarksGrpc.EchoBenchmarksStub;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
@@ -38,11 +37,6 @@ public class StreamingMessageTransceiver extends MessageTransceiver
     private ClientCallStreamObserver<EchoMessage> requestObserver;
     private EchoMessage.Builder messageBuilder;
     private ByteString payload;
-
-    public StreamingMessageTransceiver(final NanoClock clock)
-    {
-        super(clock);
-    }
 
     public void init(final Configuration configuration)
     {

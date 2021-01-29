@@ -19,7 +19,6 @@ import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicLong;
@@ -261,9 +260,7 @@ public final class LoadTestRig
     {
         try
         {
-            return configuration.messageTransceiverClass()
-                .getConstructor(NanoClock.class)
-                .newInstance(SystemNanoClock.INSTANCE);
+            return configuration.messageTransceiverClass().getConstructor().newInstance();
         }
         catch (final ReflectiveOperationException ex)
         {

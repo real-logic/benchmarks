@@ -16,7 +16,6 @@
 package uk.co.real_logic.benchmarks.kafka.remote;
 
 import org.agrona.LangUtil;
-import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -80,11 +79,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 
     private KafkaConsumer<byte[], byte[]> consumer;
     private UnsafeBuffer receiverBuffer;
-
-    public KafkaMessageTransceiver(final NanoClock clock)
-    {
-        super(clock);
-    }
 
     public void init(final Configuration configuration)
     {

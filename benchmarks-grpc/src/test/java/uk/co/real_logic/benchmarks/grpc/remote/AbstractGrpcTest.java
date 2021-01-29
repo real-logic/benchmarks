@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.grpc.remote;
 
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import uk.co.real_logic.benchmarks.remote.Configuration;
@@ -51,7 +49,7 @@ abstract class AbstractGrpcTest
         test(100, 1376, 1);
     }
 
-    protected abstract MessageTransceiver createMessageTransceiver(NanoClock clock);
+    protected abstract MessageTransceiver createMessageTransceiver();
 
     private void test(
         final int numberOfMessages,
@@ -62,7 +60,7 @@ abstract class AbstractGrpcTest
         {
             server.start();
 
-            final MessageTransceiver messageTransceiver = createMessageTransceiver(SystemNanoClock.INSTANCE);
+            final MessageTransceiver messageTransceiver = createMessageTransceiver();
 
             final Configuration configuration = new Configuration.Builder()
                 .warmUpIterations(0)

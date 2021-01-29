@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.Histogram;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.SystemNanoClock;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,9 +54,9 @@ public abstract class MessageTransceiver extends MessageTransceiverBase
     boolean p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
     boolean p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 
-    public MessageTransceiver(final NanoClock clock)
+    public MessageTransceiver()
     {
-        super(clock, new Histogram(HOURS.toNanos(1), 3));
+        super(SystemNanoClock.INSTANCE, new Histogram(HOURS.toNanos(1), 3));
     }
 
     MessageTransceiver(final NanoClock clock, final Histogram histogram)

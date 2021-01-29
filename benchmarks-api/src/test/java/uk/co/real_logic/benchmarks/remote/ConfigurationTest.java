@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
-import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
@@ -169,7 +168,7 @@ class ConfigurationTest
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("MessageTransceiver class must have a public constructor with a MessageRecorder parameter",
+        assertEquals("MessageTransceiver class must have a zero-arg public constructor",
             ex.getMessage());
     }
 
@@ -515,9 +514,9 @@ class ConfigurationTest
 
     public static final class TestNoPublicConstructorMessageTransceiver extends MessageTransceiver
     {
-        private TestNoPublicConstructorMessageTransceiver(final NanoClock clock)
+        private TestNoPublicConstructorMessageTransceiver()
         {
-            super(clock);
+            super();
         }
 
         public void init(final Configuration configuration)

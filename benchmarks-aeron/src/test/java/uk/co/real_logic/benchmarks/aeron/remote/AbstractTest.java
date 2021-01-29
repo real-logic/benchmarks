@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,10 +133,7 @@ abstract class AbstractTest<
             remoteNode.setDaemon(true);
             remoteNode.start();
 
-            final MessageTransceiver messageTransceiver = createMessageTransceiver(
-                driver,
-                client,
-                SystemNanoClock.INSTANCE);
+            final MessageTransceiver messageTransceiver = createMessageTransceiver(driver, client);
 
             final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
 
@@ -171,6 +166,5 @@ abstract class AbstractTest<
 
     abstract Class<MESSAGE_TRANSCEIVER> messageTransceiverClass();
 
-    abstract MESSAGE_TRANSCEIVER createMessageTransceiver(
-        DRIVER driver, CLIENT client, NanoClock nanoClock);
+    abstract MESSAGE_TRANSCEIVER createMessageTransceiver(DRIVER driver, CLIENT client);
 }

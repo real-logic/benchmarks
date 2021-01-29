@@ -37,9 +37,8 @@ public final class InMemoryMessageTransceiver extends MessageTransceiver
     private long sendIndex = 0;
     private long receiveIndex = 0;
 
-    public InMemoryMessageTransceiver(final NanoClock clock)
+    public InMemoryMessageTransceiver()
     {
-        super(clock);
     }
 
     InMemoryMessageTransceiver(final NanoClock clock, final Histogram histogram)
