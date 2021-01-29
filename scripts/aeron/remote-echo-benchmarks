@@ -267,8 +267,7 @@ do
         "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?}" \
         "uk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}" \
         "uk.co.real_logic.benchmarks.aeron.remote.passive.channels=${passive_channels%?}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.passive.streams=${passive_streams%?}" \
-        "aeron.threading.mode=DEDICATED"
+        "uk.co.real_logic.benchmarks.aeron.remote.passive.streams=${passive_streams%?}"
     done
   done
 done
