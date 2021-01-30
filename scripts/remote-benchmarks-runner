@@ -117,3 +117,12 @@ function find_java_process_by_class_name()
   local class_name=$1
   echo "\$(pgrep -l -f '$class_name' | grep java | awk '{print \$1}')"
 }
+
+function pin_thread()
+{
+  local pid=$1
+  local thread_name=$2
+  local core=$3
+  local tid="\$(ps Ho tid,comm -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
+  echo "tid=$tid; while [ -z \"\$tid\" ]; do sleep 0.5; tid=$tid; done; echo \"$thread_name TID=\$tid\"; taskset -p -c $core \$tid"
+}

@@ -18,15 +18,6 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 source "$DIR/../remote-benchmarks-runner"
 
-function pin_thread()
-{
-  local pid=$1
-  local thread_name=$2
-  local core=$3
-  local tid="\$(ps Ho tid,comm -p $pid | grep \"$thread_name\" | awk '{print \$1}')"
-  echo "tid=$tid; while [ -z \"\$tid\" ]; do sleep 0.5; tid=$tid; done; echo \"$thread_name TID=\$tid\"; taskset -p -c $core \$tid"
-}
-
 function start_media_driver()
 {
   local executable=$1
