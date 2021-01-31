@@ -26,7 +26,8 @@ required_vars=(
   "CLIENT_DRIVER_CPU_CORE_2"
   "CLIENT_DRIVER_CPU_CORE_3"
   "CLIENT_DRIVER_OTHER_CPU_CORES"
-  "CLIENT_CPU_CORES"
+  "CLIENT_LOAD_TEST_RIG_CPU_CORE_1"
+  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
   "SERVER_JAVA_HOME"
   "SERVER_DRIVER_CPU_CORE_1"
   "SERVER_DRIVER_CPU_CORE_2"
@@ -255,10 +256,26 @@ do
         fi
       done
 
+      start_client="\
+      export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
+      && $client_driver \
+      && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-client & \
+      $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig");  \
+      client_pid=\$pid; $(pin_thread \$client_pid "java" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
+      && wait \$!; kill \$driver_pid; wait"
+
+      start_server="\
+      export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
+      && $server_driver \
+      && taskset -c $SERVER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-server"
+
+      stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.aeron.remote.EchoNode"); \
+      $(stop_media_driver)"
+
       run_benchmarks \
-        "export JAVA_HOME=\"$CLIENT_JAVA_HOME\" && $client_driver && taskset -c $CLIENT_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-client && kill \$driver_pid; wait" \
-        "export JAVA_HOME=\"$SERVER_JAVA_HOME\" && $server_driver && taskset -c $SERVER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-server" \
-        "kill -9 $(find_java_process_by_class_name "uk.co.real_logic.benchmarks.aeron.remote.EchoNode"); $(stop_media_driver)" \
+        "$start_client" \
+        "$start_server" \
+        "$stop_server" \
         "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
         "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$test" \
         "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \

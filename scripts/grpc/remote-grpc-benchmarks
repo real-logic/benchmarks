@@ -101,7 +101,7 @@ do
     run_benchmarks \
       "export JAVA_HOME=\"$CLIENT_JAVA_HOME\" && taskset -c $CLIENT_CPU_CORES $onload $BENCHMARKS_PATH/scripts/grpc/$client-client" \
       "export JAVA_HOME=\"$SERVER_JAVA_HOME\" && taskset -c $SERVER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/grpc/server" \
-      "kill $(find_java_process_by_class_name "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")" \
+      "$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")" \
       "$BENCHMARKS_PATH/scripts/grpc/benchmark.properties" \
       "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
       "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
