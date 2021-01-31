@@ -275,6 +275,8 @@ public final class LoadTestRig
         SystemUtil.loadPropertiesFiles(args);
 
         final Configuration configuration = Configuration.fromSystemProperties();
+
+        Thread.currentThread().setName("load-test-rig");
         new LoadTestRig(configuration).run();
     }
 }
