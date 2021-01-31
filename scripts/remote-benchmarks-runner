@@ -136,7 +136,7 @@ function pin_thread()
   local thread_name=$2
   local core=$3
   local tid="\$(ps Ho tid,comm -p $pid | awk '/$thread_name/{print \$1}')"
-  echo "tid=$tid; while [ -z \"\$tid\" ]; do sleep 0.5; tid=$tid; done; echo \"tid_$thread_name=\$tid\"; taskset -p -c $core \$tid"
+  echo "tid=$tid; while [ -z \"\$tid\" ]; do sleep 0.1; tid=$tid; done; echo \"tid_$thread_name=\$tid\"; taskset -p -c $core \$tid"
 }
 
 function kill_java_process()
