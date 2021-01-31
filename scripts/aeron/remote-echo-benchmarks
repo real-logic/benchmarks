@@ -56,6 +56,7 @@ enable_onload=1
 enable_ef_vi=1
 enable_ats=1
 enable_c_driver=1
+enable_java_driver=1
 active_publications=(1 2 5 10)
 
 while [[ $# -gt 0 ]]
@@ -77,6 +78,10 @@ do
       enable_c_driver=0
       shift
       ;;
+    --no-java-driver)
+      enable_java_driver=0
+      shift
+      ;;
     --active-publications)
       IFS=',';
       read -ra active_publications <<< "$2"
@@ -85,7 +90,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "$0 [--no-onload] [--no-ef_vi] [--no-ats] [--no-c-driver] [--active-publications \"\$active-publications-csv\"]"
+      echo "$0 [--no-onload] [--no-ef_vi] [--no-ats] [--no-c-driver] [--no-java-driver] [--active-publications \"\$active-publications-csv\"]"
       exit
       ;;
     *)
@@ -95,18 +100,27 @@ do
   esac
 done
 
+if [ "$enable_java_driver" -ne 1 ] && [ "$enable_c_driver" -ne 1 ]
+then
+  echo "At least C or Java driver must be enabled!"
+  exit 1
+fi
+
 function build_drivers()
 {
   local commands=()
 
-  # Java driver
-  commands+=("$(start_media_driver "$BENCHMARKS_PATH/scripts/aeron/media-driver" "$1" "$2" "$3" "$4")")
-
-  if [ "$enable_onload" -eq 1 ]
+  if [ "$enable_java_driver" -eq 1 ]
   then
-    # Java driver with Onload
-    commands+=("$(start_media_driver \
-      "onload --profile=latency --force-profiles $BENCHMARKS_PATH/scripts/aeron/media-driver" "$1" "$2" "$3" "$4")")
+    # Java driver
+    commands+=("$(start_media_driver "$BENCHMARKS_PATH/scripts/aeron/media-driver" "$1" "$2" "$3" "$4")")
+
+    if [ "$enable_onload" -eq 1 ]
+    then
+      # Java driver with Onload
+      commands+=("$(start_media_driver \
+        "onload --profile=latency --force-profiles $BENCHMARKS_PATH/scripts/aeron/media-driver" "$1" "$2" "$3" "$4")")
+    fi
   fi
 
   if [ "$enable_c_driver" -eq 1 ]
@@ -177,11 +191,14 @@ client_drivers=($(build_drivers "$CLIENT_DRIVER_OTHER_CPU_CORES" "$CLIENT_DRIVER
 server_drivers=($(build_drivers "$SERVER_DRIVER_OTHER_CPU_CORES" "$SERVER_DRIVER_CPU_CORE_1" "$SERVER_DRIVER_CPU_CORE_2" "$SERVER_DRIVER_CPU_CORE_3"))
 unset IFS
 
-scenarios=("java")
-
-if [ "$enable_onload" -eq 1 ]
+if [ "$enable_java_driver" -eq 1 ]
 then
-  scenarios+=("java-onload")
+  scenarios=("java")
+
+  if [ "$enable_onload" -eq 1 ]
+  then
+    scenarios+=("java-onload")
+  fi
 fi
 
 if [ "$enable_c_driver" -eq 1 ]
