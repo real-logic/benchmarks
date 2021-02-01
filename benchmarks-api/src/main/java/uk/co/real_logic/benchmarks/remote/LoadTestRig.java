@@ -169,17 +169,26 @@ public final class LoadTestRig
                 if (now < timestamp && now < endTime)
                 {
                     idleStrategy.reset();
+                    long received = 0;
                     do
                     {
-                        final long received = receivedMessages.get();
-                        messageTransceiver.receive();
-                        if (received == receivedMessages.get())
+                        if (received < sentMessages)
                         {
-                            idleStrategy.idle();
+                            messageTransceiver.receive();
+                            final long updatedReceived = receivedMessages.get();
+                            if (updatedReceived == received)
+                            {
+                                idleStrategy.idle();
+                            }
+                            else
+                            {
+                                received = updatedReceived;
+                                idleStrategy.reset();
+                            }
                         }
                         else
                         {
-                            idleStrategy.reset();
+                            idleStrategy.idle();
                         }
                         now = clock.nanoTime();
                     }
@@ -209,14 +218,14 @@ public final class LoadTestRig
         while (received < sentMessages)
         {
             messageTransceiver.receive();
-            final long tmp = receivedMessages.get();
-            if (tmp == received)
+            final long updatedReceived = receivedMessages.get();
+            if (updatedReceived == received)
             {
                 idleStrategy.idle();
             }
             else
             {
-                received = tmp;
+                received = updatedReceived;
                 idleStrategy.reset();
             }
         }
