@@ -58,6 +58,7 @@ enable_ats=1
 enable_c_driver=1
 enable_java_driver=1
 active_publications=(1 2 5 10)
+endpoint_modes=("multiplexed" "dedicated")
 
 while [[ $# -gt 0 ]]
 do
@@ -89,8 +90,15 @@ do
       shift
       shift
       ;;
+    --endpoint-modes)
+      IFS=',';
+      read -ra endpoint_modes <<< "$2"
+      unset IFS;
+      shift
+      shift
+      ;;
     -h|--help)
-      echo "$0 [--no-onload] [--no-ef_vi] [--no-ats] [--no-c-driver] [--no-java-driver] [--active-publications \"\$active-publications-csv\"]"
+      echo "$0 [--no-onload] [--no-ef_vi] [--no-ats] [--no-c-driver] [--no-java-driver] [--active-publications \"\$active-publications-csv\"] [--endpoint-modes \"\$endpoint-modes-csv\"]"
       exit
       ;;
     *)
@@ -237,71 +245,85 @@ do
   client_driver="${client_drivers[index]}"
   server_driver="${server_drivers[index]}"
 
-  for active in "${active_publications[@]}"
+  for endpoint_mode in "${endpoint_modes[@]}"
   do
-    for passive in 0 $active
+    for active in "${active_publications[@]}"
     do
-      test="echo-$scenario-active-$active-passive-$passive"
-      echo -e "\n Testing scenario: '$test'\n"
-
-      destination_channels=""
-      destination_streams=""
-      source_channels=""
-      source_streams=""
-      passive_channels=""
-      passive_streams=""
-
-      for (( i=0; i<active; i++ ))
+      for passive in 0 $active
       do
-        dest_port=$((13000 + i))
-        dest_stream=$((1000000 + i))
-        src_port=$((13100 + i))
-        src_stream=$((2000000 + i))
+        test="echo-$scenario-endpoint-$endpoint_mode-active-$active-passive-$passive"
+        echo -e "\n Testing scenario: '$test'\n"
 
-        destination_channels+="aeron:udp?endpoint=$AERON_DESTINATION_IP:$dest_port|interface=$AERON_DESTINATION_INTERFACE,"
-        destination_streams+="$dest_stream,"
+        destination_channels=""
+        destination_streams=""
+        source_channels=""
+        source_streams=""
+        passive_channels=""
+        passive_streams=""
 
-        source_channels+="aeron:udp?endpoint=$AERON_SOURCE_IP:$src_port|interface=$AERON_SOURCE_INTERFACE,"
-        source_streams+="$src_stream,"
+        for (( i=0; i<active; i++ ))
+        do
+          if [ "$endpoint_mode" == "dedicated" ]
+          then
+            dest_port=$((13000 + i))
+            src_port=$((13100 + i))
+          else
+            dest_port=13000
+            src_port=13100
+          fi
+          dest_stream=$((1000000 + i))
+          src_stream=$((2000000 + i))
 
-        if [ "$passive" -ne 0 ]
-        then
-          passive_port=$((13200 + i))
-          passive_stream=$((3000000 + i))
-          passive_channels+="aeron:udp?endpoint=$AERON_DESTINATION_IP:$passive_port|interface=$AERON_DESTINATION_INTERFACE,"
-          passive_streams+="$passive_stream,"
-        fi
+          destination_channels+="aeron:udp?endpoint=$AERON_DESTINATION_IP:$dest_port|interface=$AERON_DESTINATION_INTERFACE,"
+          destination_streams+="$dest_stream,"
+
+          source_channels+="aeron:udp?endpoint=$AERON_SOURCE_IP:$src_port|interface=$AERON_SOURCE_INTERFACE,"
+          source_streams+="$src_stream,"
+
+          if [ "$passive" -ne 0 ]
+          then
+            if [ "$endpoint_mode" == "dedicated" ]
+            then
+              passive_port=$((13200 + i))
+            else
+              passive_port=13200
+            fi
+            passive_stream=$((3000000 + i))
+            passive_channels+="aeron:udp?endpoint=$AERON_DESTINATION_IP:$passive_port|interface=$AERON_DESTINATION_INTERFACE,"
+            passive_streams+="$passive_stream,"
+          fi
+        done
+
+        start_client="\
+        export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
+        && $client_driver \
+        && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-client & \
+        $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig");  \
+        client_pid=\$pid; $(pin_thread \$client_pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
+        && wait \$!; kill \$driver_pid; wait"
+
+        start_server="\
+        export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
+        && $server_driver \
+        && taskset -c $SERVER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-server"
+
+        stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.aeron.remote.EchoNode"); \
+        $(stop_media_driver)"
+
+        run_benchmarks \
+          "$start_client" \
+          "$start_server" \
+          "$stop_server" \
+          "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
+          "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$test" \
+          "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
+          "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?}" \
+          "uk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?}" \
+          "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?}" \
+          "uk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}" \
+          "uk.co.real_logic.benchmarks.aeron.remote.passive.channels=${passive_channels%?}" \
+          "uk.co.real_logic.benchmarks.aeron.remote.passive.streams=${passive_streams%?}"
       done
-
-      start_client="\
-      export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
-      && $client_driver \
-      && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-client & \
-      $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig");  \
-      client_pid=\$pid; $(pin_thread \$client_pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
-      && wait \$!; kill \$driver_pid; wait"
-
-      start_server="\
-      export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
-      && $server_driver \
-      && taskset -c $SERVER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-server"
-
-      stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.aeron.remote.EchoNode"); \
-      $(stop_media_driver)"
-
-      run_benchmarks \
-        "$start_client" \
-        "$start_server" \
-        "$stop_server" \
-        "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
-        "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$test" \
-        "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
-        "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels=${passive_channels%?}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.passive.streams=${passive_streams%?}"
     done
   done
 done
