@@ -127,7 +127,8 @@ do
       && export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
       && taskset -c $SERVER_KAFKA_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/kafka-start"
 
-      stop_all="KAFKA_DATA_DIR=\"$SERVER_KAFKA_DIR\" $BENCHMARKS_PATH/scripts/kafka/stop-all; \
+      stop_all="export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
+      && KAFKA_DATA_DIR=\"$SERVER_KAFKA_DIR\" $BENCHMARKS_PATH/scripts/kafka/stop-all; \
       mv $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties.bak $BENCHMARKS_PATH/scripts/kafka/zookeeper.properties; \
       mv $BENCHMARKS_PATH/scripts/kafka/server.properties.bak $BENCHMARKS_PATH/scripts/kafka/server.properties"
 
