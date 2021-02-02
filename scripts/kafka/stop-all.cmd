@@ -39,9 +39,14 @@ goto :eof
 
 :killJavaProcess
 SET name=%1
-FOR /F "tokens=* USEBACKQ" %%F IN (`"%JAVA_HOME%\bin\jps" ^| findstr %name%`) DO (
-  SET TASK_PID=%%F
-  SET TASK_PID=!TASK_PID:%name%=!
+FOR /F "tokens=* USEBACKQ" %%P IN (`tasklist /FI "ImageName eq java.exe" /SVC /FO csv /NH`) DO (
+  SET pid=%%P
+  SET pid=!pid:"java.exe","=!
+  SET pid=!pid:","N/A"=!
+
+  FOR /F "tokens=* USEBACKQ" %%J IN (`%JAVA_HOME%\bin\jcmd !pid! VM.command_line ^| findstr %name%`) DO (
+      SET TASK_PID=!pid!
+  )
 )
 
 if [!TASK_PID!] == [] (
@@ -49,6 +54,7 @@ if [!TASK_PID!] == [] (
 ) else (
   taskkill /T /F /PID !TASK_PID!
   if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+  timeout /t 1 >NUL
 )
 
 exit /b 0
