@@ -121,7 +121,7 @@ function await_process_start()
 function find_java_process()
 {
   local class_name=$1
-  echo "\$(pgrep -l -f '$class_name' | grep java | awk '{print \$1}')"
+  echo "\$(pgrep -l -f '$class_name' | awk '/java/{print \$1}')"
 }
 
 function await_java_process_start()

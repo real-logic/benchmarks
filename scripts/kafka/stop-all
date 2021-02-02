@@ -20,7 +20,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 killJavaProcess() {
     local name=$1
     local pid
-    pid=$(pgrep -l -f "$name" | grep java | awk '{print $1}')
+    pid=$(pgrep -l -f "$name" | awk '/java/{print $1}')
 
     if [ -z "$pid" ]; then
       echo "$name is not running"
