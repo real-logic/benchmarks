@@ -312,7 +312,7 @@ do
 
         run_benchmarks \
           "$start_client" \
-          "$start_server" \
+          "$(kill_java_process "uk.co.real_logic.benchmarks.aeron.remote.EchoNode"); $start_server" \
           "$stop_server" \
           "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
           "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$test" \

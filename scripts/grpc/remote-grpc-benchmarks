@@ -112,7 +112,7 @@ do
     # shellcheck disable=SC2153
     run_benchmarks \
       "$start_client" \
-      "$start_server" \
+      "$stop_server; $start_server" \
       "$stop_server" \
       "$BENCHMARKS_PATH/scripts/grpc/benchmark.properties" \
       "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
