@@ -108,7 +108,8 @@ do
       echo -e "\n Testing scenario: '$scenario'\n"
 
       start_client="export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
-      && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/client &
+      ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
+      ; taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/client &
       $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
       $(pin_thread \$pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
       && wait \$!"
