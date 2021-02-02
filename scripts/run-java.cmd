@@ -32,7 +32,7 @@ set JAVA_OPTIONS=^
   -XX:ReservedCodeCacheSize=1G ^
   -XX:+PerfDisableSharedMem
 
-FOR /F "tokens=3 usebackq" %%J IN (`"%JAVA_HOME%\bin\java -version 2>&1" ^| findstr version`) DO (
+FOR /F "tokens=3" %%J IN ('"%JAVA_HOME%\bin\java" -version 2^>^&1 ^| findstr version') DO (
   SET "java_version=%%J"
   SET "java_version=!java_version:"=!"
 )
