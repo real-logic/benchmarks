@@ -18,14 +18,11 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set "DIR=%~dp0"
 
-"%JAVA_HOME%\bin\java" ^
-  -cp "%DIR%\..\benchmarks-all\build\libs\benchmarks.jar" ^
+set JAVA_OPTIONS=^
   -XX:+UnlockExperimentalVMOptions ^
   -XX:+TrustFinalNonStaticFields ^
   -XX:+UnlockDiagnosticVMOptions ^
   -XX:GuaranteedSafepointInterval=300000 ^
-  -XX:+UseBiasedLocking ^
-  -XX:BiasedLockingStartupDelay=0 ^
   -XX:+UseParallelGC ^
   -XX:ParallelGCThreads=2 ^
   -Xms4G ^
@@ -33,6 +30,32 @@ set "DIR=%~dp0"
   -XX:+AlwaysPreTouch ^
   -XX:MaxMetaspaceSize=1G ^
   -XX:ReservedCodeCacheSize=1G ^
-  -XX:+PerfDisableSharedMem ^
+  -XX:+PerfDisableSharedMem
+
+FOR /F "tokens=3 usebackq" %%J IN (`"%JAVA_HOME%\bin\java -version 2>&1" ^| findstr version`) DO (
+  SET "java_version=%%J"
+  SET "java_version=!java_version:"=!"
+)
+
+if "!java_version:~0,3!" == "1.8" (
+  set "ADD_OPENS="
+) else (
+  FOR /F "tokens=1 delims=.-" %%A IN ("!java_version!") DO (
+    SET major_java_version=%%A
+  )
+
+  if !major_java_version! LSS 15 (
+    set "JAVA_OPTIONS=!JAVA_OPTIONS! -XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0"
+  )
+
+  set ADD_OPENS=^
+  --add-opens java.base/sun.nio.ch=ALL-UNNAMED ^
+  --add-opens java.base/java.util.zip=ALL-UNNAMED
+)
+
+"%JAVA_HOME%\bin\java" ^
+  -cp "%DIR%\..\benchmarks-all\build\libs\benchmarks.jar" ^
+  !JAVA_OPTIONS! ^
+  !ADD_OPENS! ^
   %JVM_OPTS% ^
   %*
