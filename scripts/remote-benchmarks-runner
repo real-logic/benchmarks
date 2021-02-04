@@ -82,11 +82,12 @@ function run_benchmarks()
           config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burstSize# }")
           config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${messageLength# }")
 
-          local jvm_opts="rm -f $config_file"
+          local jvm_opts="rm -f $config_file && echo -e \""
           for opt in "${config_options[@]}";
           do
-            jvm_opts+=" && echo '$opt' >> $config_file"
+            jvm_opts+="$opt\n"
           done
+          jvm_opts+="\" >> $config_file"
 
           echo -e "\nStarting server..."
           ssh $SSH_USER@$SSH_NODE_2 "($jvm_opts && $server_start_command &) > /dev/null 2>&1 && exit"

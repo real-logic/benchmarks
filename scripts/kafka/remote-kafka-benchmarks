@@ -120,10 +120,10 @@ do
       && taskset -c $SERVER_ZOOKEEPER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/zookeeper-start"
 
       start_kafka="cp $BENCHMARKS_PATH/scripts/kafka/server.properties $BENCHMARKS_PATH/scripts/kafka/server.properties.bak \
-      && echo \"log.dirs=$SERVER_KAFKA_DIR/logs\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
-      && echo \"ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
-      && echo \"ssl.keystore.location=$BENCHMARKS_PATH/certificates/server.keystore\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
-      && echo \"advertised.listeners=PLAINTEXT://$SERVER_HOST:$plain_text_port,SSL://$SERVER_HOST:$ssl_port\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
+      && echo -e \"log.dirs=$SERVER_KAFKA_DIR/logs\n\
+      ssl.truststore.location=$BENCHMARKS_PATH/certificates/truststore.p12\n\
+      ssl.keystore.location=$BENCHMARKS_PATH/certificates/server.keystore\n\
+      advertised.listeners=PLAINTEXT://$SERVER_HOST:$plain_text_port,SSL://$SERVER_HOST:$ssl_port\" >> $BENCHMARKS_PATH/scripts/kafka/server.properties \
       && export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
       && taskset -c $SERVER_KAFKA_CPU_CORES $onload $BENCHMARKS_PATH/scripts/kafka/kafka-start"
 
