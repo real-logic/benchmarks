@@ -329,4 +329,4 @@ do
   done
 done
 
-download_results "echo-results.zip" "$BENCHMARKS_PATH/scripts/results" "$DIR/.."
+download_results "aeron-echo-results.zip" "$BENCHMARKS_PATH/scripts/results" "$DIR/.."
