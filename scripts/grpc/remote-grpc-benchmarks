@@ -115,7 +115,6 @@ do
       "$start_client" \
       "$stop_server; $start_server" \
       "$stop_server" \
-      "$BENCHMARKS_PATH/scripts/grpc/benchmark.properties" \
       "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
       "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.host=$SERVER_HOST" \

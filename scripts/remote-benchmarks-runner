@@ -63,8 +63,7 @@ function run_benchmarks()
   local client_command="$1"
   local server_start_command="$2"
   local server_stop_command="$3"
-  local config_file="$4"
-  local config=("${@:5}")
+  local config=("${@:4}")
 
   for messageRate in "${MESSAGE_RATE[@]}"
   do
@@ -82,12 +81,12 @@ function run_benchmarks()
           config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burstSize# }")
           config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${messageLength# }")
 
-          local jvm_opts="rm -f $config_file && echo -e \""
+          local jvm_opts="export JVM_OPTS=\""
           for opt in "${config_options[@]}";
           do
-            jvm_opts+="$opt\n"
+            jvm_opts+="-D$opt "
           done
-          jvm_opts+="\" >> $config_file"
+          jvm_opts+="\""
 
           echo -e "\nStarting server..."
           ssh $SSH_USER@$SSH_NODE_2 "($jvm_opts && $server_start_command &) > /dev/null 2>&1 && exit"

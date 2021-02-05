@@ -136,7 +136,6 @@ do
         "$start_client" \
         "$stop_all; $start_zookeeper & $start_kafka" \
         "$stop_all" \
-        "$BENCHMARKS_PATH/scripts/kafka/benchmark.properties" \
         "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
         "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
         "bootstrap.servers=$SERVER_HOST:$port" \

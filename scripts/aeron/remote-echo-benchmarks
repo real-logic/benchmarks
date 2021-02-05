@@ -294,13 +294,16 @@ do
           fi
         done
 
+        client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
+        server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
+
         start_client="\
         export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
-        ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
+        ; $(kill_java_process "$client_class_name") \
         ; $client_driver \
         && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-client & \
-        $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig");  \
-        client_pid=\$pid; $(pin_thread \$client_pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
+        $(await_java_process_start "$client_class_name") \
+        ; $(pin_thread \$pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
         && wait \$!; kill \$driver_pid; wait"
 
         start_server="\
@@ -308,14 +311,13 @@ do
         && $server_driver \
         && taskset -c $SERVER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/echo-server"
 
-        stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.aeron.remote.EchoNode"); \
+        stop_server="$(kill_java_process server_class_name); \
         $(stop_media_driver)"
 
         run_benchmarks \
           "$start_client" \
-          "$(kill_java_process "uk.co.real_logic.benchmarks.aeron.remote.EchoNode"); $start_server" \
+          "$(kill_java_process server_class_name); $start_server" \
           "$stop_server" \
-          "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
           "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$test" \
           "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
           "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?}" \

@@ -153,26 +153,22 @@ do
 
     client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
     server_class_name="uk.co.real_logic.benchmarks.aeron.remote.ArchiveNode"
-    aeron_scripts_dir="$BENCHMARKS_PATH/scripts/aeron"
 
     start_client="\
     export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
     ; $(kill_java_process "$client_class_name") \
     ; $client_driver \
-    && cp $aeron_scripts_dir/low-latency-driver.properties $aeron_scripts_dir/low-latency-driver.properties.bak \
-    && echo \"aeron.archive.control.response.channel=aeron:udp?endpoint=$AERON_SOURCE_IP:0|interface=$AERON_SOURCE_INTERFACE\" >> $aeron_scripts_dir/low-latency-driver.properties \
-    && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $aeron_scripts_dir/live-replay-client & \
+    && export JVM_OPTS=\"\$JVM_OPTS -Daeron.archive.control.response.channel=aeron:udp?endpoint=$AERON_SOURCE_IP:0|interface=$AERON_SOURCE_INTERFACE\" \
+    && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/live-replay-client & \
     $(await_java_process_start "$client_class_name") \
     ; $(pin_thread \$pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
-    && wait \$! \
-    && cp $aeron_scripts_dir/low-latency-driver.properties.bak $aeron_scripts_dir/low-latency-driver.properties \
-    && kill \$driver_pid; wait"
+    && wait \$! && kill \$driver_pid; wait"
 
     start_server="\
     export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
     ; $(kill_java_process "$server_class_name") \
     ; $server_driver \
-    && taskset -c $SERVER_ARCHIVE_OTHER_CPU_CORES $aeron_scripts_dir/live-replay-server & \
+    && taskset -c $SERVER_ARCHIVE_OTHER_CPU_CORES $BENCHMARKS_PATH/scripts/aeron/live-replay-server & \
     $(await_java_process_start "$server_class_name") \
     ; $(pin_thread \$pid "archive-recorde" "$SERVER_ARCHIVE_CPU_CORE_1") \
     ; $(pin_thread \$pid "archive-replaye" "$SERVER_ARCHIVE_CPU_CORE_2") \
@@ -185,7 +181,6 @@ do
       "$start_client" \
       "$start_server" \
       "$stop_server" \
-      "$BENCHMARKS_PATH/scripts/aeron/benchmark.properties" \
       "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$test" \
       "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
       "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=$AERON_DESTINATION_IP:13000|interface=$AERON_DESTINATION_INTERFACE" \
