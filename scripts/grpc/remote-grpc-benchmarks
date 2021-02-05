@@ -106,6 +106,7 @@ do
     && wait \$!"
 
     start_server="export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
+    && export JVM_OPTS=\"\$JVM_OPTS -Duk.co.real_logic.benchmarks.grpc.remote.certificates=$SERVER_BENCHMARKS_PATH/certificates\" \
     && taskset -c $SERVER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/grpc/server"
 
     stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
@@ -116,11 +117,11 @@ do
       "$stop_server; $start_server" \
       "$stop_server" \
       "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
-      "uk.co.real_logic.benchmarks.remote.outputDirectory=$BENCHMARKS_PATH/scripts/results" \
+      "uk.co.real_logic.benchmarks.remote.outputDirectory=$CLIENT_BENCHMARKS_PATH/scripts/results" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.host=$SERVER_HOST" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.port=$SERVER_PORT" \
       "uk.co.real_logic.benchmarks.grpc.remote.tls=$tls" \
-      "uk.co.real_logic.benchmarks.grpc.remote.certificates=$BENCHMARKS_PATH/certificates"
+      "uk.co.real_logic.benchmarks.grpc.remote.certificates=$CLIENT_BENCHMARKS_PATH/certificates"
   done
 done
 
