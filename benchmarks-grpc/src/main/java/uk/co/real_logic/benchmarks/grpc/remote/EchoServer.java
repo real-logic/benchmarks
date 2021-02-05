@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.grpc.remote;
 
 import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
+import org.agrona.PropertyAction;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
@@ -48,7 +49,7 @@ public class EchoServer implements AutoCloseable
 
     public static void main(final String[] args) throws Exception
     {
-        SystemUtil.loadPropertiesFiles(args);
+        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         try (EchoServer server = new EchoServer(getServerBuilder()))
         {

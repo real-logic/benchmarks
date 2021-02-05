@@ -22,6 +22,7 @@ import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.PropertyAction;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -218,7 +219,7 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     public static void main(final String[] args)
     {
-        SystemUtil.loadPropertiesFiles(args);
+        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);

@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
+import org.agrona.PropertyAction;
 import org.agrona.SystemUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -95,7 +96,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
 
     public static void main(final String[] args)
     {
-        SystemUtil.loadPropertiesFiles(args);
+        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);

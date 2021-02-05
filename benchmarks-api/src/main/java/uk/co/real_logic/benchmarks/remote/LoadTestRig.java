@@ -16,6 +16,7 @@
 package uk.co.real_logic.benchmarks.remote;
 
 import org.agrona.LangUtil;
+import org.agrona.PropertyAction;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
@@ -281,7 +282,7 @@ public final class LoadTestRig
 
     public static void main(final String[] args) throws Exception
     {
-        SystemUtil.loadPropertiesFiles(args);
+        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         final Configuration configuration = Configuration.fromSystemProperties();
 
