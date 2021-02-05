@@ -25,12 +25,13 @@ fi
 source "${DIR}/../remote-benchmarks-runner"
 
 required_vars=(
-  "BENCHMARKS_PATH"
+  "CLIENT_BENCHMARKS_PATH"
   "CLIENT_JAVA_HOME"
   "CLIENT_LOAD_TEST_RIG_CPU_CORE_1"
   "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
-  "SERVER_HOST"
+  "SERVER_BENCHMARKS_PATH"
   "SERVER_JAVA_HOME"
+  "SERVER_HOST"
   "SERVER_ZOOKEEPER_CPU_CORES"
   "SERVER_KAFKA_CPU_CORES"
   "SERVER_KAFKA_DIR")
@@ -148,4 +149,4 @@ do
   done
 done
 
-download_results "kafka-results.zip" "$BENCHMARKS_PATH/scripts/results" "$DIR/.."
+download_results "kafka-results.zip" "$CLIENT_BENCHMARKS_PATH/scripts/results" "$DIR/.."

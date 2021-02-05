@@ -30,13 +30,14 @@ fi
 source "${DIR}/../remote-benchmarks-runner"
 
 required_vars=(
-  "BENCHMARKS_PATH"
   "CLIENT_JAVA_HOME"
+  "CLIENT_BENCHMARKS_PATH"
   "CLIENT_LOAD_TEST_RIG_CPU_CORE_1"
   "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
+  "SERVER_JAVA_HOME"
+  "SERVER_BENCHMARKS_PATH"
   "SERVER_HOST"
   "SERVER_PORT"
-  "SERVER_JAVA_HOME"
   "SERVER_CPU_CORES")
 
 for var in "${required_vars[@]}"; do
@@ -100,18 +101,22 @@ do
 
     start_client="export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
     ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-    ; taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/grpc/$client-client & \
+    ; taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $onload $CLIENT_BENCHMARKS_PATH/scripts/grpc/$client-client & \
     $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
     $(pin_thread \$pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
     && wait \$!"
 
+    # shellcheck disable=SC2153
     start_server="export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
-    && export JVM_OPTS=\"\$JVM_OPTS -Duk.co.real_logic.benchmarks.grpc.remote.certificates=$SERVER_BENCHMARKS_PATH/certificates\" \
-    && taskset -c $SERVER_CPU_CORES $onload $BENCHMARKS_PATH/scripts/grpc/server"
+    && export JVM_OPTS=\"\
+    -Duk.co.real_logic.benchmarks.grpc.remote.server.host=$SERVER_HOST \
+    -Duk.co.real_logic.benchmarks.grpc.remote.server.port=$SERVER_PORT \
+    -Duk.co.real_logic.benchmarks.grpc.remote.certificates=$SERVER_BENCHMARKS_PATH/certificates \
+    -Duk.co.real_logic.benchmarks.grpc.remote.tls=$tls\" \
+    && taskset -c $SERVER_CPU_CORES $onload $SERVER_BENCHMARKS_PATH/scripts/grpc/server"
 
     stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
 
-    # shellcheck disable=SC2153
     run_benchmarks \
       "$start_client" \
       "$stop_server; $start_server" \
@@ -120,9 +125,9 @@ do
       "uk.co.real_logic.benchmarks.remote.outputDirectory=$CLIENT_BENCHMARKS_PATH/scripts/results" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.host=$SERVER_HOST" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.port=$SERVER_PORT" \
-      "uk.co.real_logic.benchmarks.grpc.remote.tls=$tls" \
-      "uk.co.real_logic.benchmarks.grpc.remote.certificates=$CLIENT_BENCHMARKS_PATH/certificates"
+      "uk.co.real_logic.benchmarks.grpc.remote.certificates=$CLIENT_BENCHMARKS_PATH/certificates" \
+      "uk.co.real_logic.benchmarks.grpc.remote.tls=$tls"
   done
 done
 
-download_results "grpc-results.zip" "$BENCHMARKS_PATH/scripts/results" "$DIR/.."
+download_results "grpc-results.zip" "$CLIENT_BENCHMARKS_PATH/scripts/results" "$DIR/.."

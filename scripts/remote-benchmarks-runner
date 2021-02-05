@@ -86,10 +86,10 @@ function run_benchmarks()
           do
             jvm_opts+="-D$opt "
           done
-          jvm_opts+="\""
+          jvm_opts="${jvm_opts%?}\""
 
           echo -e "\nStarting server..."
-          ssh $SSH_USER@$SSH_NODE_2 "($jvm_opts && $server_start_command &) > /dev/null 2>&1 && exit"
+          ssh $SSH_USER@$SSH_NODE_2 "($server_start_command &) > /dev/null 2>&1 && exit"
 
           echo -e "\nStarting client..."
           ssh $SSH_USER@$SSH_NODE_1 "$jvm_opts && $client_command && exit"
