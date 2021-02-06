@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2021 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+source "$DIR/remote-benchmarks-helper"
+
+required_vars=(
+  "CLIENT_BENCHMARKS_PATH"
+  "CLIENT_JAVA_HOME"
+  "CLIENT_DRIVER_CPU_CORE_1"
+  "CLIENT_DRIVER_CPU_CORE_2"
+  "CLIENT_DRIVER_CPU_CORE_3"
+  "CLIENT_DRIVER_OTHER_CPU_CORES"
+  "CLIENT_LOAD_TEST_RIG_CPU_CORE_1"
+  "CLIENT_LOAD_TEST_RIG_CPU_CORE_2"
+  "CLIENT_LOAD_TEST_RIG_CPU_CORE_3"
+  "CLIENT_LOAD_TEST_RIG_CPU_CORE_4"
+  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
+  "SERVER_JAVA_HOME"
+  "SERVER_DRIVER_CPU_CORE_1"
+  "SERVER_DRIVER_CPU_CORE_2"
+  "SERVER_DRIVER_CPU_CORE_3"
+  "SERVER_DRIVER_OTHER_CPU_CORES"
+  "SERVER_CPU_CORES"
+  "AERON_DESTINATION_IP"
+  "AERON_DESTINATION_INTERFACE"
+  "AERON_SOURCE_IP"
+  "AERON_SOURCE_INTERFACE"
+  "AERON_ARCHIVE_DIR")
+
+for var in "${required_vars[@]}"; do
+  if [[ -z "${!var}" ]]
+  then
+    echo "env var $var must be set"
+    required_var_missing=true
+  fi
+done
+
+if [ -n "$required_var_missing" ];
+then
+  exit 1
+fi
+
+enable_c_driver=1
+enable_java_driver=1
+onload="onload --profile=latency --force-profiles "
+file_sync_levels=(0 2)
+
+while [[ $# -gt 0 ]]
+do
+  case "$1" in
+    --no-onload)
+      onload=""
+      shift
+      ;;
+    --no-c-driver)
+      enable_c_driver=0
+      shift
+      ;;
+    --no-java-driver)
+      enable_java_driver=0
+      shift
+      ;;
+    --file-sync-level)
+      IFS=',';
+      read -ra fsync <<< "$2"
+      unset IFS;
+      shift
+      shift
+      ;;
+    -h|--help)
+      echo "$0 [--no-onload] [--no-c-driver] [--no-java-driver] [--file-sync-level \"\$file-sync-level-csv\"]"
+      exit
+      ;;
+    *)
+      echo "Invalid parameter. Use --help to get a list of supported parameters."
+      exit 1
+      ;;
+  esac
+done
+
+if [ "$enable_java_driver" -ne 1 ] && [ "$enable_c_driver" -ne 1 ]
+then
+  echo "At least C or Java driver must be enabled!"
+  exit 1
+fi
+
+function build_drivers()
+{
+  local scripts_path="$1/scripts/aeron"
+  local commands=()
+
+  if [ "$enable_java_driver" -eq 1 ]
+  then
+    commands+=("$(start_media_driver "$onload$scripts_path/media-driver" "$2" "$3" "$4" "$5")")
+  fi
+
+  if [ "$enable_c_driver" -eq 1 ]
+  then
+    commands+=("touch $scripts_path/benchmark.properties; \
+    $(start_media_driver "$onload$scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+  fi
+
+  local IFS=$'\n'
+  echo "${commands[*]}"
+}
+
+IFS=$'\n'
+# shellcheck disable=SC2207
+client_drivers=($(build_drivers "$CLIENT_BENCHMARKS_PATH" \
+"$CLIENT_DRIVER_OTHER_CPU_CORES" "$CLIENT_DRIVER_CPU_CORE_1" "$CLIENT_DRIVER_CPU_CORE_2" "$CLIENT_DRIVER_CPU_CORE_3"))
+# shellcheck disable=SC2207
+server_drivers=($(build_drivers "$SERVER_BENCHMARKS_PATH" \
+"$SERVER_DRIVER_OTHER_CPU_CORES" "$SERVER_DRIVER_CPU_CORE_1" "$SERVER_DRIVER_CPU_CORE_2" "$SERVER_DRIVER_CPU_CORE_3"))
+unset IFS
+
+if [ "$enable_java_driver" -eq 1 ]
+then
+  scenarios=("java")
+fi
+
+if [ "$enable_c_driver" -eq 1 ]
+then
+  scenarios+=("c")
+fi
+
+for index in "${!scenarios[@]}"
+do
+  scenario="${scenarios[index]}"
+  client_driver="${client_drivers[index]}"
+  server_driver="${server_drivers[index]}"
+
+  if [ -n "$onload" ]
+  then
+    scenario="$scenario-onload"
+  fi
+
+  for fsync in "${file_sync_levels[@]}"
+  do
+    test="live-recording-$scenario-fsync-$fsync"
+    echo -e "\n Testing scenario: '$test'\n"
+
+    client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
+    server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
+
+    start_client="\
+    export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
+    ; $(kill_java_process "$client_class_name") \
+    ; $client_driver \
+    && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $CLIENT_BENCHMARKS_PATH/scripts/aeron/live-recording-client & \
+    $(await_java_process_start "$client_class_name") \
+    ; $(pin_thread \$pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
+    ; $(pin_thread \$pid "archive-recorde" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_2") \
+    ; $(pin_thread \$pid "archive-replaye" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_3") \
+    ; $(pin_thread \$pid "archive-conduct" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_4") \
+    && wait \$! && kill \$driver_pid; wait"
+
+    start_server="\
+    export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
+    ; $(kill_java_process "$server_class_name") \
+    ; $server_driver \
+    && export JVM_OPTS=\"\
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=$AERON_DESTINATION_IP:13000|interface=$AERON_DESTINATION_INTERFACE \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=$AERON_SOURCE_IP:13100|interface=$AERON_SOURCE_INTERFACE\" \
+    && taskset -c $SERVER_CPU_CORES $SERVER_BENCHMARKS_PATH/scripts/aeron/echo-server"
+
+    stop_server="$(kill_java_process "$server_class_name"); $(stop_media_driver)"
+
+    run_benchmarks \
+      "$start_client" \
+      "$start_server" \
+      "$stop_server" \
+      "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$test" \
+      "uk.co.real_logic.benchmarks.remote.outputDirectory=$CLIENT_BENCHMARKS_PATH/scripts/results" \
+      "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=$AERON_DESTINATION_IP:13000|interface=$AERON_DESTINATION_INTERFACE" \
+      "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=$AERON_SOURCE_IP:13100|interface=$AERON_SOURCE_INTERFACE" \
+      "aeron.archive.dir=$AERON_ARCHIVE_DIR" \
+      "aeron.archive.file.sync.level=$fsync" \
+      "aeron.archive.catalog.file.sync.level=$fsync" \
+      "aeron.archive.recording.events.enabled=true"
+  done
+done
+
+download_results "aeron-live-recording-results.zip" "$CLIENT_BENCHMARKS_PATH/scripts/results" "$DIR/.."
