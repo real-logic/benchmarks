@@ -135,20 +135,21 @@ function build_drivers()
 
   if [ "$enable_c_driver" -eq 1 ]
   then
+    local create_benchmark_props="touch $scripts_path/benchmark.properties"
     # C driver
-    commands+=("$(start_media_driver "$scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+    commands+=("$create_benchmark_props; $(start_media_driver "$scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
 
     if [ "$enable_onload" -eq 1 ]
     then
       # C driver with Onload
-      commands+=("$(start_media_driver \
+      commands+=("$create_benchmark_props; $(start_media_driver \
         "onload --profile=latency --force-profiles $scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
     fi
 
     if [ "$enable_ef_vi" -eq 1 ]
     then
       # C driver with ef_vi
-      commands+=("$(start_media_driver \
+      commands+=("$create_benchmark_props; $(start_media_driver \
         "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"$scripts_path/libaeron_ef_vi.so\" \
         $scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
@@ -157,7 +158,7 @@ function build_drivers()
     if [ "$enable_ats" -eq 1 ]
     then
       # C driver with ATS
-      commands+=("$(start_media_driver \
+      commands+=("$create_benchmark_props; $(start_media_driver \
         "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$scripts_path\" \
         AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
@@ -168,7 +169,7 @@ function build_drivers()
       if [ "$enable_onload" -eq 1 ]
       then
         # C driver with ATS and Onload
-        commands+=("$(start_media_driver \
+        commands+=("$create_benchmark_props; $(start_media_driver \
           "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$scripts_path\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
@@ -180,7 +181,7 @@ function build_drivers()
       if [ "$enable_ef_vi" -eq 1 ]
       then
         # C driver with ATS and ef_vi
-        commands+=("$(start_media_driver \
+        commands+=("$create_benchmark_props; $(start_media_driver \
           "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$scripts_path\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \

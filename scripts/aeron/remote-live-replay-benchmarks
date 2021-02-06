@@ -112,7 +112,8 @@ function build_drivers()
 
   if [ "$enable_c_driver" -eq 1 ]
   then
-    commands+=("$(start_media_driver "$onload$scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+    commands+=("touch $scripts_path/benchmark.properties; \
+    $(start_media_driver "$onload$scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
   fi
 
   local IFS=$'\n'
