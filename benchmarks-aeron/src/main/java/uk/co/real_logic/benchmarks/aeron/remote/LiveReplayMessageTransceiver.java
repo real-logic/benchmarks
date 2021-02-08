@@ -20,7 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
@@ -49,18 +48,16 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             onMessageReceived(timestamp, checksum);
         });
 
-    public LiveReplayMessageTransceiver(final MessageRecorder messageRecorder)
+    public LiveReplayMessageTransceiver()
     {
-        this(launchEmbeddedMediaDriverIfConfigured(), connect(), true, messageRecorder);
+        this(launchEmbeddedMediaDriverIfConfigured(), connect(), true);
     }
 
     LiveReplayMessageTransceiver(
         final MediaDriver mediaDriver,
         final AeronArchive aeronArchive,
-        final boolean ownsArchiveClient,
-        final MessageRecorder messageRecorder)
+        final boolean ownsArchiveClient)
     {
-        super(messageRecorder);
         this.mediaDriver = mediaDriver;
         this.aeronArchive = aeronArchive;
         this.ownsArchiveClient = ownsArchiveClient;

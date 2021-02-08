@@ -43,7 +43,6 @@ class AeronUtilTest
         clearProperty(ARCHIVE_STREAM_PROP_NAME);
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
         clearProperty(IDLE_STRATEGY);
-        clearProperty(RECONNECT_IF_IMAGE_CLOSED);
     }
 
     @Test
@@ -61,7 +60,6 @@ class AeronUtilTest
         assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
-        assertFalse(reconnectIfImageClosed());
     }
 
     @Test
@@ -79,7 +77,6 @@ class AeronUtilTest
         setProperty(ARCHIVE_STREAM_PROP_NAME, "");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "");
         setProperty(IDLE_STRATEGY, "");
-        setProperty(RECONNECT_IF_IMAGE_CLOSED, "");
 
         assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333" }, destinationChannels());
         assertArrayEquals(new int[]{ 1_000_000_000 }, destinationStreams());
@@ -93,7 +90,6 @@ class AeronUtilTest
         assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
-        assertFalse(reconnectIfImageClosed());
     }
 
     @Test
@@ -111,7 +107,6 @@ class AeronUtilTest
         setProperty(ARCHIVE_STREAM_PROP_NAME, "777");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
         setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
-        setProperty(RECONNECT_IF_IMAGE_CLOSED, "true");
 
         assertArrayEquals(new String[]{ "ch1:5001", "ch2:5002", "ch3:5003" }, destinationChannels());
         assertArrayEquals(new int[]{ 100, 101, 102 }, destinationStreams());
@@ -125,7 +120,6 @@ class AeronUtilTest
         assertEquals(22, passiveChannelsPollFrequency());
         assertTrue(embeddedMediaDriver());
         assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
-        assertTrue(reconnectIfImageClosed());
     }
 
     @Test

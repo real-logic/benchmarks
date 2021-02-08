@@ -17,19 +17,52 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-"${JAVA_HOME}/bin/java" \
+java_options=(
+  -XX:+UnlockExperimentalVMOptions
+  -XX:+TrustFinalNonStaticFields
+  -XX:+UnlockDiagnosticVMOptions
+  -XX:GuaranteedSafepointInterval=300000
+  -XX:+UseParallelGC
+  -XX:ParallelGCThreads=2
+  -Xms4G
+  -Xmx4G
+  -XX:+AlwaysPreTouch
+  -XX:MaxMetaspaceSize=1G
+  -XX:ReservedCodeCacheSize=1G
+  -XX:+PerfDisableSharedMem)
+
+java_version=$("${JAVA_HOME}/bin/java" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+
+if [[ ${java_version} == '1.8.'* ]]
+then
+  add_opens=()
+else
+  major_java_version=${java_version%%[.-]*}
+
+  if [ "$major_java_version" -lt 15 ]
+  then
+    java_options+=(-XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0)
+  fi
+
+  add_opens=(
+  --add-opens
+  java.base/sun.nio.ch=ALL-UNNAMED
+  --add-opens
+  java.base/java.util.zip=ALL-UNNAMED)
+fi
+
+jvm_opts=()
+
+if [ -n "$JVM_OPTS" ]
+then
+  IFS=' ';
+  read -ra jvm_opts <<< "$JVM_OPTS"
+  unset IFS;
+fi
+
+exec "${JAVA_HOME}/bin/java" \
   -cp "$DIR/../benchmarks-all/build/libs/benchmarks.jar" \
-  -XX:+UnlockExperimentalVMOptions \
-  -XX:+TrustFinalNonStaticFields \
-  -XX:+UnlockDiagnosticVMOptions \
-  -XX:GuaranteedSafepointInterval=300000 \
-  -XX:+UseBiasedLocking \
-  -XX:BiasedLockingStartupDelay=0 \
-  -XX:+UseParallelOldGC \
-  -Xms8G \
-  -Xmx8G \
-  -XX:+AlwaysPreTouch \
-  -XX:MaxMetaspaceSize=1G \
-  -XX:ReservedCodeCacheSize=1G \
-  ${JVM_OPTS} \
+  "${java_options[@]}" \
+  "${add_opens[@]}" \
+  "${jvm_opts[@]}" \
   "$@"

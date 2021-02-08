@@ -20,7 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
-import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.NoOpLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,8 +27,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.real_logic.benchmarks.remote.Configuration;
+import uk.co.real_logic.benchmarks.remote.LoadTestRig;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -39,7 +40,7 @@ import static io.aeron.driver.Configuration.DIR_DELETE_ON_START_PROP_NAME;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.LangUtil.rethrowUnchecked;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchArchivingMediaDriver;
 
@@ -105,16 +106,17 @@ class ClusterTest
         setProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME, "aeron:ipc?term-length=64k");
 
         final Configuration configuration = new Configuration.Builder()
-            .numberOfMessages(messages)
+            .warmUpIterations(0)
+            .iterations(2)
+            .messageRate(messages)
             .messageLength(messageLength)
             .messageTransceiverClass(ClusterMessageTransceiver.class)
+            .batchSize(burstSize)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("aeron")
             .build();
 
         final AtomicReference<Throwable> error = new AtomicReference<>();
-        final LongArrayList receivedTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
-        final LongArrayList sentTimestamps = new LongArrayList(messages, Long.MIN_VALUE);
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
@@ -152,69 +154,15 @@ class ClusterTest
             ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
                 serviceContainerContext))
         {
-            final MessageTransceiver messageTransceiver = new ClusterMessageTransceiver(
-                null,
-                aeronClusterContext,
-                (timestamp, checksum) ->
-                {
-                    assertEquals(-timestamp, checksum);
-                    receivedTimestamps.addLong(timestamp);
-                });
+            final MessageTransceiver messageTransceiver = new ClusterMessageTransceiver(null, aeronClusterContext);
 
-            messageTransceiver.init(configuration);
-            try
-            {
-                int sent = 0;
-                long timestamp = 1_000;
-                while (sent < messages || receivedTimestamps.size() < messages)
-                {
-                    if (Thread.interrupted())
-                    {
-                        throw new IllegalStateException("run cancelled!");
-                    }
-
-                    if (sent < messages)
-                    {
-                        int sentBatch = 0;
-                        do
-                        {
-                            sentBatch += messageTransceiver.send(
-                                burstSize - sentBatch, messageLength, timestamp, -timestamp);
-                            messageTransceiver.receive();
-                        }
-                        while (sentBatch < burstSize);
-
-                        for (int i = 0; i < burstSize; i++)
-                        {
-                            sentTimestamps.add(timestamp);
-                        }
-
-                        sent += burstSize;
-                        timestamp++;
-                    }
-
-                    if (receivedTimestamps.size() < messages)
-                    {
-                        messageTransceiver.receive();
-                    }
-
-                    if (null != error.get())
-                    {
-                        rethrowUnchecked(error.get());
-                    }
-                }
-            }
-            finally
-            {
-                messageTransceiver.destroy();
-            }
+            final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
+            loadTestRig.run();
         }
 
         if (null != error.get())
         {
             rethrowUnchecked(error.get());
         }
-
-        assertEquals(sentTimestamps, receivedTimestamps);
     }
 }

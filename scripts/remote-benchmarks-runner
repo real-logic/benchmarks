@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2021 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+required_vars=(
+  "SSH_USER"
+  "SSH_NODE_1"
+  "SSH_NODE_2")
+
+for var in "${required_vars[@]}"; do
+  if [[ -z "${!var}" ]]
+  then
+    echo "env var $var must be set"
+    required_var_missing=true
+  fi
+done
+
+if [ -n "$required_var_missing" ];
+then
+  exit 1
+fi
+
+if [ -z "$RUNS" ];
+then
+  RUNS=3
+fi
+
+if [ -z "$ITERATIONS" ];
+then
+  ITERATIONS=10
+fi
+
+if [ -z "$MESSAGE_RATE" ];
+then
+  MESSAGE_RATE=(100000)
+fi
+
+if [ -z "$BURST_SIZE" ];
+then
+  BURST_SIZE=(1 10)
+fi
+
+if [ -z "$MESSAGE_LENGTH" ];
+then
+  MESSAGE_LENGTH=(32 224 1376)
+fi
+
+function run_benchmarks()
+{
+  local client_command="$1"
+  local server_start_command="$2"
+  local server_stop_command="$3"
+  local config=("${@:4}")
+
+  for messageRate in "${MESSAGE_RATE[@]}"
+  do
+    for burstSize in "${BURST_SIZE[@]}"
+    do
+      for messageLength in "${MESSAGE_LENGTH[@]}"
+      do
+        for (( i=1; i<=RUNS; i++ ))
+        do
+          echo -e '\n### Benchmark run #'$i' ...\n'
+
+          local config_options=("${config[@]}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.messageRate=${messageRate# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burstSize# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${messageLength# }")
+
+          local jvm_opts="export JVM_OPTS=\""
+          for opt in "${config_options[@]}";
+          do
+            jvm_opts+="-D$opt "
+          done
+          jvm_opts="${jvm_opts%?}\""
+
+          echo -e "\nStarting server..."
+          ssh $SSH_USER@$SSH_NODE_2 "($server_start_command &) > /dev/null 2>&1 && exit"
+
+          echo -e "\nStarting client..."
+          ssh $SSH_USER@$SSH_NODE_1 "$jvm_opts && $client_command && exit"
+
+          echo -e "\nStopping server..."
+          ssh $SSH_USER@$SSH_NODE_2 "$server_stop_command && exit"
+        done
+      done
+    done
+  done
+}
+
+function download_results()
+{
+  local archive="/home/$SSH_USER/$1"
+  local results_dir="$2"
+  local dest_dir="$3"
+
+  ssh $SSH_USER@$SSH_NODE_1 "rm -f \"$archive\"; cd \"$results_dir\" && zip -r \"$archive\" . && exit"
+  scp $SSH_USER@$SSH_NODE_1:"$archive" "$dest_dir"
+}
+
+function await_process_start()
+{
+  local pid=$1
+  echo "pid=$pid; while [ -z \"\$pid\" ]; do sleep 0.5; pid=$pid; done; echo \"pid=\$pid\""
+}
+
+function find_java_process()
+{
+  local class_name=$1
+  echo "\$(pgrep -l -f '$class_name' | awk '/java/{print \$1}')"
+}
+
+function await_java_process_start()
+{
+  local class_name=$1
+  await_process_start "$(find_java_process "$class_name")"
+}
+
+function pin_thread()
+{
+  local pid=$1
+  local thread_name=$2
+  local core=$3
+  local tid="\$(ps Ho tid,comm -p $pid | awk '/$thread_name/{print \$1}')"
+  echo "tid=$tid; while [ -z \"\$tid\" ]; do sleep 0.1; tid=$tid; done; echo \"tid_$thread_name=\$tid\"; taskset -p -c $core \$tid"
+}
+
+function kill_java_process()
+{
+  local class_name=$1
+  echo "kill -9 $(find_java_process "$class_name")"
+}

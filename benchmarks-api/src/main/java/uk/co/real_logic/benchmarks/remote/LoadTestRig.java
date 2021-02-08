@@ -16,19 +16,19 @@
 package uk.co.real_logic.benchmarks.remote;
 
 import org.agrona.LangUtil;
+import org.agrona.PropertyAction;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static uk.co.real_logic.benchmarks.remote.MessageTransceiverBase.CHECKSUM;
 
 /**
  * {@code LoadTestRig} class is the core of the RTT benchmark. It is responsible for running benchmark against provided
@@ -37,62 +37,48 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public final class LoadTestRig
 {
     static final int MINIMUM_NUMBER_OF_CPU_CORES = 6;
-    static final long CHECKSUM = ThreadLocalRandom.current().nextLong();
 
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
     private final Configuration configuration;
     private final MessageTransceiver messageTransceiver;
-    private final NanoClock clock;
     private final PrintStream out;
-    private final PersistedHistogram histogram;
+    private final NanoClock clock;
+    private final PersistedHistogram persistedHistogram;
     private final int availableProcessors;
-    private long receivedMessages;
 
     public LoadTestRig(final Configuration configuration)
     {
+        this(configuration, createTransceiver(configuration), System.out);
+    }
+
+    public LoadTestRig(
+        final Configuration configuration,
+        final MessageTransceiver messageTransceiver,
+        final PrintStream out)
+    {
         this(
             configuration,
-            SystemNanoClock.INSTANCE,
-            System.out, new PersistedHistogram(),
-            Runtime.getRuntime().availableProcessors(),
-            messageRecorder ->
-            {
-                final Class<? extends MessageTransceiver> messageTransceiverClass =
-                    requireNonNull(configuration.messageTransceiverClass());
-                try
-                {
-                    return messageTransceiverClass.getConstructor(MessageRecorder.class).newInstance(messageRecorder);
-                }
-                catch (final ReflectiveOperationException ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                    throw new Error();
-                }
-            });
+            messageTransceiver,
+            out,
+            messageTransceiver.clock,
+            new PersistedHistogram(messageTransceiver.histogram),
+            Runtime.getRuntime().availableProcessors()
+        );
     }
 
     LoadTestRig(
         final Configuration configuration,
-        final NanoClock clock,
+        final MessageTransceiver messageTransceiver,
         final PrintStream out,
-        final PersistedHistogram histogram,
-        final int availableProcessors,
-        final Function<MessageRecorder, MessageTransceiver> messageTransceiverSupplier)
+        final NanoClock clock,
+        final PersistedHistogram persistedHistogram,
+        final int availableProcessors)
     {
         this.configuration = requireNonNull(configuration);
-        this.clock = requireNonNull(clock);
+        this.messageTransceiver = requireNonNull(messageTransceiver);
         this.out = requireNonNull(out);
-        this.histogram = requireNonNull(histogram);
-        this.messageTransceiver = messageTransceiverSupplier.apply(
-            (timestamp, checksum) ->
-            {
-                if (CHECKSUM != checksum)
-                {
-                    throw new IllegalStateException("Invalid checksum: expected=" + CHECKSUM + ", actual=" + checksum);
-                }
-                histogram.recordValue(clock.nanoTime() - timestamp);
-                receivedMessages++;
-            });
+        this.clock = requireNonNull(clock);
+        this.persistedHistogram = requireNonNull(persistedHistogram);
         this.availableProcessors = availableProcessors;
     }
 
@@ -114,25 +100,25 @@ public final class LoadTestRig
                 out.printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload and a" +
                     " burst size of %,d...%n",
                     configuration.warmUpIterations(),
-                    configuration.numberOfMessages(),
+                    configuration.messageRate(),
                     configuration.messageLength(),
                     configuration.batchSize());
-                send(configuration.warmUpIterations(), configuration.numberOfMessages());
+                send(configuration.warmUpIterations(), configuration.messageRate());
 
-                receivedMessages = 0;
-                histogram.reset();
+                messageTransceiver.reset();
             }
 
             // Measurement
             out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload and a" +
                 " burst size of %,d...%n",
                 configuration.iterations(),
-                configuration.numberOfMessages(),
+                configuration.messageRate(),
                 configuration.messageLength(),
                 configuration.batchSize());
-            final long sentMessages = send(configuration.iterations(), configuration.numberOfMessages());
+            final long sentMessages = send(configuration.iterations(), configuration.messageRate());
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
+            final PersistedHistogram histogram = persistedHistogram;
             histogram.outputPercentileDistribution(out, 1000.0);
 
             warnIfInsufficientCpu();
@@ -150,6 +136,7 @@ public final class LoadTestRig
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final NanoClock clock = this.clock;
+        final AtomicLong receivedMessages = messageTransceiver.receivedMessages;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.idleStrategy();
@@ -167,7 +154,6 @@ public final class LoadTestRig
         while (true)
         {
             final int sent = messageTransceiver.send(batchSize, messageSize, timestamp, CHECKSUM);
-            messageTransceiver.receive();
 
             sentMessages += sent;
             if (totalNumberOfMessages == sentMessages)
@@ -184,17 +170,26 @@ public final class LoadTestRig
                 if (now < timestamp && now < endTime)
                 {
                     idleStrategy.reset();
+                    long received = 0;
                     do
                     {
-                        final long receivedMessages = this.receivedMessages;
-                        messageTransceiver.receive();
-                        if (receivedMessages == this.receivedMessages)
+                        if (received < sentMessages)
                         {
-                            idleStrategy.idle();
+                            messageTransceiver.receive();
+                            final long updatedReceived = receivedMessages.get();
+                            if (updatedReceived == received)
+                            {
+                                idleStrategy.idle();
+                            }
+                            else
+                            {
+                                received = updatedReceived;
+                                idleStrategy.reset();
+                            }
                         }
                         else
                         {
-                            idleStrategy.reset();
+                            idleStrategy.idle();
                         }
                         now = clock.nanoTime();
                     }
@@ -204,6 +199,7 @@ public final class LoadTestRig
             else
             {
                 batchSize -= sent;
+                messageTransceiver.receive();
             }
 
             if (now >= endTime)
@@ -218,21 +214,19 @@ public final class LoadTestRig
             }
         }
 
-        while (true)
+        idleStrategy.reset();
+        long received = receivedMessages.get();
+        while (received < sentMessages)
         {
-            final long receivedMessages = this.receivedMessages;
-            if (receivedMessages >= sentMessages)
-            {
-                break;
-            }
-
             messageTransceiver.receive();
-            if (receivedMessages == this.receivedMessages)
+            final long updatedReceived = receivedMessages.get();
+            if (updatedReceived == received)
             {
                 idleStrategy.idle();
             }
             else
             {
+                received = updatedReceived;
                 idleStrategy.reset();
             }
         }
@@ -264,7 +258,7 @@ public final class LoadTestRig
 
     private void warnIfTargetRateNotAchieved(final long sentMessages)
     {
-        final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.numberOfMessages();
+        final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.messageRate();
         if (sentMessages < expectedTotalNumberOfMessages)
         {
             out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
@@ -273,11 +267,26 @@ public final class LoadTestRig
         }
     }
 
+    private static MessageTransceiver createTransceiver(final Configuration configuration)
+    {
+        try
+        {
+            return configuration.messageTransceiverClass().getConstructor().newInstance();
+        }
+        catch (final ReflectiveOperationException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+            throw new Error();
+        }
+    }
+
     public static void main(final String[] args) throws Exception
     {
-        SystemUtil.loadPropertiesFiles(args);
+        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         final Configuration configuration = Configuration.fromSystemProperties();
+
+        Thread.currentThread().setName("load-test-rig");
         new LoadTestRig(configuration).run();
     }
 }

@@ -21,7 +21,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,10 +54,9 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         return EchoMessageTransceiver.class;
     }
 
-    protected EchoMessageTransceiver createMessageTransceiver(
-        final MediaDriver mediaDriver, final Aeron aeron, final MessageRecorder messageRecorder)
+    protected EchoMessageTransceiver createMessageTransceiver(final MediaDriver mediaDriver, final Aeron aeron)
     {
-        return new EchoMessageTransceiver(mediaDriver, aeron, false, messageRecorder);
+        return new EchoMessageTransceiver(mediaDriver, aeron, false);
     }
 
     @AfterEach

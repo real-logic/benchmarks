@@ -18,14 +18,14 @@
 ##
 # Example: Invoking `benchmark-runner` from the `scripts` directory.
 #
-# $ ./benchmark-runner --output-file "echo-test" --messages "1000, 5000" --burst-size "1, 10" --message-length "32, 224, 1376" "aeron/echo-client"
+# $ ./benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,224,1376" "aeron/echo-client"
 ##
 
-RUNS=5
+RUNS=3
 ITERATIONS=10
-NUMBER_OF_MESSAGES=10000
-BURST_SIZE=1
-MESSAGE_LENGTH=32
+MESSAGE_RATE=(100000)
+BURST_SIZE=(1 10)
+MESSAGE_LENGTH=(32 224 1376)
 
 while [[ $# -gt 0 ]]
 do
@@ -36,9 +36,9 @@ do
       shift
       shift
       ;;
-    -m|--messages)
+    -m|--message-rate)
       IFS=',';
-      read -ra NUMBER_OF_MESSAGES <<< "$2"
+      read -ra MESSAGE_RATE <<< "$2"
       unset IFS;
       shift
       shift
@@ -68,7 +68,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "$0 (-o|--output-file) \"\$output-file-name-prefix\" [(-m|--messages) \"\$number-of-messages-csv\"] [(-b|--burst-size) \"\$burst-size-csv\"] [(-l|--message-length) \"\$message-length-in-bytes-csv\"] [(-i|--iterations) \$iterations] [(-r|--runs) \$runs] \"\$command \$cmdArg1 ...\""
+      echo "$0 (-o|--output-file) \"\$output-file-name-prefix\" [(-m|--message-rate) \"\$message-rate-csv\"] [(-b|--burst-size) \"\$burst-size-csv\"] [(-l|--message-length) \"\$message-length-in-bytes-csv\"] [(-i|--iterations) \$iterations] [(-r|--runs) \$runs] \"\$command \$cmdArg1 ...\""
       exit
       ;;
     *)
@@ -86,11 +86,11 @@ fi
 
 EXISTING_JVM_OPTS=$JVM_OPTS
 
-for messages in "${NUMBER_OF_MESSAGES[@]}"
+for messageRate in "${MESSAGE_RATE[@]}"
 do
   for burst in "${BURST_SIZE[@]}"
   do
-    for length in "${MESSAGE_LENGTH[@]}"
+    for messageLength in "${MESSAGE_LENGTH[@]}"
     do
       for (( r=1; r<=RUNS; r++ ))
       do
@@ -101,9 +101,9 @@ do
         JVM_OPTS="$EXISTING_JVM_OPTS \
         -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${OUTPUT_FILE_NAME} \
         -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
-        -Duk.co.real_logic.benchmarks.remote.messages=${messages# } \
+        -Duk.co.real_logic.benchmarks.remote.messageRate=${messageRate# } \
         -Duk.co.real_logic.benchmarks.remote.batchSize=${burst# } \
-        -Duk.co.real_logic.benchmarks.remote.messageLength=${length# }" \
+        -Duk.co.real_logic.benchmarks.remote.messageLength=${messageLength# }" \
          ${COMMAND}
       done
     done

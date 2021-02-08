@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2021 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+if [ -z "$MESSAGE_RATE" ];
+then
+  export MESSAGE_RATE=25000
+fi
+
+source "${DIR}/../remote-benchmarks-runner"
+
+required_vars=(
+  "CLIENT_BENCHMARKS_PATH"
+  "CLIENT_JAVA_HOME"
+  "CLIENT_LOAD_TEST_RIG_CPU_CORE_1"
+  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
+  "SERVER_BENCHMARKS_PATH"
+  "SERVER_JAVA_HOME"
+  "SERVER_HOST"
+  "SERVER_ZOOKEEPER_CPU_CORES"
+  "SERVER_KAFKA_CPU_CORES"
+  "SERVER_KAFKA_DIR")
+
+for var in "${required_vars[@]}"; do
+  if [[ -z "${!var}" ]]
+  then
+    echo "env var $var must be set"
+    required_var_missing=true
+  fi
+done
+
+if [ -n "$required_var_missing" ];
+then
+  exit 1
+fi
+
+security_protocols=("PLAINTEXT" "SSL")
+command_wrappers=("" "onload --profile=latency --force-profiles")
+
+while [[ $# -gt 0 ]]
+do
+  case "$1" in
+    --no-ssl)
+      security_protocols=("PLAINTEXT")
+      shift
+      ;;
+    --no-onload)
+      command_wrappers=("")
+      shift
+      ;;
+    -h|--help)
+      echo "$0 [--no-ssl] [--no-onload]"
+      exit
+      ;;
+    *)
+      echo "Invalid parameter. Use --help to get a list of supported parameters."
+      exit 1
+      ;;
+  esac
+done
+
+plain_text_port=13592
+ssl_port=13593
+for protocol in "${security_protocols[@]}"
+do
+  for onload in "${command_wrappers[@]}"
+  do
+    for flush in "" "1"
+    do
+      scenario="kafka"
+      flush_messages_prop=""
+
+      if [ -n "$flush" ]
+      then
+          flush_messages_prop="flush.messages=$flush"
+          scenario="$scenario-flush-$flush"
+      else
+          scenario="$scenario-no-flush"
+      fi
+
+      if [ -n "$onload" ]
+      then
+          scenario="$scenario-onload"
+      fi
+
+      if [ "$protocol" == "PLAINTEXT" ]
+      then
+        port=$plain_text_port
+      else
+        scenario="$scenario-ssl"
+        port=$ssl_port
+      fi
+
+      echo -e "\n Testing scenario: '$scenario'\n"
+
+      start_client="export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
+      ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
+      ; taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $onload $CLIENT_BENCHMARKS_PATH/scripts/kafka/client &
+      $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
+      $(pin_thread \$pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
+      && wait \$!"
+
+      server_scripts_path="$SERVER_BENCHMARKS_PATH/scripts/kafka"
+      start_zookeeper="cp $server_scripts_path/zookeeper.properties $server_scripts_path/zookeeper.properties.bak \
+      && echo \"dataDir=$SERVER_KAFKA_DIR/zookeeper\" >> $server_scripts_path/zookeeper.properties \
+      && export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
+      && taskset -c $SERVER_ZOOKEEPER_CPU_CORES $onload $server_scripts_path/zookeeper-start"
+
+      start_kafka="cp $server_scripts_path/server.properties $server_scripts_path/server.properties.bak \
+      && echo -e \"log.dirs=$SERVER_KAFKA_DIR/logs\n\
+      ssl.truststore.location=$SERVER_BENCHMARKS_PATH/certificates/truststore.p12\n\
+      ssl.keystore.location=$SERVER_BENCHMARKS_PATH/certificates/server.keystore\n\
+      advertised.listeners=PLAINTEXT://$SERVER_HOST:$plain_text_port,SSL://$SERVER_HOST:$ssl_port\" >> $server_scripts_path/server.properties \
+      && export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
+      && taskset -c $SERVER_KAFKA_CPU_CORES $onload $server_scripts_path/kafka-start"
+
+      stop_server="export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
+      && KAFKA_DATA_DIR=\"$SERVER_KAFKA_DIR\" $server_scripts_path/stop-all; \
+      mv $server_scripts_path/zookeeper.properties.bak $server_scripts_path/zookeeper.properties; \
+      mv $server_scripts_path/server.properties.bak $server_scripts_path/server.properties"
+
+      run_benchmarks \
+        "$start_client" \
+        "$stop_server; $start_zookeeper & $start_kafka" \
+        "$stop_server" \
+        "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$scenario" \
+        "uk.co.real_logic.benchmarks.remote.outputDirectory=$CLIENT_BENCHMARKS_PATH/scripts/results" \
+        "bootstrap.servers=$SERVER_HOST:$port" \
+        "security.protocol=$protocol" \
+        "ssl.truststore.location=$CLIENT_BENCHMARKS_PATH/certificates/truststore.p12" \
+        "ssl.keystore.location=$CLIENT_BENCHMARKS_PATH/certificates/client.keystore" \
+        "$flush_messages_prop"
+    done
+  done
+done
+
+download_results "kafka-results.zip" "$CLIENT_BENCHMARKS_PATH/scripts/results" "$DIR/.."

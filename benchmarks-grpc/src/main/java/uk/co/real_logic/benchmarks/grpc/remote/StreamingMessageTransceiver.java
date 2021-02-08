@@ -22,7 +22,6 @@ import io.grpc.stub.StreamObserver;
 import org.agrona.LangUtil;
 import uk.co.real_logic.benchmarks.grpc.remote.EchoBenchmarksGrpc.EchoBenchmarksStub;
 import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,11 +37,6 @@ public class StreamingMessageTransceiver extends MessageTransceiver
     private ClientCallStreamObserver<EchoMessage> requestObserver;
     private EchoMessage.Builder messageBuilder;
     private ByteString payload;
-
-    public StreamingMessageTransceiver(final MessageRecorder messageRecorder)
-    {
-        super(messageRecorder);
-    }
 
     public void init(final Configuration configuration)
     {

@@ -19,14 +19,14 @@ setlocal EnableExtensions EnableDelayedExpansion
 rem
 rem Example: Invoking `benchmark-runner` from the `scripts` directory.
 rem
-rem $ benchmark-runner --output-file "echo-test" --messages "1000, 5000" --burst-size "1, 10" --message-length "32, 224, 1376" "aeron\echo-client"
+rem $ benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,224,1376" "aeron\echo-client"
 rem
 
-set RUNS=5
+set RUNS=3
 set ITERATIONS=10
-set NUMBER_OF_MESSAGES=10000
-set BURST_SIZE=1
-set MESSAGE_LENGTH=32
+set MESSAGE_RATE=100000
+set BURST_SIZE="1,10"
+set MESSAGE_LENGTH="32,224,1376"
 
 :loop
 if not "%1"=="" (
@@ -38,10 +38,10 @@ if not "%1"=="" (
   )
 
   set "FLAG="
-  if "%1"=="--messages" set FLAG=1
+  if "%1"=="--message-rate" set FLAG=1
   if "%1"=="-m" set FLAG=1
   if defined FLAG (
-      set "NUMBER_OF_MESSAGES=%2";
+      set "MESSAGE_RATE=%2";
   )
 
   set "FLAG="
@@ -76,7 +76,7 @@ if not "%1"=="" (
   if "%1"=="--help" set FLAG=1
   if "%1"=="-h" set FLAG=1
   if defined FLAG (
-      echo "%0 (-o|--output-file) ^"\$output-file-name-prefix\" [(-m|--messages) ^"\$number-of-messages-csv\"] [(-b|--burst-size) ^"\$burst-size-csv\"] [(-l|--message-length) ^"\$message-length-in-bytes-csv\"] [(-i|--iterations) ^$iterations] [(-r|--runs) ^$runs] ^"\$command ^$cmdArg1 ...\""
+      echo "%0 (-o|--output-file) ^"\$output-file-name-prefix\" [(-m|--message-rate) ^"\$message-rate-csv\"] [(-b|--burst-size) ^"\$burst-size-csv\"] [(-l|--message-length) ^"\$message-length-in-bytes-csv\"] [(-i|--iterations) ^$iterations] [(-r|--runs) ^$runs] ^"\$command ^$cmdArg1 ...\""
       exit /b
   )
 
@@ -90,7 +90,7 @@ if [%OUTPUT_FILE_NAME%] == [] (
   exit -1
 )
 
-for %%m in (%NUMBER_OF_MESSAGES%) do (
+for %%m in (%MESSAGE_RATE%) do (
   for %%b in (%BURST_SIZE%) do (
     for %%l in (%MESSAGE_LENGTH%) do (
       for /L %%r in (1,1,%RUNS%) do (
@@ -103,7 +103,7 @@ for %%m in (%NUMBER_OF_MESSAGES%) do (
 
         set JVM_OPTS=-Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=%OUTPUT_FILE_NAME% ^
         -Duk.co.real_logic.benchmarks.remote.iterations=%ITERATIONS% ^
-        -Duk.co.real_logic.benchmarks.remote.messages=%%m ^
+        -Duk.co.real_logic.benchmarks.remote.messageRate=%%m ^
         -Duk.co.real_logic.benchmarks.remote.batchSize=%%b ^
         -Duk.co.real_logic.benchmarks.remote.messageLength=%%l
 

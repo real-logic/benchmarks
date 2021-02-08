@@ -24,7 +24,6 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import static io.aeron.ChannelUri.addSessionId;
@@ -63,18 +62,16 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     private Subscription subscription;
     private Image image;
 
-    public LiveRecordingMessageTransceiver(final MessageRecorder messageRecorder)
+    public LiveRecordingMessageTransceiver()
     {
-        this(launchArchivingMediaDriver(), connect(), true, messageRecorder);
+        this(launchArchivingMediaDriver(), connect(), true);
     }
 
     LiveRecordingMessageTransceiver(
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
-        final boolean ownsArchiveClient,
-        final MessageRecorder messageRecorder)
+        final boolean ownsArchiveClient)
     {
-        super(messageRecorder);
         this.archivingMediaDriver = archivingMediaDriver;
         this.aeronArchive = aeronArchive;
         this.ownsArchiveClient = ownsArchiveClient;

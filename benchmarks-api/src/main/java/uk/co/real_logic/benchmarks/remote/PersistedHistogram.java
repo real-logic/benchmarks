@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import static java.nio.file.Files.find;
 import static java.nio.file.Files.isRegularFile;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.HOURS;
 import static org.agrona.AsciiEncoding.parseIntAscii;
 
 final class PersistedHistogram
@@ -38,33 +37,9 @@ final class PersistedHistogram
 
     private final Histogram histogram;
 
-    PersistedHistogram()
-    {
-        this(new Histogram(HOURS.toNanos(1), 3));
-    }
-
     PersistedHistogram(final Histogram histogram)
     {
         this.histogram = histogram;
-    }
-
-    /**
-     * Discard recorder values.
-     */
-    public void reset()
-    {
-        histogram.reset();
-    }
-
-    /**
-     * Record a value in the histogram.
-     *
-     * @param value RTT value to be recorded.
-     * @throws ArrayIndexOutOfBoundsException (may throw) if value is exceeds highestTrackableValue
-     */
-    public void recordValue(final long value)
-    {
-        histogram.recordValue(value);
     }
 
     /**

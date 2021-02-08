@@ -47,7 +47,7 @@ import static org.agrona.Strings.isEmpty;
  * A {@code Configuration} instance can be created using the {@link Builder} class, e.g.:
  * <pre>
  *    final Configuration.Builder builder = new Configuration.Builder();
- *    build.numberOfMessages(1000);
+ *    build.messageRate(1000);
  *    ...
  *    final Configuration configuration = builder.build();
  * </pre>
@@ -96,9 +96,9 @@ public final class Configuration
      * Name of the required system property to configure the number of messages to be sent during the measurement
      * iterations.
      *
-     * @see #numberOfMessages()
+     * @see #messageRate()
      */
-    public static final String MESSAGES_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messages";
+    public static final String MESSAGE_RATE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messageRate";
 
     /**
      * Name of the system property to configure the batch size, i.e. number of messages to be sent in a single burst.
@@ -157,7 +157,7 @@ public final class Configuration
 
     private final int warmUpIterations;
     private final int iterations;
-    private final int numberOfMessages;
+    private final int messageRate;
     private final int batchSize;
     private final int messageLength;
     private final Class<? extends MessageTransceiver> messageTransceiverClass;
@@ -169,7 +169,7 @@ public final class Configuration
     {
         this.warmUpIterations = checkMinValue(builder.warmUpIterations, 0, "Warm-up iterations");
         this.iterations = checkMinValue(builder.iterations, 1, "Iterations");
-        this.numberOfMessages = checkMinValue(builder.numberOfMessages, 1, "Number of messages");
+        this.messageRate = checkMinValue(builder.messageRate, 1, "Message rate");
         this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
         this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
@@ -200,15 +200,15 @@ public final class Configuration
     }
 
     /**
-     * Number of messages per measurement iteration.
+     * Number of messages to be sent per iteration.
      *
-     * @return number of messages per measurement iteration.
+     * @return target message rate per iteration.
      * @implNote Actual number of messages sent can be less than this number if the underlying system is not capable
      * of achieving the target send rate.
      */
-    public int numberOfMessages()
+    public int messageRate()
     {
-        return numberOfMessages;
+        return messageRate;
     }
 
     /**
@@ -281,7 +281,7 @@ public final class Configuration
         return "Configuration{" +
             "\n    warmUpIterations=" + warmUpIterations +
             "\n    iterations=" + iterations +
-            "\n    numberOfMessages=" + numberOfMessages +
+            "\n    messageRate=" + messageRate +
             "\n    batchSize=" + batchSize +
             "\n    messageLength=" + messageLength +
             "\n    messageTransceiverClass=" + messageTransceiverClass.getName() +
@@ -302,7 +302,7 @@ public final class Configuration
         final StringBuilder builder = new StringBuilder(prefix.length() + 98);
 
         builder.append(prefix)
-            .append("_").append(numberOfMessages)
+            .append("_").append(messageRate)
             .append("_").append(batchSize)
             .append("_").append(messageLength)
             .append("_").append(computeSha256(systemProperties));
@@ -316,7 +316,7 @@ public final class Configuration
     {
         private int warmUpIterations = DEFAULT_WARM_UP_ITERATIONS;
         private int iterations = DEFAULT_ITERATIONS;
-        private int numberOfMessages;
+        private int messageRate;
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
         private Class<? extends MessageTransceiver> messageTransceiverClass;
@@ -350,14 +350,14 @@ public final class Configuration
         }
 
         /**
-         * Set the number of messages per measurement iteration.
+         * Set the target message rate per iteration.
          *
-         * @param numberOfMessages per measurement iteration.
+         * @param messageRate number of messages to be sent per iterations.
          * @return this for a fluent API.
          */
-        public Builder numberOfMessages(final int numberOfMessages)
+        public Builder messageRate(final int messageRate)
         {
-            this.numberOfMessages = numberOfMessages;
+            this.messageRate = messageRate;
             return this;
         }
 
@@ -490,7 +490,7 @@ public final class Configuration
         }
 
         builder
-            .numberOfMessages(intProperty(MESSAGES_PROP_NAME))
+            .messageRate(intProperty(MESSAGE_RATE_PROP_NAME))
             .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class))
             .outputFileNamePrefix(getPropertyValue(OUTPUT_FILE_NAME_PREFIX_PROP_NAME));
 
@@ -502,7 +502,7 @@ public final class Configuration
      *
      * @return directory where TLS certificates are stored.
      */
-    public static Path certificatesDirectory()
+    public static Path tryResolveCertificatesDirectory()
     {
         final Path userDir = Paths.get(getProperty("user.dir"));
         Path certificatesDir = userDir.resolve("certificates");
@@ -541,7 +541,7 @@ public final class Configuration
 
         try
         {
-            final Constructor<? extends MessageTransceiver> constructor = klass.getConstructor(MessageRecorder.class);
+            final Constructor<? extends MessageTransceiver> constructor = klass.getConstructor();
             if (isPublic(constructor.getModifiers()))
             {
                 return klass;
@@ -551,8 +551,7 @@ public final class Configuration
         {
         }
 
-        throw new IllegalArgumentException(
-            "MessageTransceiver class must have a public constructor with a MessageRecorder parameter");
+        throw new IllegalArgumentException("MessageTransceiver class must have a zero-arg public constructor");
     }
 
     private static boolean isPropertyProvided(final String propName)
@@ -615,7 +614,7 @@ public final class Configuration
         {
             throw new IllegalArgumentException(
                 "invalid IdleStrategy property '" + IDLE_STRATEGY_PROP_NAME + "', cause: " +
-                ex.getCause().getMessage());
+                    ex.getCause().getMessage());
         }
     }
 

@@ -22,6 +22,7 @@ import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.PropertyAction;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -134,15 +135,12 @@ public final class EchoNode implements AutoCloseable, Runnable
     public void run()
     {
         final FragmentHandler[] fragmentHandlers = this.fragmentHandlers;
-        final ExclusivePublication[] publications = this.publications;
         final Subscription[] subscriptions = this.subscriptions;
         final Image[] images = this.images;
-        final Subscription[] passiveSubscriptions = this.passiveSubscriptions;
         final Image[] passiveImages = this.passiveImages;
 
         final IdleStrategy idleStrategy = idleStrategy();
 
-        final boolean reconnectIfImageClosed = reconnectIfImageClosed();
         final int passiveChannelsPollFrequency = passiveChannelsPollFrequency();
         final AtomicBoolean running = this.running;
 
@@ -180,18 +178,7 @@ public final class EchoNode implements AutoCloseable, Runnable
                 {
                     if (images[i].isClosed())
                     {
-                        if (!reconnectIfImageClosed)
-                        {
-                            return;  // Abort execution
-                        }
-                        while (!allConnected(subscriptions) ||
-                            !allConnected(publications) ||
-                            !allConnected(passiveSubscriptions))
-                        {
-                            yieldUninterruptedly();
-                        }
-                        reloadImages(subscriptions, images);
-                        reloadImages(passiveSubscriptions, passiveImages);
+                        return;  // Abort execution
                     }
                 }
             }
@@ -232,7 +219,7 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     public static void main(final String[] args)
     {
-        SystemUtil.loadPropertiesFiles(args);
+        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);

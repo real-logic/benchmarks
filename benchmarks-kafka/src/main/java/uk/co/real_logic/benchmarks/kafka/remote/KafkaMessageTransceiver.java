@@ -27,7 +27,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import java.time.Duration;
@@ -54,7 +53,7 @@ public class KafkaMessageTransceiver extends MessageTransceiver
     private static final short REPLICATION_FACTOR = 1;
     private static final Duration POLL_TIMEOUT = ofMillis(100);
 
-    final AtomicInteger outstandingRequests = new AtomicInteger();
+    final AtomicInteger outstandingRequests = new AtomicInteger(); // FIXME: Why AtomicInteger?
     final AtomicReference<Throwable> error = new AtomicReference<>();
     final Callback sendCallback =
         (metadata, exception) ->
@@ -80,11 +79,6 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 
     private KafkaConsumer<byte[], byte[]> consumer;
     private UnsafeBuffer receiverBuffer;
-
-    public KafkaMessageTransceiver(final MessageRecorder messageRecorder)
-    {
-        super(messageRecorder);
-    }
 
     public void init(final Configuration configuration)
     {

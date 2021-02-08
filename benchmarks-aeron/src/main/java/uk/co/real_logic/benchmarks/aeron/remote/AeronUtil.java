@@ -79,7 +79,6 @@ final class AeronUtil
         "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
     static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentLimit";
     static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idleStrategy";
-    static final String RECONNECT_IF_IMAGE_CLOSED = "uk.co.real_logic.benchmarks.aeron.remote.reconnectIfImageClosed";
     static final int FRAGMENT_LIMIT = getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
     static final ExclusivePublication[] EMPTY_PUBLICATIONS = new ExclusivePublication[0];
     static final Subscription[] EMPTY_SUBSCRIPTIONS = new Subscription[0];
@@ -215,11 +214,6 @@ final class AeronUtil
         }
     }
 
-    static boolean reconnectIfImageClosed()
-    {
-        return getBoolean(RECONNECT_IF_IMAGE_CLOSED);
-    }
-
     static MediaDriver launchEmbeddedMediaDriverIfConfigured()
     {
         if (embeddedMediaDriver())
@@ -303,30 +297,15 @@ final class AeronUtil
                     .commit();
             };
 
-        final boolean reconnectIfImageClosed = reconnectIfImageClosed();
-
-        Image image = subscription.imageAtIndex(0);
-
+        final Image image = subscription.imageAtIndex(0);
         while (true)
         {
             final int fragmentsRead = image.poll(dataHandler, FRAGMENT_LIMIT);
             if (0 == fragmentsRead)
             {
-                if (!running.get())
+                if (!running.get() || image.isClosed())
                 {
                     break;
-                }
-                else if (image.isClosed())
-                {
-                    if (!reconnectIfImageClosed)
-                    {
-                        break;
-                    }
-                    while (!subscription.isConnected() || !publication.isConnected())
-                    {
-                        yieldUninterruptedly();
-                    }
-                    image = subscription.imageAtIndex(0);
                 }
             }
 

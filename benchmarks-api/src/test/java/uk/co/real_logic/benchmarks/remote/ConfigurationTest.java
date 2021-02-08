@@ -76,7 +76,7 @@ class ConfigurationTest
     {
         final Configuration configuration = new Builder()
             .warmUpIterations(0)
-            .numberOfMessages(1_000)
+            .messageRate(1_000)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputFileNamePrefix("test")
             .build();
@@ -99,14 +99,14 @@ class ConfigurationTest
 
     @ParameterizedTest
     @ValueSource(ints = { -123, 0 })
-    void throwsIllegalArgumentExceptionIfNumberOfMessagesIsInvalid(final int numberOfMessages)
+    void throwsIllegalArgumentExceptionIfMessageRateIsInvalid(final int messageRate)
     {
         final Builder builder = new Builder()
-            .numberOfMessages(numberOfMessages);
+            .messageRate(messageRate);
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Number of messages cannot be less than 1, got: " + numberOfMessages, ex.getMessage());
+        assertEquals("Message rate cannot be less than 1, got: " + messageRate, ex.getMessage());
     }
 
     @ParameterizedTest
@@ -114,7 +114,7 @@ class ConfigurationTest
     void throwsIllegalArgumentExceptionIfBatchSizeIsInvalid(final int size)
     {
         final Builder builder = new Builder()
-            .numberOfMessages(1000)
+            .messageRate(1000)
             .batchSize(size);
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
@@ -127,7 +127,7 @@ class ConfigurationTest
     void throwsIllegalArgumentExceptionIfMessageLengthIsLessThanMinimumSize(final int length)
     {
         final Builder builder = new Builder()
-            .numberOfMessages(200)
+            .messageRate(200)
             .messageLength(length);
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
@@ -140,7 +140,7 @@ class ConfigurationTest
     void throwsNullPointerExceptionIfMessageTransceiverClassIsNull()
     {
         final Builder builder = new Builder()
-            .numberOfMessages(10);
+            .messageRate(10);
 
         final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
 
@@ -151,7 +151,7 @@ class ConfigurationTest
     void throwsIllegalArgumentExceptionIfMessageTransceiverClassIsAnAbstractClass()
     {
         final Builder builder = new Builder()
-            .numberOfMessages(10)
+            .messageRate(10)
             .messageTransceiverClass(MessageTransceiver.class);
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
@@ -163,12 +163,12 @@ class ConfigurationTest
     void throwsIllegalArgumentExceptionIfMessageTransceiverClassHasNoPublicConstructor()
     {
         final Builder builder = new Builder()
-            .numberOfMessages(10)
+            .messageRate(10)
             .messageTransceiverClass(TestNoPublicConstructorMessageTransceiver.class);
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("MessageTransceiver class must have a public constructor with a MessageRecorder parameter",
+        assertEquals("MessageTransceiver class must have a zero-arg public constructor",
             ex.getMessage());
     }
 
@@ -176,7 +176,7 @@ class ConfigurationTest
     void throwsNullPointerExceptionIfIdleStrategyIsNull()
     {
         final Builder builder = new Builder()
-            .numberOfMessages(4)
+            .messageRate(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .idleStrategy(null);
 
@@ -189,7 +189,7 @@ class ConfigurationTest
     void throwsNullPointerExceptionIfOutputDirectoryIsNull()
     {
         final Builder builder = new Builder()
-            .numberOfMessages(4)
+            .messageRate(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(null);
 
@@ -204,7 +204,7 @@ class ConfigurationTest
         final Path outputDirectory = Files.createTempFile(tempDir, "test", "file");
 
         final Builder builder = new Builder()
-            .numberOfMessages(4)
+            .messageRate(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(outputDirectory);
 
@@ -221,7 +221,7 @@ class ConfigurationTest
             PosixFilePermissions.asFileAttribute(EnumSet.of(PosixFilePermission.OWNER_READ)));
 
         final Builder builder = new Builder()
-            .numberOfMessages(4)
+            .messageRate(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(outputDirectory);
 
@@ -239,7 +239,7 @@ class ConfigurationTest
         final Path outputDirectory = rootDirectory.resolve("actual-dir");
 
         final Builder builder = new Builder()
-            .numberOfMessages(4)
+            .messageRate(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(outputDirectory);
 
@@ -252,7 +252,7 @@ class ConfigurationTest
     void throwsIllegalArgumentExceptionIfOutputFileNamePrefixIsEmpty(final @TempDir Path tempDir) throws IOException
     {
         final Builder builder = new Builder()
-            .numberOfMessages(4)
+            .messageRate(4)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
             .outputFileNamePrefix(" \t");
@@ -266,7 +266,7 @@ class ConfigurationTest
     void outputFileNamePrefixAddsHashValueComputedFromSystemProperties(final @TempDir Path tempDir)
     {
         final Configuration configuration = new Builder()
-            .numberOfMessages(12)
+            .messageRate(12)
             .batchSize(3)
             .messageLength(75)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -284,13 +284,13 @@ class ConfigurationTest
     void defaultOptions()
     {
         final Configuration configuration = new Builder()
-            .numberOfMessages(123)
+            .messageRate(123)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputFileNamePrefix("defaults")
             .systemProperties(new Properties())
             .build();
 
-        assertEquals(123, configuration.numberOfMessages());
+        assertEquals(123, configuration.messageRate());
         assertEquals(DEFAULT_WARM_UP_ITERATIONS, configuration.warmUpIterations());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
@@ -310,7 +310,7 @@ class ConfigurationTest
         final Configuration configuration = new Builder()
             .warmUpIterations(3)
             .iterations(11)
-            .numberOfMessages(666)
+            .messageRate(666)
             .batchSize(4)
             .messageLength(119)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -321,7 +321,7 @@ class ConfigurationTest
 
         assertEquals(3, configuration.warmUpIterations());
         assertEquals(11, configuration.iterations());
-        assertEquals(666, configuration.numberOfMessages());
+        assertEquals(666, configuration.messageRate());
         assertEquals(4, configuration.batchSize());
         assertEquals(119, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
@@ -336,7 +336,7 @@ class ConfigurationTest
         final Configuration configuration = new Builder()
             .warmUpIterations(4)
             .iterations(10)
-            .numberOfMessages(777)
+            .messageRate(777)
             .batchSize(2)
             .messageLength(64)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -348,7 +348,7 @@ class ConfigurationTest
         assertEquals("Configuration{" +
             "\n    warmUpIterations=4" +
             "\n    iterations=10" +
-            "\n    numberOfMessages=777" +
+            "\n    messageRate=777" +
             "\n    batchSize=2" +
             "\n    messageLength=64" +
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
@@ -366,25 +366,25 @@ class ConfigurationTest
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class, Configuration::fromSystemProperties);
 
-        assertEquals("property '" + MESSAGES_PROP_NAME + "' is required!", ex.getMessage());
+        assertEquals("property '" + MESSAGE_RATE_PROP_NAME + "' is required!", ex.getMessage());
     }
 
     @Test
     void fromSystemPropertiesThrowsIllegalArgumentExceptionIfNumberOfMessagesHasInvalidValue()
     {
-        setProperty(MESSAGES_PROP_NAME, "100x000");
+        setProperty(MESSAGE_RATE_PROP_NAME, "100x000");
 
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class, Configuration::fromSystemProperties);
 
-        assertEquals("non-integer value for property '" + MESSAGES_PROP_NAME +
+        assertEquals("non-integer value for property '" + MESSAGE_RATE_PROP_NAME +
             "', cause: 'x' is not a valid digit @ 3", ex.getMessage());
     }
 
     @Test
     void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessageTransceiverPropertyIsNotConfigured()
     {
-        setProperty(MESSAGES_PROP_NAME, "100");
+        setProperty(MESSAGE_RATE_PROP_NAME, "100");
 
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class, Configuration::fromSystemProperties);
@@ -395,7 +395,7 @@ class ConfigurationTest
     @Test
     void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessageTransceiverHasInvalidValue()
     {
-        setProperty(MESSAGES_PROP_NAME, "20");
+        setProperty(MESSAGE_RATE_PROP_NAME, "20");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, Integer.class.getName());
 
         final IllegalArgumentException ex = assertThrows(
@@ -409,12 +409,12 @@ class ConfigurationTest
     void fromSystemPropertiesDefaults()
     {
         setProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "test-out-prefix");
-        setProperty(MESSAGES_PROP_NAME, "42");
+        setProperty(MESSAGE_RATE_PROP_NAME, "42");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
 
         final Configuration configuration = fromSystemProperties();
 
-        assertEquals(42, configuration.numberOfMessages());
+        assertEquals(42, configuration.messageRate());
         assertEquals(DEFAULT_WARM_UP_ITERATIONS, configuration.warmUpIterations());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
@@ -429,7 +429,7 @@ class ConfigurationTest
     {
         setProperty(WARM_UP_ITERATIONS_PROP_NAME, "2");
         setProperty(ITERATIONS_PROP_NAME, "4");
-        setProperty(MESSAGES_PROP_NAME, "200");
+        setProperty(MESSAGE_RATE_PROP_NAME, "200");
         setProperty(BATCH_SIZE_PROP_NAME, "3");
         setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
@@ -442,7 +442,7 @@ class ConfigurationTest
 
         assertEquals(2, configuration.warmUpIterations());
         assertEquals(4, configuration.iterations());
-        assertEquals(200, configuration.numberOfMessages());
+        assertEquals(200, configuration.messageRate());
         assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
@@ -497,7 +497,7 @@ class ConfigurationTest
         Stream.of(
             WARM_UP_ITERATIONS_PROP_NAME,
             ITERATIONS_PROP_NAME,
-            MESSAGES_PROP_NAME,
+            MESSAGE_RATE_PROP_NAME,
             BATCH_SIZE_PROP_NAME,
             MESSAGE_LENGTH_PROP_NAME,
             MESSAGE_TRANSCEIVER_PROP_NAME,
@@ -514,9 +514,9 @@ class ConfigurationTest
 
     public static final class TestNoPublicConstructorMessageTransceiver extends MessageTransceiver
     {
-        private TestNoPublicConstructorMessageTransceiver(final MessageRecorder messageRecorder)
+        private TestNoPublicConstructorMessageTransceiver()
         {
-            super(messageRecorder);
+            super();
         }
 
         public void init(final Configuration configuration)
@@ -527,7 +527,7 @@ class ConfigurationTest
         {
         }
 
-        public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
+        public int send(final int messageRate, final int messageLength, final long timestamp, final long checksum)
         {
             return 0;
         }

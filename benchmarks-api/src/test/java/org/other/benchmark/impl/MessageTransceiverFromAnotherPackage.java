@@ -16,16 +16,10 @@
 package org.other.benchmark.impl;
 
 import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.MessageRecorder;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 public class MessageTransceiverFromAnotherPackage extends MessageTransceiver
 {
-    public MessageTransceiverFromAnotherPackage(final MessageRecorder messageRecorder)
-    {
-        super(messageRecorder);
-    }
-
     public void init(final Configuration configuration)
     {
     }

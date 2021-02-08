@@ -16,27 +16,39 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
+set "DIR=%~dp0"
+
 rem Kill Kafka process
-call :killJavaProcess Kafka
+call :killJavaProcess "kafka.Kafka"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 rem Kill Zookeeper process
-call :killJavaProcess QuorumPeerMain
+call :killJavaProcess "org.apache.zookeeper.server.quorum.QuorumPeerMain"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 rem Finally delete the data directory
-set "DATA_DIR=%CD%\..\kafka-data"
-if exist "%DATA_DIR%" (
-  rmdir /S /Q %DATA_DIR%
+if "%KAFKA_DATA_DIR%" == "" (
+  set "KAFKA_DATA_DIR=%DIR%\..\kafka-data"
+)
+
+if exist "%KAFKA_DATA_DIR%" (
+  rmdir /S /Q "%KAFKA_DATA_DIR%"
 )
 
 goto :eof
 
 :killJavaProcess
 SET name=%1
-FOR /F "tokens=* USEBACKQ" %%F IN (`"%JAVA_HOME%\bin\jps" ^| findstr %name%`) DO (
-  SET TASK_PID=%%F
-  SET TASK_PID=!TASK_PID:%name%=!
+FOR /F "tokens=*" %%P IN ('tasklist /FI "ImageName eq java.exe" /SVC /FO csv /NH') DO (
+  SET "pid=%%P"
+  if not "!pid:~0,5!" == "INFO:" (
+    SET "pid=!pid:"java.exe","=!"
+    SET "pid=!pid:","N/A"=!"
+
+    FOR /F "tokens=*" %%J IN ("%JAVA_HOME%\bin\jcmd" !pid! VM.command_line ^| findstr %name%) DO (
+      SET TASK_PID=!pid!
+    )
+  )
 )
 
 if [!TASK_PID!] == [] (
@@ -44,6 +56,7 @@ if [!TASK_PID!] == [] (
 ) else (
   taskkill /T /F /PID !TASK_PID!
   if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+  timeout /t 1 >NUL
 )
 
 exit /b 0
