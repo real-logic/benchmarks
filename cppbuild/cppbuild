@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SOURCE_DIR="`pwd`"
-export BUILD_DIR="`pwd`/cppbuild/Release"
+export BUILD_DIR="${SOURCE_DIR}/cppbuild/Release"
 export BUILD_CONFIG=Release
 EXTRA_CMAKE_ARGS=""
 
@@ -17,21 +17,21 @@ esac
 
 while [[ $# -gt 0 ]]
 do
-  option="$1"
+  option="${1}"
   case ${option} in
     --c-warnings-as-errors)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DC_WARNINGS_AS_ERRORS=ON"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DC_WARNINGS_AS_ERRORS=ON"
       echo "Enabling warnings as errors for c"
       shift
       ;;
     --cxx-warnings-as-errors)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCXX_WARNINGS_AS_ERRORS=ON"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCXX_WARNINGS_AS_ERRORS=ON"
       echo "Enabling warnings as errors for c++"
       shift
       ;;
     -d|--debug-build)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
-      export BUILD_DIR="`pwd`/cppbuild/Debug"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Debug"
+      export BUILD_DIR="${SOURCE_DIR}/cppbuild/Debug"
       export BUILD_CONFIG=Debug
       shift
       ;;
@@ -40,40 +40,41 @@ do
       shift
       ;;
     --aeron-git-url)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_URL=$2"
-      echo "Setting -DAERON_GIT_URL=$2"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_GIT_URL=${2}"
+      echo "Setting -DAERON_GIT_URL=${2}"
       shift
       shift
       ;;
     --aeron-git-tag)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_TAG=$2"
-      echo "Setting -DAERON_GIT_TAG=$2"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_GIT_TAG=${2}"
+      echo "Setting -DAERON_GIT_TAG=${2}"
       shift
       shift
       ;;
     --aeron-git-sha)
-      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DAERON_GIT_SHA=$2"
-      echo "Setting -DAERON_GIT_SHA=$2"
+      EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DAERON_GIT_SHA=${2}"
+      echo "Setting -DAERON_GIT_SHA=${2}"
       shift
       shift
       ;;
     -h|--help)
-      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--no-parallel] [--aeron-git-url $GIT_URL] [--aeron-git-tag $GIT_TAG] [--aeron-git-sha $GIT_SHA]"
+      echo "${0} [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--no-parallel] [--aeron-git-url ${GIT_URL}] [--aeron-git-tag ${GIT_TAG}] [--aeron-git-sha ${GIT_SHA}]"
       exit
       ;;
     *)
-      echo "Unknown option $option"
+      echo "Unknown option ${option}"
       echo "Use --help for help"
       exit
       ;;
   esac
 done
 
-if [[ -d "$BUILD_DIR" ]] ; then
-  echo "Build directory ($BUILD_DIR) exists, removing."
+if [[ -d "${BUILD_DIR}" ]] ; then
+  echo "Build directory (${BUILD_DIR}) exists, removing."
   rm -rf "${BUILD_DIR}"
 fi
 
 mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}" || exit
 
-(cd "$BUILD_DIR" && cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all)
+(cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all)
