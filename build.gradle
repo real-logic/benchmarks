@@ -20,7 +20,7 @@ plugins {
     id 'checkstyle'
     id 'com.github.ben-manes.versions' version '0.36.0'
     id 'com.github.johnrengelman.shadow' version '6.1.0' apply false
-    id 'com.google.protobuf' version '0.8.14' apply false
+    id 'com.google.protobuf' version '0.8.15' apply false
 }
 
 defaultTasks 'clean', 'build'
@@ -54,7 +54,7 @@ def junitVersion = '5.7.1'
 def mockitoVersion = '3.7.7'
 def checkstyleVersion = '8.39'
 def grpcVersion = '1.35.0'
-def protobufVersion = '3.14.0'
+def protobufVersion = '3.15.1'
 def kafkaVersion = '2.7.0'
 def slf4jVersion = '1.7.30'
 def annotationsApiVersion = '6.0.53'
