@@ -58,6 +58,7 @@ def protobufVersion = '3.15.6'
 def kafkaVersion = '2.7.0'
 def slf4jVersion = '1.7.30'
 def annotationsApiVersion = '6.0.53'
+def byteBuddyVersion = '1.10.22'
 
 allprojects {
     repositories {
@@ -72,9 +73,13 @@ subprojects {
     apply plugin: 'idea'
 
     dependencies {
-        testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
+        testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+        testImplementation ("org.mockito:mockito-inline:${mockitoVersion}") {
+            exclude group: 'org.junit.jupiter'
+            exclude group: 'net.bytebuddy'
+        }
+        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
 
