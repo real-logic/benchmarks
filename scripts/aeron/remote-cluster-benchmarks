@@ -1,0 +1,317 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2021 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+source "${DIR}/remote-benchmarks-helper"
+
+required_vars=(
+  "CLIENT_BENCHMARKS_PATH"
+  "CLIENT_JAVA_HOME"
+  "CLIENT_DRIVER_CPU_CORE_1"
+  "CLIENT_DRIVER_CPU_CORE_2"
+  "CLIENT_DRIVER_CPU_CORE_3"
+  "CLIENT_DRIVER_OTHER_CPU_CORES"
+  "CLIENT_LOAD_TEST_RIG_CPU_CORE_1"
+  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
+  "CLIENT_INGRESS_CHANNEL"
+  "CLIENT_INGRESS_ENDPOINTS"
+  "CLIENT_EGRESS_CHANNEL"
+  "CLUSTER_MEMBERS"
+  "NODE1_JAVA_HOME"
+  "NODE1_DRIVER_CPU_CORE_1"
+  "NODE1_DRIVER_CPU_CORE_2"
+  "NODE1_DRIVER_CPU_CORE_3"
+  "NODE1_DRIVER_OTHER_CPU_CORES"
+  "NODE1_ARCHIVE_CPU_CORE_1"
+  "NODE1_ARCHIVE_CPU_CORE_2"
+  "NODE1_ARCHIVE_CPU_CORE_3"
+  "NODE1_CONSENSUS_MODULE_CPU_CORE_1"
+  "NODE1_OTHER_CPU_CORES"
+  "NODE1_CLUSTER_DIR"
+  "NODE1_CLUSTER_MEMBER_ID"
+  "NODE1_CLUSTER_INGRESS_CHANNEL"
+  "NODE1_CLUSTER_LOG_CHANNEL"
+  "NODE1_ARCHIVE_DIR"
+  "NODE1_ARCHIVE_CONTROL_CHANNEL"
+  "NODE1_ARCHIVE_CONTROL_STREAM_ID"
+  "NODE1_ARCHIVE_CONTROL_RESPONSE_CHANNEL"
+  "NODE1_ARCHIVE_CONTROL_RESPONSE_STREAM_ID")
+
+for var in "${required_vars[@]}"; do
+  if [[ -z "${!var}" ]]
+  then
+    echo "env var '${var}' must be set"
+    required_var_missing=true
+  fi
+done
+
+if [ -n "${required_var_missing}" ];
+then
+  exit 1
+fi
+
+enable_onload=1
+enable_ef_vi=1
+enable_ats=1
+enable_c_driver=1
+enable_java_driver=1
+file_sync_levels=(0 2)
+
+while [[ $# -gt 0 ]]
+do
+  case "${1}" in
+    --no-c-driver)
+      enable_c_driver=0
+      shift
+      ;;
+    --no-java-driver)
+      enable_java_driver=0
+      shift
+      ;;
+    --no-onload)
+      enable_onload=0
+      shift
+      ;;
+    --no-ef_vi)
+      enable_ef_vi=0
+      shift
+      ;;
+    --no-ats)
+      enable_ats=0
+      shift
+      ;;
+    --file-sync-level)
+      IFS=',';
+      read -ra file_sync_levels <<< "${2}"
+      unset IFS;
+      shift
+      shift
+      ;;
+    -h|--help)
+      echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--file-sync-level \"\${file-sync-level-csv}\"]"
+      exit
+      ;;
+    *)
+      echo "Invalid parameter. Use --help to get a list of supported parameters."
+      exit 1
+      ;;
+  esac
+done
+
+if [ "${enable_java_driver}" -ne 1 ] && [ "${enable_c_driver}" -ne 1 ]
+then
+  echo "At least C or Java driver must be enabled!"
+  exit 1
+fi
+
+function build_drivers()
+{
+  local scripts_path="${1}/scripts/aeron"
+  local commands=()
+  local onload="onload --profile=latency --force-profiles "
+
+  if [ "${enable_java_driver}" -eq 1 ]
+  then
+    # Java driver
+    commands+=("$(start_media_driver "${scripts_path}/media-driver" "${2}" "${3}" "${4}" "${5}")")
+
+    if [ "${enable_onload}" -eq 1 ]
+    then
+      # Java driver with Onload
+      commands+=("$(start_media_driver "${onload}${scripts_path}/media-driver" "${2}" "${3}" "${4}" "${5}")")
+    fi
+  fi
+
+  if [ "${enable_c_driver}" -eq 1 ]
+  then
+    local create_benchmark_props="touch ${scripts_path}/benchmark.properties"
+    # C driver
+    commands+=("${create_benchmark_props}; $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+
+    if [ "${enable_onload}" -eq 1 ]
+    then
+      # C driver with Onload
+      commands+=("${create_benchmark_props}; $(start_media_driver \
+        "${onload}${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+    fi
+
+    if [ "${enable_ef_vi}" -eq 1 ]
+    then
+      # C driver with ef_vi
+      commands+=("${create_benchmark_props}; $(start_media_driver \
+        "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
+        ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+    fi
+
+    if [ "${enable_ats}" -eq 1 ]
+    then
+      # C driver with ATS
+      commands+=("${create_benchmark_props}; $(start_media_driver \
+        "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+        ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+
+      if [ "${enable_onload}" -eq 1 ]
+      then
+        # C driver with ATS and Onload
+        commands+=("${create_benchmark_props}; $(start_media_driver \
+          "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+          AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+          AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+          AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+          AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+          ${onload}${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+      fi
+
+      if [ "${enable_ef_vi}" -eq 1 ]
+      then
+        # C driver with ATS and ef_vi
+        commands+=("${create_benchmark_props}; $(start_media_driver \
+          "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+          AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+          AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+          AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+          AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
+          AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+          ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+      fi
+    fi
+  fi
+
+  local IFS=$'\n'
+  echo "${commands[*]}"
+}
+
+IFS=$'\n'
+# shellcheck disable=SC2207
+client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" \
+"${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CPU_CORE_1}" "${CLIENT_DRIVER_CPU_CORE_2}" "${CLIENT_DRIVER_CPU_CORE_3}"))
+# shellcheck disable=SC2207
+server_drivers=($(build_drivers "${NODE1_BENCHMARKS_PATH}" \
+"${NODE1_DRIVER_OTHER_CPU_CORES}" "${NODE1_DRIVER_CPU_CORE_1}" "${NODE1_DRIVER_CPU_CORE_2}" "${NODE1_DRIVER_CPU_CORE_3}"))
+unset IFS
+
+if [ "${enable_java_driver}" -eq 1 ]
+then
+  scenarios=("java")
+
+  if [ "${enable_onload}" -eq 1 ]
+  then
+    scenarios+=("java-onload")
+  fi
+fi
+
+if [ "${enable_c_driver}" -eq 1 ]
+then
+  scenarios+=("c")
+
+  if [ "${enable_onload}" -eq 1 ]
+  then
+    scenarios+=("c-onload")
+  fi
+
+  if [ "${enable_ef_vi}" -eq 1 ]
+  then
+    scenarios+=("c-ef_vi")
+  fi
+
+  if [ "${enable_ats}" -eq 1 ]
+  then
+    scenarios+=("c-ats")
+
+    if [ "${enable_onload}" -eq 1 ]
+    then
+      scenarios+=("c-ats-onload")
+    fi
+
+    if [ "${enable_ef_vi}" -eq 1 ]
+    then
+      scenarios+=("c-ats-ef_vi")
+    fi
+  fi
+fi
+
+for index in "${!scenarios[@]}"
+do
+  scenario="${scenarios[index]}"
+  client_driver="${client_drivers[index]}"
+  server_driver="${server_drivers[index]}"
+
+  for fsync in "${file_sync_levels[@]}"
+  do
+    test="cluster-${scenario}-fsync-${fsync}"
+    echo -e "\n Testing scenario: '${test}'\n"
+
+    client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
+    server_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterNode"
+
+    start_client="\
+    export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
+    ; $(kill_java_process "${client_class_name}") \
+    ; ${client_driver} \
+    && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client & \
+    $(await_java_process_start "${client_class_name}") \
+    ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}") \
+    && wait \$! && kill \${driver_pid}; wait"
+
+    start_server="\
+    export JAVA_HOME=\"${NODE1_JAVA_HOME}\" \
+    ; $(kill_java_process "${server_class_name}") \
+    ; ${server_driver} \
+    && export JVM_OPTS=\"\
+    -Daeron.cluster.members=${CLUSTER_MEMBERS} \
+    -Daeron.cluster.dir=${NODE1_CLUSTER_DIR} \
+    -Daeron.cluster.member.id=${NODE1_CLUSTER_MEMBER_ID} \
+    -Daeron.cluster.ingress.channel=${NODE1_CLUSTER_INGRESS_CHANNEL} \
+    -Daeron.cluster.log.channel=${NODE1_CLUSTER_LOG_CHANNEL} \
+    -Daeron.archive.dir=${NODE1_ARCHIVE_DIR} \
+    -Daeron.archive.file.sync.level=${fsync} \
+    -Daeron.archive.catalog.file.sync.level=${fsync} \
+    -Daeron.archive.recording.events.enabled=false \
+    -Daeron.archive.control.channel=${NODE1_ARCHIVE_CONTROL_CHANNEL} \
+    -Daeron.archive.control.stream.id=${NODE1_ARCHIVE_CONTROL_STREAM_ID} \
+    -Daeron.archive.control.response.channel=${NODE1_ARCHIVE_CONTROL_RESPONSE_CHANNEL} \
+    -Daeron.archive.control.response.stream.id=${NODE1_ARCHIVE_CONTROL_RESPONSE_STREAM_ID}\" \
+    && taskset -c ${NODE1_OTHER_CPU_CORES} ${NODE1_BENCHMARKS_PATH}/scripts/aeron/cluster-node & \
+    $(await_java_process_start "${server_class_name}") \
+    ; $(pin_thread \${pid} "archive-recorde" "${NODE1_ARCHIVE_CPU_CORE_1}") \
+    ; $(pin_thread \${pid} "archive-replaye" "${NODE1_ARCHIVE_CPU_CORE_2}") \
+    ; $(pin_thread \${pid} "archive-conduct" "${NODE1_ARCHIVE_CPU_CORE_3}") \
+    ; $(pin_thread \${pid} "consensus-modul" "${NODE1_CONSENSUS_MODULE_CPU_CORE_1}") \
+    && wait \$!"
+
+    stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
+
+    run_benchmarks \
+      "${start_client}" \
+      "${start_server}" \
+      "${stop_server}" \
+      "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}" \
+      "uk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+      "aeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}" \
+      "aeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}" \
+      "aeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}" \
+      "aeron.cluster.message.timeout=60000000000"
+  done
+done
+
+download_results "aeron-cluster-results.zip" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
