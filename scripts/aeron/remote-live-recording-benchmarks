@@ -78,7 +78,7 @@ do
       ;;
     --file-sync-level)
       IFS=',';
-      read -ra fsync <<< "$2"
+      read -ra file_sync_levels <<< "$2"
       unset IFS;
       shift
       shift
