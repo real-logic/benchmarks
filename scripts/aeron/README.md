@@ -40,7 +40,7 @@ Three different test scenarios are covered:
 
 1. Echo cluster benchmark
 
-   Similar to the echo benchmark but the messages are sent to the cluster using
+   Similar to the echo benchmark but with the messages being sent to the cluster using
    `io.aeron.cluster.client.AeronCluster.tryClaim` and received from the cluster using
    `io.aeron.cluster.client.AeronCluster.pollEgress` API.
    
@@ -52,10 +52,11 @@ Three different test scenarios are covered:
    - `aeron.cluster.dir` - a dedicated directory for the `ConsensusModule`.
    - `aeron.cluster.members` - the static list of cluster nodes.
    - `aeron.cluster.member.id` - unique ID of the cluster node, must be one of the IDs in the cluster members list.
-   - `aeron.archive.control.channel` - `Archive` control channel, must match the last part of the corresponding cluster
-     members entry.
+   - `aeron.archive.control.channel` - `Archive` control channel, must be IPC.
    - `aeron.archive.control.stream.id` - `Archive` control channel stream ID, must be unique across cluster nodes on
-     the same machine.
+   - `aeron.archive.control.response.channel` - `Archive` control response channel, must be IPC.
+   - `aeron.archive.control.response.stream.id` - `Archive` control response channel stream ID, must be unique across 
+     cluster nodes on the same machine.
    - `aeron.cluster.log.channel` - log channel for distributing cluster log. Usually configured as multicast or as
      multi destination cast. Must match the third part of the corresponding cluster members entry.
    - `aeron.cluster.ingress.channel` - an ingress channel to which messages to the cluster will be sent. Can be
@@ -68,45 +69,51 @@ Three different test scenarios are covered:
    ```bash
     # node 0
     aeron.dir=/dev/shm/node0-driver
-    aeron.archive.dir=/tmp/node0-archive
     aeron.cluster.dir=/tmp/node0-cluster
+    aeron.cluster.member.id=0
     aeron.cluster.members=0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:20004|\
     1,localhost:21000,localhost:21001,localhost:21002,localhost:21003,localhost:21004|\
     2,localhost:22000,localhost:22001,localhost:22002,localhost:22003,localhost:22004
-    aeron.cluster.member.id=0
-    aeron.archive.control.channel=aeron:udp?endpoint=localhost:20004
-    aeron.archive.control.stream.id=100
-    aeron.archive.recording.events.enabled=false
     aeron.cluster.log.channel=aeron:udp?control-mode=manual|control=localhost:20002
     aeron.cluster.ingress.channel=aeron:udp
+    aeron.archive.dir=/tmp/node0-archive
+    aeron.archive.control.channel=aeron:ipc
+    aeron.archive.control.stream.id=100
+    aeron.archive.control.response.channel=aeron:ipc
+    aeron.archive.control.response.stream.id=200
+    aeron.archive.recording.events.enabled=false
     
     # node 1
     aeron.dir=/dev/shm/node1-driver
-    aeron.archive.dir=/tmp/node1-archive
     aeron.cluster.dir=/tmp/node1-cluster
+    aeron.cluster.member.id=1
     aeron.cluster.members=0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:20004|\
     1,localhost:21000,localhost:21001,localhost:21002,localhost:21003,localhost:21004|\
     2,localhost:22000,localhost:22001,localhost:22002,localhost:22003,localhost:22004
-    aeron.cluster.member.id=1
-    aeron.archive.control.channel=aeron:udp?endpoint=localhost:21004
-    aeron.archive.control.stream.id=101
-    aeron.archive.recording.events.enabled=false
     aeron.cluster.log.channel=aeron:udp?control-mode=manual|control=localhost:21002
     aeron.cluster.ingress.channel=aeron:udp
+    aeron.archive.dir=/tmp/node1-archive
+    aeron.archive.control.channel=aeron:ipc
+    aeron.archive.control.stream.id=101
+    aeron.archive.control.response.channel=aeron:ipc
+    aeron.archive.control.response.stream.id=201
+    aeron.archive.recording.events.enabled=false
     
     # node2
     aeron.dir=/dev/shm/node2-driver
-    aeron.archive.dir=/tmp/node2-archive
     aeron.cluster.dir=/tmp/node2-cluster
+    aeron.cluster.member.id=2
     aeron.cluster.members=0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:20004|\
     1,localhost:21000,localhost:21001,localhost:21002,localhost:21003,localhost:21004|\
     2,localhost:22000,localhost:22001,localhost:22002,localhost:22003,localhost:22004
-    aeron.cluster.member.id=2
-    aeron.archive.control.channel=aeron:udp?endpoint=localhost:22004
-    aeron.archive.control.stream.id=102
-    aeron.archive.recording.events.enabled=false
     aeron.cluster.log.channel=aeron:udp?control-mode=manual|control=localhost:22002
     aeron.cluster.ingress.channel=aeron:udp
+    aeron.archive.dir=/tmp/node2-archive
+    aeron.archive.control.channel=aeron:ipc
+    aeron.archive.control.stream.id=102
+    aeron.archive.control.response.channel=aeron:ipc
+    aeron.archive.control.response.stream.id=202
+    aeron.archive.recording.events.enabled=false
     
     # client
     aeron.cluster.ingress.channel=aeron:udp
