@@ -118,6 +118,7 @@ Three different test scenarios are covered:
     # client
     aeron.cluster.ingress.channel=aeron:udp
     aeron.cluster.ingress.endpoints=0=localhost:20000,1=localhost:21000,2=localhost:22000
+    aeron.cluster.egress.channel=aeron:udp?endpoint=localhost:0
    ```
     
 
