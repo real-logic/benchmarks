@@ -32,28 +32,27 @@ required_vars=(
   "CLIENT_INGRESS_ENDPOINTS"
   "CLIENT_EGRESS_CHANNEL"
   "CLUSTER_MEMBERS"
-  "NODE1_JAVA_HOME"
-  "NODE1_DRIVER_CPU_CORE_1"
-  "NODE1_DRIVER_CPU_CORE_2"
-  "NODE1_DRIVER_CPU_CORE_3"
-  "NODE1_DRIVER_OTHER_CPU_CORES"
-  "NODE1_ARCHIVE_CPU_CORE_1"
-  "NODE1_ARCHIVE_CPU_CORE_2"
-  "NODE1_ARCHIVE_CPU_CORE_3"
-  "NODE1_CONSENSUS_MODULE_CPU_CORE_1"
-  "NODE1_OTHER_CPU_CORES"
-  "NODE1_CLUSTER_DIR"
-  "NODE1_CLUSTER_MEMBER_ID"
-  "NODE1_CLUSTER_INGRESS_CHANNEL"
-  "NODE1_CLUSTER_LOG_CHANNEL"
-  "NODE1_ARCHIVE_DIR"
-  "NODE1_ARCHIVE_CONTROL_CHANNEL"
-  "NODE1_ARCHIVE_CONTROL_STREAM_ID"
-  "NODE1_ARCHIVE_CONTROL_RESPONSE_CHANNEL"
-  "NODE1_ARCHIVE_CONTROL_RESPONSE_STREAM_ID")
+  "NODE0_JAVA_HOME"
+  "NODE0_DRIVER_CPU_CORE_1"
+  "NODE0_DRIVER_CPU_CORE_2"
+  "NODE0_DRIVER_CPU_CORE_3"
+  "NODE0_DRIVER_OTHER_CPU_CORES"
+  "NODE0_ARCHIVE_CPU_CORE_1"
+  "NODE0_ARCHIVE_CPU_CORE_2"
+  "NODE0_ARCHIVE_CPU_CORE_3"
+  "NODE0_CONSENSUS_MODULE_CPU_CORE_1"
+  "NODE0_OTHER_CPU_CORES"
+  "NODE0_CLUSTER_DIR"
+  "NODE0_CLUSTER_INGRESS_CHANNEL"
+  "NODE0_CLUSTER_LOG_CHANNEL"
+  "NODE0_ARCHIVE_DIR"
+  "NODE0_ARCHIVE_CONTROL_CHANNEL"
+  "NODE0_ARCHIVE_CONTROL_STREAM_ID"
+  "NODE0_ARCHIVE_CONTROL_RESPONSE_CHANNEL"
+  "NODE0_ARCHIVE_CONTROL_RESPONSE_STREAM_ID")
 
 for var in "${required_vars[@]}"; do
-  if [[ -z "${!var}" ]]
+  if [[ -z "${!var+''}" ]]
   then
     echo "env var '${var}' must be set"
     required_var_missing=true
@@ -201,13 +200,67 @@ function build_drivers()
   echo "${commands[*]}"
 }
 
+function start_server()
+{
+  local server_class_name=$1
+  local server_driver=$2
+  local fsync=$3
+  local node_id=$4
+  local benchmarks_path=NODE${node_id}_BENCHMARKS_PATH
+  local java_home=NODE${node_id}_JAVA_HOME
+  local cluster_dir=NODE${node_id}_CLUSTER_DIR
+  local ingress_channel=NODE${node_id}_CLUSTER_INGRESS_CHANNEL
+  local cluster_log_channel=NODE${node_id}_CLUSTER_LOG_CHANNEL
+  local archive_dir=NODE${node_id}_ARCHIVE_DIR
+  local archive_control_channel=NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
+  local archive_control_stream_id=NODE${node_id}_ARCHIVE_CONTROL_STREAM_ID
+  local archive_control_response_channel=NODE${node_id}_ARCHIVE_CONTROL_RESPONSE_CHANNEL
+  local archive_control_response_stream_id=NODE${node_id}_ARCHIVE_CONTROL_RESPONSE_STREAM_ID
+  local other_cpu_cores=NODE${node_id}_OTHER_CPU_CORES
+  local archive_cpu_core1=NODE${node_id}_ARCHIVE_CPU_CORE_1
+  local archive_cpu_core2=NODE${node_id}_ARCHIVE_CPU_CORE_2
+  local archive_cpu_core3=NODE${node_id}_ARCHIVE_CPU_CORE_3
+  local consensus_module_cpu_core1=NODE${node_id}_CONSENSUS_MODULE_CPU_CORE_1}
+  echo "
+    export JAVA_HOME=\"${!java_home}\" \
+    ; $(kill_java_process "${server_class_name}") \
+    ; ${server_driver} \
+    && export JVM_OPTS=\"\
+    -Daeron.cluster.members=${CLUSTER_MEMBERS} \
+    -Daeron.cluster.dir=${!cluster_dir} \
+    -Daeron.cluster.member.id=${node_id} \
+    -Daeron.cluster.ingress.channel=${!ingress_channel} \
+    -Daeron.cluster.log.channel=${!cluster_log_channel} \
+    -Daeron.archive.dir=${!archive_dir} \
+    -Daeron.archive.file.sync.level=${fsync} \
+    -Daeron.archive.catalog.file.sync.level=${fsync} \
+    -Daeron.archive.recording.events.enabled=false \
+    -Daeron.archive.control.channel=${!archive_control_channel} \
+    -Daeron.archive.control.stream.id=${!archive_control_stream_id} \
+    -Daeron.archive.control.response.channel=${!archive_control_response_channel} \
+    -Daeron.archive.control.response.stream.id=${!archive_control_response_stream_id}\" \
+    && taskset -c ${!other_cpu_cores} ${!benchmarks_path}/scripts/aeron/cluster-node & \
+    $(await_java_process_start "${server_class_name}") \
+    ; $(pin_thread \${pid} "archive-recorde" "${!archive_cpu_core1}") \
+    ; $(pin_thread \${pid} "archive-replaye" "${!archive_cpu_core2}") \
+    ; $(pin_thread \${pid} "archive-conduct" "${!archive_cpu_core3}") \
+    ; $(pin_thread \${pid} "consensus-modul" "${!consensus_module_cpu_core1}") \
+    && wait \$!"
+}
+
 IFS=$'\n'
 # shellcheck disable=SC2207
 client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" \
 "${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CPU_CORE_1}" "${CLIENT_DRIVER_CPU_CORE_2}" "${CLIENT_DRIVER_CPU_CORE_3}"))
 # shellcheck disable=SC2207
-server_drivers=($(build_drivers "${NODE1_BENCHMARKS_PATH}" \
+server_drivers_node0=($(build_drivers "${NODE0_BENCHMARKS_PATH}" \
+"${NODE0_DRIVER_OTHER_CPU_CORES}" "${NODE0_DRIVER_CPU_CORE_1}" "${NODE0_DRIVER_CPU_CORE_2}" "${NODE0_DRIVER_CPU_CORE_3}"))
+# shellcheck disable=SC2207
+server_drivers_node1=($(build_drivers "${NODE1_BENCHMARKS_PATH}" \
 "${NODE1_DRIVER_OTHER_CPU_CORES}" "${NODE1_DRIVER_CPU_CORE_1}" "${NODE1_DRIVER_CPU_CORE_2}" "${NODE1_DRIVER_CPU_CORE_3}"))
+# shellcheck disable=SC2207
+server_drivers_node2=($(build_drivers "${NODE2_BENCHMARKS_PATH}" \
+"${NODE2_DRIVER_OTHER_CPU_CORES}" "${NODE2_DRIVER_CPU_CORE_1}" "${NODE2_DRIVER_CPU_CORE_2}" "${NODE2_DRIVER_CPU_CORE_3}"))
 unset IFS
 
 if [ "${enable_java_driver}" -eq 1 ]
@@ -254,7 +307,6 @@ for index in "${!scenarios[@]}"
 do
   scenario="${scenarios[index]}"
   client_driver="${client_drivers[index]}"
-  server_driver="${server_drivers[index]}"
 
   for fsync in "${file_sync_levels[@]}"
   do
@@ -273,31 +325,7 @@ do
     ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}") \
     && wait \$! && kill \${driver_pid}; wait"
 
-    start_server="\
-    export JAVA_HOME=\"${NODE1_JAVA_HOME}\" \
-    ; $(kill_java_process "${server_class_name}") \
-    ; ${server_driver} \
-    && export JVM_OPTS=\"\
-    -Daeron.cluster.members=${CLUSTER_MEMBERS} \
-    -Daeron.cluster.dir=${NODE1_CLUSTER_DIR} \
-    -Daeron.cluster.member.id=${NODE1_CLUSTER_MEMBER_ID} \
-    -Daeron.cluster.ingress.channel=${NODE1_CLUSTER_INGRESS_CHANNEL} \
-    -Daeron.cluster.log.channel=${NODE1_CLUSTER_LOG_CHANNEL} \
-    -Daeron.archive.dir=${NODE1_ARCHIVE_DIR} \
-    -Daeron.archive.file.sync.level=${fsync} \
-    -Daeron.archive.catalog.file.sync.level=${fsync} \
-    -Daeron.archive.recording.events.enabled=false \
-    -Daeron.archive.control.channel=${NODE1_ARCHIVE_CONTROL_CHANNEL} \
-    -Daeron.archive.control.stream.id=${NODE1_ARCHIVE_CONTROL_STREAM_ID} \
-    -Daeron.archive.control.response.channel=${NODE1_ARCHIVE_CONTROL_RESPONSE_CHANNEL} \
-    -Daeron.archive.control.response.stream.id=${NODE1_ARCHIVE_CONTROL_RESPONSE_STREAM_ID}\" \
-    && taskset -c ${NODE1_OTHER_CPU_CORES} ${NODE1_BENCHMARKS_PATH}/scripts/aeron/cluster-node & \
-    $(await_java_process_start "${server_class_name}") \
-    ; $(pin_thread \${pid} "archive-recorde" "${NODE1_ARCHIVE_CPU_CORE_1}") \
-    ; $(pin_thread \${pid} "archive-replaye" "${NODE1_ARCHIVE_CPU_CORE_2}") \
-    ; $(pin_thread \${pid} "archive-conduct" "${NODE1_ARCHIVE_CPU_CORE_3}") \
-    ; $(pin_thread \${pid} "consensus-modul" "${NODE1_CONSENSUS_MODULE_CPU_CORE_1}") \
-    && wait \$!"
+    start_server="$(start_server "${server_class_name}" "${server_drivers_node0[index]}" "${fsync}" 0)"
 
     stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
 
