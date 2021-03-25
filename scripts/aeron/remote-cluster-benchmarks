@@ -346,13 +346,19 @@ do
             && wait \$! && kill \${driver_pid}; wait"
 
             echo -e "\nStarting node 0..."
-            ssh ${SSH_USER}@${SSH_CLUSTER_NODE0} "($(start_server "${server_class_name}" "${server_drivers_node0[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
+            ssh ${SSH_USER}@${NODE0_IP} "($(start_server "${server_class_name}" "${server_drivers_node0[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
 
-            echo -e "\nStarting client..."
+            echo -e "\nStarting node 1..."
+            ssh ${SSH_USER}@${NODE1_IP} "($(start_server "${server_class_name}" "${server_drivers_node1[index]}" "${fsync}" 1) &) > /dev/null 2>&1 && exit"
+
+            echo -e "\nRunning benchmark..."
             ssh ${SSH_USER}@${SSH_CLIENT_NODE} "${start_client} && exit"
 
             echo -e "\nStopping node 0..."
-            ssh ${SSH_USER}@${SSH_CLUSTER_NODE0} "$(kill_java_process "${server_class_name}"); $(stop_media_driver) && exit"
+            ssh ${SSH_USER}@${NODE0_IP} "$(kill_java_process "${server_class_name}"); $(stop_media_driver) && exit"
+
+            echo -e "\nStopping node 1..."
+            ssh ${SSH_USER}@${NODE1_IP} "$(kill_java_process "${server_class_name}"); $(stop_media_driver) && exit"
           done
         done
       done
