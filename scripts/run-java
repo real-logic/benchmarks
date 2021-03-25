@@ -39,7 +39,7 @@ then
 else
   major_java_version=${java_version%%[.-]*}
 
-  if [ "$major_java_version" -lt 15 ]
+  if [ "${major_java_version}" -lt 15 ]
   then
     java_options+=(-XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0)
   fi
@@ -53,15 +53,15 @@ fi
 
 jvm_opts=()
 
-if [ -n "$JVM_OPTS" ]
+if [ -n "${JVM_OPTS}" ]
 then
   IFS=' ';
-  read -ra jvm_opts <<< "$JVM_OPTS"
+  read -ra jvm_opts <<< "${JVM_OPTS}"
   unset IFS;
 fi
 
 exec "${JAVA_HOME}/bin/java" \
-  -cp "$DIR/../benchmarks-all/build/libs/benchmarks.jar" \
+  -cp "${DIR}/../benchmarks-all/build/libs/benchmarks.jar" \
   "${java_options[@]}" \
   "${add_opens[@]}" \
   "${jvm_opts[@]}" \

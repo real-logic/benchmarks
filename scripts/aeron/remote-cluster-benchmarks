@@ -202,10 +202,10 @@ function build_drivers()
 
 function start_server()
 {
-  local server_class_name=$1
-  local server_driver=$2
-  local fsync=$3
-  local node_id=$4
+  local server_class_name=${1}
+  local server_driver=${2}
+  local fsync=${3}
+  local node_id=${4}
   local benchmarks_path=NODE${node_id}_BENCHMARKS_PATH
   local java_home=NODE${node_id}_JAVA_HOME
   local cluster_dir=NODE${node_id}_CLUSTER_DIR

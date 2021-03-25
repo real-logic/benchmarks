@@ -17,7 +17,7 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-source "$DIR/remote-benchmarks-helper"
+source "${DIR}/remote-benchmarks-helper"
 
 required_vars=(
   "CLIENT_JAVA_HOME"
@@ -48,7 +48,7 @@ for var in "${required_vars[@]}"; do
   fi
 done
 
-if [ -n "$required_var_missing" ];
+if [ -n "${required_var_missing}" ];
 then
   exit 1
 fi
@@ -63,7 +63,7 @@ endpoint_modes=("multiplexed" "dedicated")
 
 while [[ $# -gt 0 ]]
 do
-  case "$1" in
+  case "${1}" in
     --no-c-driver)
       enable_c_driver=0
       shift
@@ -86,20 +86,20 @@ do
       ;;
     --active-publications)
       IFS=',';
-      read -ra active_publications <<< "$2"
+      read -ra active_publications <<< "${2}"
       unset IFS;
       shift
       shift
       ;;
     --endpoint-modes)
       IFS=',';
-      read -ra endpoint_modes <<< "$2"
+      read -ra endpoint_modes <<< "${2}"
       unset IFS;
       shift
       shift
       ;;
     -h|--help)
-      echo "$0 [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--active-publications \"\$active-publications-csv\"] [--endpoint-modes \"\$endpoint-modes-csv\"]"
+      echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--active-publications \"\${active-publications-csv}\"] [--endpoint-modes \"\${endpoint-modes-csv}\"]"
       exit
       ;;
     *)
@@ -109,7 +109,7 @@ do
   esac
 done
 
-if [ "$enable_java_driver" -ne 1 ] && [ "$enable_c_driver" -ne 1 ]
+if [ "${enable_java_driver}" -ne 1 ] && [ "${enable_c_driver}" -ne 1 ]
 then
   echo "At least C or Java driver must be enabled!"
   exit 1
@@ -117,78 +117,78 @@ fi
 
 function build_drivers()
 {
-  local scripts_path="$1/scripts/aeron"
+  local scripts_path="${1}/scripts/aeron"
   local commands=()
 
-  if [ "$enable_java_driver" -eq 1 ]
+  if [ "${enable_java_driver}" -eq 1 ]
   then
     # Java driver
-    commands+=("$(start_media_driver "$scripts_path/media-driver" "$2" "$3" "$4" "$5")")
+    commands+=("$(start_media_driver "${scripts_path}/media-driver" "${2}" "${3}" "${4}" "${5}")")
 
-    if [ "$enable_onload" -eq 1 ]
+    if [ "${enable_onload}" -eq 1 ]
     then
       # Java driver with Onload
       commands+=("$(start_media_driver \
-        "onload --profile=latency --force-profiles $scripts_path/media-driver" "$2" "$3" "$4" "$5")")
+        "onload --profile=latency --force-profiles ${scripts_path}/media-driver" "${2}" "${3}" "${4}" "${5}")")
     fi
   fi
 
-  if [ "$enable_c_driver" -eq 1 ]
+  if [ "${enable_c_driver}" -eq 1 ]
   then
-    local create_benchmark_props="touch $scripts_path/benchmark.properties"
+    local create_benchmark_props="touch ${scripts_path}/benchmark.properties"
     # C driver
-    commands+=("$create_benchmark_props; $(start_media_driver "$scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+    commands+=("${create_benchmark_props}; $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
 
-    if [ "$enable_onload" -eq 1 ]
+    if [ "${enable_onload}" -eq 1 ]
     then
       # C driver with Onload
-      commands+=("$create_benchmark_props; $(start_media_driver \
-        "onload --profile=latency --force-profiles $scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+      commands+=("${create_benchmark_props}; $(start_media_driver \
+        "onload --profile=latency --force-profiles ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
     fi
 
-    if [ "$enable_ef_vi" -eq 1 ]
+    if [ "${enable_ef_vi}" -eq 1 ]
     then
       # C driver with ef_vi
-      commands+=("$create_benchmark_props; $(start_media_driver \
+      commands+=("${create_benchmark_props}; $(start_media_driver \
         "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
-        AERON_DRIVER_DYNAMIC_LIBRARIES=\"$scripts_path/libaeron_ef_vi.so\" \
-        $scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
+        ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
     fi
 
-    if [ "$enable_ats" -eq 1 ]
+    if [ "${enable_ats}" -eq 1 ]
     then
       # C driver with ATS
-      commands+=("$create_benchmark_props; $(start_media_driver \
-        "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$scripts_path\" \
+      commands+=("${create_benchmark_props}; $(start_media_driver \
+        "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
         AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-        AERON_DRIVER_DYNAMIC_LIBRARIES=\"$scripts_path/libaeron_transport_security.so\" \
-        $scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+        ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
 
-      if [ "$enable_onload" -eq 1 ]
+      if [ "${enable_onload}" -eq 1 ]
       then
         # C driver with ATS and Onload
-        commands+=("$create_benchmark_props; $(start_media_driver \
-          "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$scripts_path\" \
+        commands+=("${create_benchmark_props}; $(start_media_driver \
+          "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-          AERON_DRIVER_DYNAMIC_LIBRARIES=\"$scripts_path/libaeron_transport_security.so\" \
-          onload --profile=latency --force-profiles $scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+          AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+          onload --profile=latency --force-profiles ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
       fi
 
-      if [ "$enable_ef_vi" -eq 1 ]
+      if [ "${enable_ef_vi}" -eq 1 ]
       then
         # C driver with ATS and ef_vi
-        commands+=("$create_benchmark_props; $(start_media_driver \
-          "AERON_TRANSPORT_SECURITY_CONF_DIR=\"$scripts_path\" \
+        commands+=("${create_benchmark_props}; $(start_media_driver \
+          "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-          AERON_DRIVER_DYNAMIC_LIBRARIES=\"$scripts_path/libaeron_transport_security.so\",\"$scripts_path/libaeron_ef_vi.so\" \
+          AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
           AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
-          $scripts_path/c-media-driver" "$2" "$3" "$4" "$5")")
+          ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
       fi
     fi
   fi
@@ -199,47 +199,47 @@ function build_drivers()
 
 IFS=$'\n'
 # shellcheck disable=SC2207
-client_drivers=($(build_drivers "$CLIENT_BENCHMARKS_PATH" \
-"$CLIENT_DRIVER_OTHER_CPU_CORES" "$CLIENT_DRIVER_CPU_CORE_1" "$CLIENT_DRIVER_CPU_CORE_2" "$CLIENT_DRIVER_CPU_CORE_3"))
+client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" \
+"${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CPU_CORE_1}" "${CLIENT_DRIVER_CPU_CORE_2}" "${CLIENT_DRIVER_CPU_CORE_3}"))
 # shellcheck disable=SC2207
-server_drivers=($(build_drivers "$SERVER_BENCHMARKS_PATH" \
-"$SERVER_DRIVER_OTHER_CPU_CORES" "$SERVER_DRIVER_CPU_CORE_1" "$SERVER_DRIVER_CPU_CORE_2" "$SERVER_DRIVER_CPU_CORE_3"))
+server_drivers=($(build_drivers "${SERVER_BENCHMARKS_PATH}" \
+"${SERVER_DRIVER_OTHER_CPU_CORES}" "${SERVER_DRIVER_CPU_CORE_1}" "${SERVER_DRIVER_CPU_CORE_2}" "${SERVER_DRIVER_CPU_CORE_3}"))
 unset IFS
 
-if [ "$enable_java_driver" -eq 1 ]
+if [ "${enable_java_driver}" -eq 1 ]
 then
   scenarios=("java")
 
-  if [ "$enable_onload" -eq 1 ]
+  if [ "${enable_onload}" -eq 1 ]
   then
     scenarios+=("java-onload")
   fi
 fi
 
-if [ "$enable_c_driver" -eq 1 ]
+if [ "${enable_c_driver}" -eq 1 ]
 then
   scenarios+=("c")
 
-  if [ "$enable_onload" -eq 1 ]
+  if [ "${enable_onload}" -eq 1 ]
   then
     scenarios+=("c-onload")
   fi
 
-  if [ "$enable_ef_vi" -eq 1 ]
+  if [ "${enable_ef_vi}" -eq 1 ]
   then
     scenarios+=("c-ef_vi")
   fi
 
-  if [ "$enable_ats" -eq 1 ]
+  if [ "${enable_ats}" -eq 1 ]
   then
     scenarios+=("c-ats")
 
-    if [ "$enable_onload" -eq 1 ]
+    if [ "${enable_onload}" -eq 1 ]
     then
       scenarios+=("c-ats-onload")
     fi
 
-    if [ "$enable_ef_vi" -eq 1 ]
+    if [ "${enable_ef_vi}" -eq 1 ]
     then
       scenarios+=("c-ats-ef_vi")
     fi
@@ -256,10 +256,10 @@ do
   do
     for active in "${active_publications[@]}"
     do
-      for passive in 0 $active
+      for passive in 0 ${active}
       do
-        test="echo-$scenario-endpoint-$endpoint_mode-active-$active-passive-$passive"
-        echo -e "\n Testing scenario: '$test'\n"
+        test="echo-${scenario-endpoint-}${endpoint_mode-active-}${active-passive-}${passive}"
+        echo -e "\n Testing scenario: '${test}'\n"
 
         destination_channels=""
         destination_streams=""
@@ -270,7 +270,7 @@ do
 
         for (( i=0; i<active; i++ ))
         do
-          if [ "$endpoint_mode" == "dedicated" ]
+          if [ "${endpoint_mode}" == "dedicated" ]
           then
             dest_port=$((13000 + i))
             src_port=$((13100 + i))
@@ -281,23 +281,23 @@ do
           dest_stream=$((1000000 + i))
           src_stream=$((2000000 + i))
 
-          destination_channels+="aeron:udp?endpoint=$AERON_DESTINATION_IP:$dest_port|interface=$AERON_DESTINATION_INTERFACE,"
-          destination_streams+="$dest_stream,"
+          destination_channels+="aeron:udp?endpoint=${AERON_DESTINATION_IP}:${dest_port}|interface=${AERON_DESTINATION_INTERFACE},"
+          destination_streams+="${dest_stream},"
 
-          source_channels+="aeron:udp?endpoint=$AERON_SOURCE_IP:$src_port|interface=$AERON_SOURCE_INTERFACE,"
-          source_streams+="$src_stream,"
+          source_channels+="aeron:udp?endpoint=${AERON_SOURCE_IP}:${src_port}|interface=${AERON_SOURCE_INTERFACE},"
+          source_streams+="${src_stream},"
 
-          if [ "$passive" -ne 0 ]
+          if [ "${passive}" -ne 0 ]
           then
-            if [ "$endpoint_mode" == "dedicated" ]
+            if [ "${endpoint_mode}" == "dedicated" ]
             then
               passive_port=$((13200 + i))
             else
               passive_port=13200
             fi
             passive_stream=$((3000000 + i))
-            passive_channels+="aeron:udp?endpoint=$AERON_DESTINATION_IP:$passive_port|interface=$AERON_DESTINATION_INTERFACE,"
-            passive_streams+="$passive_stream,"
+            passive_channels+="aeron:udp?endpoint=${AERON_DESTINATION_IP}:${passive_port}|interface=${AERON_DESTINATION_INTERFACE},"
+            passive_streams+="${passive_stream},"
           fi
         done
 
@@ -305,17 +305,17 @@ do
         server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
 
         start_client="\
-        export JAVA_HOME=\"$CLIENT_JAVA_HOME\" \
-        ; $(kill_java_process "$client_class_name") \
-        ; $client_driver \
-        && taskset -c $CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES $CLIENT_BENCHMARKS_PATH/scripts/aeron/echo-client & \
-        $(await_java_process_start "$client_class_name") \
-        ; $(pin_thread \$pid "load-test-rig" "$CLIENT_LOAD_TEST_RIG_CPU_CORE_1") \
-        && wait \$!; kill \$driver_pid; wait"
+        export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
+        ; $(kill_java_process "${client_class_name}") \
+        ; ${client_driver} \
+        && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
+        $(await_java_process_start "${client_class_name}") \
+        ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}") \
+        && wait \$!; kill \${driver_pid}; wait"
 
         start_server="\
-        export JAVA_HOME=\"$SERVER_JAVA_HOME\" \
-        && $server_driver \
+        export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
+        && ${server_driver} \
         && export JVM_OPTS=\"\
         -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?} \
         -Duk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?} \
@@ -323,17 +323,17 @@ do
         -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?} \
         -Duk.co.real_logic.benchmarks.aeron.remote.passive.channels=${passive_channels%?} \
         -Duk.co.real_logic.benchmarks.aeron.remote.passive.streams=${passive_streams%?}\" \
-        && taskset -c $SERVER_CPU_CORES $SERVER_BENCHMARKS_PATH/scripts/aeron/echo-server"
+        && taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
 
-        stop_server="$(kill_java_process "$server_class_name"); \
+        stop_server="$(kill_java_process "${server_class_name}"); \
         $(stop_media_driver)"
 
         run_benchmarks \
-          "$start_client" \
-          "$(kill_java_process "$server_class_name"); $start_server" \
-          "$stop_server" \
-          "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=$test" \
-          "uk.co.real_logic.benchmarks.remote.outputDirectory=$CLIENT_BENCHMARKS_PATH/scripts/results" \
+          "${start_client}" \
+          "$(kill_java_process "${server_class_name}"); ${start_server}" \
+          "${stop_server}" \
+          "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}" \
+          "uk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
           "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?}" \
           "uk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?}" \
           "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?}" \
@@ -345,4 +345,4 @@ do
   done
 done
 
-download_results "aeron-echo-results.zip" "$CLIENT_BENCHMARKS_PATH/scripts/results" "$DIR/.."
+download_results "aeron-echo-results.zip" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

@@ -29,62 +29,62 @@ MESSAGE_LENGTH=(32 224 1376)
 
 while [[ $# -gt 0 ]]
 do
-  option="$1"
+  option="${1}"
   case ${option} in
     -o|--output-file)
-      OUTPUT_FILE_NAME="$2";
+      OUTPUT_FILE_NAME="${2}";
       shift
       shift
       ;;
     -m|--message-rate)
       IFS=',';
-      read -ra MESSAGE_RATE <<< "$2"
+      read -ra MESSAGE_RATE <<< "${2}"
       unset IFS;
       shift
       shift
       ;;
     -b|--burst-size)
       IFS=',';
-      read -ra BURST_SIZE <<< "$2"
+      read -ra BURST_SIZE <<< "${2}"
       unset IFS;
       shift
       shift
       ;;
     -l|--message-length)
       IFS=',';
-      read -ra MESSAGE_LENGTH <<< "$2"
+      read -ra MESSAGE_LENGTH <<< "${2}"
       unset IFS;
       shift
       shift
       ;;
     -i|--iterations)
-      ITERATIONS="$2";
+      ITERATIONS="${2}";
       shift
       shift
       ;;
     -r|--runs)
-      RUNS="$2";
+      RUNS="${2}";
       shift
       shift
       ;;
     -h|--help)
-      echo "$0 (-o|--output-file) \"\$output-file-name-prefix\" [(-m|--message-rate) \"\$message-rate-csv\"] [(-b|--burst-size) \"\$burst-size-csv\"] [(-l|--message-length) \"\$message-length-in-bytes-csv\"] [(-i|--iterations) \$iterations] [(-r|--runs) \$runs] \"\$command \$cmdArg1 ...\""
+      echo "${0} (-o|--output-file) \"\${output-file-name-prefix}\" [(-m|--message-rate) \"\${message-rate-csv}\"] [(-b|--burst-size) \"\${burst-size-csv}\"] [(-l|--message-length) \"\${message-length-in-bytes-csv}\"] [(-i|--iterations) \${iterations}] [(-r|--runs) \${runs}] \"\${command} \${cmdArg1} ...\""
       exit
       ;;
     *)
-      COMMAND="$1"
+      COMMAND="${1}"
       shift
       ;;
   esac
 done
 
-if [ -z "$OUTPUT_FILE_NAME" ];
+if [ -z "${OUTPUT_FILE_NAME}" ];
 then
   echo 'Flag -o/--output-file is required'
   exit 1
 fi
 
-EXISTING_JVM_OPTS=$JVM_OPTS
+EXISTING_JVM_OPTS=${JVM_OPTS}
 
 for messageRate in "${MESSAGE_RATE[@]}"
 do
@@ -95,10 +95,10 @@ do
       for (( r=1; r<=RUNS; r++ ))
       do
         echo -e '\n#######################'
-        echo 'Benchmark run #'$r' ...'
+        echo 'Benchmark run #'${r}' ...'
         echo '#######################'
 
-        JVM_OPTS="$EXISTING_JVM_OPTS \
+        JVM_OPTS="${EXISTING_JVM_OPTS} \
         -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${OUTPUT_FILE_NAME} \
         -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
         -Duk.co.real_logic.benchmarks.remote.messageRate=${messageRate# } \
@@ -110,4 +110,4 @@ do
   done
 done
 
-JVM_OPTS=$EXISTING_JVM_OPTS
+JVM_OPTS=${EXISTING_JVM_OPTS}

@@ -76,7 +76,7 @@ if not "%1"=="" (
   if "%1"=="--help" set FLAG=1
   if "%1"=="-h" set FLAG=1
   if defined FLAG (
-      echo "%0 (-o|--output-file) ^"\$output-file-name-prefix\" [(-m|--message-rate) ^"\$message-rate-csv\"] [(-b|--burst-size) ^"\$burst-size-csv\"] [(-l|--message-length) ^"\$message-length-in-bytes-csv\"] [(-i|--iterations) ^$iterations] [(-r|--runs) ^$runs] ^"\$command ^$cmdArg1 ...\""
+      echo "%0 (-o|--output-file) ^"\${output-file-name-prefix}\" [(-m|--message-rate) ^"\${message-rate-csv}\"] [(-b|--burst-size) ^"\${burst-size-csv}\"] [(-l|--message-length) ^"\${message-length-in-bytes-csv}\"] [(-i|--iterations) ^${iterations}] [(-r|--runs) ^${runs}] ^"\${command} ^${cmdArg1} ...\""
       exit /b
   )
 

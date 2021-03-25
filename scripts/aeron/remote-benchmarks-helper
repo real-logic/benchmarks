@@ -16,32 +16,32 @@
 ##
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-source "$DIR/../remote-benchmarks-runner"
+source "${DIR}/../remote-benchmarks-runner"
 
 function start_media_driver()
 {
-  local executable=$1
+  local executable=${1}
   local driver_pid
   local driver_thread
 
-  if [[ "$executable" =~ /media-driver$ ]]
+  if [[ "${executable}" =~ /media-driver$ ]]
   then
-    driver_pid="$(await_java_process_start "io.aeron.driver.MediaDriver"); driver_pid=\$pid"
+    driver_pid="$(await_java_process_start "io.aeron.driver.MediaDriver"); driver_pid=\${pid}"
     driver_thread="driver-conducto"
   else
-    driver_pid="$(await_process_start "\$(pgrep -x aeronmd)"); driver_pid=\$pid"
+    driver_pid="$(await_process_start "\$(pgrep -x aeronmd)"); driver_pid=\${pid}"
     driver_thread="aeronmd"
   fi
 
   local command=""
-  command="$(stop_media_driver); taskset -c $2 \"$executable\" & $driver_pid"
+  command="$(stop_media_driver); taskset -c ${2} \"${executable}\" & ${driver_pid}"
 
-  command+="; echo \"driver PID=\$driver_pid\""
-  command+="; $(pin_thread \$driver_pid "$driver_thread" "$3")"
-  command+="; $(pin_thread \$driver_pid "sender" "$4")"
-  command+="; $(pin_thread \$driver_pid "receiver" "$5")"
+  command+="; echo \"driver PID=\${driver_pid}\""
+  command+="; $(pin_thread \${driver_pid} "${driver_thread}" "${3}")"
+  command+="; $(pin_thread \${driver_pid} "sender" "${4}")"
+  command+="; $(pin_thread \${driver_pid} "receiver" "${5}")"
 
-  echo $command
+  echo ${command}
 }
 
 function stop_media_driver()
