@@ -41,9 +41,9 @@ required_vars=(
   "SERVER_CPU_CORES")
 
 for var in "${required_vars[@]}"; do
-  if [[ -z "${!var}" ]]
+  if [[ -z "${!var+''}" ]]
   then
-    echo "env var $var must be set"
+    echo "env var '${var}' must be set"
     required_var_missing=true
   fi
 done
