@@ -258,7 +258,7 @@ do
     do
       for passive in 0 ${active}
       do
-        test="echo-${scenario-endpoint-}${endpoint_mode-active-}${active-passive-}${passive}"
+        test="echo-${scenario}-endpoint-${endpoint_mode}-active-${active}-passive-${passive}"
         echo -e "\n Testing scenario: '${test}'\n"
 
         destination_channels=""

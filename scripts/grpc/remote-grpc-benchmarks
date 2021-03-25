@@ -89,12 +89,12 @@ do
 
     if [ "${tls}" == "true" ]
     then
-        scenario="${scenario-tls}"
+        scenario="${scenario}-tls"
     fi
 
     if [ -n "${onload}" ]
     then
-        scenario="${scenario-onload}"
+        scenario="${scenario}-onload"
     fi
 
     echo -e "\n Testing scenario: '${scenario}'\n"

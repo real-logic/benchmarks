@@ -88,21 +88,21 @@ do
       if [ -n "${flush}" ]
       then
           flush_messages_prop="flush.messages=${flush}"
-          scenario="${scenario-flush-}${flush}"
+          scenario="${scenario}-flush-${flush}"
       else
-          scenario="${scenario-no-flush}"
+          scenario="${scenario}-no-flush"
       fi
 
       if [ -n "${onload}" ]
       then
-          scenario="${scenario-onload}"
+          scenario="${scenario}-onload"
       fi
 
       if [ "${protocol}" == "PLAINTEXT" ]
       then
         port=${plain_text_port}
       else
-        scenario="${scenario-ssl}"
+        scenario="${scenario}-ssl"
         port=${ssl_port}
       fi
 
