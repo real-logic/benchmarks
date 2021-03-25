@@ -316,29 +316,47 @@ do
     client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
     server_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterNode"
 
-    start_client="\
-    export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
-    ; $(kill_java_process "${client_class_name}") \
-    ; ${client_driver} \
-    && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client & \
-    $(await_java_process_start "${client_class_name}") \
-    ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}") \
-    && wait \$! && kill \${driver_pid}; wait"
+    for messageRate in "${MESSAGE_RATE[@]}"
+    do
+      for burstSize in "${BURST_SIZE[@]}"
+      do
+        for messageLength in "${MESSAGE_LENGTH[@]}"
+        do
+          for (( i=1; i<=RUNS; i++ ))
+          do
+            echo -e '\n### Benchmark run #'${i}' ...\n'
 
-    start_server="$(start_server "${server_class_name}" "${server_drivers_node0[index]}" "${fsync}" 0)"
+            start_client="export JVM_OPTS=\"\
+            -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}\
+            -Duk.co.real_logic.benchmarks.remote.messageRate=${messageRate# }\
+            -Duk.co.real_logic.benchmarks.remote.batchSize=${burstSize# }\
+            -Duk.co.real_logic.benchmarks.remote.messageLength=${messageLength# }\
+            -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}\
+            -Duk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results\
+            -Daeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}\
+            -Daeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}\
+            -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
+            -Daeron.cluster.message.timeout=60000000000\"\
+            && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\"\
+            ; $(kill_java_process "${client_class_name}")\
+            ; ${client_driver}\
+            && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client & \
+            $(await_java_process_start "${client_class_name}")\
+            ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}")\
+            && wait \$! && kill \${driver_pid}; wait"
 
-    stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
+            echo -e "\nStarting node 0..."
+            ssh ${SSH_USER}@${SSH_CLUSTER_NODE0} "($(start_server "${server_class_name}" "${server_drivers_node0[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
 
-    run_benchmarks \
-      "${start_client}" \
-      "${start_server}" \
-      "${stop_server}" \
-      "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}" \
-      "uk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-      "aeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}" \
-      "aeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}" \
-      "aeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}" \
-      "aeron.cluster.message.timeout=60000000000"
+            echo -e "\nStarting client..."
+            ssh ${SSH_USER}@${SSH_CLIENT_NODE} "${start_client} && exit"
+
+            echo -e "\nStopping node 0..."
+            ssh ${SSH_USER}@${SSH_CLUSTER_NODE0} "$(kill_java_process "${server_class_name}"); $(stop_media_driver) && exit"
+          done
+        done
+      done
+    done
   done
 done
 
