@@ -89,13 +89,13 @@ function run_benchmarks()
           jvm_opts="${jvm_opts%?}\""
 
           echo -e "\nStarting server..."
-          ssh ${SSH_USER}@${SSH_SERVER_NODE} "(${server_start_command} &) > /dev/null 2>&1 && exit"
+          ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_SERVER_NODE} "(${server_start_command} &) > /dev/null 2>&1 && exit"
 
           echo -e "\nStarting client..."
-          ssh ${SSH_USER}@${SSH_CLIENT_NODE} "${jvm_opts} && ${client_command} && exit"
+          ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE} "${jvm_opts} && ${client_command} && exit"
 
           echo -e "\nStopping server..."
-          ssh ${SSH_USER}@${SSH_SERVER_NODE} "${server_stop_command} && exit"
+          ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_SERVER_NODE} "${server_stop_command} && exit"
         done
       done
     done
@@ -108,8 +108,8 @@ function download_results()
   local results_dir="${2}"
   local dest_dir="${3}"
 
-  ssh ${SSH_USER}@${SSH_CLIENT_NODE} "rm -f \"${archive}\"; cd \"${results_dir}\" && zip -r \"${archive}\" . && exit"
-  scp ${SSH_USER}@${SSH_CLIENT_NODE}:"${archive}" "${dest_dir}"
+  ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE} "rm -f \"${archive}\"; cd \"${results_dir}\" && zip -r \"${archive}\" . && exit"
+  scp -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE}:"${archive}" "${dest_dir}"
 }
 
 function await_process_start()
