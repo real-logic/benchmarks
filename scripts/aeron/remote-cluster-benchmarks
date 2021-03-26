@@ -203,7 +203,7 @@ function build_drivers()
 
 function start_server()
 {
-  local server_class_name=${1}
+  local cluster_node_class_name=${1}
   local server_driver=${2}
   local fsync=${3}
   local node_id=${4}
@@ -224,7 +224,7 @@ function start_server()
   local consensus_module_cpu_core1=NODE${node_id}_CONSENSUS_MODULE_CPU_CORE_1}
   echo "
     export JAVA_HOME=\"${!java_home}\" \
-    ; $(kill_java_process "${server_class_name}") \
+    ; $(kill_java_process "${cluster_node_class_name}") \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
     -Daeron.cluster.members=${CLUSTER_MEMBERS} \
@@ -241,7 +241,7 @@ function start_server()
     -Daeron.archive.control.response.channel=${!archive_control_response_channel} \
     -Daeron.archive.control.response.stream.id=${!archive_control_response_stream_id}\" \
     && taskset -c ${!other_cpu_cores} ${!benchmarks_path}/scripts/aeron/cluster-node & \
-    $(await_java_process_start "${server_class_name}") \
+    $(await_java_process_start "${cluster_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_cpu_core1}") \
     ; $(pin_thread \${pid} "archive-replaye" "${!archive_cpu_core2}") \
     ; $(pin_thread \${pid} "archive-conduct" "${!archive_cpu_core3}") \
@@ -254,13 +254,13 @@ IFS=$'\n'
 client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" \
 "${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CPU_CORE_1}" "${CLIENT_DRIVER_CPU_CORE_2}" "${CLIENT_DRIVER_CPU_CORE_3}"))
 # shellcheck disable=SC2207
-server_drivers_node0=($(build_drivers "${NODE0_BENCHMARKS_PATH}" \
+cluster_node0_drivers=($(build_drivers "${NODE0_BENCHMARKS_PATH}" \
 "${NODE0_DRIVER_OTHER_CPU_CORES}" "${NODE0_DRIVER_CPU_CORE_1}" "${NODE0_DRIVER_CPU_CORE_2}" "${NODE0_DRIVER_CPU_CORE_3}"))
 # shellcheck disable=SC2207
-server_drivers_node1=($(build_drivers "${NODE1_BENCHMARKS_PATH}" \
+cluster_node1_drivers=($(build_drivers "${NODE1_BENCHMARKS_PATH}" \
 "${NODE1_DRIVER_OTHER_CPU_CORES}" "${NODE1_DRIVER_CPU_CORE_1}" "${NODE1_DRIVER_CPU_CORE_2}" "${NODE1_DRIVER_CPU_CORE_3}"))
 # shellcheck disable=SC2207
-server_drivers_node2=($(build_drivers "${NODE2_BENCHMARKS_PATH}" \
+cluster_node2_drivers=($(build_drivers "${NODE2_BENCHMARKS_PATH}" \
 "${NODE2_DRIVER_OTHER_CPU_CORES}" "${NODE2_DRIVER_CPU_CORE_1}" "${NODE2_DRIVER_CPU_CORE_2}" "${NODE2_DRIVER_CPU_CORE_3}"))
 unset IFS
 
@@ -315,7 +315,7 @@ do
     echo -e "\n Testing scenario: '${test}'\n"
 
     client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
-    server_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterNode"
+    cluster_node_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterNode"
 
     for messageRate in "${MESSAGE_RATE[@]}"
     do
@@ -347,19 +347,25 @@ do
             && wait \$! && kill \${driver_pid}; wait"
 
             echo -e "\nStarting node 0..."
-            ssh ${SSH_USER}@${SSH_NODE0} "($(start_server "${server_class_name}" "${server_drivers_node0[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
+            ssh ${SSH_USER}@${SSH_CLUSTER_NODE0} "($(start_server "${cluster_node_class_name}" "${cluster_node0_drivers[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
 
             echo -e "\nStarting node 1..."
-            ssh ${SSH_USER}@${SSH_NODE1} "($(start_server "${server_class_name}" "${server_drivers_node1[index]}" "${fsync}" 1) &) > /dev/null 2>&1 && exit"
+            ssh ${SSH_USER}@${SSH_CLUSTER_NODE1} "($(start_server "${cluster_node_class_name}" "${cluster_node1_drivers[index]}" "${fsync}" 1) &) > /dev/null 2>&1 && exit"
+
+            echo -e "\nStarting node 2..."
+            ssh ${SSH_USER}@${SSH_CLUSTER_NODE2} "($(start_server "${cluster_node_class_name}" "${cluster_node2_drivers[index]}" "${fsync}"2) &) > /dev/null 2>&1 && exit"
 
             echo -e "\nRunning benchmark..."
             ssh ${SSH_USER}@${SSH_CLIENT_NODE} "${start_client} && exit"
 
             echo -e "\nStopping node 0..."
-            ssh ${SSH_USER}@${SSH_NODE0} "$(kill_java_process "${server_class_name}"); $(stop_media_driver) && exit"
+            ssh ${SSH_USER}@${SSH_CLUSTER_NODE0} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
 
             echo -e "\nStopping node 1..."
-            ssh ${SSH_USER}@${SSH_NODE1} "$(kill_java_process "${server_class_name}"); $(stop_media_driver) && exit"
+            ssh ${SSH_USER}@${SSH_CLUSTER_NODE1} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
+
+            echo -e "\nStopping node 2..."
+            ssh ${SSH_USER}@${SSH_CLUSTER_NODE2} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
           done
         done
       done
