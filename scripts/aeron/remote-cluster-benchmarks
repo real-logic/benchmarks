@@ -140,58 +140,59 @@ function build_drivers()
   then
     local create_benchmark_props="touch ${scripts_path}/benchmark.properties"
     # C driver
-    commands+=("${create_benchmark_props}; $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+    commands+=("${create_benchmark_props}; \
+      $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
 
     if [ "${enable_onload}" -eq 1 ]
     then
       # C driver with Onload
-      commands+=("${create_benchmark_props}; $(start_media_driver \
-        "${onload}${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+      commands+=("${create_benchmark_props}; \
+        $(start_media_driver "${onload}${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ef_vi}" -eq 1 ]
     then
       # C driver with ef_vi
-      commands+=("${create_benchmark_props}; $(start_media_driver \
-        "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+      commands+=("${create_benchmark_props}; \
+        export AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
-        ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ats}" -eq 1 ]
     then
       # C driver with ATS
-      commands+=("${create_benchmark_props}; $(start_media_driver \
-        "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+      commands+=("${create_benchmark_props}; \
+        export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
         AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-        ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
 
       if [ "${enable_onload}" -eq 1 ]
       then
         # C driver with ATS and Onload
-        commands+=("${create_benchmark_props}; $(start_media_driver \
-          "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        commands+=("${create_benchmark_props}; \
+          export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-          ${onload}${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+          && $(start_media_driver "${onload}${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
       fi
 
       if [ "${enable_ef_vi}" -eq 1 ]
       then
         # C driver with ATS and ef_vi
-        commands+=("${create_benchmark_props}; $(start_media_driver \
-          "AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        commands+=("${create_benchmark_props}; \
+          export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
           AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
-          ${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+          && $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
       fi
     fi
   fi
