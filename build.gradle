@@ -70,7 +70,6 @@ allprojects {
     configurations.all {
         resolutionStrategy {
             failOnVersionConflict()
-            failOnNonReproducibleResolution()
 
             force "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
                   "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
