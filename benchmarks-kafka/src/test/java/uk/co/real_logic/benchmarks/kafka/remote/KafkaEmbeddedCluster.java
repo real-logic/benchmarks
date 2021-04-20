@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.kafka.remote;
 
-import kafka.metrics.KafkaMetricsReporter;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaConfig$;
 import kafka.server.KafkaServer;
@@ -23,8 +22,6 @@ import org.apache.kafka.common.utils.Time;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import scala.Option;
-import scala.collection.immutable.Seq;
-import scala.collection.immutable.Seq$;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.net.InetSocketAddress;
@@ -65,9 +62,7 @@ class KafkaEmbeddedCluster implements AutoCloseable
         factory.startup(zookeeper);
 
         final KafkaConfig config = createConfig(httpPort, sslPort, zookeeperPort);
-        @SuppressWarnings("unchecked") final Seq<KafkaMetricsReporter> metricsReporters =
-            (Seq<KafkaMetricsReporter>)Seq$.MODULE$.empty();
-        kafka = new KafkaServer(config, Time.SYSTEM, Option.empty(), metricsReporters);
+        kafka = new KafkaServer(config, Time.SYSTEM, Option.empty(), false);
         kafka.startup();
     }
 
