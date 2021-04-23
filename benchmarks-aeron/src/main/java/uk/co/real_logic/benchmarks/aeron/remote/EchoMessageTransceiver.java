@@ -144,14 +144,15 @@ public final class EchoMessageTransceiver extends MessageTransceiver
             sendIndex = index = 0;
         }
 
-        final int sent =
-            sendMessages(publications[index], bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
+        final int sent = sendMessages(
+            publications[index], bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
 
         if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - timestamp < 0)
         {
             sendKeepAliveMessages(timestamp, checksum);
             timeOfLastKeepAliveNs = timestamp;
         }
+
         return sent;
     }
 

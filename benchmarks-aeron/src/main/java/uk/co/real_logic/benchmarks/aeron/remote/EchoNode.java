@@ -174,9 +174,9 @@ public final class EchoNode implements AutoCloseable, Runnable
                     return; // Abort execution
                 }
 
-                for (int i = 0; i < numImages; i++)
+                for (final Image image : images)
                 {
-                    if (images[i].isClosed())
+                    if (image.isClosed())
                     {
                         return;  // Abort execution
                     }

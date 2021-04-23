@@ -127,6 +127,7 @@ public abstract class MessageTransceiver extends MessageTransceiverBase
         {
             throw new IllegalStateException("Invalid checksum: expected=" + CHECKSUM + ", actual=" + checksum);
         }
+
         histogram.recordValue(clock.nanoTime() - timestamp);
         receivedMessages.getAndIncrement();
     }

@@ -249,7 +249,7 @@ class ConfigurationTest
     }
 
     @Test
-    void throwsIllegalArgumentExceptionIfOutputFileNamePrefixIsEmpty(final @TempDir Path tempDir) throws IOException
+    void throwsIllegalArgumentExceptionIfOutputFileNamePrefixIsEmpty(final @TempDir Path tempDir)
     {
         final Builder builder = new Builder()
             .messageRate(4)

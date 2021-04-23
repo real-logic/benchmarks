@@ -124,8 +124,8 @@ public final class Configuration
     public static final String IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.idleStrategy";
 
     /**
-     * Name of the required system property to configure the {@link MessageTransceiver} class (i.e. system under test) to be
-     * used for the benchmark. Must be a fully qualified class name.
+     * Name of the required system property to configure the {@link MessageTransceiver} class (i.e. system under test)
+     * to be used for the benchmark. Must be a fully qualified class name.
      */
     public static final String MESSAGE_TRANSCEIVER_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messageTransceiver";
 
@@ -149,9 +149,9 @@ public final class Configuration
         {
             SHA256 = MessageDigest.getInstance("SHA-256");
         }
-        catch (final NoSuchAlgorithmException e)
+        catch (final NoSuchAlgorithmException ex)
         {
-            throw new Error(e);
+            throw new Error(ex);
         }
     }
 
@@ -299,14 +299,11 @@ public final class Configuration
             throw new IllegalArgumentException("Output file name prefix cannot be empty!");
         }
 
-        final StringBuilder builder = new StringBuilder(prefix.length() + 98);
-
-        builder.append(prefix)
-            .append("_").append(messageRate)
-            .append("_").append(batchSize)
-            .append("_").append(messageLength)
-            .append("_").append(computeSha256(systemProperties));
-        return builder.toString();
+        return prefix +
+            "_" + messageRate +
+            "_" + batchSize +
+            "_" + messageLength +
+            "_" + computeSha256(systemProperties);
     }
 
     /**

@@ -43,26 +43,28 @@ class LoadTestRigTest
     private final PrintStream out = mock(PrintStream.class);
     private final Histogram histogram = mock(Histogram.class);
     private final PersistedHistogram persistedHistogram = mock(PersistedHistogram.class);
-    private final MessageTransceiver messageTransceiver = spy(new MessageTransceiver(clock, histogram)
-    {
-        public void init(final Configuration configuration) throws Exception
+    private final MessageTransceiver messageTransceiver = spy(
+        new MessageTransceiver(clock, histogram)
         {
-        }
+            public void init(final Configuration configuration)
+            {
+            }
 
-        public void destroy() throws Exception
-        {
-        }
+            public void destroy()
+            {
+            }
 
-        public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
-        {
-            return numberOfMessages;
-        }
+            public int send(
+                final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
+            {
+                return numberOfMessages;
+            }
 
-        public void receive()
-        {
-            onMessageReceived(1, CHECKSUM);
-        }
-    });
+            public void receive()
+            {
+                onMessageReceived(1, CHECKSUM);
+            }
+        });
 
     private Configuration configuration;
 

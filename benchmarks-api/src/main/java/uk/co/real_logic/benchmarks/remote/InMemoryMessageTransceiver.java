@@ -70,6 +70,7 @@ public final class InMemoryMessageTransceiver extends MessageTransceiver
             UNSAFE.putLong(messages, offset(index + messageIndexOffset(i)), timestamp);
             UNSAFE.putLong(messages, offset(index + 1 + messageIndexOffset(i)), checksum);
         }
+
         UNSAFE.putLong(messages, offset(index), timestamp);
         UNSAFE.putOrderedLong(messages, offset(index + 1), checksum);
 

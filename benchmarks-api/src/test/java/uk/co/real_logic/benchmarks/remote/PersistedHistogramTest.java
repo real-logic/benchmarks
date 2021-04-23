@@ -130,6 +130,7 @@ class PersistedHistogramTest
         assertNotNull(file);
         assertTrue(Files.exists(file));
         assertEquals("another_one-14.hdr", file.getFileName().toString());
+
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(histogram, savedHistogram);
     }
@@ -137,19 +138,16 @@ class PersistedHistogramTest
     private Histogram readHistogram(final Path file) throws FileNotFoundException
     {
         final List<EncodableHistogram> histograms = new ArrayList<>();
-        final HistogramLogReader logReader = new HistogramLogReader(file.toFile());
-        try
+        try (HistogramLogReader logReader = new HistogramLogReader(file.toFile()))
         {
             while (logReader.hasNext())
             {
                 histograms.add(logReader.nextIntervalHistogram());
             }
         }
-        finally
-        {
-            logReader.close();
-        }
+
         assertEquals(1, histograms.size());
+
         return (Histogram)histograms.get(0);
     }
 }
