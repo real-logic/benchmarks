@@ -1,6 +1,6 @@
 # Benchmarks
 
-Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures.
+Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures and messaging systems.
 
 ## Java Benchmarks
 
