@@ -17,6 +17,7 @@
 
 required_vars=(
   "SSH_USER"
+  "SSH_KEY_FILE"
   "SSH_CLIENT_NODE"
   "SSH_SERVER_NODE")
 
