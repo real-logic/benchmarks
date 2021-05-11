@@ -132,6 +132,7 @@ class ClusterTest
             .clusterMembers("0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:8010")
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel("aeron:udp?term-length=64k|control-mode=manual|control=localhost:20002")
+            .replicationChannel("aeron:udp?endpoint=localhost:0")
             .errorHandler(AeronUtil.rethrowingErrorHandler("consensus-module"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
