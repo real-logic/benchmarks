@@ -47,10 +47,6 @@ required_vars=(
   "NODE0_CLUSTER_LOG_CHANNEL"
   "NODE0_CLUSTER_REPLICATION_CHANNEL"
   "NODE0_ARCHIVE_DIR"
-  "NODE0_ARCHIVE_CONTROL_CHANNEL"
-  "NODE0_ARCHIVE_CONTROL_STREAM_ID"
-  "NODE0_ARCHIVE_CONTROL_RESPONSE_CHANNEL"
-  "NODE0_ARCHIVE_CONTROL_RESPONSE_STREAM_ID"
   "NODE1_JAVA_HOME"
   "NODE1_DRIVER_CPU_CORE_1"
   "NODE1_DRIVER_CPU_CORE_2"
@@ -66,10 +62,6 @@ required_vars=(
   "NODE1_CLUSTER_LOG_CHANNEL"
   "NODE1_CLUSTER_REPLICATION_CHANNEL"
   "NODE1_ARCHIVE_DIR"
-  "NODE1_ARCHIVE_CONTROL_CHANNEL"
-  "NODE1_ARCHIVE_CONTROL_STREAM_ID"
-  "NODE1_ARCHIVE_CONTROL_RESPONSE_CHANNEL"
-  "NODE1_ARCHIVE_CONTROL_RESPONSE_STREAM_ID"
   "NODE2_JAVA_HOME"
   "NODE2_DRIVER_CPU_CORE_1"
   "NODE2_DRIVER_CPU_CORE_2"
@@ -84,11 +76,7 @@ required_vars=(
   "NODE2_CLUSTER_INGRESS_CHANNEL"
   "NODE2_CLUSTER_LOG_CHANNEL"
   "NODE2_CLUSTER_REPLICATION_CHANNEL"
-  "NODE2_ARCHIVE_DIR"
-  "NODE2_ARCHIVE_CONTROL_CHANNEL"
-  "NODE2_ARCHIVE_CONTROL_STREAM_ID"
-  "NODE2_ARCHIVE_CONTROL_RESPONSE_CHANNEL"
-  "NODE2_ARCHIVE_CONTROL_RESPONSE_STREAM_ID")
+  "NODE2_ARCHIVE_DIR")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var+''}" ]]
@@ -253,10 +241,6 @@ function start_server()
   local cluster_log_channel=NODE${node_id}_CLUSTER_LOG_CHANNEL
   local cluster_replication_channel=NODE${node_id}_CLUSTER_REPLICATION_CHANNEL
   local archive_dir=NODE${node_id}_ARCHIVE_DIR
-  local archive_control_channel=NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
-  local archive_control_stream_id=NODE${node_id}_ARCHIVE_CONTROL_STREAM_ID
-  local archive_control_response_channel=NODE${node_id}_ARCHIVE_CONTROL_RESPONSE_CHANNEL
-  local archive_control_response_stream_id=NODE${node_id}_ARCHIVE_CONTROL_RESPONSE_STREAM_ID
   local other_cpu_cores=NODE${node_id}_OTHER_CPU_CORES
   local archive_cpu_core1=NODE${node_id}_ARCHIVE_CPU_CORE_1
   local archive_cpu_core2=NODE${node_id}_ARCHIVE_CPU_CORE_2
@@ -276,11 +260,7 @@ function start_server()
     -Daeron.archive.dir=${!archive_dir} \
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
-    -Daeron.archive.recording.events.enabled=false \
-    -Daeron.archive.control.channel=${!archive_control_channel} \
-    -Daeron.archive.control.stream.id=${!archive_control_stream_id} \
-    -Daeron.archive.control.response.channel=${!archive_control_response_channel} \
-    -Daeron.archive.control.response.stream.id=${!archive_control_response_stream_id}\" \
+    -Daeron.archive.recording.events.enabled=false\" \
     && taskset -c ${!other_cpu_cores} ${!benchmarks_path}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_cpu_core1}") \
