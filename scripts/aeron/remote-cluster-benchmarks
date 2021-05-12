@@ -378,7 +378,7 @@ do
             -Daeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}\
             -Daeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}\
             -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
-            -Daeron.cluster.message.timeout=60000000000\"\
+            -Daeron.cluster.message.timeout=300000000000\"\
             && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\"\
             ; $(kill_java_process "${client_class_name}")\
             ; ${client_driver}\
