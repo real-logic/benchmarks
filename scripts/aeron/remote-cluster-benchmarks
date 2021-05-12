@@ -166,12 +166,12 @@ function build_drivers()
   if [ "${enable_java_driver}" -eq 1 ]
   then
     # Java driver
-    commands+=("$(start_media_driver "${scripts_path}/media-driver" "${2}" "${3}" "${4}" "${5}")")
+    commands+=("$(start_media_driver "${scripts_path}/media-driver" "" "${2}" "${3}" "${4}" "${5}")")
 
     if [ "${enable_onload}" -eq 1 ]
     then
       # Java driver with Onload
-      commands+=("$(start_media_driver "${onload}${scripts_path}/media-driver" "${2}" "${3}" "${4}" "${5}")")
+      commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
     fi
   fi
 
@@ -180,13 +180,13 @@ function build_drivers()
     local create_benchmark_props="touch ${scripts_path}/benchmark.properties"
     # C driver
     commands+=("${create_benchmark_props}; \
-      $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+      $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
 
     if [ "${enable_onload}" -eq 1 ]
     then
       # C driver with Onload
       commands+=("${create_benchmark_props}; \
-        $(start_media_driver "${onload}${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+        $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ef_vi}" -eq 1 ]
@@ -195,7 +195,7 @@ function build_drivers()
       commands+=("${create_benchmark_props}; \
         export AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ats}" -eq 1 ]
@@ -207,7 +207,7 @@ function build_drivers()
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
 
       if [ "${enable_onload}" -eq 1 ]
       then
@@ -218,7 +218,7 @@ function build_drivers()
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-          && $(start_media_driver "${onload}${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+          && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
       fi
 
       if [ "${enable_ef_vi}" -eq 1 ]
@@ -231,7 +231,7 @@ function build_drivers()
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
           AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
-          && $(start_media_driver "${scripts_path}/c-media-driver" "${2}" "${3}" "${4}" "${5}")")
+          && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
       fi
     fi
   fi
