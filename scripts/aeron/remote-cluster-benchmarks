@@ -40,7 +40,7 @@ required_vars=(
   "NODE0_ARCHIVE_CPU_CORE_1"
   "NODE0_ARCHIVE_CPU_CORE_2"
   "NODE0_ARCHIVE_CPU_CORE_3"
-  "NODE0_CONSENSUS_MODULE_CPU_CORE_1"
+  "NODE0_CONSENSUS_MODULE_CPU"
   "NODE0_OTHER_CPU_CORES"
   "NODE0_CLUSTER_DIR"
   "NODE0_CLUSTER_INGRESS_CHANNEL"
@@ -55,7 +55,7 @@ required_vars=(
   "NODE1_ARCHIVE_CPU_CORE_1"
   "NODE1_ARCHIVE_CPU_CORE_2"
   "NODE1_ARCHIVE_CPU_CORE_3"
-  "NODE1_CONSENSUS_MODULE_CPU_CORE_1"
+  "NODE1_CONSENSUS_MODULE_CPU"
   "NODE1_OTHER_CPU_CORES"
   "NODE1_CLUSTER_DIR"
   "NODE1_CLUSTER_INGRESS_CHANNEL"
@@ -70,7 +70,7 @@ required_vars=(
   "NODE2_ARCHIVE_CPU_CORE_1"
   "NODE2_ARCHIVE_CPU_CORE_2"
   "NODE2_ARCHIVE_CPU_CORE_3"
-  "NODE2_CONSENSUS_MODULE_CPU_CORE_1"
+  "NODE2_CONSENSUS_MODULE_CPU"
   "NODE2_OTHER_CPU_CORES"
   "NODE2_CLUSTER_DIR"
   "NODE2_CLUSTER_INGRESS_CHANNEL"
@@ -245,7 +245,7 @@ function start_server()
   local archive_cpu_core1=NODE${node_id}_ARCHIVE_CPU_CORE_1
   local archive_cpu_core2=NODE${node_id}_ARCHIVE_CPU_CORE_2
   local archive_cpu_core3=NODE${node_id}_ARCHIVE_CPU_CORE_3
-  local consensus_module_cpu_core1=NODE${node_id}_CONSENSUS_MODULE_CPU_CORE_1}
+  local consensus_module_cpu=NODE${node_id}_CONSENSUS_MODULE_CPU}
   echo "
     export JAVA_HOME=\"${!java_home}\" \
     ; $(kill_java_process "${cluster_node_class_name}") \
@@ -266,7 +266,7 @@ function start_server()
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_cpu_core1}") \
     ; $(pin_thread \${pid} "archive-replaye" "${!archive_cpu_core2}") \
     ; $(pin_thread \${pid} "archive-conduct" "${!archive_cpu_core3}") \
-    ; $(pin_thread \${pid} "consensus-modul" "${!consensus_module_cpu_core1}") \
+    ; $(pin_thread \${pid} "consensus-modul" "${!consensus_module_cpu}") \
     && wait \$!"
 }
 
