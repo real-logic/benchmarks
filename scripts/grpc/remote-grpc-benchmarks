@@ -101,7 +101,7 @@ do
 
     start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
     ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-    ; taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${onload} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/${client-client} & \
+    ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/${client-client} & \
     $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
     $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}") \
     && wait \$!"
@@ -113,7 +113,7 @@ do
     -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT} \
     -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
     -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}\" \
-    && taskset -c ${SERVER_CPU_CORES} ${onload} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
+    && ${onload} taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
 
     stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
 

@@ -110,7 +110,7 @@ do
 
       start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
       ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-      ; taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${onload} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client &
+      ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client &
       $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
       $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}") \
       && wait \$!"
@@ -119,7 +119,7 @@ do
       start_zookeeper="cp ${server_scripts_path}/zookeeper.properties ${server_scripts_path}/zookeeper.properties.bak \
       && echo \"dataDir=${SERVER_KAFKA_DIR}/zookeeper\" >> ${server_scripts_path}/zookeeper.properties \
       && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-      && taskset -c ${SERVER_ZOOKEEPER_CPU_CORES} ${onload} ${server_scripts_path}/zookeeper-start"
+      && ${onload} taskset -c ${SERVER_ZOOKEEPER_CPU_CORES} ${server_scripts_path}/zookeeper-start"
 
       start_kafka="cp ${server_scripts_path}/server.properties ${server_scripts_path}/server.properties.bak \
       && echo -e \"log.dirs=${SERVER_KAFKA_DIR}/logs\n\
@@ -127,7 +127,7 @@ do
       ssl.keystore.location=${SERVER_BENCHMARKS_PATH}/certificates/server.keystore\n\
       advertised.listeners=PLAINTEXT://${SERVER_HOST}:${plain_text_port},SSL://${SERVER_HOST}:${ssl_port}\" >> ${server_scripts_path}/server.properties \
       && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-      && taskset -c ${SERVER_KAFKA_CPU_CORES} ${onload} ${server_scripts_path}/kafka-start"
+      && ${onload} taskset -c ${SERVER_KAFKA_CPU_CORES} ${server_scripts_path}/kafka-start"
 
       stop_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
       && KAFKA_DATA_DIR=\"${SERVER_KAFKA_DIR}\" ${server_scripts_path}/stop-all; \
