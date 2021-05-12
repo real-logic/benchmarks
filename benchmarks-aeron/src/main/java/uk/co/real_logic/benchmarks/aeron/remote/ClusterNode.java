@@ -36,13 +36,12 @@ public final class ClusterNode
         SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         final Archive.Context archiveContext = new Archive.Context()
-            .deleteArchiveOnStart(true);
+            .deleteArchiveOnStart(true)
+            .recordingEventsEnabled(false);
         archiveContext.localControlStreamId(archiveContext.controlStreamId());
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(archiveContext.controlChannel())
-            .controlRequestStreamId(archiveContext.controlStreamId())
             .aeronDirectoryName(archiveContext.aeronDirectoryName());
 
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
