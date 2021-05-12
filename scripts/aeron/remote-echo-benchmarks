@@ -17,7 +17,7 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-source "${DIR}/aeron-remote-benchmarks-functions"
+source "${DIR}/remote-benchmarks-helper"
 
 required_vars=(
   "CLIENT_JAVA_HOME"
@@ -124,12 +124,12 @@ function build_drivers()
   if [ "${enable_java_driver}" -eq 1 ]
   then
     # Java driver
-    commands+=("\$(start_media_driver \"${scripts_path}/media-driver\" \"\" \"${2}\" \"${3}\" \"${4}\" \"${5}\")")
+    commands+=("$(start_media_driver "${scripts_path}/media-driver" "" "${2}" "${3}" "${4}" "${5}")")
 
     if [ "${enable_onload}" -eq 1 ]
     then
       # Java driver with Onload
-      commands+=("\$(start_media_driver \"${scripts_path}/media-driver\" \"${onload}\" \"${2}\" \"${3}\" \"${4}\" \"${5}\")")
+      commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
     fi
   fi
 
@@ -138,13 +138,13 @@ function build_drivers()
     local create_benchmark_props="touch ${scripts_path}/benchmark.properties"
     # C driver
     commands+=("${create_benchmark_props}; \
-      \$(start_media_driver \"${scripts_path}/c-media-driver\" \"\" \"${2}\" \"${3}\" \"${4}\" \"${5}\")")
+      $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
 
     if [ "${enable_onload}" -eq 1 ]
     then
       # C driver with Onload
       commands+=("${create_benchmark_props}; \
-        \$(start_media_driver \"${scripts_path}/c-media-driver\" \"${onload}\" \"${2}\" \"${3}\" \"${4}\" \"${5}\")")
+        $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ef_vi}" -eq 1 ]
@@ -153,7 +153,7 @@ function build_drivers()
       commands+=("${create_benchmark_props}; \
         export AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
-        && \$(start_media_driver \"${scripts_path}/c-media-driver\" \"\" \"${2}\" \"${3}\" \"${4}\" \"${5}\")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ats}" -eq 1 ]
@@ -165,7 +165,7 @@ function build_drivers()
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-        && \$(start_media_driver \"${scripts_path}/c-media-driver\" \"\" \"${2}\" \"${3}\" \"${4}\" \"${5}\")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
 
       if [ "${enable_onload}" -eq 1 ]
       then
@@ -176,7 +176,7 @@ function build_drivers()
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-          && \$(start_media_driver \"${scripts_path}/c-media-driver\" \"${onload}\" \"${2}\" \"${3}\" \"${4}\" \"${5}\")")
+          && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
       fi
 
       if [ "${enable_ef_vi}" -eq 1 ]
@@ -189,7 +189,7 @@ function build_drivers()
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
           AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
-          && \$(start_media_driver \"${scripts_path}/c-media-driver\" \"\" \"${2}\" \"${3}\" \"${4}\" \"${5}\")")
+          && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
       fi
     fi
   fi
@@ -306,17 +306,15 @@ do
         server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
 
         start_client="\
-        source ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/aeron-remote-benchmarks-functions;\
         export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
-        ; \$(kill_java_process \"${client_class_name}\") \
+        ; $(kill_java_process "${client_class_name}") \
         ; ${client_driver} \
         && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
-        \$(await_java_process_start \"${client_class_name}\") \
-        ; \$(pin_thread \${pid} \"load-test-rig\" \"${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}\") \
+        $(await_java_process_start "${client_class_name}") \
+        ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}") \
         && wait \$!; kill \${driver_pid}; wait"
 
         start_server="\
-        source ${SERVER_BENCHMARKS_PATH}/scripts/aeron/aeron-remote-benchmarks-functions;\
         export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
         && ${server_driver} \
         && export JVM_OPTS=\"\
@@ -328,14 +326,12 @@ do
         -Duk.co.real_logic.benchmarks.aeron.remote.passive.streams=${passive_streams%?}\" \
         && taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
 
-        stop_server="\
-        source ${SERVER_BENCHMARKS_PATH}/scripts/aeron/aeron-remote-benchmarks-functions;\
-        \$(kill_java_process \"${server_class_name}\"); \
-        \$(stop_media_driver)"
+        stop_server="$(kill_java_process "${server_class_name}"); \
+        $(stop_media_driver)"
 
         run_benchmarks \
           "${start_client}" \
-          "\$(kill_java_process \"${server_class_name}\"); ${start_server}" \
+          "$(kill_java_process "${server_class_name}"); ${start_server}" \
           "${stop_server}" \
           "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}" \
           "uk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \

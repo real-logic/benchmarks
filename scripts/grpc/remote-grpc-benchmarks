@@ -99,13 +99,11 @@ do
 
     echo -e "\n Testing scenario: '${scenario}'\n"
 
-    start_client="\
-    source ${CLIENT_BENCHMARKS_PATH}/scripts/remote-benchmarks-functions;\
-    export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
-    ; \$(kill_java_process \"uk.co.real_logic.benchmarks.remote.LoadTestRig\") \
+    start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
+    ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
     ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/${client-client} & \
-    \$(await_java_process_start \"uk.co.real_logic.benchmarks.remote.LoadTestRig\"); \
-    \$(pin_thread \${pid} \"load-test-rig\" \"${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}\") \
+    $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
+    $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_CPU_CORE_1}") \
     && wait \$!"
 
     # shellcheck disable=SC2153
@@ -117,9 +115,7 @@ do
     -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}\" \
     && ${onload} taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
 
-    stop_server="\
-    source ${SERVER_BENCHMARKS_PATH}/scripts/remote-benchmarks-functions;\
-    \$(kill_java_process \"uk.co.real_logic.benchmarks.grpc.remote.EchoServer\")"
+    stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
 
     run_benchmarks \
       "${start_client}" \
