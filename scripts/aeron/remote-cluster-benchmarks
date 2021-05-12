@@ -17,6 +17,11 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
+if [ -z "${MESSAGE_RATE}" ];
+then
+  MESSAGE_RATE=(50000)
+fi
+
 if [ -z "${MESSAGE_LENGTH}" ];
 then
   export MESSAGE_LENGTH=(32 224 1344)
