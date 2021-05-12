@@ -15,6 +15,10 @@
 ## limitations under the License.
 ##
 
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+source "${DIR}/remote-benchmarks-functions"
+
 required_vars=(
   "SSH_USER"
   "SSH_KEY_FILE"
@@ -111,37 +115,4 @@ function download_results()
 
   ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE} "rm -f \"${archive}\"; cd \"${results_dir}\" && zip -r \"${archive}\" . && exit"
   scp -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE}:"${archive}" "${dest_dir}"
-}
-
-function await_process_start()
-{
-  local pid=${1}
-  echo "pid=${pid}; while [ -z \"\${pid}\" ]; do sleep 0.5; pid=${pid}; done; echo \"pid=\${pid}\""
-}
-
-function find_java_process()
-{
-  local class_name=${1}
-  echo "\$(pgrep -l -f '${class_name}' | awk '/java/{print \$1}')"
-}
-
-function await_java_process_start()
-{
-  local class_name=${1}
-  await_process_start "$(find_java_process "${class_name}")"
-}
-
-function pin_thread()
-{
-  local pid=${1}
-  local thread_name=${2}
-  local core=${3}
-  local tid="\$(ps Ho tid,comm -p ${pid} | awk '/${thread_name}/{print \$1}')"
-  echo "tid=${tid}; while [ -z \"\${tid}\" ]; do sleep 0.1; tid=${tid}; done; echo \"tid_${thread_name}=\${tid}\"; taskset -p -c ${core} \${tid}"
-}
-
-function kill_java_process()
-{
-  local class_name=${1}
-  echo "kill -9 $(find_java_process "${class_name}")"
 }
