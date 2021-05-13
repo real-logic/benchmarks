@@ -303,6 +303,10 @@ do
 
     client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
     cluster_node_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterNode"
+    client_ingress_endpoints=''
+    if [ -n "${CLIENT_INGRESS_ENDPOINTS}" ]; then
+      client_ingress_endpoints="-Daeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}"
+    fi
 
     for messageRate in "${MESSAGE_RATE[@]}"
     do
@@ -322,7 +326,7 @@ do
             -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}\
             -Duk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results\
             -Daeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}\
-            -Daeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}\
+            ${client_ingress_endpoints}\
             -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
             -Daeron.cluster.message.timeout=300000000000\"\
             && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\"\
