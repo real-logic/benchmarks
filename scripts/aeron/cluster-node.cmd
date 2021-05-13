@@ -21,5 +21,6 @@ set "DIR=%~dp0"
 call "%DIR%\..\run-java.cmd" ^
   uk.co.real_logic.benchmarks.aeron.remote.ClusterNode ^
   "%DIR%\low-latency-driver.properties" ^
+  "%DIR%\low-latency-archive.properties" ^
   "%DIR%\benchmark.properties" ^
   %*
