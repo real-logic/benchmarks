@@ -34,6 +34,21 @@ then
   exit 1
 fi
 
+if [ -z "${SSH_CONNECTION_ATTEMPTS}" ];
+then
+  SSH_CONNECTION_ATTEMPTS=10
+fi
+
+if [ -z "${SSH_CONNECT_TIMEOUT}" ];
+then
+  SSH_CONNECT_TIMEOUT=30
+fi
+
+if [ -z "${SSH_SERVER_ALIVE_INTERVAL}" ];
+then
+  SSH_SERVER_ALIVE_INTERVAL=600
+fi
+
 if [ -z "${RUNS}" ];
 then
   RUNS=3
@@ -90,13 +105,13 @@ function run_benchmarks()
           jvm_opts="${jvm_opts%?}\""
 
           echo -e "\nStarting server..."
-          ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_SERVER_NODE} "(${server_start_command} &) > /dev/null 2>&1 && exit"
+          execute_remote_command ${SSH_SERVER_NODE} "(${server_start_command} &) > /dev/null 2>&1 && exit"
 
           echo -e "\nStarting client..."
-          ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE} "${jvm_opts} && ${client_command} && exit"
+          execute_remote_command ${SSH_CLIENT_NODE} "${jvm_opts} && ${client_command} && exit"
 
           echo -e "\nStopping server..."
-          ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_SERVER_NODE} "${server_stop_command} && exit"
+          execute_remote_command ${SSH_SERVER_NODE} "${server_stop_command} && exit"
         done
       done
     done
@@ -109,8 +124,12 @@ function download_results()
   local results_dir="${2}"
   local dest_dir="${3}"
 
-  ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE} "rm -f \"${archive}\"; cd \"${results_dir}\" && zip -r \"${archive}\" . && exit"
-  scp -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE}:"${archive}" "${dest_dir}"
+  execute_remote_command ${SSH_CLIENT_NODE} "rm -f \"${archive}\"; cd \"${results_dir}\" && zip -r \"${archive}\" . && exit"
+  scp -i ${SSH_KEY_FILE} \
+   -o ConnectionAttempts=${SSH_CONNECTION_ATTEMPTS} \
+   -o ConnectTimeout=${SSH_CONNECT_TIMEOUT} \
+   -o ServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL} \
+   ${SSH_USER}@${SSH_CLIENT_NODE}:"${archive}" "${dest_dir}"
 }
 
 function await_process_start()
@@ -135,4 +154,16 @@ function kill_java_process()
 {
   local class_name=${1}
   echo "kill -9 $(find_java_process "${class_name}")"
+}
+
+function execute_remote_command()
+{
+  local server=$1
+  local command=$2
+  ssh -i "${SSH_KEY_FILE}" \
+   -o ConnectionAttempts=${SSH_CONNECTION_ATTEMPTS} \
+   -o ConnectTimeout=${SSH_CONNECT_TIMEOUT} \
+   -o ServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL} \
+   "${SSH_USER}"@"${server}" \
+   "${command}"
 }

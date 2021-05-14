@@ -336,25 +336,25 @@ do
             ; kill \${driver_pid}; wait"
 
             echo -e "\nStarting node 0..."
-            ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLUSTER_NODE0} "($(start_server "${cluster_node_class_name}" "${cluster_node0_drivers[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
+            execute_remote_command ${SSH_CLUSTER_NODE0} "($(start_server "${cluster_node_class_name}" "${cluster_node0_drivers[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
 
             echo -e "\nStarting node 1..."
-            ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLUSTER_NODE1} "($(start_server "${cluster_node_class_name}" "${cluster_node1_drivers[index]}" "${fsync}" 1) &) > /dev/null 2>&1 && exit"
+            execute_remote_command ${SSH_CLUSTER_NODE1} "($(start_server "${cluster_node_class_name}" "${cluster_node1_drivers[index]}" "${fsync}" 1) &) > /dev/null 2>&1 && exit"
 
             echo -e "\nStarting node 2..."
-            ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLUSTER_NODE2} "($(start_server "${cluster_node_class_name}" "${cluster_node2_drivers[index]}" "${fsync}" 2) &) > /dev/null 2>&1 && exit"
+            execute_remote_command ${SSH_CLUSTER_NODE2} "($(start_server "${cluster_node_class_name}" "${cluster_node2_drivers[index]}" "${fsync}" 2) &) > /dev/null 2>&1 && exit"
 
             echo -e "\nRunning benchmark..."
-            ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLIENT_NODE} "${start_client} && exit"
+            execute_remote_command ${SSH_CLIENT_NODE} "${start_client} && exit"
 
             echo -e "\nStopping node 0..."
-            ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLUSTER_NODE0} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
+            execute_remote_command ${SSH_CLUSTER_NODE0} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
 
             echo -e "\nStopping node 1..."
-            ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLUSTER_NODE1} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
+            execute_remote_command ${SSH_CLUSTER_NODE1} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
 
             echo -e "\nStopping node 2..."
-            ssh -i ${SSH_KEY_FILE} ${SSH_USER}@${SSH_CLUSTER_NODE2} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
+            execute_remote_command ${SSH_CLUSTER_NODE2} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
           done
         done
       done
