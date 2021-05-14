@@ -257,9 +257,9 @@ do
       do
         for messageLength in "${MESSAGE_LENGTH[@]}"
         do
-          for ((n = 1; n <= RUNS; n++))
+          for ((r = 1; r <= RUNS; r++))
           do
-            echo -e '\n### Benchmark run #'"${n}"' ...\n'
+            echo -e '\n### Benchmark run #'"${r}"' ...\n'
 
             start_client="export JVM_OPTS=\"\
             -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}\
