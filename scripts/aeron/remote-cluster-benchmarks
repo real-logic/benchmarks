@@ -17,12 +17,12 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-if [ -z "${MESSAGE_LENGTH}" ];
+if [ -z "${MESSAGE_LENGTH}" ]
 then
   export MESSAGE_LENGTH=(32 224 1344)
 fi
 
-if [ -z "${CLUSTER_SIZE}" ];
+if [ -z "${CLUSTER_SIZE}" ]
 then
   export CLUSTER_SIZE=3
 fi
@@ -50,11 +50,10 @@ required_vars=(
 for var in "${required_vars[@]}"; do
   if [[ ${var} == _* ]]
   then
-    for (( i=0; i<CLUSTER_SIZE; i++ ))
+    for ((n = 0; n < CLUSTER_SIZE; n++))
     do
-      node_var="NODE${i}${var}"
-      if [[ -z "${!node_var+''}" ]]
-      then
+      node_var="NODE${n}${var}"
+      if [[ -z "${!node_var+''}" ]]; then
         echo "env var '${node_var}' must be set"
         required_var_missing=true
       fi
@@ -68,7 +67,7 @@ for var in "${required_vars[@]}"; do
   fi
 done
 
-if [ -n "${required_var_missing}" ];
+if [ -n "${required_var_missing}" ]
 then
   exit 1
 fi
@@ -83,41 +82,41 @@ file_sync_levels=(0 2)
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
-    --no-c-driver)
-      enable_c_driver=0
-      shift
-      ;;
-    --no-java-driver)
-      enable_java_driver=0
-      shift
-      ;;
-    --no-onload)
-      enable_onload=0
-      shift
-      ;;
-    --no-ef_vi)
-      enable_ef_vi=0
-      shift
-      ;;
-    --no-ats)
-      enable_ats=0
-      shift
-      ;;
-    --file-sync-level)
-      IFS=',';
-      read -ra file_sync_levels <<< "${2}"
-      unset IFS;
-      shift
-      shift
-      ;;
-    -h|--help)
-      echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--file-sync-level \"\${file-sync-level-csv}\"]"
-      exit
-      ;;
-    *)
-      echo "Invalid parameter. Use --help to get a list of supported parameters."
-      exit 1
-      ;;
+  --no-c-driver)
+    enable_c_driver=0
+    shift
+    ;;
+  --no-java-driver)
+    enable_java_driver=0
+    shift
+    ;;
+  --no-onload)
+    enable_onload=0
+    shift
+    ;;
+  --no-ef_vi)
+    enable_ef_vi=0
+    shift
+    ;;
+  --no-ats)
+    enable_ats=0
+    shift
+    ;;
+  --file-sync-level)
+    IFS=','
+    read -ra file_sync_levels <<<"${2}"
+    unset IFS
+    shift
+    shift
+    ;;
+  -h | --help)
+    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--file-sync-level \"\${file-sync-level-csv}\"]"
+    exit
+    ;;
+  *)
+    echo "Invalid parameter. Use --help to get a list of supported parameters."
+    exit 1
+    ;;
   esac
 done
 
@@ -126,89 +125,6 @@ then
   echo "At least C or Java driver must be enabled!"
   exit 1
 fi
-
-function build_drivers()
-{
-  local scripts_path="${1}/scripts/aeron"
-  local commands=()
-  local onload="onload --profile=latency --force-profiles "
-
-  if [ "${enable_java_driver}" -eq 1 ]
-  then
-    # Java driver
-    commands+=("$(start_media_driver "${scripts_path}/media-driver" "" "${2}")")
-
-    if [ "${enable_onload}" -eq 1 ]
-    then
-      # Java driver with Onload
-      commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}")")
-    fi
-  fi
-
-  if [ "${enable_c_driver}" -eq 1 ]
-  then
-    local create_benchmark_props="touch ${scripts_path}/benchmark.properties"
-    # C driver
-    commands+=("${create_benchmark_props}; \
-      $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}")")
-
-    if [ "${enable_onload}" -eq 1 ]
-    then
-      # C driver with Onload
-      commands+=("${create_benchmark_props}; \
-        $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}")")
-    fi
-
-    if [ "${enable_ef_vi}" -eq 1 ]
-    then
-      # C driver with ef_vi
-      commands+=("${create_benchmark_props}; \
-        export AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
-        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}")")
-    fi
-
-    if [ "${enable_ats}" -eq 1 ]
-    then
-      # C driver with ATS
-      commands+=("${create_benchmark_props}; \
-        export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
-        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
-        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}")")
-
-      if [ "${enable_onload}" -eq 1 ]
-      then
-        # C driver with ATS and Onload
-        commands+=("${create_benchmark_props}; \
-          export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
-          AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
-          AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-          AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-          AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-          && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}")")
-      fi
-
-      if [ "${enable_ef_vi}" -eq 1 ]
-      then
-        # C driver with ATS and ef_vi
-        commands+=("${create_benchmark_props}; \
-          export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
-          AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
-          AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-          AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-          AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
-          AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
-          && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}")")
-      fi
-    fi
-  fi
-
-  local IFS=$'\n'
-  echo "${commands[*]}"
-}
 
 function start_server()
 {
@@ -242,53 +158,77 @@ function start_server()
     && numactl -N ${!numa_node} -m ${!numa_node} ${!benchmarks_path}/scripts/aeron/cluster-node"
 }
 
-IFS=$'\n'
-# shellcheck disable=SC2207
-client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" "${CLIENT_DRIVER_NUMA_NODE}"))
-# shellcheck disable=SC2207
-cluster_node0_drivers=($(build_drivers "${NODE0_BENCHMARKS_PATH}" "${NODE0_DRIVER_NUMA_NODE}"))
-# shellcheck disable=SC2207
-cluster_node1_drivers=($(build_drivers "${NODE1_BENCHMARKS_PATH}" "${NODE1_DRIVER_NUMA_NODE}"))
-# shellcheck disable=SC2207
-cluster_node2_drivers=($(build_drivers "${NODE2_BENCHMARKS_PATH}" "${NODE2_DRIVER_NUMA_NODE}"))
-unset IFS
-
+commands=()
+scenarios=()
+scripts_path="benchmarks_path_var/scripts/aeron"
+onload="onload --profile=latency --force-profiles "
 if [ "${enable_java_driver}" -eq 1 ]
 then
   scenarios=("java")
+  commands+=("$(start_media_driver "${scripts_path}/media-driver" "" "driver_numa_node_var")")
 
   if [ "${enable_onload}" -eq 1 ]
   then
     scenarios+=("java-onload")
+    commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "driver_numa_node_var")")
   fi
 fi
 
 if [ "${enable_c_driver}" -eq 1 ]
 then
   scenarios+=("c")
+  create_benchmark_props="touch ${scripts_path}/benchmark.properties"
+  commands+=("${create_benchmark_props}; $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_numa_node_var")")
 
   if [ "${enable_onload}" -eq 1 ]
   then
     scenarios+=("c-onload")
+    commands+=("${create_benchmark_props}; $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_numa_node_var")")
   fi
 
   if [ "${enable_ef_vi}" -eq 1 ]
   then
     scenarios+=("c-ef_vi")
+    commands+=("${create_benchmark_props}; \
+      export AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+      AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_numa_node_var")")
   fi
 
   if [ "${enable_ats}" -eq 1 ]
   then
     scenarios+=("c-ats")
+    commands+=("${create_benchmark_props}; \
+      export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+      AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+      AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+      AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+      AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_numa_node_var")")
 
     if [ "${enable_onload}" -eq 1 ]
     then
       scenarios+=("c-ats-onload")
+      commands+=("${create_benchmark_props}; \
+        export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+        && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_numa_node_var")")
     fi
 
     if [ "${enable_ef_vi}" -eq 1 ]
     then
       scenarios+=("c-ats-ef_vi")
+      commands+=("${create_benchmark_props}; \
+        export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
+        AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_numa_node_var")")
     fi
   fi
 fi
@@ -296,7 +236,8 @@ fi
 for index in "${!scenarios[@]}"
 do
   scenario="${scenarios[index]}"
-  client_driver="${client_drivers[index]}"
+  client_driver="${commands[index]//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
+  client_driver="${client_driver//driver_numa_node_var/${CLIENT_DRIVER_NUMA_NODE}}"
 
   for fsync in "${file_sync_levels[@]}"
   do
@@ -316,9 +257,9 @@ do
       do
         for messageLength in "${MESSAGE_LENGTH[@]}"
         do
-          for (( i=1; i<=RUNS; i++ ))
+          for ((n = 1; n <= RUNS; n++))
           do
-            echo -e '\n### Benchmark run #'${i}' ...\n'
+            echo -e '\n### Benchmark run #'"${n}"' ...\n'
 
             start_client="export JVM_OPTS=\"\
             -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}\
@@ -337,21 +278,24 @@ do
             && numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client \
             ; kill \${driver_pid}; wait"
 
-            for (( j=0; j<CLUSTER_SIZE; j++ ))
+            for ((n = 0; n < CLUSTER_SIZE; n++))
             do
-              echo -e "\nStarting node ${j}..."
-              ssh_node=SSH_CLUSTER_NODE${j}
-              cluster_node_drivers=cluster_node${j}_drivers
-              execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${!cluster_node_drivers[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
+              echo -e "\nStarting node ${n}..."
+              ssh_node=SSH_CLUSTER_NODE${n}
+              server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
+              server_driver="${commands[index]//benchmarks_path_var/${!server_benchmarks_path}}"
+              server_driver_numa_node=NODE${n}_DRIVER_NUMA_NODE
+              server_driver="${server_driver//driver_numa_node_var/${!server_driver_numa_node}}"
+              execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${n}") &) > /dev/null 2>&1 && exit"
             done
 
             echo -e "\nRunning benchmark..."
             execute_remote_command "${SSH_CLIENT_NODE}" "${start_client} && exit"
 
-            for (( j=0; j<CLUSTER_SIZE; j++ ))
+            for ((n = 0; n < CLUSTER_SIZE; n++))
             do
-              echo -e "\nStopping node ${j}..."
-              ssh_node=SSH_CLUSTER_NODE${j}
+              echo -e "\nStopping node ${n}..."
+              ssh_node=SSH_CLUSTER_NODE${n}
               execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
             done
           done
