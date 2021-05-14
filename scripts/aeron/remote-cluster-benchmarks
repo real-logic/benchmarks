@@ -22,6 +22,11 @@ then
   export MESSAGE_LENGTH=(32 224 1344)
 fi
 
+if [ -z "${CLUSTER_SIZE}" ];
+then
+  export CLUSTER_SIZE=3
+fi
+
 source "${DIR}/remote-benchmarks-helper"
 
 required_vars=(
@@ -33,36 +38,33 @@ required_vars=(
   "CLIENT_INGRESS_ENDPOINTS"
   "CLIENT_EGRESS_CHANNEL"
   "CLUSTER_MEMBERS"
-  "NODE0_JAVA_HOME"
-  "NODE0_DRIVER_NUMA_NODE"
-  "NODE0_NUMA_NODE"
-  "NODE0_CLUSTER_DIR"
-  "NODE0_CLUSTER_INGRESS_CHANNEL"
-  "NODE0_CLUSTER_LOG_CHANNEL"
-  "NODE0_CLUSTER_REPLICATION_CHANNEL"
-  "NODE0_ARCHIVE_DIR"
-  "NODE1_JAVA_HOME"
-  "NODE1_DRIVER_NUMA_NODE"
-  "NODE1_NUMA_NODE"
-  "NODE1_CLUSTER_DIR"
-  "NODE1_CLUSTER_INGRESS_CHANNEL"
-  "NODE1_CLUSTER_LOG_CHANNEL"
-  "NODE1_CLUSTER_REPLICATION_CHANNEL"
-  "NODE1_ARCHIVE_DIR"
-  "NODE2_JAVA_HOME"
-  "NODE2_DRIVER_NUMA_NODE"
-  "NODE2_NUMA_NODE"
-  "NODE2_CLUSTER_DIR"
-  "NODE2_CLUSTER_INGRESS_CHANNEL"
-  "NODE2_CLUSTER_LOG_CHANNEL"
-  "NODE2_CLUSTER_REPLICATION_CHANNEL"
-  "NODE2_ARCHIVE_DIR")
+  "_JAVA_HOME"
+  "_DRIVER_NUMA_NODE"
+  "_NUMA_NODE"
+  "_CLUSTER_DIR"
+  "_CLUSTER_INGRESS_CHANNEL"
+  "_CLUSTER_LOG_CHANNEL"
+  "_CLUSTER_REPLICATION_CHANNEL"
+  "_ARCHIVE_DIR")
 
 for var in "${required_vars[@]}"; do
-  if [[ -z "${!var+''}" ]]
+  if [[ ${var} == _* ]]
   then
-    echo "env var '${var}' must be set"
-    required_var_missing=true
+    for (( i=0; i<CLUSTER_SIZE; i++ ))
+    do
+      node_var="NODE${i}${var}"
+      if [[ -z "${!node_var+''}" ]]
+      then
+        echo "env var '${node_var}' must be set"
+        required_var_missing=true
+      fi
+    done
+  else
+    if [[ -z "${!var+''}" ]]
+    then
+      echo "env var '${var}' must be set"
+      required_var_missing=true
+    fi
   fi
 done
 
@@ -335,26 +337,23 @@ do
             && numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client \
             ; kill \${driver_pid}; wait"
 
-            echo -e "\nStarting node 0..."
-            execute_remote_command ${SSH_CLUSTER_NODE0} "($(start_server "${cluster_node_class_name}" "${cluster_node0_drivers[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
-
-            echo -e "\nStarting node 1..."
-            execute_remote_command ${SSH_CLUSTER_NODE1} "($(start_server "${cluster_node_class_name}" "${cluster_node1_drivers[index]}" "${fsync}" 1) &) > /dev/null 2>&1 && exit"
-
-            echo -e "\nStarting node 2..."
-            execute_remote_command ${SSH_CLUSTER_NODE2} "($(start_server "${cluster_node_class_name}" "${cluster_node2_drivers[index]}" "${fsync}" 2) &) > /dev/null 2>&1 && exit"
+            for (( j=0; j<CLUSTER_SIZE; j++ ))
+            do
+              echo -e "\nStarting node ${j}..."
+              ssh_node=SSH_CLUSTER_NODE${j}
+              cluster_node_drivers=cluster_node${j}_drivers
+              execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${!cluster_node_drivers[index]}" "${fsync}" 0) &) > /dev/null 2>&1 && exit"
+            done
 
             echo -e "\nRunning benchmark..."
-            execute_remote_command ${SSH_CLIENT_NODE} "${start_client} && exit"
+            execute_remote_command "${SSH_CLIENT_NODE}" "${start_client} && exit"
 
-            echo -e "\nStopping node 0..."
-            execute_remote_command ${SSH_CLUSTER_NODE0} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
-
-            echo -e "\nStopping node 1..."
-            execute_remote_command ${SSH_CLUSTER_NODE1} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
-
-            echo -e "\nStopping node 2..."
-            execute_remote_command ${SSH_CLUSTER_NODE2} "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
+            for (( j=0; j<CLUSTER_SIZE; j++ ))
+            do
+              echo -e "\nStopping node ${j}..."
+              ssh_node=SSH_CLUSTER_NODE${j}
+              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
+            done
           done
         done
       done
