@@ -216,7 +216,10 @@ unset IFS
 
 if [ "${enable_java_driver}" -eq 1 ]
 then
-  scenarios=("java")
+  if [ "${no_java_driver}" -eq 0 ]
+  then
+    scenarios=("java")
+  fi
 
   if [ "${enable_onload}" -eq 1 ]
   then
@@ -226,7 +229,10 @@ fi
 
 if [ "${enable_c_driver}" -eq 1 ]
 then
-  scenarios+=("c")
+  if [ "${no_c_driver}" -eq 0 ]
+  then
+    scenarios+=("c")
+  fi
 
   if [ "${enable_onload}" -eq 1 ]
   then
