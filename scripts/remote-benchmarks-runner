@@ -124,12 +124,12 @@ function download_results()
   local results_dir="${2}"
   local dest_dir="${3}"
 
-  execute_remote_command ${SSH_CLIENT_NODE} "rm -f \"${archive}\"; cd \"${results_dir}\" && zip -r \"${archive}\" . && exit"
+  execute_remote_command "${SSH_CLIENT_NODE}" "rm -f \"${archive}\"; cd \"${results_dir}\" && zip -r \"${archive}\" . && exit"
   scp -i ${SSH_KEY_FILE} \
    -o ConnectionAttempts=${SSH_CONNECTION_ATTEMPTS} \
    -o ConnectTimeout=${SSH_CONNECT_TIMEOUT} \
    -o ServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL} \
-   ${SSH_USER}@${SSH_CLIENT_NODE}:"${archive}" "${dest_dir}"
+   "${SSH_USER}"@"${SSH_CLIENT_NODE}":"${archive}" "${dest_dir}"
 }
 
 function await_process_start()
