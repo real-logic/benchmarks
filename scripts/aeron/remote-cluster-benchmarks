@@ -145,8 +145,9 @@ function start_server()
     ; $(kill_java_process "${cluster_node_class_name}") \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
-    -Daeron.cluster.members=${CLUSTER_MEMBERS} \
     -Daeron.cluster.dir=${!cluster_dir} \
+    -Daeron.cluster.idle.strategy=noop \
+    -Daeron.cluster.members=${CLUSTER_MEMBERS} \
     -Daeron.cluster.member.id=${node_id} \
     -Daeron.cluster.ingress.channel=${!cluster_ingress_channel} \
     -Daeron.cluster.log.channel=${!cluster_log_channel} \
