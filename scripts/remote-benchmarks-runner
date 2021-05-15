@@ -79,6 +79,11 @@ then
   MESSAGE_LENGTH=(32 224 1376)
 fi
 
+if [ -z "${CONNECTION_TIMEOUT}" ];
+then
+  CONNECTION_TIMEOUT="120s"
+fi
+
 function run_benchmarks()
 {
   local client_command="${1}"
@@ -97,6 +102,7 @@ function run_benchmarks()
           echo -e '\n### Benchmark run #'${i}' ...\n'
 
           local config_options=("${config[@]}")
+          config_options+=("uk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT}")
           config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
           config_options+=("uk.co.real_logic.benchmarks.remote.warmup.iterations=${WARMUP_ITERATIONS}")
           config_options+=("uk.co.real_logic.benchmarks.remote.message.rate=${messageRate# }")

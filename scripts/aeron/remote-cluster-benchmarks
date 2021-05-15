@@ -279,6 +279,7 @@ do
             echo -e '\n### Benchmark run #'"${r}"' ...\n'
 
             start_client="export JVM_OPTS=\"\
+            -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT}\
             -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}\
             -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# }\
             -Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }\
