@@ -31,6 +31,7 @@ import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.status.CountersReader;
@@ -38,7 +39,9 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.Publication.*;
@@ -77,8 +80,9 @@ final class AeronUtil
     static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.stream";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
-    static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentlimit";
-    static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idlestrategy";
+    static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragment.limit";
+    static final String IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.idlestrategy";
+    static final String CONNECTION_TIMEOUT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.connectiontimeout";
     static final int FRAGMENT_LIMIT = getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
     static final ExclusivePublication[] EMPTY_PUBLICATIONS = new ExclusivePublication[0];
     static final Subscription[] EMPTY_SUBSCRIPTIONS = new Subscription[0];
@@ -88,6 +92,17 @@ final class AeronUtil
 
     private AeronUtil()
     {
+    }
+
+    static long connectionTimeoutNs()
+    {
+        final String value = getProperty(CONNECTION_TIMEOUT_PROP_NAME);
+        if (isEmpty(value))
+        {
+            return TimeUnit.SECONDS.toNanos(60);
+        }
+
+        return parseDuration(CONNECTION_TIMEOUT_PROP_NAME, value);
     }
 
     static String[] destinationChannels()
@@ -198,7 +213,7 @@ final class AeronUtil
 
     static IdleStrategy idleStrategy()
     {
-        final String idleStrategy = getProperty(IDLE_STRATEGY);
+        final String idleStrategy = getProperty(IDLE_STRATEGY_PROP_NAME);
         if (isEmpty(idleStrategy))
         {
             return NoOpIdleStrategy.INSTANCE;
@@ -372,6 +387,22 @@ final class AeronUtil
             catch (final ArchiveException ignore)
             {
                 yieldUninterruptedly();
+            }
+        }
+    }
+
+    static void awaitConnected(final BooleanSupplier connection, final long connectionTimeoutNs, final NanoClock clock)
+    {
+        final long deadlineNs = clock.nanoTime() + connectionTimeoutNs;
+        while (!connection.getAsBoolean())
+        {
+            if (clock.nanoTime() < deadlineNs)
+            {
+                yieldUninterruptedly();
+            }
+            else
+            {
+                throw new IllegalStateException("Failed to connect within timeout of " + connectionTimeoutNs + "ns");
             }
         }
     }

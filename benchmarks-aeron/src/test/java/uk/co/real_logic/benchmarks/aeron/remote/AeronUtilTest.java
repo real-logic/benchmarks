@@ -15,17 +15,26 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InOrder;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.BooleanSupplier;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
+import static java.util.concurrent.TimeUnit.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 class AeronUtilTest
@@ -42,7 +51,7 @@ class AeronUtilTest
         clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
         clearProperty(ARCHIVE_STREAM_PROP_NAME);
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
-        clearProperty(IDLE_STRATEGY);
+        clearProperty(IDLE_STRATEGY_PROP_NAME);
     }
 
     @Test
@@ -54,7 +63,7 @@ class AeronUtilTest
         assertArrayEquals(new int[]{ 1_000_000_001 }, sourceStreams());
         assertArrayEquals(new String[0], passiveChannels());
         assertArrayEquals(new int[0], passiveStreams());
-        assertEquals(TimeUnit.SECONDS.toNanos(1), passiveChannelsKeepAliveIntervalNanos());
+        assertEquals(SECONDS.toNanos(1), passiveChannelsKeepAliveIntervalNanos());
         assertEquals(1000, passiveChannelsPollFrequency());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_100_000, archiveStream());
@@ -76,7 +85,7 @@ class AeronUtilTest
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "");
-        setProperty(IDLE_STRATEGY, "");
+        setProperty(IDLE_STRATEGY_PROP_NAME, "");
 
         assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333" }, destinationChannels());
         assertArrayEquals(new int[]{ 1_000_000_000 }, destinationStreams());
@@ -84,7 +93,7 @@ class AeronUtilTest
         assertArrayEquals(new int[]{ 1_000_000_001 }, sourceStreams());
         assertArrayEquals(new String[0], passiveChannels());
         assertArrayEquals(new int[0], passiveStreams());
-        assertEquals(TimeUnit.SECONDS.toNanos(1), passiveChannelsKeepAliveIntervalNanos());
+        assertEquals(SECONDS.toNanos(1), passiveChannelsKeepAliveIntervalNanos());
         assertEquals(1000, passiveChannelsPollFrequency());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_100_000, archiveStream());
@@ -106,7 +115,7 @@ class AeronUtilTest
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "localhost");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "777");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
-        setProperty(IDLE_STRATEGY, YieldingIdleStrategy.class.getName());
+        setProperty(IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
 
         assertArrayEquals(new String[]{ "ch1:5001", "ch2:5002", "ch3:5003" }, destinationChannels());
         assertArrayEquals(new int[]{ 100, 101, 102 }, destinationStreams());
@@ -116,7 +125,7 @@ class AeronUtilTest
         assertArrayEquals(new int[]{ 1, 2 }, passiveStreams());
         assertEquals("localhost", archiveChannel());
         assertEquals(777, archiveStream());
-        assertEquals(TimeUnit.MICROSECONDS.toNanos(125), passiveChannelsKeepAliveIntervalNanos());
+        assertEquals(MICROSECONDS.toNanos(125), passiveChannelsKeepAliveIntervalNanos());
         assertEquals(22, passiveChannelsPollFrequency());
         assertTrue(embeddedMediaDriver());
         assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
@@ -130,4 +139,88 @@ class AeronUtilTest
 
         assertEquals("Number of 'channels' does not match with 'streams':\n [a]\n [1, 2]", exception.getMessage());
     }
+
+    @Test
+    void connectionTimeoutNsIsSixtySecondsByDefault()
+    {
+        System.setProperty(CONNECTION_TIMEOUT_PROP_NAME, "");
+        try
+        {
+            assertEquals(SECONDS.toNanos(60), connectionTimeoutNs());
+        }
+        finally
+        {
+            System.clearProperty(CONNECTION_TIMEOUT_PROP_NAME);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("connectionTimeouts")
+    void connectionTimeoutNsReturnsUserSpecifiedValue(final String connectionTimeout, final long expectedValueNs)
+    {
+        System.setProperty(CONNECTION_TIMEOUT_PROP_NAME, connectionTimeout);
+        try
+        {
+            assertEquals(expectedValueNs, connectionTimeoutNs());
+        }
+        finally
+        {
+            System.clearProperty(CONNECTION_TIMEOUT_PROP_NAME);
+        }
+    }
+
+    @Test
+    void awaitConnectedReturnsImmediatelyIfAlreadyConnected()
+    {
+        final BooleanSupplier connection = mock(BooleanSupplier.class);
+        when(connection.getAsBoolean()).thenReturn(true);
+        final long connectionTimeoutNs = 0;
+        final NanoClock clock = mock(NanoClock.class);
+
+        awaitConnected(connection, connectionTimeoutNs, clock);
+
+        final InOrder inOrder = inOrder(clock, connection);
+        inOrder.verify(clock).nanoTime();
+        inOrder.verify(connection).getAsBoolean();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void awaitConnectedShouldYieldUntilConnected()
+    {
+        final BooleanSupplier connection = mock(BooleanSupplier.class);
+        when(connection.getAsBoolean()).thenReturn(false, false, true);
+        final long connectionTimeoutNs = 10;
+        final NanoClock clock = mock(NanoClock.class);
+        when(clock.nanoTime()).thenReturn(0L, 3L, 8L, 15L);
+
+        awaitConnected(connection, connectionTimeoutNs, clock);
+
+        verify(connection, times(3)).getAsBoolean();
+        verify(clock, times(3)).nanoTime();
+        verifyNoMoreInteractions(clock, connection);
+    }
+
+    @Test
+    void awaitConnectedShouldThrowIfNotConnectedUntilTimeout()
+    {
+        final BooleanSupplier connection = mock(BooleanSupplier.class);
+        final long connectionTimeoutNs = 8;
+        final NanoClock clock = mock(NanoClock.class);
+        when(clock.nanoTime()).thenReturn(Long.MAX_VALUE);
+
+        final IllegalStateException exception =
+            assertThrows(IllegalStateException.class, () -> awaitConnected(connection, connectionTimeoutNs, clock));
+        assertEquals("Failed to connect within timeout of 8ns", exception.getMessage());
+    }
+
+    private static List<Arguments> connectionTimeouts()
+    {
+        return Arrays.asList(
+            Arguments.arguments("5ns", 5L),
+            Arguments.arguments("16us", MICROSECONDS.toNanos(16)),
+            Arguments.arguments("31ms", MILLISECONDS.toNanos(31)),
+            Arguments.arguments("42s", SECONDS.toNanos(42)));
+    }
+
 }

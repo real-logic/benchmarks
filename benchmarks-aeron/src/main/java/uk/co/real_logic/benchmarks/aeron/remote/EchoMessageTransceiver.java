@@ -18,6 +18,7 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
@@ -112,10 +113,10 @@ public final class EchoMessageTransceiver extends MessageTransceiver
             keepAliveIntervalNs = passiveChannelsKeepAliveIntervalNanos();
         }
 
-        while (!allConnected(subscriptions) || !allConnected(publications) || !allConnected(passivePublications))
-        {
-            yieldUninterruptedly();
-        }
+        awaitConnected(
+            () -> allConnected(subscriptions) && allConnected(publications) && allConnected(passivePublications),
+            connectionTimeoutNs(),
+            SystemNanoClock.INSTANCE);
 
         for (int i = 0; i < numActiveChannels; i++)
         {

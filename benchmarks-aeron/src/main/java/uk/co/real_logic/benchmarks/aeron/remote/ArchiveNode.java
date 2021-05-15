@@ -21,6 +21,7 @@ import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.PropertyAction;
 import org.agrona.SystemUtil;
+import org.agrona.concurrent.SystemNanoClock;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -71,10 +72,10 @@ public final class ArchiveNode implements AutoCloseable, Runnable
         final String channel = addSessionId(archiveChannel, publicationSessionId);
         aeronArchive.startRecording(channel, archiveStreamId, LOCAL, true);
 
-        while (!subscription.isConnected() || !publication.isConnected())
-        {
-            yieldUninterruptedly();
-        }
+        awaitConnected(
+            () -> subscription.isConnected() && publication.isConnected(),
+            connectionTimeoutNs(),
+            SystemNanoClock.INSTANCE);
 
         awaitRecordingStart(aeron, publicationSessionId);
     }

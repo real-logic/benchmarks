@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
+import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
@@ -69,10 +70,9 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
         publication = aeron.addExclusivePublication(destinationChannels()[0], destinationStreams()[0]);
 
-        while (!publication.isConnected())
-        {
-            yieldUninterruptedly();
-        }
+        final long connectionTimeoutNs = connectionTimeoutNs();
+        final SystemNanoClock clock = SystemNanoClock.INSTANCE;
+        awaitConnected(publication::isConnected, connectionTimeoutNs, clock);
 
         final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStream());
 
@@ -83,10 +83,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
         subscription = aeron.addSubscription(channel, replayStreamId);
 
-        while (!subscription.isConnected())
-        {
-            yieldUninterruptedly();
-        }
+        awaitConnected(subscription::isConnected, connectionTimeoutNs, clock);
 
         image = subscription.imageAtIndex(0);
     }

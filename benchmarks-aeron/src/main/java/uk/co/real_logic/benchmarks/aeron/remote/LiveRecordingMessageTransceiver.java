@@ -23,6 +23,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
@@ -94,10 +95,10 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
         recordingEventsAdapter = new RecordingEventsAdapter(
             new LiveRecordingEventsListener(this), recordingEventsSubscription, FRAGMENT_LIMIT);
 
-        while (!recordingEventsSubscription.isConnected() || !subscription.isConnected() || !publication.isConnected())
-        {
-            yieldUninterruptedly();
-        }
+        awaitConnected(
+            () -> recordingEventsSubscription.isConnected() && subscription.isConnected() && publication.isConnected(),
+            connectionTimeoutNs(),
+            SystemNanoClock.INSTANCE);
 
         final int publicationSessionId = publication.sessionId();
         final String channel = addSessionId(sendChannel, publicationSessionId);

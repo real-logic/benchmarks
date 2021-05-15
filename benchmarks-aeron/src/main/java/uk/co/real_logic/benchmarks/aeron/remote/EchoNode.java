@@ -25,6 +25,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.PropertyAction;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.SystemNanoClock;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -124,10 +125,10 @@ public final class EchoNode implements AutoCloseable, Runnable
             passiveImages = EMPTY_IMAGES;
         }
 
-        while (!allConnected(subscriptions) || !allConnected(publications) || !allConnected(passiveSubscriptions))
-        {
-            yieldUninterruptedly();
-        }
+        awaitConnected(
+            () -> allConnected(subscriptions) && allConnected(publications) && allConnected(passiveSubscriptions),
+            connectionTimeoutNs(),
+            SystemNanoClock.INSTANCE);
 
         reloadImages(passiveSubscriptions, passiveImages);
     }
