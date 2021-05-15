@@ -41,5 +41,5 @@ function start_media_driver()
 
 function stop_media_driver()
 {
-  echo "pkill -x aeronmd; $(kill_java_process "io.aeron.driver.MediaDriver")"
+  echo "pkill -x aeronmd; $(kill_java_process "io.aeron.driver.MediaDriver"); rm -rf /dev/shm/aeron"
 }
