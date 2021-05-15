@@ -355,4 +355,17 @@ class LoadTestRigTest
         final String fileName = files[0].getName();
         assertTrue(fileName.endsWith(PersistedHistogram.FILE_EXTENSION));
     }
+
+    @Test
+    void shouldCallDestroyOnMessageTransceiverIfInitFails() throws Exception
+    {
+        final IllegalStateException initException = new IllegalStateException("Init failed");
+        doThrow(initException).when(messageTransceiver).init(configuration);
+
+        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, out);
+
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, loadTestRig::run);
+        assertSame(initException, exception);
+        verify(messageTransceiver).destroy();
+    }
 }

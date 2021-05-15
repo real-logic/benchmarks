@@ -89,10 +89,10 @@ public final class LoadTestRig
     public void run() throws Exception
     {
         out.printf("%nStarting latency benchmark using the following configuration:%n%s%n", configuration);
-        messageTransceiver.init(configuration);
 
         try
         {
+            messageTransceiver.init(configuration);
             if (configuration.warmUpIterations() > 0)
             {
                 out.printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload and a" +
