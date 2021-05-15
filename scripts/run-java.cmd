@@ -19,6 +19,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 set "DIR=%~dp0"
 
 set JAVA_OPTIONS=^
+  -Djava.net.preferIPv4Stack=true ^
   -XX:+UnlockExperimentalVMOptions ^
   -XX:+TrustFinalNonStaticFields ^
   -XX:+UnlockDiagnosticVMOptions ^
