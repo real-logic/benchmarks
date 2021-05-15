@@ -70,15 +70,15 @@ final class AeronUtil
     static final String PASSIVE_CHANNELS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.passive.channels";
     static final String PASSIVE_STREAMS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.passive.streams";
     static final String PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME =
-        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels.keepAliveInterval";
+        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels.keepaliveinterval";
     static final String PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME =
-        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels.pollFrequency";
+        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels.pollfrequency";
     static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
     static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.stream";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.embeddedMediaDriver";
-    static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentLimit";
-    static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idleStrategy";
+    static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragmentlimit";
+    static final String IDLE_STRATEGY = "uk.co.real_logic.benchmarks.aeron.remote.idlestrategy";
     static final int FRAGMENT_LIMIT = getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
     static final ExclusivePublication[] EMPTY_PUBLICATIONS = new ExclusivePublication[0];
     static final Subscription[] EMPTY_SUBSCRIPTIONS = new Subscription[0];
