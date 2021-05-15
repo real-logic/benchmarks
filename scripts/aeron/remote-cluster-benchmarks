@@ -155,6 +155,7 @@ function start_server()
     ; $(kill_java_process "${cluster_node_class_name}") \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
+    -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT} \
     -Daeron.cluster.dir=${!cluster_dir} \
     -Daeron.cluster.idle.strategy=noop \
     -Daeron.cluster.members=${CLUSTER_MEMBERS} \

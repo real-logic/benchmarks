@@ -117,7 +117,7 @@ function run_benchmarks()
           jvm_opts="${jvm_opts%?}\""
 
           echo -e "\nStarting server..."
-          execute_remote_command "${SSH_SERVER_NODE}" "(${server_start_command} &) > /tmp/benchmark-startup-\$(date +%s).log 2>&1 && exit"
+          execute_remote_command "${SSH_SERVER_NODE}" "${jvm_opts} && (${server_start_command} &) > /tmp/benchmark-startup-\$(date +%s).log 2>&1 && exit"
 
           echo -e "\nStarting client..."
           execute_remote_command "${SSH_CLIENT_NODE}" "${jvm_opts} && ${client_command} && exit"
