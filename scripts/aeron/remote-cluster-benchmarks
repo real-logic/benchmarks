@@ -293,7 +293,7 @@ do
             ; $(kill_java_process "${client_class_name}")\
             ; ${client_driver}\
             && numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client \
-            ; kill \${driver_pid}; wait"
+            ; kill -9 \${driver_pid}; wait"
 
             for ((n = 0; n < CLUSTER_SIZE; n++))
             do

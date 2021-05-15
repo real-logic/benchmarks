@@ -323,7 +323,7 @@ do
         ; $(kill_java_process "${client_class_name}") \
         ; ${client_driver} \
         && numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client \
-        ; kill \${driver_pid}; wait"
+        ; kill -9 \${driver_pid}; wait"
 
         start_server="\
         export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
