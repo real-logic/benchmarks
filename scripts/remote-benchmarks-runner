@@ -81,7 +81,7 @@ fi
 
 if [ -z "${CONNECTION_TIMEOUT}" ];
 then
-  CONNECTION_TIMEOUT="120s"
+  CONNECTION_TIMEOUT="60s"
 fi
 
 function run_benchmarks()
