@@ -138,8 +138,7 @@ public final class Configuration
     /**
      * Name of the required system property to configure the output file name prefix.
      */
-    public static final String OUTPUT_FILE_NAME_PREFIX_PROP_NAME =
-        "uk.co.real_logic.benchmarks.remote.output.filename.prefix";
+    public static final String OUTPUT_FILE_NAME_PROP_NAME = "uk.co.real_logic.benchmarks.remote.output.file";
 
     private static final MessageDigest SHA256;
 
@@ -489,7 +488,7 @@ public final class Configuration
         builder
             .messageRate(intProperty(MESSAGE_RATE_PROP_NAME))
             .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class))
-            .outputFileNamePrefix(getPropertyValue(OUTPUT_FILE_NAME_PREFIX_PROP_NAME));
+            .outputFileNamePrefix(getPropertyValue(OUTPUT_FILE_NAME_PROP_NAME));
 
         return builder.build();
     }
@@ -654,7 +653,7 @@ public final class Configuration
         for (final Map.Entry<Object, Object> entry : properties.entrySet())
         {
             final String key = (String)entry.getKey();
-            if (!OUTPUT_FILE_NAME_PREFIX_PROP_NAME.equals(key))
+            if (!OUTPUT_FILE_NAME_PROP_NAME.equals(key))
             {
                 sortedProperties.put(key, (String)entry.getValue());
             }

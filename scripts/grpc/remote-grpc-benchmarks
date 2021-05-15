@@ -117,7 +117,7 @@ do
       "${start_client}" \
       "${stop_server}; ${start_server}" \
       "${stop_server}" \
-      "uk.co.real_logic.benchmarks.remote.output.filename.prefix=${scenario}" \
+      "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
       "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST}" \
       "uk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT}" \

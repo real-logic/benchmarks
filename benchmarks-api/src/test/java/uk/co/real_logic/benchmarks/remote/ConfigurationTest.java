@@ -408,7 +408,7 @@ class ConfigurationTest
     @Test
     void fromSystemPropertiesDefaults()
     {
-        setProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "test-out-prefix");
+        setProperty(OUTPUT_FILE_NAME_PROP_NAME, "test-out-prefix");
         setProperty(MESSAGE_RATE_PROP_NAME, "42");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
 
@@ -436,7 +436,7 @@ class ConfigurationTest
         setProperty(IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
         final Path outputDirectory = tempDir.resolve("my-output-dir-prop");
         setProperty(OUTPUT_DIRECTORY_PROP_NAME, outputDirectory.toAbsolutePath().toString());
-        setProperty(OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "my-out-file");
+        setProperty(OUTPUT_FILE_NAME_PROP_NAME, "my-out-file");
 
         final Configuration configuration = fromSystemProperties();
 
@@ -477,7 +477,7 @@ class ConfigurationTest
                 "X", "-100",
                 "y", "2.25",
                 "z", "0",
-                OUTPUT_FILE_NAME_PREFIX_PROP_NAME, "ignore me"),
+                OUTPUT_FILE_NAME_PROP_NAME, "ignore me"),
                 "8bc055dc860587df8a9234d6721e6a482dd707e204f29895eee08aeeaaaf4432"));
     }
 
@@ -503,7 +503,7 @@ class ConfigurationTest
             MESSAGE_TRANSCEIVER_PROP_NAME,
             IDLE_STRATEGY_PROP_NAME,
             OUTPUT_DIRECTORY_PROP_NAME,
-            OUTPUT_FILE_NAME_PREFIX_PROP_NAME)
+            OUTPUT_FILE_NAME_PROP_NAME)
             .forEach(System::clearProperty);
     }
 

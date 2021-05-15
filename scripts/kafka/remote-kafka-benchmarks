@@ -134,7 +134,7 @@ do
         "${start_client}" \
         "${stop_server}; ${start_zookeeper} & ${start_kafka}" \
         "${stop_server}" \
-        "uk.co.real_logic.benchmarks.remote.output.filename.prefix=${scenario}" \
+        "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
         "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
         "bootstrap.servers=${SERVER_HOST}:${port}" \
         "security.protocol=${protocol}" \
