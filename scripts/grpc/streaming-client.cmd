@@ -19,7 +19,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 set "DIR=%~dp0"
 
 call "%DIR%\..\run-java.cmd" ^
-  -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.grpc.remote.StreamingMessageTransceiver ^
+  -Duk.co.real_logic.benchmarks.remote.message.transceiver=uk.co.real_logic.benchmarks.grpc.remote.StreamingMessageTransceiver ^
   uk.co.real_logic.benchmarks.remote.LoadTestRig ^
   "%DIR%\benchmark.properties" ^
   %*

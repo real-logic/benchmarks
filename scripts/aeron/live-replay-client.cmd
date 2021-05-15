@@ -17,7 +17,7 @@
 set "DIR=%~dp0"
 
 call "%DIR%\..\run-java.cmd" ^
-  -Duk.co.real_logic.benchmarks.remote.messageTransceiver=uk.co.real_logic.benchmarks.aeron.remote.LiveReplayMessageTransceiver ^
+  -Duk.co.real_logic.benchmarks.remote.message.transceiver=uk.co.real_logic.benchmarks.aeron.remote.LiveReplayMessageTransceiver ^
   uk.co.real_logic.benchmarks.remote.LoadTestRig ^
   "%DIR%\low-latency-driver.properties" ^
   "%DIR%\benchmark.properties" ^

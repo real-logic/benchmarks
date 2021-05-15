@@ -103,9 +103,9 @@ for %%m in (%MESSAGE_RATE%) do (
 
         set JVM_OPTS=-Duk.co.real_logic.benchmarks.remote.output.filename.prefix=%OUTPUT_FILE_NAME% ^
         -Duk.co.real_logic.benchmarks.remote.iterations=%ITERATIONS% ^
-        -Duk.co.real_logic.benchmarks.remote.messageRate=%%m ^
-        -Duk.co.real_logic.benchmarks.remote.batchSize=%%b ^
-        -Duk.co.real_logic.benchmarks.remote.messageLength=%%l
+        -Duk.co.real_logic.benchmarks.remote.message.rate=%%m ^
+        -Duk.co.real_logic.benchmarks.remote.batch.size=%%b ^
+        -Duk.co.real_logic.benchmarks.remote.message.length=%%l
 
          %COMMAND%
 

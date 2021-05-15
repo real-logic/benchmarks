@@ -5,7 +5,7 @@ This directory provides scripts to benchmark gRPC using the `uk.co.real_logic.be
 
 All benchmarks require two nodes: "client" and "server", where "client" is the
 `uk.co.real_logic.benchmarks.remote.LoadTestRig` that uses one of the
-`uk.co.real_logic.benchmarks.remote.MessageTransceiver` implementations under the hood, and the "server" is the
+`uk.co.real_logic.benchmarks.remote.message.transceiver` implementations under the hood, and the "server" is the
 remote node that pipes messages through.
 
 NOTE: It is advised to have "client" and "server" run on different machines.

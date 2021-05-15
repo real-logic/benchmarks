@@ -5,7 +5,7 @@ This directory provides scripts to benchmark Aeron using the `uk.co.real_logic.b
 
 All benchmarks require two nodes: "client" and "server", where "client" is the
 `uk.co.real_logic.benchmarks.remote.LoadTestRig` that uses one of the
-`uk.co.real_logic.benchmarks.remote.MessageTransceiver`implementations under the hood, and the "server" is the
+`uk.co.real_logic.benchmarks.remote.message.transceiver`implementations under the hood, and the "server" is the
 remote node that pipes messages through.
 
 NOTE: It is advised to have "client" and "server" run on different machines.
@@ -144,10 +144,10 @@ There are three ways to define and/or override properties:
 
 1. Create a file named `benchmark.properties` and define your properties there.
     
-    The example below illustrates setting property `uk.co.real_logic.benchmarks.remote.messageRate` to `1000000`:
+    The example below illustrates setting property `uk.co.real_logic.benchmarks.remote.message.rate` to `1000000`:
     
     ```
-    uk.co.real_logic.benchmarks.remote.messageRate=1000000
+    uk.co.real_logic.benchmarks.remote.message.rate=1000000
     ```
 
 1. Supply custom properties file(s) as the last argument to a script, e.g.:
