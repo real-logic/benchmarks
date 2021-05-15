@@ -280,11 +280,11 @@ do
 
             start_client="export JVM_OPTS=\"\
             -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}\
-            -Duk.co.real_logic.benchmarks.remote.messageRate=${messageRate# }\
-            -Duk.co.real_logic.benchmarks.remote.batchSize=${burstSize# }\
-            -Duk.co.real_logic.benchmarks.remote.messageLength=${messageLength# }\
-            -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}\
-            -Duk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results\
+            -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# }\
+            -Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }\
+            -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# }\
+            -Duk.co.real_logic.benchmarks.remote.output.filename.prefix=${test}\
+            -Duk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results\
             -Daeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}\
             ${client_ingress_endpoints}\
             -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\

@@ -82,7 +82,7 @@ public final class Configuration
      *
      * @see #warmUpIterations()
      */
-    public static final String WARM_UP_ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.iterations";
+    public static final String WARMUP_ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.iterations";
 
     /**
      * Name of the system property to configure the number of measurement iterations. Default value is
@@ -98,7 +98,7 @@ public final class Configuration
      *
      * @see #messageRate()
      */
-    public static final String MESSAGE_RATE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messageRate";
+    public static final String MESSAGE_RATE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.message.rate";
 
     /**
      * Name of the system property to configure the batch size, i.e. number of messages to be sent in a single burst.
@@ -106,14 +106,14 @@ public final class Configuration
      *
      * @see #batchSize()
      */
-    public static final String BATCH_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.batchSize";
+    public static final String BATCH_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.batch.size";
 
     /**
      * Name of the system property to configure the message size in bytes. Default value is {@link #MIN_MESSAGE_LENGTH}.
      *
      * @see #messageLength()
      */
-    public static final String MESSAGE_LENGTH_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messageLength";
+    public static final String MESSAGE_LENGTH_PROP_NAME = "uk.co.real_logic.benchmarks.remote.message.length";
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} to use when sending and receiving messages.
@@ -121,25 +121,25 @@ public final class Configuration
      *
      * @see #idleStrategy()
      */
-    public static final String IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.idleStrategy";
+    public static final String IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.idle.strategy";
 
     /**
      * Name of the required system property to configure the {@link MessageTransceiver} class (i.e. system under test)
      * to be used for the benchmark. Must be a fully qualified class name.
      */
-    public static final String MESSAGE_TRANSCEIVER_PROP_NAME = "uk.co.real_logic.benchmarks.remote.messageTransceiver";
+    public static final String MESSAGE_TRANSCEIVER_PROP_NAME = "uk.co.real_logic.benchmarks.remote.message.transceiver";
 
     /**
      * Name of the system property to configure the output directory where histogram files for each run should be
      * stored. Default value is {@code results} directory created in the current directory.
      */
-    public static final String OUTPUT_DIRECTORY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.outputDirectory";
+    public static final String OUTPUT_DIRECTORY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.output.directory";
 
     /**
      * Name of the required system property to configure the output file name prefix.
      */
     public static final String OUTPUT_FILE_NAME_PREFIX_PROP_NAME =
-        "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix";
+        "uk.co.real_logic.benchmarks.remote.output.filename.prefix";
 
     private static final MessageDigest SHA256;
 
@@ -456,9 +456,9 @@ public final class Configuration
     public static Configuration fromSystemProperties()
     {
         final Builder builder = new Builder();
-        if (isPropertyProvided(WARM_UP_ITERATIONS_PROP_NAME))
+        if (isPropertyProvided(WARMUP_ITERATIONS_PROP_NAME))
         {
-            builder.warmUpIterations(intProperty(WARM_UP_ITERATIONS_PROP_NAME));
+            builder.warmUpIterations(intProperty(WARMUP_ITERATIONS_PROP_NAME));
         }
 
         if (isPropertyProvided(ITERATIONS_PROP_NAME))

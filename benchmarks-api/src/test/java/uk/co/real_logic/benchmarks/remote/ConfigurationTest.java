@@ -427,7 +427,7 @@ class ConfigurationTest
     @Test
     void fromSystemPropertiesOverrideAll(final @TempDir Path tempDir)
     {
-        setProperty(WARM_UP_ITERATIONS_PROP_NAME, "2");
+        setProperty(WARMUP_ITERATIONS_PROP_NAME, "2");
         setProperty(ITERATIONS_PROP_NAME, "4");
         setProperty(MESSAGE_RATE_PROP_NAME, "200");
         setProperty(BATCH_SIZE_PROP_NAME, "3");
@@ -495,7 +495,7 @@ class ConfigurationTest
     private void clearConfigProperties()
     {
         Stream.of(
-            WARM_UP_ITERATIONS_PROP_NAME,
+            WARMUP_ITERATIONS_PROP_NAME,
             ITERATIONS_PROP_NAME,
             MESSAGE_RATE_PROP_NAME,
             BATCH_SIZE_PROP_NAME,

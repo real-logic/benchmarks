@@ -134,8 +134,8 @@ do
         "${start_client}" \
         "${stop_server}; ${start_zookeeper} & ${start_kafka}" \
         "${stop_server}" \
-        "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${scenario}" \
-        "uk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+        "uk.co.real_logic.benchmarks.remote.output.filename.prefix=${scenario}" \
+        "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
         "bootstrap.servers=${SERVER_HOST}:${port}" \
         "security.protocol=${protocol}" \
         "ssl.truststore.location=${CLIENT_BENCHMARKS_PATH}/certificates/truststore.p12" \

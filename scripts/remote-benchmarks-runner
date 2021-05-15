@@ -59,6 +59,11 @@ then
   ITERATIONS=10
 fi
 
+if [ -z "${WARMUP_ITERATIONS}" ];
+then
+  WARMUP_ITERATIONS=5
+fi
+
 if [ -z "${MESSAGE_RATE}" ];
 then
   MESSAGE_RATE=(100000)
@@ -93,9 +98,10 @@ function run_benchmarks()
 
           local config_options=("${config[@]}")
           config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.messageRate=${messageRate# }")
-          config_options+=("uk.co.real_logic.benchmarks.remote.batchSize=${burstSize# }")
-          config_options+=("uk.co.real_logic.benchmarks.remote.messageLength=${messageLength# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.warmup.iterations=${WARMUP_ITERATIONS}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.message.rate=${messageRate# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.message.length=${messageLength# }")
 
           local jvm_opts="export JVM_OPTS=\""
           for opt in "${config_options[@]}";
@@ -105,7 +111,7 @@ function run_benchmarks()
           jvm_opts="${jvm_opts%?}\""
 
           echo -e "\nStarting server..."
-          execute_remote_command "${SSH_SERVER_NODE}" "(${server_start_command} &) > /dev/null 2>&1 && exit"
+          execute_remote_command "${SSH_SERVER_NODE}" "(${server_start_command} &) > /tmp/benchmark-startup.log 2>&1 && exit"
 
           echo -e "\nStarting client..."
           execute_remote_command "${SSH_CLIENT_NODE}" "${jvm_opts} && ${client_command} && exit"

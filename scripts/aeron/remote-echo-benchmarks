@@ -344,8 +344,8 @@ do
           "${start_client}" \
           "$(kill_java_process "${server_class_name}"); ${start_server}" \
           "${stop_server}" \
-          "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}" \
-          "uk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+          "uk.co.real_logic.benchmarks.remote.output.filename.prefix=${test}" \
+          "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
           "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?}" \
           "uk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?}" \
           "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?}" \

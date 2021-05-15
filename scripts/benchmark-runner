@@ -99,7 +99,7 @@ do
         echo '#######################'
 
         JVM_OPTS="${EXISTING_JVM_OPTS} \
-        -Duk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${OUTPUT_FILE_NAME} \
+        -Duk.co.real_logic.benchmarks.remote.output.filename.prefix=${OUTPUT_FILE_NAME} \
         -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
         -Duk.co.real_logic.benchmarks.remote.messageRate=${messageRate# } \
         -Duk.co.real_logic.benchmarks.remote.batchSize=${burst# } \

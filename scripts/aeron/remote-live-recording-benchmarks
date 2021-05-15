@@ -168,8 +168,8 @@ do
       "${start_client}" \
       "${start_server}" \
       "${stop_server}" \
-      "uk.co.real_logic.benchmarks.remote.outputFileNamePrefix=${test}" \
-      "uk.co.real_logic.benchmarks.remote.outputDirectory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+      "uk.co.real_logic.benchmarks.remote.output.filename.prefix=${test}" \
+      "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
       "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${AERON_DESTINATION_IP}:13000|interface=${AERON_DESTINATION_INTERFACE}" \
       "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${AERON_SOURCE_IP}:13100|interface=${AERON_SOURCE_INTERFACE}" \
       "aeron.archive.dir=${AERON_ARCHIVE_DIR}" \
