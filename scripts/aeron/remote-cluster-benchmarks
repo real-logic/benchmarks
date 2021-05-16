@@ -17,14 +17,14 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
+if [ -z "${MESSAGE_RATE}" ];
+then
+  MESSAGE_RATE=(50000)
+fi
+
 if [ -z "${MESSAGE_LENGTH}" ]
 then
   export MESSAGE_LENGTH=(32 224 1344)
-fi
-
-if [ -z "${CLUSTER_SIZE}" ]
-then
-  export CLUSTER_SIZE=3
 fi
 
 source "${DIR}/remote-benchmarks-helper"
@@ -38,6 +38,7 @@ required_vars=(
   "CLIENT_INGRESS_ENDPOINTS"
   "CLIENT_EGRESS_CHANNEL"
   "CLUSTER_MEMBERS"
+  "CLUSTER_SIZE"
   "_JAVA_HOME"
   "_DRIVER_NUMA_NODE"
   "_NUMA_NODE"
