@@ -34,6 +34,7 @@ function start_media_driver()
 
   local command=""
   command="$(stop_media_driver); \
+  rm -rf /dev/shm/aeron; \
   ${wrapper_script} numactl -N ${numa_node} -m ${numa_node} \"${executable}\" & ${driver_pid}"
 
   echo ${command}
@@ -41,5 +42,5 @@ function start_media_driver()
 
 function stop_media_driver()
 {
-  echo "pkill -x aeronmd; $(kill_java_process "io.aeron.driver.MediaDriver"); rm -rf /dev/shm/aeron"
+  echo "pkill -x aeronmd; $(kill_java_process "io.aeron.driver.MediaDriver")"
 }

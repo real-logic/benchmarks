@@ -153,6 +153,8 @@ function start_server()
   echo "
     export JAVA_HOME=\"${!java_home}\" \
     ; $(kill_java_process "${cluster_node_class_name}") \
+    ; rm -rf \"${cluster_dir}\" \
+    ; rm -rf \"${archive_dir}\" \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
     -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT} \
