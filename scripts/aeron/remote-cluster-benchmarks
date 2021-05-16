@@ -43,10 +43,12 @@ required_vars=(
   "_DRIVER_NUMA_NODE"
   "_NUMA_NODE"
   "_CLUSTER_DIR"
+  "_CLUSTER_CONSENSUS_CHANNEL"
   "_CLUSTER_INGRESS_CHANNEL"
   "_CLUSTER_LOG_CHANNEL"
   "_CLUSTER_REPLICATION_CHANNEL"
-  "_ARCHIVE_DIR")
+  "_ARCHIVE_DIR"
+  "_ARCHIVE_CONTROL_CHANNEL")
 
 for var in "${required_vars[@]}"; do
   if [[ ${var} == _* ]]
@@ -152,10 +154,12 @@ function start_server()
   local benchmarks_path=NODE${node_id}_BENCHMARKS_PATH
   local java_home=NODE${node_id}_JAVA_HOME
   local cluster_dir=NODE${node_id}_CLUSTER_DIR
+  local cluster_consensus_channel=NODE${node_id}_CLUSTER_CONSENSUS_CHANNEL
   local cluster_ingress_channel=NODE${node_id}_CLUSTER_INGRESS_CHANNEL
   local cluster_log_channel=NODE${node_id}_CLUSTER_LOG_CHANNEL
   local cluster_replication_channel=NODE${node_id}_CLUSTER_REPLICATION_CHANNEL
   local archive_dir=NODE${node_id}_ARCHIVE_DIR
+  local archive_control_channel=NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
   local numa_node=NODE${node_id}_NUMA_NODE
   echo "
     export JAVA_HOME=\"${!java_home}\" \
@@ -169,10 +173,12 @@ function start_server()
     -Daeron.cluster.idle.strategy=noop \
     -Daeron.cluster.members=${CLUSTER_MEMBERS} \
     -Daeron.cluster.member.id=${node_id} \
+    -Daeron.cluster.consensus.channel=${!cluster_consensus_channel} \
     -Daeron.cluster.ingress.channel=${!cluster_ingress_channel} \
     -Daeron.cluster.log.channel=${!cluster_log_channel} \
     -Daeron.cluster.replication.channel=${!cluster_replication_channel} \
     -Daeron.archive.dir=${!archive_dir} \
+    -Daeron.archive.control.channel=${!archive_control_channel} \
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false\" \
