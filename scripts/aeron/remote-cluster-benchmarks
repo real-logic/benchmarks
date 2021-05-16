@@ -179,9 +179,9 @@ scripts_path="benchmarks_path_var/scripts/aeron"
 onload="onload --profile=latency --force-profiles "
 if [ "${enable_java_driver}" -eq 1 ]
 then
-  scenarios=("java")
   if [ "${no_java_driver}" -eq 0 ]
   then
+    scenarios=("java")
     commands+=("$(start_media_driver "${scripts_path}/media-driver" "" "driver_numa_node_var")")
   fi
 
@@ -194,10 +194,10 @@ fi
 
 if [ "${enable_c_driver}" -eq 1 ]
 then
-  scenarios+=("c")
   create_benchmark_props="touch ${scripts_path}/benchmark.properties"
   if [ "${no_c_driver}" -eq 0 ]
   then
+    scenarios+=("c")
     commands+=("${create_benchmark_props}; $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_numa_node_var")")
   fi
 
