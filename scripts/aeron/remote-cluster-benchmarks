@@ -307,7 +307,7 @@ do
               server_driver="${commands[index]//benchmarks_path_var/${!server_benchmarks_path}}"
               server_driver_numa_node=NODE${n}_DRIVER_NUMA_NODE
               server_driver="${server_driver//driver_numa_node_var/${!server_driver_numa_node}}"
-              execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${n}") &) >  /tmp/benchmark-startup-\$(date +%s).log 2>&1 && exit"
+              execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${n}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
             done
 
             echo -e "\nRunning benchmark..."
