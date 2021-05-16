@@ -50,26 +50,32 @@ fi
 
 security_protocols=("PLAINTEXT" "SSL")
 command_wrappers=("" "onload --profile=latency --force-profiles")
+results_file="kafka-results.zip"
 
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
-    --no-ssl)
-      security_protocols=("PLAINTEXT")
-      shift
-      ;;
-    --no-onload)
-      command_wrappers=("")
-      shift
-      ;;
-    -h|--help)
-      echo "${0} [--no-ssl] [--no-onload]"
-      exit
-      ;;
-    *)
-      echo "Invalid parameter. Use --help to get a list of supported parameters."
-      exit 1
-      ;;
+  --no-ssl)
+    security_protocols=("PLAINTEXT")
+    shift
+    ;;
+  --no-onload)
+    command_wrappers=("")
+    shift
+    ;;
+  --results-file)
+    results_file="${2}"
+    shift
+    shift
+    ;;
+  -h|--help)
+    echo "${0} [--no-ssl] [--no-onload]"
+    exit
+    ;;
+  *)
+    echo "Invalid parameter. Use --help to get a list of supported parameters."
+    exit 1
+    ;;
   esac
 done
 
@@ -145,4 +151,4 @@ do
   done
 done
 
-download_results "kafka-results.zip" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "${results_file}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

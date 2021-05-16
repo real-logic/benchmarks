@@ -50,33 +50,39 @@ enable_c_driver=1
 enable_java_driver=1
 onload="onload --profile=latency --force-profiles "
 file_sync_levels=(0 2)
+results_file="aeron-live-replay-results.zip"
 
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
-    --no-onload)
-      onload=""
-      shift
-      ;;
-    --no-c-driver)
-      enable_c_driver=0
-      shift
-      ;;
-    --no-java-driver)
-      enable_java_driver=0
-      shift
-      ;;
-    --file-sync-level)
-      IFS=',';
-      read -ra file_sync_levels <<< "${2}"
-      unset IFS;
-      shift
-      shift
-      ;;
-    -h|--help)
-      echo "${0} [--no-onload] [--no-c-driver] [--no-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"]"
-      exit
-      ;;
+  --no-onload)
+    onload=""
+    shift
+    ;;
+  --no-c-driver)
+    enable_c_driver=0
+    shift
+    ;;
+  --no-java-driver)
+    enable_java_driver=0
+    shift
+    ;;
+  --file-sync-level)
+    IFS=',';
+    read -ra file_sync_levels <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
+  --results-file)
+    results_file="${2}"
+    shift
+    shift
+    ;;
+  -h|--help)
+    echo "${0} [--no-onload] [--no-c-driver] [--no-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"]"
+    exit
+    ;;
     *)
       echo "Invalid parameter. Use --help to get a list of supported parameters."
       exit 1
@@ -183,4 +189,4 @@ do
   done
 done
 
-download_results "aeron-live-replay-results.zip" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "${results_file}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

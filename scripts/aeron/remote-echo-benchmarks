@@ -55,60 +55,66 @@ enable_ef_vi=1
 enable_ats=1
 active_publications=(1 2 5 10)
 endpoint_modes=("multiplexed" "dedicated")
+results_file="aeron-echo-results.zip"
 
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
-    --disable-c-driver)
-      enable_c_driver=0
-      shift
-      ;;
-    --no-c-driver)
-      no_c_driver=1
-      shift
-      ;;
-    --disable-java-driver)
-      enable_java_driver=0
-      shift
-      ;;
-    --no-java-driver)
-      no_java_driver=1
-      shift
-      ;;
-    --no-onload)
-      enable_onload=0
-      shift
-      ;;
-    --no-ef_vi)
-      enable_ef_vi=0
-      shift
-      ;;
-    --no-ats)
-      enable_ats=0
-      shift
-      ;;
-    --active-publications)
-      IFS=',';
-      read -ra active_publications <<< "${2}"
-      unset IFS;
-      shift
-      shift
-      ;;
-    --endpoint-modes)
-      IFS=',';
-      read -ra endpoint_modes <<< "${2}"
-      unset IFS;
-      shift
-      shift
-      ;;
-    -h|--help)
-      echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--active-publications \"\${active-publications-csv}\"] [--endpoint-modes \"\${endpoint-modes-csv}\"]"
-      exit
-      ;;
-    *)
-      echo "Invalid parameter. Use --help to get a list of supported parameters."
-      exit 1
-      ;;
+  --disable-c-driver)
+    enable_c_driver=0
+    shift
+    ;;
+  --no-c-driver)
+    no_c_driver=1
+    shift
+    ;;
+  --disable-java-driver)
+    enable_java_driver=0
+    shift
+    ;;
+  --no-java-driver)
+    no_java_driver=1
+    shift
+    ;;
+  --no-onload)
+    enable_onload=0
+    shift
+    ;;
+  --no-ef_vi)
+    enable_ef_vi=0
+    shift
+    ;;
+  --no-ats)
+    enable_ats=0
+    shift
+    ;;
+  --active-publications)
+    IFS=',';
+    read -ra active_publications <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
+  --endpoint-modes)
+    IFS=',';
+    read -ra endpoint_modes <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
+  --results-file)
+    results_file="${2}"
+    shift
+    shift
+    ;;
+  -h|--help)
+    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--active-publications \"\${active-publications-csv}\"] [--endpoint-modes \"\${endpoint-modes-csv}\"]"
+    exit
+    ;;
+  *)
+    echo "Invalid parameter. Use --help to get a list of supported parameters."
+    exit 1
+    ;;
   esac
 done
 
@@ -359,4 +365,4 @@ do
   done
 done
 
-download_results "aeron-echo-results.zip" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "${results_file}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
