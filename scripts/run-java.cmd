@@ -25,7 +25,6 @@ set JAVA_OPTIONS=^
   -XX:+UnlockDiagnosticVMOptions ^
   -XX:GuaranteedSafepointInterval=300000 ^
   -XX:+UseParallelGC ^
-  -XX:ParallelGCThreads=2 ^
   -Xms4G ^
   -Xmx4G ^
   -XX:+AlwaysPreTouch ^
