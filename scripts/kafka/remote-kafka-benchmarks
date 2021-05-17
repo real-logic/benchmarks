@@ -19,7 +19,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 if [ -z "${MESSAGE_RATE}" ];
 then
-  export MESSAGE_RATE=25000
+  export MESSAGE_RATE=20000
 fi
 
 source "${DIR}/../remote-benchmarks-runner"
