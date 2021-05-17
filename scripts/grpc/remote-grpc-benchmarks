@@ -88,7 +88,7 @@ for tls in "${tls_options[@]}"
 do
   for onload in "${command_wrappers[@]}"
   do
-    scenario="grpc-${client}"
+    scenario="grpc-streaming"
 
     if [ "${tls}" == "true" ]
     then
