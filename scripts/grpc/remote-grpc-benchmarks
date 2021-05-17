@@ -84,8 +84,6 @@ do
   esac
 done
 
-client="streaming"
-
 for tls in "${tls_options[@]}"
 do
   for onload in "${command_wrappers[@]}"
@@ -106,7 +104,7 @@ do
 
     start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
     ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-    ; ${onload} numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/${client-client}"
+    ; ${onload} numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client"
 
     # shellcheck disable=SC2153
     start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
