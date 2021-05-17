@@ -49,7 +49,7 @@ then
 fi
 
 security_protocols=("PLAINTEXT" "SSL")
-command_wrappers=("" "onload --profile=latency --force-profiles")
+onload="onload --profile=latency --force-profiles"
 results_file="kafka-results.zip"
 
 while [[ $# -gt 0 ]]
@@ -60,7 +60,7 @@ do
     shift
     ;;
   --no-onload)
-    command_wrappers=("")
+    onload=""
     shift
     ;;
   --results-file)
@@ -83,71 +83,68 @@ plain_text_port=13592
 ssl_port=13593
 for protocol in "${security_protocols[@]}"
 do
-  for onload in "${command_wrappers[@]}"
+  for flush in "" "1"
   do
-    for flush in "" "1"
-    do
-      scenario="kafka"
-      flush_messages_prop=""
+    scenario="kafka"
 
-      if [ -n "${flush}" ]
-      then
-          flush_messages_prop="flush.messages=${flush}"
-          scenario="${scenario}-flush-${flush}"
-      else
-          scenario="${scenario}-no-flush"
-      fi
+    if [ -n "${onload}" ]
+    then
+        scenario="${scenario}-onload"
+    fi
 
-      if [ -n "${onload}" ]
-      then
-          scenario="${scenario}-onload"
-      fi
+    flush_messages_prop=""
+    if [ -n "${flush}" ]
+    then
+        flush_messages_prop="flush.messages=${flush}"
+        scenario="${scenario}-flush-${flush}"
+    else
+        scenario="${scenario}-no-flush"
+    fi
 
-      if [ "${protocol}" == "PLAINTEXT" ]
-      then
-        port=${plain_text_port}
-      else
-        scenario="${scenario}-ssl"
-        port=${ssl_port}
-      fi
+    if [ "${protocol}" == "PLAINTEXT" ]
+    then
+      port=${plain_text_port}
+    else
+      scenario="${scenario}-ssl"
+      port=${ssl_port}
+    fi
 
-      echo -e "\n Testing scenario: '${scenario}'\n"
+    echo -e "\n Testing scenario: '${scenario}'\n"
 
-      start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
-      ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-      ; ${onload} numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client"
+    start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
+    ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
+    ; ${onload} numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client"
 
-      server_scripts_path="${SERVER_BENCHMARKS_PATH}/scripts/kafka"
-      start_zookeeper="cp ${server_scripts_path}/zookeeper.properties ${server_scripts_path}/zookeeper.properties.bak \
-      && echo \"dataDir=${SERVER_KAFKA_DIR}/zookeeper\" >> ${server_scripts_path}/zookeeper.properties \
-      && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-      && ${onload} numactl -N ${SERVER_ZOOKEEPER_NUMA_NODE} -m ${SERVER_ZOOKEEPER_NUMA_NODE} ${server_scripts_path}/zookeeper-start"
+    server_scripts_path="${SERVER_BENCHMARKS_PATH}/scripts/kafka"
+    start_zookeeper="cp ${server_scripts_path}/zookeeper.properties ${server_scripts_path}/zookeeper.properties.bak \
+    && echo \"dataDir=${SERVER_KAFKA_DIR}/zookeeper\" >> ${server_scripts_path}/zookeeper.properties \
+    && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
+    && ${onload} numactl -N ${SERVER_ZOOKEEPER_NUMA_NODE} -m ${SERVER_ZOOKEEPER_NUMA_NODE} ${server_scripts_path}/zookeeper-start"
 
-      start_kafka="cp ${server_scripts_path}/server.properties ${server_scripts_path}/server.properties.bak \
-      && echo -e \"log.dirs=${SERVER_KAFKA_DIR}/logs\n\
-      ssl.truststore.location=${SERVER_BENCHMARKS_PATH}/certificates/truststore.p12\n\
-      ssl.keystore.location=${SERVER_BENCHMARKS_PATH}/certificates/server.keystore\n\
-      advertised.listeners=PLAINTEXT://${SERVER_HOST}:${plain_text_port},SSL://${SERVER_HOST}:${ssl_port}\" >> ${server_scripts_path}/server.properties \
-      && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-      && ${onload} numactl -N ${SERVER_KAFKA_NUMA_NODE} -m ${SERVER_KAFKA_NUMA_NODE} ${server_scripts_path}/kafka-start"
+    start_kafka="cp ${server_scripts_path}/server.properties ${server_scripts_path}/server.properties.bak \
+    && echo -e \"log.dirs=${SERVER_KAFKA_DIR}/logs\n\
+    ssl.truststore.location=${SERVER_BENCHMARKS_PATH}/certificates/truststore.p12\n\
+    ssl.keystore.location=${SERVER_BENCHMARKS_PATH}/certificates/server.keystore\n\
+    advertised.listeners=PLAINTEXT://${SERVER_HOST}:${plain_text_port},SSL://${SERVER_HOST}:${ssl_port}\" >> ${server_scripts_path}/server.properties \
+    && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
+    && ${onload} numactl -N ${SERVER_KAFKA_NUMA_NODE} -m ${SERVER_KAFKA_NUMA_NODE} ${server_scripts_path}/kafka-start"
 
-      stop_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-      && KAFKA_DATA_DIR=\"${SERVER_KAFKA_DIR}\" ${server_scripts_path}/stop-all; \
-      mv ${server_scripts_path}/zookeeper.properties.bak ${server_scripts_path}/zookeeper.properties; \
-      mv ${server_scripts_path}/server.properties.bak ${server_scripts_path}/server.properties"
+    stop_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
+    && KAFKA_DATA_DIR=\"${SERVER_KAFKA_DIR}\" ${server_scripts_path}/stop-all; \
+    mv ${server_scripts_path}/zookeeper.properties.bak ${server_scripts_path}/zookeeper.properties; \
+    mv ${server_scripts_path}/server.properties.bak ${server_scripts_path}/server.properties"
 
-      run_benchmarks \
-        "${start_client}" \
-        "${stop_server}; ${start_zookeeper} & ${start_kafka}" \
-        "${stop_server}" \
-        "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
-        "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-        "bootstrap.servers=${SERVER_HOST}:${port}" \
-        "security.protocol=${protocol}" \
-        "ssl.truststore.location=${CLIENT_BENCHMARKS_PATH}/certificates/truststore.p12" \
-        "ssl.keystore.location=${CLIENT_BENCHMARKS_PATH}/certificates/client.keystore" \
-        "${flush_messages_prop}"
-    done
+    run_benchmarks \
+      "${start_client}" \
+      "${stop_server}; ${start_zookeeper} & ${start_kafka}" \
+      "${stop_server}" \
+      "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
+      "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+      "bootstrap.servers=${SERVER_HOST}:${port}" \
+      "security.protocol=${protocol}" \
+      "ssl.truststore.location=${CLIENT_BENCHMARKS_PATH}/certificates/truststore.p12" \
+      "ssl.keystore.location=${CLIENT_BENCHMARKS_PATH}/certificates/client.keystore" \
+      "${flush_messages_prop}"
   done
 done
 
