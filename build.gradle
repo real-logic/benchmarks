@@ -84,7 +84,6 @@ allprojects {
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'checkstyle'
-    apply plugin: 'idea'
 
     dependencies {
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
