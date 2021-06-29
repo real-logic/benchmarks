@@ -50,7 +50,7 @@ def jmhVersion = '1.32'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.4'
 def junitVersion = '5.7.2'
-def mockitoVersion = '3.11.1'
+def mockitoVersion = '3.11.2'
 def checkstyleVersion = '8.39'
 def grpcVersion = '1.38.0'
 def protobufVersion = '3.17.3'
@@ -58,7 +58,7 @@ def kafkaVersion = '2.8.0'
 def slf4jVersion = '1.7.30'
 def scalaVersion = '2.13.5'
 def annotationsApiVersion = '6.0.53'
-def byteBuddyVersion = '1.11.0'
+def byteBuddyVersion = '1.11.3'
 
 allprojects {
     repositories {
