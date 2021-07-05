@@ -55,7 +55,7 @@ def checkstyleVersion = '8.39'
 def grpcVersion = '1.38.0'
 def protobufVersion = '3.17.3'
 def kafkaVersion = '2.8.0'
-def slf4jVersion = '1.7.30'
+def slf4jVersion = '1.7.31'
 def scalaVersion = '2.13.5'
 def annotationsApiVersion = '6.0.53'
 def byteBuddyVersion = '1.11.3'
@@ -104,7 +104,7 @@ subprojects {
             // -- Workaround for https://github.com/gradle/gradle/issues/15538
             options.forkOptions.jvmArgs.addAll( ['--add-opens', 'jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED'] )
             // --
-            javaCompiler = toolchainCompiler
+            javaCompiler.set(toolchainCompiler)
         }
         else {
             options.fork = true
@@ -128,7 +128,7 @@ subprojects {
             exceptionFormat = 'full'
         }
 
-        javaLauncher = toolchainLauncher
+        javaLauncher.set(toolchainLauncher)
     }
 }
 
@@ -236,6 +236,6 @@ tasks.named("dependencyUpdates").configure {
 }
 
 wrapper {
-    gradleVersion = '7.0.2'
+    gradleVersion = '7.1.1'
     distributionType = 'ALL'
 }
