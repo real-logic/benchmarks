@@ -19,7 +19,7 @@ plugins {
     id 'checkstyle'
     id 'com.github.ben-manes.versions' version '0.39.0'
     id 'com.github.johnrengelman.shadow' version '7.0.0' apply false
-    id 'com.google.protobuf' version '0.8.16' apply false
+    id 'com.google.protobuf' version '0.8.17' apply false
 }
 
 defaultTasks 'clean', 'build'
@@ -52,8 +52,9 @@ def disruptorVersion = '3.4.4'
 def junitVersion = '5.7.2'
 def mockitoVersion = '3.11.2'
 def checkstyleVersion = '8.39'
-def grpcVersion = '1.38.0'
+def grpcVersion = '1.39.0'
 def protobufVersion = '3.17.3'
+def errorproneVersion = '2.4.0'
 def kafkaVersion = '2.8.0'
 def slf4jVersion = '1.7.31'
 def scalaVersion = '2.13.5'
@@ -76,7 +77,9 @@ allprojects {
                   "org.slf4j:slf4j-api:${slf4jVersion}",
                   "org.scala-lang:scala-library:${scalaVersion}",
                   "org.scala-lang:scala-reflect:${scalaVersion}",
-                  "net.sf.jopt-simple:jopt-simple:5.0.4"
+                  "net.sf.jopt-simple:jopt-simple:5.0.4",
+                  "com.google.protobuf:protobuf-java:${protobufVersion}",
+                  "com.google.errorprone:error_prone_annotations:${errorproneVersion}"
         }
     }
 }
