@@ -47,6 +47,7 @@ def toolchainCompiler = javaToolchains.compilerFor {
 def agronaVersion = '1.12.0'
 def aeronVersion = '1.35.0'
 def jmhVersion = '1.33'
+def joptVersion = '5.0.4'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.4'
 def junitVersion = '5.7.2'
@@ -59,7 +60,8 @@ def kafkaVersion = '2.8.0'
 def slf4jVersion = '1.7.32'
 def scalaVersion = '2.13.5'
 def annotationsApiVersion = '6.0.53'
-def byteBuddyVersion = '1.11.3'
+def jacksonVersion = '2.10.5.1'
+def byteBuddyVersion = '1.11.12'
 
 allprojects {
     repositories {
@@ -73,11 +75,11 @@ allprojects {
 
             force "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
                   "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
-                  "com.fasterxml.jackson.core:jackson-databind:2.10.5.1",
+                  "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
                   "org.slf4j:slf4j-api:${slf4jVersion}",
                   "org.scala-lang:scala-library:${scalaVersion}",
                   "org.scala-lang:scala-reflect:${scalaVersion}",
-                  "net.sf.jopt-simple:jopt-simple:5.0.4",
+                  "net.sf.jopt-simple:jopt-simple:${joptVersion}",
                   "com.google.protobuf:protobuf-java:${protobufVersion}",
                   "com.google.errorprone:error_prone_annotations:${errorproneVersion}"
         }
