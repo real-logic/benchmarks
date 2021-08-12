@@ -10,3 +10,5 @@ results/
 *.rsa
 *.csr
 *.srl
+
+aeron-archive/
