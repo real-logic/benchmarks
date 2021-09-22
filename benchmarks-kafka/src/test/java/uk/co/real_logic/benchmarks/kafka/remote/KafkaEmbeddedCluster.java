@@ -114,6 +114,7 @@ class KafkaEmbeddedCluster implements AutoCloseable
                 kafka.awaitShutdown();
             },
             factory::shutdown,
-            () -> zookeeper.getZKDatabase().close());
+            () -> zookeeper.shutdown(true),
+            null != zookeeper.getZKDatabase() ? () -> zookeeper.getZKDatabase().close() : null);
     }
 }

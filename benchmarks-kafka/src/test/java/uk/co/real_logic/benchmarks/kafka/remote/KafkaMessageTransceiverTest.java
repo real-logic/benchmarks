@@ -48,7 +48,7 @@ class KafkaMessageTransceiverTest
     }
 
     @AfterAll
-    static void afterAll(final @TempDir Path tempDir)
+    static void afterAll()
     {
         cluster.close();
     }
