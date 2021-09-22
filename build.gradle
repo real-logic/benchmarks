@@ -56,12 +56,11 @@ def checkstyleVersion = '8.45.1'
 def grpcVersion = '1.40.1'
 def protobufVersion = '3.18.0'
 def errorproneVersion = '2.4.0'
-def kafkaVersion = '3.0.0'
-def zookeeperVersion = '3.7.0'
+def kafkaVersion = '2.8.0'
 def slf4jVersion = '1.7.32'
 def scalaVersion = '2.13.5'
 def annotationsApiVersion = '6.0.53'
-def jacksonVersion = '2.12.3'
+def jacksonVersion = '2.10.5'
 def byteBuddyVersion = '1.11.16'
 
 allprojects {
@@ -76,7 +75,6 @@ allprojects {
 
             force "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
                   "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
-                  "org.apache.zookeeper:zookeeper:${zookeeperVersion}",
                   "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
@@ -189,7 +187,6 @@ project(':benchmarks-kafka') {
         runtimeOnly "org.apache.kafka:kafka_2.13:${kafkaVersion}"
         runtimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
         testImplementation "org.apache.kafka:kafka_2.13:${kafkaVersion}"
-        testImplementation "org.apache.zookeeper:zookeeper:${zookeeperVersion}"
         testRuntimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
     }
 }
