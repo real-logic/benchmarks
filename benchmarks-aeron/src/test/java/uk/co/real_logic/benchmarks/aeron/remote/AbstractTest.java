@@ -36,7 +36,6 @@ import static io.aeron.driver.Configuration.DIR_DELETE_ON_SHUTDOWN_PROP_NAME;
 import static io.aeron.driver.Configuration.DIR_DELETE_ON_START_PROP_NAME;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
-import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
@@ -71,21 +70,21 @@ abstract class AbstractTest<
     @Test
     void messageLength32bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(10_000, 32, 10, tempDir, false);
+        test(10_000, 32, 10, tempDir);
     }
 
     @Timeout(30)
     @Test
     void messageLength224bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(1000, 224, 5, tempDir, false);
+        test(1000, 224, 5, tempDir);
     }
 
     @Timeout(30)
     @Test
     void messageLength1376bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(100, 1376, 1, tempDir, false);
+        test(100, 1376, 1, tempDir);
     }
 
     @SuppressWarnings("MethodLength")
@@ -93,8 +92,7 @@ abstract class AbstractTest<
         final int messageRate,
         final int messageLength,
         final int burstSize,
-        final Path tempDir,
-        final boolean outOfOrderReceive) throws Exception
+        final Path tempDir) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
             .warmUpIterations(0)
@@ -109,46 +107,47 @@ abstract class AbstractTest<
 
         final AtomicReference<Throwable> error = new AtomicReference<>();
 
-        final DRIVER driver = createDriver();
-        final CLIENT client = connectToDriver();
-        final AtomicBoolean running = new AtomicBoolean(true);
-        final CountDownLatch remoteNodeStarted = new CountDownLatch(1);
-        final Thread remoteNode = new Thread(
-            () ->
-            {
-                remoteNodeStarted.countDown();
-
-                try (NODE node = createNode(running, driver, client))
-                {
-                    node.run();
-                }
-                catch (final Throwable t)
-                {
-                    error.set(t);
-                }
-            });
-        try
+        try (DRIVER driver = createDriver(); CLIENT client = connectToDriver())
         {
-            remoteNode.setName("remote-node");
-            remoteNode.setDaemon(true);
-            remoteNode.start();
+            final AtomicBoolean running = new AtomicBoolean(true);
+            final CountDownLatch remoteNodeStarted = new CountDownLatch(1);
+            final Thread remoteNode = new Thread(
+                () ->
+                {
+                    remoteNodeStarted.countDown();
 
-            final MessageTransceiver messageTransceiver = createMessageTransceiver(driver, client);
-
-            final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
-
-            remoteNodeStarted.await();
-            loadTestRig.run();
-        }
-        finally
-        {
-            running.set(false);
-            remoteNode.join();
-            closeAll(client, driver);
-
-            if (driver instanceof ArchivingMediaDriver)
+                    try (NODE node = createNode(running, driver, client))
+                    {
+                        node.run();
+                    }
+                    catch (final Throwable t)
+                    {
+                        error.set(t);
+                    }
+                });
+            try
             {
-                ((ArchivingMediaDriver)driver).archive.context().deleteDirectory();
+                remoteNode.setName("remote-node");
+                remoteNode.setDaemon(true);
+                remoteNode.start();
+
+                final MessageTransceiver messageTransceiver = createMessageTransceiver(driver, client);
+
+                final LoadTestRig loadTestRig =
+                    new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
+
+                remoteNodeStarted.await();
+                loadTestRig.run();
+            }
+            finally
+            {
+                running.set(false);
+                final boolean wasInterrupted = Thread.interrupted();
+                remoteNode.join();
+                if (wasInterrupted)
+                {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 

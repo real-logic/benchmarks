@@ -16,7 +16,10 @@
 package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.client.AeronArchive;
+import org.agrona.IoUtil;
+import org.junit.jupiter.api.AfterEach;
 
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.archive.client.AeronArchive.connect;
@@ -25,6 +28,15 @@ import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.laun
 class LiveReplayTest extends
     AbstractTest<ArchivingMediaDriver, AeronArchive, LiveReplayMessageTransceiver, ArchiveNode>
 {
+
+    private File archiveDir;
+
+    @AfterEach
+    void afterEach()
+    {
+        IoUtil.delete(archiveDir, true);
+    }
+
     protected ArchiveNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {
@@ -33,7 +45,9 @@ class LiveReplayTest extends
 
     protected ArchivingMediaDriver createDriver()
     {
-        return launchArchiveWithEmbeddedDriver();
+        final ArchivingMediaDriver driver = launchArchiveWithEmbeddedDriver();
+        archiveDir = driver.archive.context().archiveDir();
+        return driver;
     }
 
     protected AeronArchive connectToDriver()

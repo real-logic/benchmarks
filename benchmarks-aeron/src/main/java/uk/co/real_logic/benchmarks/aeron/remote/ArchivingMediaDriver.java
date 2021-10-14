@@ -51,6 +51,7 @@ final class ArchivingMediaDriver implements AutoCloseable
         {
             final MediaDriver.Context driverCtx = new MediaDriver.Context()
                 .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true)
                 .spiesSimulateConnection(true);
 
             driver = MediaDriver.launch(driverCtx);

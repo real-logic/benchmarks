@@ -83,7 +83,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         setProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, "500ms");
         setProperty(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, "70");
 
-        test(1000, 64, 1, tempDir, false);
+        test(1000, 64, 1, tempDir);
     }
 
     @Timeout(30)
@@ -99,7 +99,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
             "aeron:udp?endpoint=localhost:13200,aeron:udp?endpoint=localhost:13201,aeron:udp?endpoint=localhost:13202");
         setProperty(SOURCE_STREAMS_PROP_NAME, "13200,13201,13202");
 
-        test(5000, 32, 1, tempDir, true);
+        test(5000, 32, 1, tempDir);
     }
 
     @Timeout(30)
@@ -114,7 +114,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         setProperty(SOURCE_STREAMS_PROP_NAME, "13200");
 
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> test(1000, 32, 1, tempDir, true));
+            () -> test(1000, 32, 1, tempDir));
 
         assertEquals("Number of destinations does not match the number of sources:\n " +
             "[aeron:udp?endpoint=localhost:13100, aeron:udp?endpoint=localhost:13101]\n " +
