@@ -61,7 +61,7 @@ def slf4jVersion = '1.7.32'
 def scalaVersion = '2.13.5'
 def annotationsApiVersion = '6.0.53'
 def jacksonVersion = '2.10.5'
-def byteBuddyVersion = '1.11.18'
+def byteBuddyVersion = '1.11.21'
 
 allprojects {
     repositories {
