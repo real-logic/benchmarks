@@ -24,7 +24,7 @@ plugins {
 
 defaultTasks 'clean', 'build'
 
-static def getBuildJavaVersion() {
+static int getBuildJavaVersion() {
     def buildJavaVersion = System.getenv('BUILD_JAVA_VERSION') ?: JavaVersion.current().getMajorVersion()
     if (buildJavaVersion.indexOf('.') > 0) {
         buildJavaVersion = buildJavaVersion.substring(0, buildJavaVersion.indexOf('.'))
@@ -61,7 +61,6 @@ def slf4jVersion = '1.7.32'
 def scalaVersion = '2.13.5'
 def annotationsApiVersion = '6.0.53'
 def jacksonVersion = '2.10.5'
-def byteBuddyVersion = '1.11.22'
 
 allprojects {
     repositories {
@@ -73,9 +72,7 @@ allprojects {
         resolutionStrategy {
             failOnVersionConflict()
 
-            force "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
-                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
-                  "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}",
+            force "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
                   "org.slf4j:slf4j-api:${slf4jVersion}",
@@ -96,7 +93,6 @@ subprojects {
     dependencies {
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-        testRuntimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
 
