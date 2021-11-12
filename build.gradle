@@ -240,6 +240,41 @@ tasks.named("dependencyUpdates").configure {
     }
 }
 
+FileTree benchmarksFileTree = fileTree('.') {
+    include 'benchmarks-all/build/libs/benchmarks.jar'
+    include 'scripts/**'
+}
+
+FileTree cDriverTree = (project.hasProperty('aeron.cdriver.package')) ?
+        tarTree(resources.gzip(project.property('aeron.cdriver.package'))) :
+        files().asFileTree
+
+FileTree cDriverDpdkTree = (project.hasProperty('aeron.cdriver.dpdk.package')) ?
+        tarTree(resources.gzip(project.property('aeron.cdriver.dpdk.package'))) :
+        files().asFileTree
+
+FileTree cDriverEfviTree = (project.hasProperty('aeron.cdriver.efvi.package')) ?
+        tarTree(resources.gzip(project.property('aeron.cdriver.efvi.package'))) :
+        files().asFileTree
+
+FileTree cDriverAtsTree = (project.hasProperty('aeron.cdriver.ats.package')) ?
+        tarTree(resources.gzip(project.property('aeron.cdriver.ats.package'))) :
+        files().asFileTree
+
+task deployTar(type: Tar) {
+    from(cDriverTree) {
+        include "*/**"
+        eachFile { fcd ->
+            fcd.relativePath = new RelativePath(true, fcd.relativePath.segments.drop(1))
+        }
+        includeEmptyDirs = false
+    }
+    from(benchmarksFileTree)
+    from(cDriverDpdkTree)
+    from(cDriverAtsTree)
+    from(cDriverEfviTree)
+}
+
 wrapper {
     gradleVersion = '7.2'
     distributionType = 'ALL'

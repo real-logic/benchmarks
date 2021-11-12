@@ -29,57 +29,57 @@ for var in "${required_vars[@]}"; do
   fi
 done
 
-if [ -n "${required_var_missing}" ];
+if [[ -v required_var_missing && -n "${required_var_missing}" ]];
 then
   exit 1
 fi
 
-if [ -z "${SSH_CONNECTION_ATTEMPTS}" ];
+if [[ ! -v SSH_CONNECTION_ATTEMPTS ]];
 then
   SSH_CONNECTION_ATTEMPTS=10
 fi
 
-if [ -z "${SSH_CONNECT_TIMEOUT}" ];
+if [[ ! -v SSH_CONNECT_TIMEOUT ]];
 then
   SSH_CONNECT_TIMEOUT=30
 fi
 
-if [ -z "${SSH_SERVER_ALIVE_INTERVAL}" ];
+if [[ ! -v SSH_SERVER_ALIVE_INTERVAL ]];
 then
   SSH_SERVER_ALIVE_INTERVAL=600
 fi
 
-if [ -z "${RUNS}" ];
+if [[ ! -v RUNS ]];
 then
   RUNS=3
 fi
 
-if [ -z "${ITERATIONS}" ];
+if [[ ! -v ITERATIONS ]];
 then
   ITERATIONS=10
 fi
 
-if [ -z "${WARMUP_ITERATIONS}" ];
+if [[ ! -v WARMUP_ITERATIONS ]];
 then
   WARMUP_ITERATIONS=5
 fi
 
-if [ -z "${MESSAGE_RATE}" ];
+if [[ ! -v MESSAGE_RATE ]];
 then
   MESSAGE_RATE=(100000)
 fi
 
-if [ -z "${BURST_SIZE}" ];
+if [[ ! -v BURST_SIZE ]];
 then
   BURST_SIZE=(1 10)
 fi
 
-if [ -z "${MESSAGE_LENGTH}" ];
+if [[ ! -v MESSAGE_LENGTH ]];
 then
   MESSAGE_LENGTH=(32 224 1376)
 fi
 
-if [ -z "${CONNECTION_TIMEOUT}" ];
+if [[ ! -v CONNECTION_TIMEOUT ]];
 then
   CONNECTION_TIMEOUT="60s"
 fi
