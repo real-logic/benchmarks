@@ -61,6 +61,7 @@ def zookeeperVersion = '3.7.0'
 def slf4jVersion = '1.7.32'
 def scalaVersion = '2.13.7'
 def jacksonVersion = '2.13.0'
+def annotationsApiVersion = '6.0.53'
 
 allprojects {
     repositories {
@@ -166,6 +167,7 @@ project(':benchmarks-grpc') {
         implementation "io.grpc:grpc-protobuf:${grpcVersion}"
         implementation "io.grpc:grpc-stub:${grpcVersion}"
         implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+        compileOnly "org.apache.tomcat:annotations-api:${annotationsApiVersion}"
     }
 
     protobuf {
