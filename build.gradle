@@ -58,7 +58,7 @@ def protobufVersion = '3.19.1'
 def errorproneVersion = '2.10.0'
 def kafkaVersion = '2.8.0'
 def slf4jVersion = '1.7.32'
-def scalaVersion = '2.13.5'
+def scalaVersion = '2.13.7'
 def jacksonVersion = '2.13.0'
 
 allprojects {
