@@ -59,7 +59,7 @@ def errorproneVersion = '2.10.0'
 def kafkaVersion = '2.8.0'
 def slf4jVersion = '1.7.32'
 def scalaVersion = '2.13.5'
-def jacksonVersion = '2.10.5'
+def jacksonVersion = '2.13.0'
 
 allprojects {
     repositories {
@@ -74,6 +74,9 @@ allprojects {
             force "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
+                  "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jacksonVersion}",
+                  "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}",
+                  "com.fasterxml.jackson.module:jackson-module-scala_2.13:${jacksonVersion}",
                   "org.slf4j:slf4j-api:${slf4jVersion}",
                   "org.slf4j:slf4j-log4j12:${slf4jVersion}",
                   "org.scala-lang:scala-library:${scalaVersion}",
