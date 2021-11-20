@@ -378,7 +378,7 @@ class ConfigurationTest
             IllegalArgumentException.class, Configuration::fromSystemProperties);
 
         assertEquals("non-integer value for property '" + MESSAGE_RATE_PROP_NAME +
-            "', cause: 'x' is not a valid digit @ 3", ex.getMessage());
+            "', cause: error parsing int: 100x000", ex.getMessage());
     }
 
     @Test
