@@ -59,7 +59,6 @@ def errorproneVersion = '2.10.0'
 def kafkaVersion = '2.8.0'
 def slf4jVersion = '1.7.32'
 def scalaVersion = '2.13.5'
-def annotationsApiVersion = '6.0.53'
 def jacksonVersion = '2.10.5'
 
 allprojects {
@@ -162,7 +161,6 @@ project(':benchmarks-grpc') {
         implementation "io.grpc:grpc-protobuf:${grpcVersion}"
         implementation "io.grpc:grpc-stub:${grpcVersion}"
         implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
-        compileOnly "org.apache.tomcat:annotations-api:${annotationsApiVersion}"
     }
 
     protobuf {
