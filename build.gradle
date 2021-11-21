@@ -44,7 +44,7 @@ def toolchainCompiler = javaToolchains.compilerFor {
     languageVersion = JavaLanguageVersion.of(buildJavaVersion)
 }
 
-def agronaVersion = '1.13.0'
+def agronaVersion = '1.13.1'
 def aeronVersion = '1.36.0'
 def jmhVersion = '1.33'
 def joptVersion = '5.0.4'
