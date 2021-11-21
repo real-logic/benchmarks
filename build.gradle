@@ -72,7 +72,8 @@ allprojects {
         resolutionStrategy {
             failOnVersionConflict()
 
-            force "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}",
+            force "org.agrona:agrona:${agronaVersion}",
+                  "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
                   "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jacksonVersion}",
