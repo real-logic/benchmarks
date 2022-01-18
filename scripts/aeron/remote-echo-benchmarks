@@ -109,7 +109,8 @@ do
     shift
     ;;
   --mtu)
-    mtu="$1"
+    mtu="${2}"
+    shift
     shift
     ;;
   -h|--help)
