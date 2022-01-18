@@ -96,7 +96,7 @@ do
     shift
     shift
     ;;
-  --endpoint-modes)
+  --modes)
     IFS=',';
     read -ra modes <<< "${2}"
     unset IFS;
