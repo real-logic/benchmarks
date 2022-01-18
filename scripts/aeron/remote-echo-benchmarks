@@ -113,7 +113,7 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--streams \"\${streams-csv}\"] [--modes \"\${modes-csv}\"] [--mtu $mtu]"
+    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--streams \"\${streams-csv}\"] [--modes \"\${modes-csv}\"] [--mtu \$mtu]"
     exit
     ;;
   *)
