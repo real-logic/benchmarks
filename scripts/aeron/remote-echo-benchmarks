@@ -328,7 +328,7 @@ do
       -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?} \
       -Duk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?} \
       -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}\" \
       && numactl -N ${SERVER_NUMA_NODE} -m ${SERVER_NUMA_NODE} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
 
       stop_server="$(kill_java_process "${server_class_name}"); \
