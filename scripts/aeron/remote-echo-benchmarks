@@ -53,9 +53,10 @@ no_c_driver=0
 enable_onload=1
 enable_ef_vi=1
 enable_ats=1
-active_publications=(1 2 5 10)
-endpoint_modes=("multiplexed" "dedicated")
+streams=(1 2 5 10)
+modes=("multiplexed" "dedicated")
 results_file="aeron-echo-results.zip"
+mtu=1408
 
 while [[ $# -gt 0 ]]
 do
@@ -88,16 +89,16 @@ do
     enable_ats=0
     shift
     ;;
-  --active-publications)
+  --streams)
     IFS=',';
-    read -ra active_publications <<< "${2}"
+    read -ra streams <<< "${2}"
     unset IFS;
     shift
     shift
     ;;
   --endpoint-modes)
     IFS=',';
-    read -ra endpoint_modes <<< "${2}"
+    read -ra modes <<< "${2}"
     unset IFS;
     shift
     shift
@@ -107,8 +108,12 @@ do
     shift
     shift
     ;;
+  --mtu)
+    mtu="$1"
+    shift
+    ;;
   -h|--help)
-    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--active-publications \"\${active-publications-csv}\"] [--endpoint-modes \"\${endpoint-modes-csv}\"]"
+    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--streams \"\${streams-csv}\"] [--modes \"\${modes-csv}\"] [--mtu $mtu]"
     exit
     ;;
   *)
@@ -274,93 +279,71 @@ do
   client_driver="${client_drivers[index]}"
   server_driver="${server_drivers[index]}"
 
-  for endpoint_mode in "${endpoint_modes[@]}"
+  for mode in "${modes[@]}"
   do
-    for active in "${active_publications[@]}"
+    for num_streams in "${streams[@]}"
     do
-      for passive in 0 ${active}
+      test="echo-${scenario}-mode-${mode}-streams-${num_streams}"
+      echo -e "\n Testing scenario: '${test}'\n"
+
+      destination_channels=""
+      destination_streams=""
+      source_channels=""
+      source_streams=""
+
+      for (( i=0; i<num_streams; i++ ))
       do
-        test="echo-${scenario}-endpoint-${endpoint_mode}-active-${active}-passive-${passive}"
-        echo -e "\n Testing scenario: '${test}'\n"
+        if [ "${mode}" == "dedicated" ]
+        then
+          dest_port=$((13000 + i))
+          src_port=$((13100 + i))
+        else
+          dest_port=13000
+          src_port=13100
+        fi
+        dest_stream=$((1000000 + i))
+        src_stream=$((2000000 + i))
 
-        destination_channels=""
-        destination_streams=""
-        source_channels=""
-        source_streams=""
-        passive_channels=""
-        passive_streams=""
+        destination_channels+="aeron:udp?endpoint=${AERON_DESTINATION_IP}:${dest_port}|interface=${AERON_DESTINATION_INTERFACE}|mtu=${mtu},"
+        destination_streams+="${dest_stream},"
 
-        for (( i=0; i<active; i++ ))
-        do
-          if [ "${endpoint_mode}" == "dedicated" ]
-          then
-            dest_port=$((13000 + i))
-            src_port=$((13100 + i))
-          else
-            dest_port=13000
-            src_port=13100
-          fi
-          dest_stream=$((1000000 + i))
-          src_stream=$((2000000 + i))
-
-          destination_channels+="aeron:udp?endpoint=${AERON_DESTINATION_IP}:${dest_port}|interface=${AERON_DESTINATION_INTERFACE},"
-          destination_streams+="${dest_stream},"
-
-          source_channels+="aeron:udp?endpoint=${AERON_SOURCE_IP}:${src_port}|interface=${AERON_SOURCE_INTERFACE},"
-          source_streams+="${src_stream},"
-
-          if [ "${passive}" -ne 0 ]
-          then
-            if [ "${endpoint_mode}" == "dedicated" ]
-            then
-              passive_port=$((13200 + i))
-            else
-              passive_port=13200
-            fi
-            passive_stream=$((3000000 + i))
-            passive_channels+="aeron:udp?endpoint=${AERON_DESTINATION_IP}:${passive_port}|interface=${AERON_DESTINATION_INTERFACE},"
-            passive_streams+="${passive_stream},"
-          fi
-        done
-
-        client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
-        server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
-
-        start_client="\
-        export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
-        ; $(kill_java_process "${client_class_name}") \
-        ; ${client_driver} \
-        && numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client \
-        ; kill -9 \${driver_pid}; wait"
-
-        start_server="\
-        export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-        && ${server_driver} \
-        && export JVM_OPTS=\"\
-        -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.passive.channels=${passive_channels%?} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.passive.streams=${passive_streams%?}\" \
-        && numactl -N ${SERVER_NUMA_NODE} -m ${SERVER_NUMA_NODE} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
-
-        stop_server="$(kill_java_process "${server_class_name}"); \
-        $(stop_media_driver)"
-
-        run_benchmarks \
-          "${start_client}" \
-          "$(kill_java_process "${server_class_name}"); ${start_server}" \
-          "${stop_server}" \
-          "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
-          "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-          "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?}" \
-          "uk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?}" \
-          "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?}" \
-          "uk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}" \
-          "uk.co.real_logic.benchmarks.aeron.remote.passive.channels=${passive_channels%?}" \
-          "uk.co.real_logic.benchmarks.aeron.remote.passive.streams=${passive_streams%?}"
+        source_channels+="aeron:udp?endpoint=${AERON_SOURCE_IP}:${src_port}|interface=${AERON_SOURCE_INTERFACE}|mtu=${mtu},"
+        source_streams+="${src_stream},"
       done
+
+      client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
+      server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
+
+      start_client="\
+      export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
+      ; $(kill_java_process "${client_class_name}") \
+      ; ${client_driver} \
+      && numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client \
+      ; kill -9 \${driver_pid}; wait"
+
+      start_server="\
+      export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
+      && ${server_driver} \
+      && export JVM_OPTS=\"\
+      -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?} \
+      && numactl -N ${SERVER_NUMA_NODE} -m ${SERVER_NUMA_NODE} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
+
+      stop_server="$(kill_java_process "${server_class_name}"); \
+      $(stop_media_driver)"
+
+      run_benchmarks \
+        "${start_client}" \
+        "$(kill_java_process "${server_class_name}"); ${start_server}" \
+        "${stop_server}" \
+        "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
+        "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+        "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?}" \
+        "uk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?}" \
+        "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?}" \
+        "uk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}"
     done
   done
 done

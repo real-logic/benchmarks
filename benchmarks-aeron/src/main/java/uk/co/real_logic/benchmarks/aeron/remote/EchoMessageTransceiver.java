@@ -41,9 +41,7 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     private final BufferClaim bufferClaim = new BufferClaim();
     ExclusivePublication[] publications;
-    ExclusivePublication[] passivePublications;
     long keepAliveIntervalNs;
-    long timeOfLastKeepAliveNs;
     int sendIndex;
 
     private Subscription[] subscriptions;
@@ -87,11 +85,6 @@ public final class EchoMessageTransceiver extends MessageTransceiver
                 Arrays.toString(destinationChannels) + "\n " + Arrays.toString(sourceChannels));
         }
 
-        final String[] passiveChannels = passiveChannels();
-        final int[] passiveStreams = passiveStreams();
-        assertChannelsAndStreamsMatch(
-            passiveChannels, passiveStreams, PASSIVE_CHANNELS_PROP_NAME, PASSIVE_STREAMS_PROP_NAME);
-
         final int numActiveChannels = destinationChannels.length;
         publications = new ExclusivePublication[numActiveChannels];
         subscriptions = new Subscription[numActiveChannels];
@@ -102,19 +95,8 @@ public final class EchoMessageTransceiver extends MessageTransceiver
             subscriptions[i] = aeron.addSubscription(sourceChannels[i], sourceStreams[i]);
         }
 
-        passivePublications = EMPTY_PUBLICATIONS;
-        if (passiveChannels.length > 0)
-        {
-            passivePublications = new ExclusivePublication[passiveChannels.length];
-            for (int i = 0; i < passiveChannels.length; i++)
-            {
-                passivePublications[i] = aeron.addExclusivePublication(passiveChannels[i], passiveStreams[i]);
-            }
-            keepAliveIntervalNs = passiveChannelsKeepAliveIntervalNanos();
-        }
-
         awaitConnected(
-            () -> allConnected(subscriptions) && allConnected(publications) && allConnected(passivePublications),
+            () -> allConnected(subscriptions) && allConnected(publications),
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
 
@@ -126,7 +108,6 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public void destroy()
     {
-        closeAll(passivePublications);
         closeAll(publications);
         closeAll(subscriptions);
 
@@ -145,16 +126,8 @@ public final class EchoMessageTransceiver extends MessageTransceiver
             sendIndex = index = 0;
         }
 
-        final int sent = sendMessages(
+        return sendMessages(
             publications[index], bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
-
-        if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - timestamp < 0)
-        {
-            sendKeepAliveMessages(timestamp, checksum);
-            timeOfLastKeepAliveNs = timestamp;
-        }
-
-        return sent;
     }
 
     public void receive()
@@ -177,20 +150,6 @@ public final class EchoMessageTransceiver extends MessageTransceiver
         for (int i = 0; i < startingIndex && fragments < FRAGMENT_LIMIT; i++)
         {
             fragments += images[i].poll(dataHandler, FRAGMENT_LIMIT - fragments);
-        }
-    }
-
-    private void sendKeepAliveMessages(final long timestamp, final long checksum)
-    {
-        for (final ExclusivePublication passivePublication : passivePublications)
-        {
-            sendMessages(
-                passivePublication,
-                bufferClaim,
-                NUMBER_OF_KEEP_ALIVE_MESSAGES,
-                KEEP_ALIVE_MESSAGE_LENGTH,
-                timestamp,
-                checksum);
         }
     }
 }

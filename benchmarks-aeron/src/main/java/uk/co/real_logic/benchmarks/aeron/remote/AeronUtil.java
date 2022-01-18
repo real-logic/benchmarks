@@ -56,8 +56,6 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.Strings.isEmpty;
 import static org.agrona.SystemUtil.parseDuration;
-import static org.agrona.collections.ArrayUtil.EMPTY_INT_ARRAY;
-import static org.agrona.collections.ArrayUtil.EMPTY_STRING_ARRAY;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithEmbeddedDriver;
 import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithStandaloneDriver;
@@ -70,12 +68,6 @@ final class AeronUtil
         "uk.co.real_logic.benchmarks.aeron.remote.destination.streams";
     static final String SOURCE_CHANNELS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channels";
     static final String SOURCE_STREAMS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.streams";
-    static final String PASSIVE_CHANNELS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.passive.channels";
-    static final String PASSIVE_STREAMS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.passive.streams";
-    static final String PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME =
-        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels.keep.alive.interval";
-    static final String PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME =
-        "uk.co.real_logic.benchmarks.aeron.remote.passive.channels.poll.frequency";
     static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
     static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.stream";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
@@ -110,7 +102,7 @@ final class AeronUtil
         final String property = getProperty(DESTINATION_CHANNELS_PROP_NAME);
         if (isEmpty(property))
         {
-            return new String[]{ "aeron:udp?endpoint=localhost:13333" };
+            return new String[]{ "aeron:udp?endpoint=localhost:13333|mtu=1408" };
         }
 
         return property.split(MULTI_VALUE_SEPARATOR);
@@ -132,7 +124,7 @@ final class AeronUtil
         final String property = getProperty(SOURCE_CHANNELS_PROP_NAME);
         if (isEmpty(property))
         {
-            return new String[]{ "aeron:udp?endpoint=localhost:13334" };
+            return new String[]{ "aeron:udp?endpoint=localhost:13334|mtu=1408" };
         }
 
         return property.split(MULTI_VALUE_SEPARATOR);
@@ -147,43 +139,6 @@ final class AeronUtil
         }
 
         return parseStreamIds(property);
-    }
-
-    static String[] passiveChannels()
-    {
-        final String property = getProperty(PASSIVE_CHANNELS_PROP_NAME);
-        if (isEmpty(property))
-        {
-            return EMPTY_STRING_ARRAY;
-        }
-
-        return property.split(MULTI_VALUE_SEPARATOR);
-    }
-
-    static int[] passiveStreams()
-    {
-        final String property = getProperty(PASSIVE_STREAMS_PROP_NAME);
-        if (isEmpty(property))
-        {
-            return EMPTY_INT_ARRAY;
-        }
-
-        return parseStreamIds(property);
-    }
-
-    static long passiveChannelsKeepAliveIntervalNanos()
-    {
-        String property = getProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME);
-        if (isEmpty(property))
-        {
-            property = "1s";
-        }
-        return parseDuration(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, property);
-    }
-
-    static int passiveChannelsPollFrequency()
-    {
-        return getInteger(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, 1000);
     }
 
     static String archiveChannel()

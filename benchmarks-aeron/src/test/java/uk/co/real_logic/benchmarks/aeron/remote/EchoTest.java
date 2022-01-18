@@ -67,28 +67,11 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         clearProperty(DESTINATION_STREAMS_PROP_NAME);
         clearProperty(SOURCE_CHANNELS_PROP_NAME);
         clearProperty(SOURCE_STREAMS_PROP_NAME);
-        clearProperty(PASSIVE_CHANNELS_PROP_NAME);
-        clearProperty(PASSIVE_STREAMS_PROP_NAME);
-        clearProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME);
-        clearProperty(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME);
     }
 
     @Timeout(30)
     @Test
-    void passiveChannels(final @TempDir Path tempDir) throws Exception
-    {
-        setProperty(
-            PASSIVE_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13000,aeron:udp?endpoint=localhost:13001");
-        setProperty(PASSIVE_STREAMS_PROP_NAME, "13000,13001");
-        setProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, "500ms");
-        setProperty(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, "70");
-
-        test(1000, 64, 1, tempDir);
-    }
-
-    @Timeout(30)
-    @Test
-    void activeChannels(final @TempDir Path tempDir) throws Exception
+    void multipleStreams(final @TempDir Path tempDir) throws Exception
     {
         setProperty(
             DESTINATION_CHANNELS_PROP_NAME,

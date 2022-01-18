@@ -42,8 +42,6 @@ public final class EchoNode implements AutoCloseable, Runnable
     private final ExclusivePublication[] publications;
     private final Subscription[] subscriptions;
     private final Image[] images;
-    private final Subscription[] passiveSubscriptions;
-    private final Image[] passiveImages;
     private final AtomicBoolean running;
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
@@ -77,11 +75,6 @@ public final class EchoNode implements AutoCloseable, Runnable
             throw new IllegalArgumentException("Number of destinations does not match the number of sources");
         }
 
-        final String[] passiveChannels = passiveChannels();
-        final int[] passiveStreams = passiveStreams();
-        assertChannelsAndStreamsMatch(
-            passiveChannels, passiveStreams, PASSIVE_CHANNELS_PROP_NAME, PASSIVE_STREAMS_PROP_NAME);
-
         final int numActiveChannels = sourceChannels.length;
         fragmentHandlers = new FragmentHandler[numActiveChannels];
         publications = new ExclusivePublication[numActiveChannels];
@@ -110,27 +103,10 @@ public final class EchoNode implements AutoCloseable, Runnable
                 };
         }
 
-        if (passiveChannels.length > 0)
-        {
-            passiveSubscriptions = new Subscription[passiveChannels.length];
-            passiveImages = new Image[passiveChannels.length];
-            for (int i = 0; i < passiveChannels.length; i++)
-            {
-                passiveSubscriptions[i] = aeron.addSubscription(passiveChannels[i], passiveStreams[i]);
-            }
-        }
-        else
-        {
-            passiveSubscriptions = EMPTY_SUBSCRIPTIONS;
-            passiveImages = EMPTY_IMAGES;
-        }
-
         awaitConnected(
-            () -> allConnected(subscriptions) && allConnected(publications) && allConnected(passiveSubscriptions),
+            () -> allConnected(subscriptions) && allConnected(publications),
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
-
-        reloadImages(passiveSubscriptions, passiveImages);
     }
 
     public void run()
@@ -138,17 +114,14 @@ public final class EchoNode implements AutoCloseable, Runnable
         final FragmentHandler[] fragmentHandlers = this.fragmentHandlers;
         final Subscription[] subscriptions = this.subscriptions;
         final Image[] images = this.images;
-        final Image[] passiveImages = this.passiveImages;
 
         final IdleStrategy idleStrategy = idleStrategy();
 
-        final int passiveChannelsPollFrequency = passiveChannelsPollFrequency();
         final AtomicBoolean running = this.running;
 
         reloadImages(subscriptions, images);
         final int numImages = images.length;
         int pollIndex = 0;
-        int fragmentsSinceLastPassivePoll = 0;
 
         while (true)
         {
@@ -184,23 +157,12 @@ public final class EchoNode implements AutoCloseable, Runnable
                 }
             }
 
-            fragmentsSinceLastPassivePoll += fragments;
-            if (fragmentsSinceLastPassivePoll >= passiveChannelsPollFrequency)
-            {
-                fragmentsSinceLastPassivePoll = 0;
-                for (final Image passiveImage : passiveImages)
-                {
-                    passiveImage.poll(NULL_FRAGMENT_HANDLER, FRAGMENT_LIMIT);
-                }
-            }
-
             idleStrategy.idle(fragments);
         }
     }
 
     public void close()
     {
-        closeAll(passiveSubscriptions);
         closeAll(subscriptions);
         closeAll(publications);
 

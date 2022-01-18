@@ -46,8 +46,6 @@ class AeronUtilTest
         clearProperty(DESTINATION_STREAMS_PROP_NAME);
         clearProperty(SOURCE_CHANNELS_PROP_NAME);
         clearProperty(SOURCE_STREAMS_PROP_NAME);
-        clearProperty(PASSIVE_CHANNELS_PROP_NAME);
-        clearProperty(PASSIVE_STREAMS_PROP_NAME);
         clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
         clearProperty(ARCHIVE_STREAM_PROP_NAME);
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
@@ -57,14 +55,10 @@ class AeronUtilTest
     @Test
     void defaultConfigurationValues()
     {
-        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333" }, destinationChannels());
+        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333|mtu=1408" }, destinationChannels());
         assertArrayEquals(new int[]{ 1_000_000_000 }, destinationStreams());
-        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13334" }, sourceChannels());
+        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13334|mtu=1408" }, sourceChannels());
         assertArrayEquals(new int[]{ 1_000_000_001 }, sourceStreams());
-        assertArrayEquals(new String[0], passiveChannels());
-        assertArrayEquals(new int[0], passiveStreams());
-        assertEquals(SECONDS.toNanos(1), passiveChannelsKeepAliveIntervalNanos());
-        assertEquals(1000, passiveChannelsPollFrequency());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());
@@ -78,23 +72,15 @@ class AeronUtilTest
         setProperty(DESTINATION_STREAMS_PROP_NAME, "");
         setProperty(SOURCE_CHANNELS_PROP_NAME, "");
         setProperty(SOURCE_STREAMS_PROP_NAME, "");
-        setProperty(PASSIVE_CHANNELS_PROP_NAME, "");
-        setProperty(PASSIVE_STREAMS_PROP_NAME, "");
-        setProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, "");
-        setProperty(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, "");
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "");
         setProperty(IDLE_STRATEGY_PROP_NAME, "");
 
-        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333" }, destinationChannels());
+        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333|mtu=1408" }, destinationChannels());
         assertArrayEquals(new int[]{ 1_000_000_000 }, destinationStreams());
-        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13334" }, sourceChannels());
+        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13334|mtu=1408" }, sourceChannels());
         assertArrayEquals(new int[]{ 1_000_000_001 }, sourceStreams());
-        assertArrayEquals(new String[0], passiveChannels());
-        assertArrayEquals(new int[0], passiveStreams());
-        assertEquals(SECONDS.toNanos(1), passiveChannelsKeepAliveIntervalNanos());
-        assertEquals(1000, passiveChannelsPollFrequency());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());
@@ -108,10 +94,6 @@ class AeronUtilTest
         setProperty(DESTINATION_STREAMS_PROP_NAME, "100,101,102,");
         setProperty(SOURCE_CHANNELS_PROP_NAME, "ch1:8001,ch2:8002,ch3:8003");
         setProperty(SOURCE_STREAMS_PROP_NAME, "200,201,202,");
-        setProperty(PASSIVE_CHANNELS_PROP_NAME, "ch4:4444,ch7:7777");
-        setProperty(PASSIVE_STREAMS_PROP_NAME, "1,2");
-        setProperty(PASSIVE_CHANNELS_KEEP_ALIVE_INTERVAL_PROP_NAME, "125us");
-        setProperty(PASSIVE_CHANNELS_POLL_FREQUENCY_PROP_NAME, "22");
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "localhost");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "777");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
@@ -121,12 +103,8 @@ class AeronUtilTest
         assertArrayEquals(new int[]{ 100, 101, 102 }, destinationStreams());
         assertArrayEquals(new String[]{ "ch1:8001", "ch2:8002", "ch3:8003" }, sourceChannels());
         assertArrayEquals(new int[]{ 200, 201, 202 }, sourceStreams());
-        assertArrayEquals(new String[]{ "ch4:4444", "ch7:7777" }, passiveChannels());
-        assertArrayEquals(new int[]{ 1, 2 }, passiveStreams());
         assertEquals("localhost", archiveChannel());
         assertEquals(777, archiveStream());
-        assertEquals(MICROSECONDS.toNanos(125), passiveChannelsKeepAliveIntervalNanos());
-        assertEquals(22, passiveChannelsPollFrequency());
         assertTrue(embeddedMediaDriver());
         assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
     }
@@ -222,5 +200,4 @@ class AeronUtilTest
             Arguments.arguments("31ms", MILLISECONDS.toNanos(31)),
             Arguments.arguments("42s", SECONDS.toNanos(42)));
     }
-
 }
