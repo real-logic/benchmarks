@@ -13,5 +13,9 @@
 :: See the License for the specific language governing permissions and
 :: limitations under the License.
 ::
+@echo off
+setlocal EnableExtensions EnableDelayedExpansion
 
-call run-java.cmd uk.co.real_logic.benchmarks.remote.ResultsAggregator %*
+set "DIR=%~dp0"
+
+call "%DIR%\run-java.cmd" uk.co.real_logic.benchmarks.remote.ResultsAggregator %*
