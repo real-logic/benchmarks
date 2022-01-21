@@ -50,7 +50,7 @@ fi
 
 security_protocols=("PLAINTEXT" "SSL")
 onload="onload --profile=latency --force-profiles"
-results_file="kafka-results.zip"
+results_file="kafka-results"
 
 while [[ $# -gt 0 ]]
 do

@@ -85,7 +85,7 @@ enable_onload=1
 enable_ef_vi=1
 enable_ats=1
 file_sync_levels=(0 2)
-results_file="aeron-cluster-results.zip"
+results_file="aeron-cluster-results"
 
 while [[ $# -gt 0 ]]
 do

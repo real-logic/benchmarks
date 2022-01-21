@@ -50,7 +50,7 @@ enable_c_driver=1
 enable_java_driver=1
 onload="onload --profile=latency --force-profiles "
 file_sync_levels=(0 2)
-results_file="aeron-live-recording-results.zip"
+results_file="aeron-live-recording-results"
 
 while [[ $# -gt 0 ]]
 do

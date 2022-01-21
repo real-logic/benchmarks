@@ -55,7 +55,7 @@ fi
 
 tls_options=("false" "true")
 command_wrappers=("" "onload --profile=latency --force-profiles")
-results_file="grpc-results.zip"
+results_file="grpc-results"
 
 while [[ $# -gt 0 ]]
 do
