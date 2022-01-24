@@ -27,12 +27,13 @@ source "${DIR}/../remote-benchmarks-runner"
 required_vars=(
   "CLIENT_BENCHMARKS_PATH"
   "CLIENT_JAVA_HOME"
-  "CLIENT_LOAD_TEST_RIG_NUMA_NODE"
+  "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
+  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
   "SERVER_BENCHMARKS_PATH"
   "SERVER_JAVA_HOME"
   "SERVER_HOST"
-  "SERVER_ZOOKEEPER_NUMA_NODE"
-  "SERVER_KAFKA_NUMA_NODE"
+  "SERVER_ZOOKEEPER_CPU_CORES"
+  "SERVER_KAFKA_CPU_CORES"
   "SERVER_KAFKA_DIR")
 
 for var in "${required_vars[@]}"; do
@@ -113,13 +114,16 @@ do
 
     start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
     ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-    ; ${onload} numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client"
+      ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client &
+      $(await_java_process_start _CPU_CORE"uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
+      $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
+      && wait \$!"
 
     server_scripts_path="${SERVER_BENCHMARKS_PATH}/scripts/kafka"
     start_zookeeper="cp ${server_scripts_path}/zookeeper.properties ${server_scripts_path}/zookeeper.properties.bak \
     && echo \"dataDir=${SERVER_KAFKA_DIR}/zookeeper\" >> ${server_scripts_path}/zookeeper.properties \
     && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-    && ${onload} numactl -N ${SERVER_ZOOKEEPER_NUMA_NODE} -m ${SERVER_ZOOKEEPER_NUMA_NODE} ${server_scripts_path}/zookeeper-start"
+    && ${onload} taskset -c ${SERVER_ZOOKEEPER_CPU_CORES} ${server_scripts_path}/zookeeper-start"
 
     start_kafka="cp ${server_scripts_path}/server.properties ${server_scripts_path}/server.properties.bak \
     && echo -e \"log.dirs=${SERVER_KAFKA_DIR}/logs\n\
@@ -127,7 +131,7 @@ do
     ssl.keystore.location=${SERVER_BENCHMARKS_PATH}/certificates/server.keystore\n\
     advertised.listeners=PLAINTEXT://${SERVER_HOST}:${plain_text_port},SSL://${SERVER_HOST}:${ssl_port}\" >> ${server_scripts_path}/server.properties \
     && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-    && ${onload} numactl -N ${SERVER_KAFKA_NUMA_NODE} -m ${SERVER_KAFKA_NUMA_NODE} ${server_scripts_path}/kafka-start"
+    && ${onload} taskset -c ${SERVER_KAFKA_CPU_CORES} ${server_scripts_path}/kafka-start"
 
     stop_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
     && KAFKA_DATA_DIR=\"${SERVER_KAFKA_DIR}\" ${server_scripts_path}/stop-all; \

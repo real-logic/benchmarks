@@ -22,20 +22,27 @@ function start_media_driver()
 {
   local executable=${1}
   local wrapper_script=${2}
-  local numa_node=${3}
   local driver_pid
+  local driver_thread
 
   if [[ "${executable}" =~ /media-driver$ ]]
   then
     driver_pid="$(await_java_process_start "io.aeron.driver.MediaDriver"); driver_pid=\${pid}"
+    driver_thread="driver-conducto"
   else
     driver_pid="$(await_process_start "\$(pgrep -x aeronmd)"); driver_pid=\${pid}"
+    driver_thread="aeronmd"
   fi
 
   local command=""
   command="$(stop_media_driver); \
   rm -rf /dev/shm/aeron; \
-  ${wrapper_script} numactl -N ${numa_node} -m ${numa_node} \"${executable}\" & ${driver_pid}"
+  ${wrapper_script} taskset -c ${3} \"${executable}\" & ${driver_pid}"
+
+  command+="; echo \"driver PID=\${driver_pid}\""
+  command+="; $(pin_thread \${driver_pid} "${driver_thread}" "${4}")"
+  command+="; $(pin_thread \${driver_pid} "sender" "${5}")"
+  command+="; $(pin_thread \${driver_pid} "receiver" "${6}")"
 
   echo ${command}
 }

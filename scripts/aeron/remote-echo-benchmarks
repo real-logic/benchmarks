@@ -22,12 +22,19 @@ source "${DIR}/remote-benchmarks-helper"
 required_vars=(
   "CLIENT_JAVA_HOME"
   "CLIENT_BENCHMARKS_PATH"
-  "CLIENT_DRIVER_NUMA_NODE"
-  "CLIENT_LOAD_TEST_RIG_NUMA_NODE"
+  "CLIENT_DRIVER_CONDUCTOR_CPU_CORE"
+  "CLIENT_DRIVER_SENDER_CPU_CORE"
+  "CLIENT_DRIVER_RECEIVER_CPU_CORE"
+  "CLIENT_DRIVER_OTHER_CPU_CORES"
+  "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
+  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
   "SERVER_JAVA_HOME"
   "SERVER_BENCHMARKS_PATH"
-  "SERVER_DRIVER_NUMA_NODE"
-  "SERVER_NUMA_NODE"
+  "SERVER_DRIVER_CONDUCTOR_CPU_CORE"
+  "SERVER_DRIVER_SENDER_CPU_CORE"
+  "SERVER_DRIVER_RECEIVER_CPU_CORE"
+  "SERVER_DRIVER_OTHER_CPU_CORES"
+  "SERVER_CPU_CORES"
   "AERON_DESTINATION_IP"
   "AERON_DESTINATION_INTERFACE"
   "AERON_SOURCE_IP"
@@ -141,13 +148,13 @@ function build_drivers()
     if [ "${no_java_driver}" -eq 0 ]
     then
       # Java driver
-      commands+=("$(start_media_driver "${scripts_path}/media-driver" "" "${2}")")
+      commands+=("$(start_media_driver "${scripts_path}/media-driver" "" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_onload}" -eq 1 ]
     then
       # Java driver with Onload
-      commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}")")
+      commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
     fi
   fi
 
@@ -158,14 +165,14 @@ function build_drivers()
     then
       # C driver
       commands+=("${create_benchmark_props}; \
-        $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}")")
+        $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_onload}" -eq 1 ]
     then
       # C driver with Onload
       commands+=("${create_benchmark_props}; \
-        $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}")")
+        $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ef_vi}" -eq 1 ]
@@ -175,7 +182,7 @@ function build_drivers()
         export AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
         AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ats}" -eq 1 ]
@@ -187,7 +194,7 @@ function build_drivers()
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
 
       if [ "${enable_onload}" -eq 1 ]
       then
@@ -198,7 +205,7 @@ function build_drivers()
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-          && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}")")
+          && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
       fi
 
       if [ "${enable_ef_vi}" -eq 1 ]
@@ -212,7 +219,7 @@ function build_drivers()
           AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
           AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
           AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
-          && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}")")
+          && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
       fi
     fi
   fi
@@ -223,9 +230,11 @@ function build_drivers()
 
 IFS=$'\n'
 # shellcheck disable=SC2207
-client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" "${CLIENT_DRIVER_NUMA_NODE}"))
+client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" \
+"${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}" "${CLIENT_DRIVER_SENDER_CPU_CORE}" "${CLIENT_DRIVER_RECEIVER_CPU_CORE}"))
 # shellcheck disable=SC2207
-server_drivers=($(build_drivers "${SERVER_BENCHMARKS_PATH}" "${SERVER_DRIVER_NUMA_NODE}"))
+server_drivers=($(build_drivers "${SERVER_BENCHMARKS_PATH}" \
+"${SERVER_DRIVER_OTHER_CPU_CORES}" "${SERVER_DRIVER_CONDUCTOR_CPU_CORE}" "${SERVER_DRIVER_SENDER_CPU_CORE}" "${SERVER_DRIVER_RECEIVER_CPU_CORE}"))
 unset IFS
 
 if [ "${enable_java_driver}" -eq 1 ]
@@ -319,8 +328,10 @@ do
       export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
       ; $(kill_java_process "${client_class_name}") \
       ; ${client_driver} \
-      && numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client \
-      ; kill -9 \${driver_pid}; wait"
+      && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
+      $(await_java_process_start _CPU_CORE"${client_class_name}") \
+      ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
+      && wait \$!; kill -9 \${driver_pid}; wait"
 
       start_server="\
       export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
@@ -330,7 +341,7 @@ do
       -Duk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?} \
       -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?} \
       -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}\" \
-      && numactl -N ${SERVER_NUMA_NODE} -m ${SERVER_NUMA_NODE} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
+      && taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
 
       stop_server="$(kill_java_process "${server_class_name}"); \
       $(stop_media_driver)"

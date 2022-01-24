@@ -32,12 +32,13 @@ source "${DIR}/../remote-benchmarks-runner"
 required_vars=(
   "CLIENT_JAVA_HOME"
   "CLIENT_BENCHMARKS_PATH"
-  "CLIENT_LOAD_TEST_RIG_NUMA_NODE"
+  "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
+  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
   "SERVER_JAVA_HOME"
   "SERVER_BENCHMARKS_PATH"
   "SERVER_HOST"
   "SERVER_PORT"
-  "SERVER_NUMA_NODE")
+  "SERVER_CPU_CORES")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var+''}" ]]
@@ -104,7 +105,10 @@ do
 
     start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
     ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-    ; ${onload} numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client"
+    ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client & \
+    $(await_java_process_start _CPU_CORE"uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
+    $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
+    && wait \$!"
 
     # shellcheck disable=SC2153
     start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
@@ -113,7 +117,7 @@ do
     -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT} \
     -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
     -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}\" \
-    && ${onload} numactl -N ${SERVER_NUMA_NODE} -m ${SERVER_NUMA_NODE} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
+    && ${onload} taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
 
     stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
 

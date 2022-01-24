@@ -22,11 +22,21 @@ source "${DIR}/remote-benchmarks-helper"
 required_vars=(
   "CLIENT_BENCHMARKS_PATH"
   "CLIENT_JAVA_HOME"
-  "CLIENT_DRIVER_NUMA_NODE"
-  "CLIENT_LOAD_TEST_RIG_NUMA_NODE"
+  "CLIENT_DRIVER_CONDUCTOR_CPU_CORE"
+  "CLIENT_DRIVER_SENDER_CPU_CORE"
+  "CLIENT_DRIVER_RECEIVER_CPU_CORE"
+  "CLIENT_DRIVER_OTHER_CPU_CORES"
+  "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
+  "CLIENT_LOAD_TEST_RIG_ARCHIVE_RECORDER_CPU_CORE"
+  "CLIENT_LOAD_TEST_RIG_ARCHIVE_REPLAYER_CPU_CORE"
+  "CLIENT_LOAD_TEST_RIG_ARCHIVE_CONDUCTOR_CPU_CORE"
+  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
   "SERVER_JAVA_HOME"
-  "SERVER_DRIVER_NUMA_NODE"
-  "SERVER_NUMA_NODE"
+  "SERVER_DRIVER_CONDUCTOR_CPU_CORE"
+  "SERVER_DRIVER_SENDER_CPU_CORE"
+  "SERVER_DRIVER_RECEIVER_CPU_CORE"
+  "SERVER_DRIVER_OTHER_CPU_CORES"
+  "SERVER_CPU_CORES"
   "AERON_DESTINATION_IP"
   "AERON_DESTINATION_INTERFACE"
   "AERON_SOURCE_IP"
@@ -103,13 +113,13 @@ function build_drivers()
 
   if [ "${enable_java_driver}" -eq 1 ]
   then
-    commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}")")
+    commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
   fi
 
   if [ "${enable_c_driver}" -eq 1 ]
   then
     commands+=("touch ${scripts_path}/benchmark.properties; \
-    $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}")")
+    $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
   fi
 
   local IFS=$'\n'
@@ -118,9 +128,11 @@ function build_drivers()
 
 IFS=$'\n'
 # shellcheck disable=SC2207
-client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" "${CLIENT_DRIVER_NUMA_NODE}"))
+client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" \
+"${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}" "${CLIENT_DRIVER_SENDER_CPU_CORE}" "${CLIENT_DRIVER_RECEIVER_CPU_CORE}"))
 # shellcheck disable=SC2207
-server_drivers=($(build_drivers "${SERVER_BENCHMARKS_PATH}" "${SERVER_DRIVER_NUMA_NODE}"))
+server_drivers=($(build_drivers "${SERVER_BENCHMARKS_PATH}" \
+"${SERVER_DRIVER_OTHER_CPU_CORES}" "${SERVER_DRIVER_CONDUCTOR_CPU_CORE}" "${SERVER_DRIVER_SENDER_CPU_CORE}" "${SERVER_DRIVER_RECEIVER_CPU_CORE}"))
 unset IFS
 
 if [ "${enable_java_driver}" -eq 1 ]
@@ -156,8 +168,13 @@ do
     export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
     ; $(kill_java_process "${client_class_name}") \
     ; ${client_driver} \
-    && numactl -N ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} -m ${CLIENT_LOAD_TEST_RIG_NUMA_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/live-recording-client \
-    ; kill -9 \${driver_pid}; wait"
+    && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/live-recording-client & \
+    $(await_java_process_start _CPU_CORE"${client_class_name}") \
+    ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
+    ; $(pin_thread \${pid} "archive-recorde" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_RECORDER_CPU_CORE}") \
+    ; $(pin_thread \${pid} "archive-replaye" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_REPLAYER_CPU_CORE}") \
+    ; $(pin_thread \${pid} "archive-conduct" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_CONDUCTOR_CPU_CORE}") \
+    && wait \$! && kill -9 \${driver_pid}; wait"
 
     start_server="\
     export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
@@ -166,7 +183,7 @@ do
     && export JVM_OPTS=\"\
     -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${AERON_DESTINATION_IP}:13000|interface=${AERON_DESTINATION_INTERFACE} \
     -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${AERON_SOURCE_IP}:13100|interface=${AERON_SOURCE_INTERFACE}\" \
-    && numactl -N ${SERVER_NUMA_NODE} -m ${SERVER_NUMA_NODE} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
+    && taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
 
     stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
 
