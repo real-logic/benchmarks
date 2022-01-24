@@ -186,8 +186,8 @@ do
     -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${AERON_SOURCE_IP}:13100|interface=${AERON_SOURCE_INTERFACE}\" \
     && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
     $(await_java_process_start "${server_class_name}") \
-    ; $(pin_thread \${pid} "load-test-rig" "${SERVER_ECHO_CPU_CORE}") \
-    && wait \$! && kill -9 \${driver_pid}; wait"
+    ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
+    && wait \$!"
 
     stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
 

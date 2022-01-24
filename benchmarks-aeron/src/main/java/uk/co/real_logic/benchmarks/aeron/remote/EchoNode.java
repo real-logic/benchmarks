@@ -189,7 +189,7 @@ public final class EchoNode implements AutoCloseable, Runnable
 
         try (EchoNode server = new EchoNode(running))
         {
-            Thread.currentThread().setName("echo-node");
+            Thread.currentThread().setName("echo");
             server.run();
         }
     }
