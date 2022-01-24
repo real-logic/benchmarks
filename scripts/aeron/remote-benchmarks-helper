@@ -40,9 +40,9 @@ function start_media_driver()
   ${wrapper_script} taskset -c ${3} \"${executable}\" & ${driver_pid}"
 
   command+="; echo \"driver PID=\${driver_pid}\""
-  command+="; $(pin_thread \${driver_pid} "${driver_thread}" "${4}")"
-  command+="; $(pin_thread \${driver_pid} "sender" "${5}")"
   command+="; $(pin_thread \${driver_pid} "receiver" "${6}")"
+  command+="; $(pin_thread \${driver_pid} "sender" "${5}")"
+  command+="; $(pin_thread \${driver_pid} "${driver_thread}" "${4}")"
 
   echo ${command}
 }
