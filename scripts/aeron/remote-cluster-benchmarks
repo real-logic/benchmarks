@@ -342,7 +342,7 @@ do
             ; $(kill_java_process "${client_class_name}")\
             ; ${client_driver}\
             && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client & \
-            $(await_java_process_start _CPU_CORE"${client_class_name}")\
+            $(await_java_process_start "${client_class_name}")\
             ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
             && wait \$!; kill -9 \${driver_pid}; wait"
 

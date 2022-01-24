@@ -34,7 +34,8 @@ required_vars=(
   "SERVER_DRIVER_SENDER_CPU_CORE"
   "SERVER_DRIVER_RECEIVER_CPU_CORE"
   "SERVER_DRIVER_OTHER_CPU_CORES"
-  "SERVER_CPU_CORES"
+  "SERVER_ECHO_CPU_CORE"
+  "SERVER_OTHER_CPU_CORES"
   "AERON_DESTINATION_IP"
   "AERON_DESTINATION_INTERFACE"
   "AERON_SOURCE_IP"
@@ -329,7 +330,7 @@ do
       ; $(kill_java_process "${client_class_name}") \
       ; ${client_driver} \
       && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
-      $(await_java_process_start _CPU_CORE"${client_class_name}") \
+      $(await_java_process_start "${client_class_name}") \
       ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
       && wait \$!; kill -9 \${driver_pid}; wait"
 
@@ -341,7 +342,10 @@ do
       -Duk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?} \
       -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?} \
       -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}\" \
-      && taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
+      && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
+      $(await_java_process_start "${server_class_name}") \
+      ; $(pin_thread \${pid} "load-test-rig" "${SERVER_ECHO_CPU_CORE}") \
+      && wait \$! && kill -9 \${driver_pid}; wait"
 
       stop_server="$(kill_java_process "${server_class_name}"); \
       $(stop_media_driver)"

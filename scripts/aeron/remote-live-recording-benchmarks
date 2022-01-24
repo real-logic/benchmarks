@@ -36,7 +36,8 @@ required_vars=(
   "SERVER_DRIVER_SENDER_CPU_CORE"
   "SERVER_DRIVER_RECEIVER_CPU_CORE"
   "SERVER_DRIVER_OTHER_CPU_CORES"
-  "SERVER_CPU_CORES"
+  "SERVER_ECHO_CPU_CORE"
+  "SERVER_OTHER_CPU_CORES"
   "AERON_DESTINATION_IP"
   "AERON_DESTINATION_INTERFACE"
   "AERON_SOURCE_IP"
@@ -169,7 +170,7 @@ do
     ; $(kill_java_process "${client_class_name}") \
     ; ${client_driver} \
     && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/live-recording-client & \
-    $(await_java_process_start _CPU_CORE"${client_class_name}") \
+    $(await_java_process_start "${client_class_name}") \
     ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
     ; $(pin_thread \${pid} "archive-recorde" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_RECORDER_CPU_CORE}") \
     ; $(pin_thread \${pid} "archive-replaye" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_REPLAYER_CPU_CORE}") \
@@ -183,7 +184,10 @@ do
     && export JVM_OPTS=\"\
     -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${AERON_DESTINATION_IP}:13000|interface=${AERON_DESTINATION_INTERFACE} \
     -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${AERON_SOURCE_IP}:13100|interface=${AERON_SOURCE_INTERFACE}\" \
-    && taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server"
+    && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
+    $(await_java_process_start "${server_class_name}") \
+    ; $(pin_thread \${pid} "load-test-rig" "${SERVER_ECHO_CPU_CORE}") \
+    && wait \$! && kill -9 \${driver_pid}; wait"
 
     stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
 

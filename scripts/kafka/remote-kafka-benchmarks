@@ -115,7 +115,7 @@ do
     start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
     ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
       ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client &
-      $(await_java_process_start _CPU_CORE"uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
+      $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
       $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
       && wait \$!"
 
