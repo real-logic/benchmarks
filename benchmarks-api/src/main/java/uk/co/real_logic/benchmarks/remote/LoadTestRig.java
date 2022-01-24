@@ -279,11 +279,11 @@ public final class LoadTestRig
 
     public static void main(final String[] args) throws Exception
     {
+        Thread.currentThread().setName("load-test-rig");
         SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         final Configuration configuration = Configuration.fromSystemProperties();
 
-        Thread.currentThread().setName("load-test-rig");
         new LoadTestRig(configuration).run();
     }
 }

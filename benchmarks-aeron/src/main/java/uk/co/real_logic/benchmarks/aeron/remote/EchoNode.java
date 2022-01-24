@@ -182,12 +182,12 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     public static void main(final String[] args)
     {
+        Thread.currentThread().setName("echo");
         SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);
 
-        Thread.currentThread().setName("echo");
         try (EchoNode server = new EchoNode(running))
         {
             server.run();
