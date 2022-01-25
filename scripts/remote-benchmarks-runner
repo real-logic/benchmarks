@@ -136,7 +136,7 @@ function download_results()
   local results_dir="${2}"
   local dest_dir="${3}"
 
-  execute_remote_command "${SSH_CLIENT_NODE}" "rm -f \"${archive}\"; cd \"${results_dir}\" && tar -cf \"${archive}\" . && exit"
+  execute_remote_command "${SSH_CLIENT_NODE}" "rm -f \"${archive}\"; cd \"${results_dir}\" && tar -czf \"${archive}\" . && exit"
   scp -i ${SSH_KEY_FILE} \
    -o ConnectionAttempts=${SSH_CONNECTION_ATTEMPTS} \
    -o ConnectTimeout=${SSH_CONNECT_TIMEOUT} \
