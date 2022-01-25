@@ -18,7 +18,7 @@ Three different test scenarios are covered:
 
     Start the scripts in the following order: `echo-server` -> `echo-client`.
 
-1. Live replay from remote archive
+2. Live replay from a remote archive
     
     The client publishes messages to the server using publication over UDP. The server pipes those messages into a
     local IPC publication which records them into an archive. Finally, the client subscribes to the replay from that
@@ -26,19 +26,18 @@ Three different test scenarios are covered:
     
     Start the scripts in the following order: `live-replay-remote-archive-server` -> `live-replay-remote-archive-client`.
 
-1. Live recording, i.e. client runs records a publication into local archive
+3. Live recording, i.e. client runs records a publication into a local archive
     
     The client publishes messages over UDP to the server. It also has a recording running on that publication using
     local archive. The server simply pipes message back. Finally, the client performs a controlled poll on the
     subscription from the server limited by the "recording progress" which it gets via the recording events.
-    
-    The biggest difference between scenario 2 and this scenario is that there is no replay of recorded message and hence
-    no reading from the disc of the saved data but still allowing consumption of those messages that were successfully
-    persisted.
+
+   The biggest difference between the two is that there is no replay of the recorded messages and hence no reading from
+   the disc while guaranteeing consumption of only the persisted messages.
     
     Start the scripts in the following order: `echo-server` -> `live-recording-client`.
 
-1. Echo cluster benchmark
+4. Echo cluster benchmark
 
    Similar to the echo benchmark but with the messages being sent to the cluster using
    `io.aeron.cluster.client.AeronCluster.tryClaim` and received from the cluster using
