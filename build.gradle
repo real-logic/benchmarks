@@ -56,8 +56,9 @@ def checkstyleVersion = '9.2.1'
 def grpcVersion = '1.43.2'
 def protobufVersion = '3.19.3'
 def errorproneVersion = '2.10.0'
-def kafkaVersion = '2.8.1'
-def slf4jVersion = '1.7.32'
+def kafkaVersion = '3.1.0'
+def zookeeperVersion = '3.6.3'
+def slf4jVersion = '1.7.33'
 def scalaVersion = '2.13.7'
 def jacksonVersion = '2.13.0'
 def annotationsApiVersion = '6.0.53'
@@ -184,6 +185,7 @@ project(':benchmarks-kafka') {
     dependencies {
         api project(':benchmarks-api')
         implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
+        implementation "org.apache.zookeeper:zookeeper:${zookeeperVersion}"
         runtimeOnly "org.apache.kafka:kafka_2.13:${kafkaVersion}"
         runtimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
         testImplementation "org.apache.kafka:kafka_2.13:${kafkaVersion}"
