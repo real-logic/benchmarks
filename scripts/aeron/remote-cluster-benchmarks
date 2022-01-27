@@ -45,6 +45,7 @@ required_vars=(
   "CLIENT_EGRESS_CHANNEL"
   "CLUSTER_MEMBERS"
   "CLUSTER_SIZE"
+  "_BENCHMARKS_PATH"
   "_JAVA_HOME"
   "_DRIVER_CONDUCTOR_CPU_CORE"
   "_DRIVER_SENDER_CPU_CORE"
@@ -209,7 +210,7 @@ function start_server()
     ; $(pin_thread \${pid} "archive-conduct" "${!archive_conductor_cpu}") \
     ; $(pin_thread \${pid} "consensus-modul" "${!consensus_module_cpu}") \
     ; $(pin_thread \${pid} "service1" "${!clustered_service_cpu}") \
-    && wait \$!"
+    && tail --pid=\$! -f /dev/null"
 }
 
 commands=()
@@ -344,7 +345,7 @@ do
             && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client & \
             $(await_java_process_start "${client_class_name}")\
             ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
-            && wait \$!; kill -9 \${driver_pid}; wait"
+            && tail --pid=\$! -f /dev/null; kill -9 \${driver_pid}; wait"
 
             for ((n = 0; n < CLUSTER_SIZE; n++))
             do

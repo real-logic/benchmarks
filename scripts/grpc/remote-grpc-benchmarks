@@ -108,7 +108,7 @@ do
     ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client & \
     $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
     $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
-    && wait \$!"
+    && tail --pid=\$! -f /dev/null"
 
     # shellcheck disable=SC2153
     start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \

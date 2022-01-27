@@ -175,7 +175,7 @@ do
     ; $(pin_thread \${pid} "archive-recorde" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_RECORDER_CPU_CORE}") \
     ; $(pin_thread \${pid} "archive-replaye" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_REPLAYER_CPU_CORE}") \
     ; $(pin_thread \${pid} "archive-conduct" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_CONDUCTOR_CPU_CORE}") \
-    && wait \$! && kill -9 \${driver_pid}; wait"
+    && tail --pid=\$! -f /dev/null && kill -9 \${driver_pid}; wait"
 
     start_server="\
     export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
@@ -187,7 +187,7 @@ do
     && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
     $(await_java_process_start "${server_class_name}") \
     ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
-    && wait \$!"
+    && tail --pid=\$! -f /dev/null"
 
     stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
 

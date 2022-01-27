@@ -332,7 +332,7 @@ do
       && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
       $(await_java_process_start "${client_class_name}") \
       ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
-      && wait \$!; kill -9 \${driver_pid}; wait"
+      && tail --pid=\$! -f /dev/null; kill -9 \${driver_pid}; wait"
 
       start_server="\
       export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
@@ -345,7 +345,7 @@ do
       && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
       $(await_java_process_start "${server_class_name}") \
       ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
-      && wait \$!"
+      && tail --pid=\$! -f /dev/null"
 
       stop_server="$(kill_java_process "${server_class_name}"); \
       $(stop_media_driver)"
