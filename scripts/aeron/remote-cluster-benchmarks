@@ -323,9 +323,9 @@ do
       do
         for messageLength in "${MESSAGE_LENGTH[@]}"
         do
-          for ((r = 1; r <= RUNS; r++))
+          for (( i=1; i<=RUNS; i++ ))
           do
-            echo -e '\n### Benchmark run #'"${r}"' ...\n'
+            echo -e '\n### Benchmark run #'"${i}"' ...\n'
 
             start_client="export JVM_OPTS=\"\
             -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT}\
@@ -347,7 +347,7 @@ do
             ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
             && tail --pid=\$! -f /dev/null; kill -9 \${driver_pid}; wait"
 
-            for ((n = 0; n < CLUSTER_SIZE; n++))
+            for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
               echo -e "\nStarting node ${n}..."
               ssh_node=SSH_CLUSTER_NODE${n}
@@ -367,7 +367,7 @@ do
             echo -e "\nRunning benchmark..."
             execute_remote_command "${SSH_CLIENT_NODE}" "${start_client} && exit"
 
-            for ((n = 0; n < CLUSTER_SIZE; n++))
+            for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
               echo -e "\nStopping node ${n}..."
               ssh_node=SSH_CLUSTER_NODE${n}
