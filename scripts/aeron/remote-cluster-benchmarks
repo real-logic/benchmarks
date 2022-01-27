@@ -175,9 +175,9 @@ function start_server()
   local archive_dir=NODE${node_id}_ARCHIVE_DIR
   local archive_control_channel=NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
   local other_cpu_cores=NODE${node_id}_OTHER_CPU_CORES
-  local archive_recorder_cpu=NODE${node_id}_ARCHIVE_CPU_CORE_RECORDER
-  local archive_replayer_cpu=NODE${node_id}_ARCHIVE_CPU_CORE_REPLAYER
-  local archive_conductor_cpu=NODE${node_id}_ARCHIVE_CPU_CORE_CONDUCTOR
+  local archive_recorder_cpu=NODE${node_id}_ARCHIVE_RECORDER_CPU_CORE
+  local archive_replayer_cpu=NODE${node_id}_ARCHIVE_REPLAYER_CPU_CORE
+  local archive_conductor_cpu=NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
   local consensus_module_cpu=NODE${node_id}_CONSENSUS_MODULE_CPU_CORE}
   local clustered_service_cpu=NODE${node_id}_CLUSTERED_SERVICE_CPU_CORE}
   echo "
