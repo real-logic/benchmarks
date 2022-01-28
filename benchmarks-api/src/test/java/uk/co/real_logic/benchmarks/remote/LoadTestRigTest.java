@@ -268,7 +268,7 @@ class LoadTestRigTest
         final long messages = loadTestRig.send(2, 25);
 
         assertEquals(50, messages);
-        verify(clock, times(54)).nanoTime();
+        verify(clock, times(55)).nanoTime();
         verify(idleStrategy, times(26)).reset();
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1000), CHECKSUM);
         verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1600), CHECKSUM);
@@ -318,7 +318,7 @@ class LoadTestRigTest
         final long messages = loadTestRig.send(10, 100);
 
         assertEquals(120, messages);
-        verify(clock, times(127)).nanoTime();
+        verify(clock, times(128)).nanoTime();
         verify(idleStrategy, times(119)).reset();
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500), CHECKSUM);
         verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500), CHECKSUM);

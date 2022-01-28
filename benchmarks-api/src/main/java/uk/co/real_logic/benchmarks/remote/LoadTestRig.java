@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static uk.co.real_logic.benchmarks.remote.MessageTransceiverBase.CHECKSUM;
 
@@ -39,6 +40,7 @@ public final class LoadTestRig
     static final int MINIMUM_NUMBER_OF_CPU_CORES = 6;
 
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
+    private static final long RECEIVE_DEADLINE_NS = SECONDS.toNanos(30);
     private final Configuration configuration;
     private final MessageTransceiver messageTransceiver;
     private final PrintStream out;
@@ -129,6 +131,7 @@ public final class LoadTestRig
         }
     }
 
+    @SuppressWarnings("MethodLength")
     long send(final int iterations, final int numberOfMessages)
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
@@ -213,6 +216,7 @@ public final class LoadTestRig
 
         idleStrategy.reset();
         long received = receivedMessages.get();
+        final long deadline = clock.nanoTime() + RECEIVE_DEADLINE_NS;
         while (received < sentMessages)
         {
             messageTransceiver.receive();
@@ -220,6 +224,12 @@ public final class LoadTestRig
             if (updatedReceived == received)
             {
                 idleStrategy.idle();
+                if (clock.nanoTime() >= deadline)
+                {
+                    out.printf("%n*** WARNING: Not all messages were received after %ds deadline!",
+                        NANOSECONDS.toSeconds(RECEIVE_DEADLINE_NS));
+                    break;
+                }
             }
             else
             {
