@@ -89,13 +89,14 @@ class LoadTestRigTest
     }
 
     @Test
-    void runPerformsWarmUpBeforeMeasurement() throws Exception
+    void runPerformsWarmupBeforeMeasurement() throws Exception
     {
         final long nanoTime = SECONDS.toNanos(123);
         final NanoClock clock = () -> nanoTime;
 
         configuration = new Configuration.Builder()
             .warmupIterations(1)
+            .warmupMessageRate(1)
             .iterations(1)
             .messageRate(1)
             .messageTransceiverClass(configuration.messageTransceiverClass())
@@ -121,7 +122,7 @@ class LoadTestRigTest
         inOrder.verify(out).printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload" +
             " and a burst size of %,d...%n",
             configuration.warmupIterations(),
-            configuration.messageRate(),
+            configuration.warmupMessageRate(),
             configuration.messageLength(),
             configuration.batchSize());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);

@@ -98,7 +98,7 @@ public final class LoadTestRig
                 out.printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload and a" +
                     " burst size of %,d...%n",
                     configuration.warmupIterations(),
-                    configuration.messageRate(),
+                    configuration.warmupMessageRate(),
                     configuration.messageLength(),
                     configuration.batchSize());
                 send(configuration.warmupIterations(), configuration.warmupMessageRate());
