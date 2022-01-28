@@ -18,7 +18,9 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 import io.aeron.Publication;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.EgressListener;
+import io.aeron.cluster.codecs.EventCode;
 import io.aeron.driver.MediaDriver;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -117,5 +119,19 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
         final long msgTimestamp = buffer.getLong(offset, LITTLE_ENDIAN);
         final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
         onMessageReceived(msgTimestamp, checksum);
+    }
+
+    public void onSessionEvent(
+        final long correlationId,
+        final long clusterSessionId,
+        final long leadershipTermId,
+        final int leaderMemberId,
+        final EventCode code,
+        final String detail)
+    {
+        if (code == EventCode.ERROR)
+        {
+            throw new AeronException("Error from Cluster: " + detail);
+        }
     }
 }
