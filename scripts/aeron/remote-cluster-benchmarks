@@ -164,50 +164,50 @@ function start_server()
   local server_driver=${2}
   local fsync=${3}
   local node_id=${4}
-  local benchmarks_path=NODE${node_id}_BENCHMARKS_PATH
-  local java_home=NODE${node_id}_JAVA_HOME
-  local cluster_dir=NODE${node_id}_CLUSTER_DIR
-  local cluster_consensus_channel=NODE${node_id}_CLUSTER_CONSENSUS_CHANNEL
-  local cluster_ingress_channel=NODE${node_id}_CLUSTER_INGRESS_CHANNEL
-  local cluster_log_channel=NODE${node_id}_CLUSTER_LOG_CHANNEL
-  local cluster_replication_channel=NODE${node_id}_CLUSTER_REPLICATION_CHANNEL
-  local archive_dir=NODE${node_id}_ARCHIVE_DIR
-  local archive_control_channel=NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
-  local other_cpu_cores=NODE${node_id}_OTHER_CPU_CORES
-  local archive_recorder_cpu=NODE${node_id}_ARCHIVE_RECORDER_CPU_CORE
-  local archive_replayer_cpu=NODE${node_id}_ARCHIVE_REPLAYER_CPU_CORE
-  local archive_conductor_cpu=NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
-  local consensus_module_cpu=NODE${node_id}_CONSENSUS_MODULE_CPU_CORE
-  local clustered_service_cpu=NODE${node_id}_CLUSTERED_SERVICE_CPU_CORE
+  local benchmarks_path_var=NODE${node_id}_BENCHMARKS_PATH
+  local java_home_var=NODE${node_id}_JAVA_HOME
+  local cluster_dir_var=NODE${node_id}_CLUSTER_DIR
+  local cluster_consensus_channel_var=NODE${node_id}_CLUSTER_CONSENSUS_CHANNEL
+  local cluster_ingress_channel_var=NODE${node_id}_CLUSTER_INGRESS_CHANNEL
+  local cluster_log_channel_var=NODE${node_id}_CLUSTER_LOG_CHANNEL
+  local cluster_replication_channel_var=NODE${node_id}_CLUSTER_REPLICATION_CHANNEL
+  local archive_dir_var=NODE${node_id}_ARCHIVE_DIR
+  local archive_control_channel_var=NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
+  local other_cpu_cores_var=NODE${node_id}_OTHER_CPU_CORES
+  local archive_recorder_cpu_var=NODE${node_id}_ARCHIVE_RECORDER_CPU_CORE
+  local archive_replayer_cpu_var=NODE${node_id}_ARCHIVE_REPLAYER_CPU_CORE
+  local archive_conductor_cpu_var=NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
+  local consensus_module_cpu_var=NODE${node_id}_CONSENSUS_MODULE_CPU_CORE
+  local clustered_service_cpu_var=NODE${node_id}_CLUSTERED_SERVICE_CPU_CORE
   echo "
-    export JAVA_HOME=\"${!java_home}\" \
+    export JAVA_HOME=\"${!java_home_var}\" \
     ; $(kill_java_process "${cluster_node_class_name}") \
-    ; rm -rf \"${cluster_dir}\" \
-    ; rm -rf \"${archive_dir}\" \
+    ; rm -rf \"${!cluster_dir_var}\" \
+    ; rm -rf \"${!archive_dir_var}\" \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
     -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT} \
-    -Daeron.cluster.dir=${!cluster_dir} \
+    -Daeron.cluster.dir=${!cluster_dir_var} \
     -Daeron.cluster.idle.strategy=noop \
     -Daeron.cluster.members=${CLUSTER_MEMBERS} \
     -Daeron.cluster.member.id=${node_id} \
-    -Daeron.cluster.consensus.channel=${!cluster_consensus_channel} \
-    -Daeron.cluster.ingress.channel=${!cluster_ingress_channel} \
-    -Daeron.cluster.log.channel=${!cluster_log_channel} \
-    -Daeron.cluster.replication.channel=${!cluster_replication_channel} \
-    -Daeron.cluster.service.name=service1
-    -Daeron.archive.dir=${!archive_dir} \
-    -Daeron.archive.control.channel=${!archive_control_channel} \
+    -Daeron.cluster.consensus.channel=${!cluster_consensus_channel_var} \
+    -Daeron.cluster.ingress.channel=${!cluster_ingress_channel_var} \
+    -Daeron.cluster.log.channel=${!cluster_log_channel_var} \
+    -Daeron.cluster.replication.channel=${!cluster_replication_channel_var} \
+    -Daeron.cluster.service.name=echo-service \
+    -Daeron.archive.dir=${!archive_dir_var} \
+    -Daeron.archive.control.channel=${!archive_control_channel_var} \
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false\" \
-    && taskset -c ${!other_cpu_cores} ${!benchmarks_path}/scripts/aeron/cluster-node & \
+    && taskset -c ${!other_cpu_cores_var} ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
-    ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu}") \
-    ; $(pin_thread \${pid} "archive-replaye" "${!archive_replayer_cpu}") \
-    ; $(pin_thread \${pid} "archive-conduct" "${!archive_conductor_cpu}") \
-    ; $(pin_thread \${pid} "consensus-modul" "${!consensus_module_cpu}") \
-    ; $(pin_thread \${pid} "service1" "${!clustered_service_cpu}") \
+    ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
+    ; $(pin_thread \${pid} "archive-replaye" "${!archive_replayer_cpu_var}") \
+    ; $(pin_thread \${pid} "archive-conduct" "${!archive_conductor_cpu_var}") \
+    ; $(pin_thread \${pid} "consensus-modul" "${!consensus_module_cpu_var}") \
+    ; $(pin_thread \${pid} "echo-service" "${!clustered_service_cpu_var}") \
     && tail --pid=\$! -f /dev/null"
 }
 
