@@ -95,7 +95,7 @@ abstract class AbstractTest<
         final Path tempDir) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
-            .warmUpIterations(0)
+            .warmupIterations(0)
             .iterations(1)
             .messageRate(messageRate)
             .messageLength(messageLength)

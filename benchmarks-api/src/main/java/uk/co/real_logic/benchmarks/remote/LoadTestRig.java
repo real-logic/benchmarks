@@ -93,15 +93,15 @@ public final class LoadTestRig
         try
         {
             messageTransceiver.init(configuration);
-            if (configuration.warmUpIterations() > 0)
+            if (configuration.warmupIterations() > 0)
             {
-                out.printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload and a" +
+                out.printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload and a" +
                     " burst size of %,d...%n",
-                    configuration.warmUpIterations(),
+                    configuration.warmupIterations(),
                     configuration.messageRate(),
                     configuration.messageLength(),
                     configuration.batchSize());
-                send(configuration.warmUpIterations(), configuration.messageRate());
+                send(configuration.warmupIterations(), configuration.warmupMessageRate());
 
                 messageTransceiver.reset();
             }

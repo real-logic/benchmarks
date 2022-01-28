@@ -107,7 +107,7 @@ class KafkaMessageTransceiverTest
         final MessageTransceiver messageTransceiver = new KafkaMessageTransceiver();
 
         final Configuration configuration = new Configuration.Builder()
-            .warmUpIterations(0)
+            .warmupIterations(0)
             .iterations(1)
             .messageRate(numberOfMessages)
             .batchSize(burstSize)

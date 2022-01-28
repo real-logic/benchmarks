@@ -72,7 +72,7 @@ class LoadTestRigTest
     void before(final @TempDir Path tempDir)
     {
         configuration = new Configuration.Builder()
-            .warmUpIterations(0)
+            .warmupIterations(0)
             .iterations(1)
             .messageRate(1)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -95,7 +95,7 @@ class LoadTestRigTest
         final NanoClock clock = () -> nanoTime;
 
         configuration = new Configuration.Builder()
-            .warmUpIterations(1)
+            .warmupIterations(1)
             .iterations(1)
             .messageRate(1)
             .messageTransceiverClass(configuration.messageTransceiverClass())
@@ -118,9 +118,9 @@ class LoadTestRigTest
         inOrder.verify(out)
             .printf("%nStarting latency benchmark using the following configuration:%n%s%n", configuration);
         inOrder.verify(messageTransceiver).init(configuration);
-        inOrder.verify(out).printf("%nRunning warm up for %,d iterations of %,d messages each, with %,d bytes payload" +
+        inOrder.verify(out).printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload" +
             " and a burst size of %,d...%n",
-            configuration.warmUpIterations(),
+            configuration.warmupIterations(),
             configuration.messageRate(),
             configuration.messageLength(),
             configuration.batchSize());
@@ -174,7 +174,7 @@ class LoadTestRigTest
         when(clock.nanoTime()).thenReturn(1L, 9_000_000_000L);
 
         configuration = new Configuration.Builder()
-            .warmUpIterations(0)
+            .warmupIterations(0)
             .iterations(3)
             .messageRate(5)
             .batchSize(2)
@@ -202,7 +202,7 @@ class LoadTestRigTest
     void receiveShouldKeepReceivingMessagesUpToTheSentMessagesLimit()
     {
         configuration = new Configuration.Builder()
-            .warmUpIterations(0)
+            .warmupIterations(0)
             .iterations(1)
             .messageRate(3)
             .batchSize(200)
@@ -336,7 +336,7 @@ class LoadTestRigTest
     void endToEndTest(final @TempDir Path tempDir) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
-            .warmUpIterations(1)
+            .warmupIterations(1)
             .iterations(2)
             .messageRate(1000)
             .messageLength(32)

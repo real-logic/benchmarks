@@ -56,9 +56,14 @@ import static org.agrona.Strings.isEmpty;
 public final class Configuration
 {
     /**
-     * Default number of the warm up iterations.
+     * Default number of the warmup iterations.
      */
-    public static final int DEFAULT_WARM_UP_ITERATIONS = 5;
+    public static final int DEFAULT_WARMUP_ITERATIONS = 5;
+
+    /**
+     * Default number of the messages to be sent duirng the warmup iterations.
+     */
+    public static final int DEFAULT_WARMUP_MESSAGE_RATE = 10_000;
 
     /**
      * Default number of measurement iterations.
@@ -77,10 +82,10 @@ public final class Configuration
     public static final int MIN_MESSAGE_LENGTH = 2 * SIZE_OF_LONG;
 
     /**
-     * Name of the system property to configure the number of warm up iterations. Default value is
-     * {@link #DEFAULT_WARM_UP_ITERATIONS}.
+     * Name of the system property to configure the number of warmup iterations. Default value is
+     * {@link #DEFAULT_WARMUP_ITERATIONS}.
      *
-     * @see #warmUpIterations()
+     * @see #warmupIterations()
      */
     public static final String WARMUP_ITERATIONS_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.iterations";
 
@@ -99,6 +104,14 @@ public final class Configuration
      * @see #messageRate()
      */
     public static final String MESSAGE_RATE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.message.rate";
+
+    /**
+     * Name of the optional system property to configure the number of messages to be sent during the warmup
+     * iterations.
+     *
+     * @see #warmupMessageRate()
+     */
+    public static final String WARMUP_MESSAGE_RATE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.message.rate";
 
     /**
      * Name of the system property to configure the batch size, i.e. number of messages to be sent in a single burst.
@@ -154,8 +167,9 @@ public final class Configuration
         }
     }
 
-    private final int warmUpIterations;
+    private final int warmupIterations;
     private final int iterations;
+    private final int warmupMessageRate;
     private final int messageRate;
     private final int batchSize;
     private final int messageLength;
@@ -166,8 +180,9 @@ public final class Configuration
 
     private Configuration(final Builder builder)
     {
-        this.warmUpIterations = checkMinValue(builder.warmUpIterations, 0, "Warm-up iterations");
+        this.warmupIterations = checkMinValue(builder.warmupIterations, 0, "Warmup iterations");
         this.iterations = checkMinValue(builder.iterations, 1, "Iterations");
+        this.warmupMessageRate = checkMinValue(builder.warmupMessageRate, 0, "Warmup message rate");
         this.messageRate = checkMinValue(builder.messageRate, 1, "Message rate");
         this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
         this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
@@ -178,14 +193,14 @@ public final class Configuration
     }
 
     /**
-     * Number of the warm up iterations, where each iteration has a duration of one second. Warm up iterations results
+     * Number of the warmup iterations, where each iteration has a duration of one second. warmup iterations results
      * will be discarded.
      *
-     * @return number of the warm up iterations, defaults to {@link #DEFAULT_WARM_UP_ITERATIONS}.
+     * @return number of the warmup iterations, defaults to {@link #DEFAULT_WARMUP_ITERATIONS}.
      */
-    public int warmUpIterations()
+    public int warmupIterations()
     {
-        return warmUpIterations;
+        return warmupIterations;
     }
 
     /**
@@ -196,6 +211,18 @@ public final class Configuration
     public int iterations()
     {
         return iterations;
+    }
+
+    /**
+     * Number of messages to be sent per iteration during the warmup period.
+     *
+     * @return target message rate per iteration during the warmup period.
+     * @implNote Actual number of messages sent can be less than this number if the underlying system is not capable
+     * of achieving the target send rate.
+     */
+    public int warmupMessageRate()
+    {
+        return warmupMessageRate;
     }
 
     /**
@@ -278,7 +305,8 @@ public final class Configuration
     public String toString()
     {
         return "Configuration{" +
-            "\n    warmUpIterations=" + warmUpIterations +
+            "\n    warmUpIterations=" + warmupIterations +
+            "\n    warmupMessageRate=" + warmupMessageRate +
             "\n    iterations=" + iterations +
             "\n    messageRate=" + messageRate +
             "\n    batchSize=" + batchSize +
@@ -310,8 +338,9 @@ public final class Configuration
      */
     public static final class Builder
     {
-        private int warmUpIterations = DEFAULT_WARM_UP_ITERATIONS;
+        private int warmupIterations = DEFAULT_WARMUP_ITERATIONS;
         private int iterations = DEFAULT_ITERATIONS;
+        private int warmupMessageRate = DEFAULT_WARMUP_MESSAGE_RATE;
         private int messageRate;
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
@@ -322,14 +351,14 @@ public final class Configuration
         private String outputFileNamePrefix;
 
         /**
-         * Set the number of warm up iterations.
+         * Set the number of warmup iterations.
          *
-         * @param iterations number of warm up iterations.
+         * @param iterations number of warmup iterations.
          * @return this for a fluent API.
          */
-        public Builder warmUpIterations(final int iterations)
+        public Builder warmupIterations(final int iterations)
         {
-            this.warmUpIterations = iterations;
+            this.warmupIterations = iterations;
             return this;
         }
 
@@ -342,6 +371,18 @@ public final class Configuration
         public Builder iterations(final int iterations)
         {
             this.iterations = iterations;
+            return this;
+        }
+
+        /**
+         * Set the target message rate per iteration during the warmup period.
+         *
+         * @param warmupMessageRate number of messages to be sent per iteration during the warmup period.
+         * @return this for a fluent API.
+         */
+        public Builder warmupMessageRate(final int warmupMessageRate)
+        {
+            this.warmupMessageRate = warmupMessageRate;
             return this;
         }
 
@@ -457,7 +498,12 @@ public final class Configuration
         final Builder builder = new Builder();
         if (isPropertyProvided(WARMUP_ITERATIONS_PROP_NAME))
         {
-            builder.warmUpIterations(intProperty(WARMUP_ITERATIONS_PROP_NAME));
+            builder.warmupIterations(intProperty(WARMUP_ITERATIONS_PROP_NAME));
+        }
+
+        if (isPropertyProvided(WARMUP_MESSAGE_RATE_PROP_NAME))
+        {
+            builder.warmupMessageRate(intProperty(WARMUP_MESSAGE_RATE_PROP_NAME));
         }
 
         if (isPropertyProvided(ITERATIONS_PROP_NAME))
