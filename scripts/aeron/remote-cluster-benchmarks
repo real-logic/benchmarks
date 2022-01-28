@@ -97,6 +97,7 @@ enable_ef_vi=1
 enable_ats=1
 file_sync_levels=(0 2)
 results_file="aeron-cluster-results"
+onload="onload --profile=latency --force-profiles "
 
 while [[ $# -gt 0 ]]
 do
@@ -121,6 +122,11 @@ do
     enable_onload=0
     shift
     ;;
+  --onload)
+    onload="${2}"
+    shift
+    shift
+    ;;
   --no-ef_vi)
     enable_ef_vi=0
     shift
@@ -142,7 +148,7 @@ do
     shift
     ;;
   -h | --help)
-    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--file-sync-level \"\${file-sync-level-csv}\"]"
+    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-ats] [--file-sync-level \"\${file-sync-level-csv}\"]"
     exit
     ;;
   *)
@@ -214,7 +220,6 @@ function start_server()
 commands=()
 scenarios=()
 scripts_path="benchmarks_path_var/scripts/aeron"
-onload="onload --profile=latency --force-profiles "
 if [ "${enable_java_driver}" -eq 1 ]
 then
   if [ "${no_java_driver}" -eq 0 ]

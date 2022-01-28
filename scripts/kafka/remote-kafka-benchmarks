@@ -64,13 +64,18 @@ do
     onload=""
     shift
     ;;
+  --onload)
+    onload="${2}"
+    shift
+    shift
+    ;;
   --results-file)
     results_file="${2}"
     shift
     shift
     ;;
   -h|--help)
-    echo "${0} [--no-ssl] [--no-onload]"
+    echo "${0} [--no-ssl] [--no-onload] [--onload \"\$onload_command\"]"
     exit
     ;;
   *)

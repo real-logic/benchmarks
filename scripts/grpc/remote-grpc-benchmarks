@@ -55,8 +55,8 @@ fi
 
 
 tls_options=("false" "true")
-command_wrappers=("" "onload --profile=latency --force-profiles")
 results_file="grpc-results"
+onload="onload --profile=latency --force-profiles"
 
 while [[ $# -gt 0 ]]
 do
@@ -69,13 +69,18 @@ do
     command_wrappers=("")
     shift
     ;;
+  --onload)
+    onload="${2}"
+    shift
+    shift
+    ;;
   --results-file)
     results_file="${2}"
     shift
     shift
     ;;
   -h|--help)
-    echo "${0} [--no-tls] [--no-onload]"
+    echo "${0} [--no-tls] [--no-onload] [--onload \"\$onload_command\"]"
     exit
     ;;
   *)
@@ -87,51 +92,48 @@ done
 
 for tls in "${tls_options[@]}"
 do
-  for onload in "${command_wrappers[@]}"
-  do
-    scenario="grpc-streaming"
+  scenario="grpc-streaming"
 
-    if [ "${tls}" == "true" ]
-    then
-        scenario="${scenario}-tls"
-    fi
+  if [ "${tls}" == "true" ]
+  then
+      scenario="${scenario}-tls"
+  fi
 
-    if [ -n "${onload}" ]
-    then
-        scenario="${scenario}-onload"
-    fi
+  if [ -n "${onload}" ]
+  then
+      scenario="${scenario}-onload"
+  fi
 
-    echo -e "\n Testing scenario: '${scenario}'\n"
+  echo -e "\n Testing scenario: '${scenario}'\n"
 
-    start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
-    ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-    ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client & \
-    $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
-    $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
-    && tail --pid=\$! -f /dev/null"
+  start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
+  ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
+  ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client & \
+  $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
+  $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
+  && tail --pid=\$! -f /dev/null"
 
-    # shellcheck disable=SC2153
-    start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-    && export JVM_OPTS=\"\
-    -Duk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST} \
-    -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT} \
-    -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
-    -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}\" \
-    && ${onload} taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
+  # shellcheck disable=SC2153
+  start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
+  && export JVM_OPTS=\"\
+  -Duk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST} \
+  -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT} \
+  -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
+  -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}\" \
+  && ${onload} taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
 
-    stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
+  stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
 
-    run_benchmarks \
-      "${start_client}" \
-      "${stop_server}; ${start_server}" \
-      "${stop_server}" \
-      "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
-      "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-      "uk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST}" \
-      "uk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT}" \
-      "uk.co.real_logic.benchmarks.grpc.remote.certificates=${CLIENT_BENCHMARKS_PATH}/certificates" \
-      "uk.co.real_logic.benchmarks.grpc.remote.tls=${tls}"
-  done
+  run_benchmarks \
+    "${start_client}" \
+    "${stop_server}; ${start_server}" \
+    "${stop_server}" \
+    "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
+    "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+    "uk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST}" \
+    "uk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT}" \
+    "uk.co.real_logic.benchmarks.grpc.remote.certificates=${CLIENT_BENCHMARKS_PATH}/certificates" \
+    "uk.co.real_logic.benchmarks.grpc.remote.tls=${tls}"
 done
 
 download_results "${results_file}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

@@ -69,6 +69,11 @@ do
     onload=""
     shift
     ;;
+  --onload)
+    onload="${2}"
+    shift
+    shift
+    ;;
   --no-c-driver)
     enable_c_driver=0
     shift
@@ -90,7 +95,7 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--no-onload] [--no-c-driver] [--no-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"]"
+    echo "${0} [--no-onload] [--onload \"\$onload_command\"] [--no-c-driver] [--no-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"]"
     exit
     ;;
     *)

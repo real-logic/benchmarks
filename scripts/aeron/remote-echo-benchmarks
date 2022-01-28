@@ -65,6 +65,7 @@ streams=(1 2 5 10)
 modes=("multiplexed" "dedicated")
 results_file="aeron-echo-results"
 mtu=1408
+onload="onload --profile=latency --force-profiles "
 
 while [[ $# -gt 0 ]]
 do
@@ -87,6 +88,11 @@ do
     ;;
   --no-onload)
     enable_onload=0
+    shift
+    ;;
+  --onload)
+    onload="${2}"
+    shift
     shift
     ;;
   --no-ef_vi)
@@ -122,7 +128,7 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--no-ef_vi] [--no-ats] [--streams \"\${streams-csv}\"] [--modes \"\${modes-csv}\"] [--mtu \$mtu]"
+    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-ats] [--streams \"\${streams-csv}\"] [--modes \"\${modes-csv}\"] [--mtu \$mtu]"
     exit
     ;;
   *)
@@ -142,7 +148,6 @@ function build_drivers()
 {
   local scripts_path="${1}/scripts/aeron"
   local commands=()
-  local onload="onload --profile=latency --force-profiles "
 
   if [ "${enable_java_driver}" -eq 1 ]
   then
