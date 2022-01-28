@@ -64,6 +64,11 @@ then
   WARMUP_ITERATIONS=5
 fi
 
+if [[ ! -v WARMUP_MESSAGE_RATE ]];
+then
+  WARMUP_MESSAGE_RATE=(10000)
+fi
+
 if [[ ! -v MESSAGE_RATE ]];
 then
   MESSAGE_RATE=(100000)
@@ -91,7 +96,7 @@ function run_benchmarks()
   local server_stop_command="${3}"
   local config=("${@:4}")
 
-  for messageRate in "${MESSAGE_RATE[@]}"
+  for rate_index in "${!MESSAGE_RATE[@]}"
   do
     for burstSize in "${BURST_SIZE[@]}"
     do
@@ -103,9 +108,10 @@ function run_benchmarks()
 
           local config_options=("${config[@]}")
           config_options+=("uk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
           config_options+=("uk.co.real_logic.benchmarks.remote.warmup.iterations=${WARMUP_ITERATIONS}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.message.rate=${messageRate# }")
+          config_options+=("uk.co.real_logic.benchmarks.remote.warmup.message.rate=${WARMUP_MESSAGE_RATE[rate_index]}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.message.rate=${MESSAGE_RATE[rate_index]}")
           config_options+=("uk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }")
           config_options+=("uk.co.real_logic.benchmarks.remote.message.length=${messageLength# }")
 

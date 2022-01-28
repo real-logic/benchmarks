@@ -17,14 +17,14 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-if [ -z "${MESSAGE_RATE}" ];
+if [[ ! -v MESSAGE_RATE ]];
 then
   MESSAGE_RATE=(50000)
 fi
 
-if [ -z "${MESSAGE_LENGTH}" ]
+if [[ ! -v MESSAGE_LENGTH ]];
 then
-  export MESSAGE_LENGTH=(32 224 1344)
+  MESSAGE_LENGTH=(32 224 1344)
 fi
 
 source "${DIR}/remote-benchmarks-helper"
@@ -320,7 +320,7 @@ do
       client_ingress_endpoints="-Daeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}"
     fi
 
-    for messageRate in "${MESSAGE_RATE[@]}"
+    for rate_index in "${!MESSAGE_RATE[@]}"
     do
       for burstSize in "${BURST_SIZE[@]}"
       do
@@ -332,8 +332,10 @@ do
 
             start_client="export JVM_OPTS=\"\
             -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT}\
+            -Duk.co.real_logic.benchmarks.remote.warmup.iterations=${WARMUP_ITERATIONS}\
+            -Duk.co.real_logic.benchmarks.remote.warmup.message.rate=${WARMUP_MESSAGE_RATE[rate_index]}\
             -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}\
-            -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# }\
+            -Duk.co.real_logic.benchmarks.remote.message.rate=${MESSAGE_RATE[rate_index]}\
             -Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }\
             -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# }\
             -Duk.co.real_logic.benchmarks.remote.output.file=${test}\
