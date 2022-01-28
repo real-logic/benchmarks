@@ -58,7 +58,7 @@ public final class Configuration
     /**
      * Default number of the warmup iterations.
      */
-    public static final int DEFAULT_WARMUP_ITERATIONS = 5;
+    public static final int DEFAULT_WARMUP_ITERATIONS = 10;
 
     /**
      * Default number of the messages to be sent duirng the warmup iterations.

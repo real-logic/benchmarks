@@ -61,7 +61,7 @@ fi
 
 if [[ ! -v WARMUP_ITERATIONS ]];
 then
-  WARMUP_ITERATIONS=5
+  WARMUP_ITERATIONS=10
 fi
 
 if [[ ! -v WARMUP_MESSAGE_RATE ]];
