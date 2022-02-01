@@ -354,6 +354,15 @@ do
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
+              echo -e "\nStopping rouge node ${n} and cleanup data..."
+              ssh_node=SSH_CLUSTER_NODE${n}
+              archive_dir_var=NODE${n}_ARCHIVE_DIR
+              cluster_dir_var=NODE${n}_CLUSTER_DIR
+              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
+            done
+
+            for (( n=0; n<CLUSTER_SIZE; n++ ))
+            do
               echo -e "\nStarting node ${n}..."
               ssh_node=SSH_CLUSTER_NODE${n}
               server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
