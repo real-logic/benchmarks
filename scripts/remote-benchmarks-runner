@@ -115,18 +115,18 @@ function run_benchmarks()
           config_options+=("uk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }")
           config_options+=("uk.co.real_logic.benchmarks.remote.message.length=${messageLength# }")
 
-          local jvm_opts="export JVM_OPTS=\""
+          local client_jvm_opts="export JVM_OPTS=\""
           for opt in "${config_options[@]}";
           do
-            jvm_opts+="-D${opt} "
+            client_jvm_opts+="-D${opt} "
           done
-          jvm_opts="${jvm_opts%?}\""
+          client_jvm_opts="${client_jvm_opts%?}\""
 
           echo -e "\nStarting server..."
-          execute_remote_command "${SSH_SERVER_NODE}" "${jvm_opts} && (${server_start_command} &) > /tmp/benchmarks-server.log 2>&1 && exit"
+          execute_remote_command "${SSH_SERVER_NODE}" "(${server_start_command} &) > /tmp/benchmarks-server.log 2>&1 && exit"
 
           echo -e "\nStarting client..."
-          execute_remote_command "${SSH_CLIENT_NODE}" "${jvm_opts} && ${client_command} && exit"
+          execute_remote_command "${SSH_CLIENT_NODE}" "${client_jvm_opts} && ${client_command} && exit"
 
           echo -e "\nStopping server..."
           execute_remote_command "${SSH_SERVER_NODE}" "${server_stop_command} && exit"
