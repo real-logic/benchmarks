@@ -31,6 +31,7 @@ required_vars=(
   "CLIENT_LOAD_TEST_RIG_ARCHIVE_REPLAYER_CPU_CORE"
   "CLIENT_LOAD_TEST_RIG_ARCHIVE_CONDUCTOR_CPU_CORE"
   "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
+  "CLIENT_INTERFACE"
   "SERVER_JAVA_HOME"
   "SERVER_DRIVER_CONDUCTOR_CPU_CORE"
   "SERVER_DRIVER_SENDER_CPU_CORE"
@@ -38,11 +39,10 @@ required_vars=(
   "SERVER_DRIVER_OTHER_CPU_CORES"
   "SERVER_ECHO_CPU_CORE"
   "SERVER_OTHER_CPU_CORES"
-  "AERON_DESTINATION_IP"
-  "AERON_DESTINATION_INTERFACE"
-  "AERON_SOURCE_IP"
-  "AERON_SOURCE_INTERFACE"
-  "AERON_ARCHIVE_DIR")
+  "SERVER_INTERFACE"
+  "DESTINATION_IP"
+  "SOURCE_IP"
+  "ARCHIVE_DIR")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var+''}" ]]
@@ -187,8 +187,8 @@ do
     ; $(kill_java_process "${server_class_name}") \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
-    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${AERON_DESTINATION_IP}:13000|interface=${AERON_DESTINATION_INTERFACE} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${AERON_SOURCE_IP}:13100|interface=${AERON_SOURCE_INTERFACE}\" \
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${SERVER_INTERFACE} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${SOURCE_IP}:13100|interface=${SERVER_INTERFACE}\" \
     && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
     $(await_java_process_start "${server_class_name}") \
     ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
@@ -202,9 +202,9 @@ do
       "${stop_server}" \
       "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
       "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-      "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${AERON_DESTINATION_IP}:13000|interface=${AERON_DESTINATION_INTERFACE}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${AERON_SOURCE_IP}:13100|interface=${AERON_SOURCE_INTERFACE}" \
-      "aeron.archive.dir=${AERON_ARCHIVE_DIR}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${CLIENT_INTERFACE}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${SOURCE_IP}:13100|interface=${CLIENT_INTERFACE}" \
+      "aeron.archive.dir=${ARCHIVE_DIR}" \
       "aeron.archive.file.sync.level=${fsync}" \
       "aeron.archive.catalog.file.sync.level=${fsync}" \
       "aeron.archive.recording.events.enabled=true"

@@ -28,6 +28,7 @@ required_vars=(
   "CLIENT_DRIVER_OTHER_CPU_CORES"
   "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
   "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
+  "CLIENT_INTERFACE"
   "SERVER_JAVA_HOME"
   "SERVER_BENCHMARKS_PATH"
   "SERVER_DRIVER_CONDUCTOR_CPU_CORE"
@@ -36,10 +37,9 @@ required_vars=(
   "SERVER_DRIVER_OTHER_CPU_CORES"
   "SERVER_ECHO_CPU_CORE"
   "SERVER_OTHER_CPU_CORES"
-  "AERON_DESTINATION_IP"
-  "AERON_DESTINATION_INTERFACE"
-  "AERON_SOURCE_IP"
-  "AERON_SOURCE_INTERFACE")
+  "SERVER_INTERFACE"
+  "DESTINATION_IP"
+  "SOURCE_IP")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var+''}" ]]
@@ -302,9 +302,11 @@ do
       test="echo-${scenario}-mode-${mode}-streams-${num_streams}"
       echo -e "\n Testing scenario: '${test}'\n"
 
-      destination_channels=""
+      client_destination_channels=""
+      client_source_channels=""
+      server_destination_channels=""
+      server_source_channels=""
       destination_streams=""
-      source_channels=""
       source_streams=""
 
       for (( i=0; i<num_streams; i++ ))
@@ -320,10 +322,12 @@ do
         dest_stream=$((1000000 + i))
         src_stream=$((2000000 + i))
 
-        destination_channels+="aeron:udp?endpoint=${AERON_DESTINATION_IP}:${dest_port}|interface=${AERON_DESTINATION_INTERFACE}|mtu=${mtu},"
-        destination_streams+="${dest_stream},"
+        server_destination_channels+="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}|interface=${SERVER_INTERFACE}|mtu=${mtu},"
+        server_source_channels+="aeron:udp?endpoint=${SOURCE_IP}:${src_port}|interface=${SERVER_INTERFACE}|mtu=${mtu},"
+        client_destination_channels+="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}|interface=${CLIENT_INTERFACE}|mtu=${mtu},"
+        client_source_channels+="aeron:udp?endpoint=${SOURCE_IP}:${src_port}|interface=${CLIENT_INTERFACE}|mtu=${mtu},"
 
-        source_channels+="aeron:udp?endpoint=${AERON_SOURCE_IP}:${src_port}|interface=${AERON_SOURCE_INTERFACE}|mtu=${mtu},"
+        destination_streams+="${dest_stream},"
         source_streams+="${src_stream},"
       done
 
@@ -343,9 +347,9 @@ do
       export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
       && ${server_driver} \
       && export JVM_OPTS=\"\
-      -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=${server_destination_channels%?} \
       -Duk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=${server_source_channels%?} \
       -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}\" \
       && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
       $(await_java_process_start "${server_class_name}") \
@@ -361,9 +365,9 @@ do
         "${stop_server}" \
         "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
         "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-        "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${destination_channels%?}" \
+        "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${client_destination_channels%?}" \
         "uk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${source_channels%?}" \
+        "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${client_source_channels%?}" \
         "uk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}"
     done
   done
