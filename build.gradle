@@ -57,7 +57,7 @@ def grpcVersion = '1.44.0'
 def protobufVersion = '3.19.4'
 def errorproneVersion = '2.10.0'
 def kafkaVersion = '3.1.0'
-def zookeeperVersion = '3.6.3'
+def zookeeperVersion = '3.7.0'
 def slf4jVersion = '1.7.33'
 def scalaVersion = '2.13.7'
 def jacksonVersion = '2.13.0'
@@ -84,6 +84,7 @@ allprojects {
                   "org.slf4j:slf4j-log4j12:${slf4jVersion}",
                   "org.scala-lang:scala-library:${scalaVersion}",
                   "org.scala-lang:scala-reflect:${scalaVersion}",
+                  "org.apache.zookeeper:zookeeper:${zookeeperVersion}",
                   "net.sf.jopt-simple:jopt-simple:${joptVersion}",
                   "com.google.protobuf:protobuf-java:${protobufVersion}",
                   "com.google.errorprone:error_prone_annotations:${errorproneVersion}"
