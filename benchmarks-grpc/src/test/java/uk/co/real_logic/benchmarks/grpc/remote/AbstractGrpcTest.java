@@ -37,16 +37,16 @@ abstract class AbstractGrpcTest
 
     @Timeout(30)
     @Test
-    void messageLength224bytes() throws Exception
+    void messageLength288bytes() throws Exception
     {
-        test(1000, 224, 5);
+        test(1000, 288, 5);
     }
 
     @Timeout(30)
     @Test
-    void messageLength1376bytes() throws Exception
+    void messageLength1344bytes() throws Exception
     {
-        test(100, 1376, 1);
+        test(100, 1344, 1);
     }
 
     protected abstract MessageTransceiver createMessageTransceiver();

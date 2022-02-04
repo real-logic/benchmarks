@@ -81,7 +81,7 @@ fi
 
 if [[ ! -v MESSAGE_LENGTH ]];
 then
-  MESSAGE_LENGTH=(32 320 1376)
+  MESSAGE_LENGTH=(32 288 1344)
 fi
 
 if [[ ! -v CONNECTION_TIMEOUT ]];

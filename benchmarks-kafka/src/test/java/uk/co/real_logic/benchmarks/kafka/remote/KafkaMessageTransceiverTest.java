@@ -73,7 +73,7 @@ class KafkaMessageTransceiverTest
 
     @Timeout(30)
     @Test
-    void messageLength1376bytes() throws Exception
+    void messageLength1344bytes() throws Exception
     {
         setProperty(BOOTSTRAP_SERVERS_CONFIG, "localhost:13502");
         setProperty(SECURITY_PROTOCOL_CONFIG, "SSL");
@@ -89,7 +89,7 @@ class KafkaMessageTransceiverTest
 
         try
         {
-            test(50, 1376, 1);
+            test(50, 1344, 1);
         }
         finally
         {

@@ -75,16 +75,16 @@ abstract class AbstractTest<
 
     @Timeout(30)
     @Test
-    void messageLength224bytes(final @TempDir Path tempDir) throws Exception
+    void messageLength288bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(1000, 224, 5, tempDir);
+        test(1000, 288, 5, tempDir);
     }
 
     @Timeout(30)
     @Test
-    void messageLength1376bytes(final @TempDir Path tempDir) throws Exception
+    void messageLength1344bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(100, 1376, 1, tempDir);
+        test(100, 1344, 1, tempDir);
     }
 
     @SuppressWarnings("MethodLength")
