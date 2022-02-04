@@ -24,7 +24,7 @@ fi
 
 if [[ ! -v MESSAGE_LENGTH ]];
 then
-  MESSAGE_LENGTH=(32 224 1344)
+  MESSAGE_LENGTH=(32 288 1344)
 fi
 
 source "${DIR}/remote-benchmarks-helper"
