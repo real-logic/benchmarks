@@ -22,11 +22,6 @@ then
   MESSAGE_RATE=(50000)
 fi
 
-if [[ ! -v MESSAGE_LENGTH ]];
-then
-  MESSAGE_LENGTH=(32 288 1344)
-fi
-
 source "${DIR}/remote-benchmarks-helper"
 
 required_vars=(
