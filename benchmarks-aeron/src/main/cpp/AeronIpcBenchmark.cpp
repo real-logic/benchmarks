@@ -251,7 +251,7 @@ static void BM_AeronIpcBenchmark(benchmark::State &state)
 {
     const auto burstLength = static_cast<std::size_t>(state.range(0));
 
-    if (0 == state.thread_index)
+    if (0 == state.thread_index())
     {
         sharedState.setup();
     }
@@ -261,7 +261,7 @@ static void BM_AeronIpcBenchmark(benchmark::State &state)
     }
 
     Burster<Publication> burster(
-        burstLength, state.thread_index, sharedState.publication, &sharedState.responseQueues[state.thread_index]);
+        burstLength, state.thread_index(), sharedState.publication, &sharedState.responseQueues[state.thread_index()]);
 
     for (auto _ : state)
     {
@@ -272,7 +272,7 @@ static void BM_AeronIpcBenchmark(benchmark::State &state)
     char label[256];
 
     std::snprintf(label, sizeof(label) - 1, "Threads: %" PRIu32", Burst Length: %" PRIu64,
-        static_cast<std::uint32_t>(state.threads),
+        static_cast<std::uint32_t>(state.threads()),
         static_cast<std::uint64_t>(burstLength));
 
     state.SetLabel(label);
