@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-SOURCE_DIR="`pwd`"
-export BUILD_DIR="${SOURCE_DIR}/cppbuild/Release"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+SOURCE_DIR="${DIR}/.."
+export BUILD_DIR="${DIR}/Release"
 export BUILD_CONFIG=Release
 EXTRA_CMAKE_ARGS=""
 
@@ -31,7 +33,7 @@ do
       ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Debug"
-      export BUILD_DIR="${SOURCE_DIR}/cppbuild/Debug"
+      export BUILD_DIR="${DIR}/Debug"
       export BUILD_CONFIG=Debug
       shift
       ;;
@@ -77,4 +79,4 @@ fi
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}" || exit
 
-(cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all)
+(cmake -G "Unix Makefiles" "${EXTRA_CMAKE_ARGS}" "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all)
