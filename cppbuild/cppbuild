@@ -35,10 +35,12 @@ do
       EXTRA_CMAKE_ARGS="${EXTRA_CMAKE_ARGS} -DCMAKE_BUILD_TYPE=Debug"
       export BUILD_DIR="${DIR}/Debug"
       export BUILD_CONFIG=Debug
+      echo "Enabling debug build"
       shift
       ;;
     --no-parallel)
       ncpus=1
+      echo "Disabling parallel build"
       shift
       ;;
     --aeron-git-url)

@@ -6,6 +6,7 @@ set "SOURCE_DIR=%DIR%\.."
 set "BUILD_DIR=%DIR%\Release"
 set "BUILD_CONFIG=Release"
 set "EXTRA_CMAKE_ARGS="
+set "CMAKE_BUILD_PARALLEL_LEVEL=%NUMBER_OF_PROCESSORS%"
 
 :loop
 if not "%1"=="" (
@@ -14,20 +15,29 @@ if not "%1"=="" (
         exit /b
     ) else if "%1"=="--c-warnings-as-errors" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DC_WARNINGS_AS_ERRORS=ON"
+        echo "Enabling warnings as errors for c"
     ) else if "%1"=="--cxx-warnings-as-errors" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCXX_WARNINGS_AS_ERRORS=ON"
+        echo "Enabling warnings as errors for c++"
     ) else if "%1"=="--debug-build" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DCMAKE_BUILD_TYPE=Debug"
         set "BUILD_DIR=%DIR%\Debug"
         set "BUILD_CONFIG=Debug"
+        echo "Enabling debug build"
+    ) else if "%1"=="--no-parallel" (
+        set "CMAKE_BUILD_PARALLEL_LEVEL=1"
+        echo "Disabling parallel build"
     ) else if "%1"=="--aeron-git-url" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_URL=%2"
+        echo "Setting -DAERON_GIT_URL=%2"
         shift
     ) else if "%1"=="--aeron-git-tag" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_TAG=%2"
+        echo "Setting -DAERON_GIT_TAG=%2"
         shift
     ) else if "%1"=="--aeron-git-sha" (
         set "EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DAERON_GIT_SHA=%2"
+        echo "Setting -DAERON_GIT_SHA=%2"
         shift
     ) else (
         echo "Unknown option %%o"
