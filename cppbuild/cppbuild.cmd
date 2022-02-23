@@ -6,7 +6,11 @@ set "SOURCE_DIR=%DIR%\.."
 set "BUILD_DIR=%DIR%\Release"
 set "BUILD_CONFIG=Release"
 set "EXTRA_CMAKE_ARGS="
-set "CMAKE_BUILD_PARALLEL_LEVEL=%NUMBER_OF_PROCESSORS%"
+if "%NUMBER_OF_PROCESSORS%"=="" (
+    set "CMAKE_BUILD_PARALLEL_LEVEL=1"
+) else (
+    set "CMAKE_BUILD_PARALLEL_LEVEL=%NUMBER_OF_PROCESSORS%"
+)
 
 :loop
 if not "%1"=="" (
