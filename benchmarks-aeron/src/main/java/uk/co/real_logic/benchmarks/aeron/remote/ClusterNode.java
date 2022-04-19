@@ -34,7 +34,7 @@ public final class ClusterNode
 {
     public static void main(final String[] args)
     {
-        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
+        SystemUtil.loadPropertiesFiles(PropertyAction.REPLACE, args);
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)
