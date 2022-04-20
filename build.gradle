@@ -157,6 +157,7 @@ project(':benchmarks-aeron') {
         implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
         implementation "io.aeron:aeron-cluster:${aeronVersion}"
         implementation "com.lmax:disruptor:${disruptorVersion}"
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 }
 
@@ -168,6 +169,7 @@ project(':benchmarks-grpc') {
         implementation "io.grpc:grpc-protobuf:${grpcVersion}"
         implementation "io.grpc:grpc-stub:${grpcVersion}"
         implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
         compileOnly "org.apache.tomcat:annotations-api:${annotationsApiVersion}"
     }
 
@@ -180,6 +182,17 @@ project(':benchmarks-grpc') {
             all()*.plugins { grpc {} }
         }
     }
+
+    sourceSets {
+        main {
+            java {
+                srcDirs += [
+                    'build/generated/source/proto/main/java',
+                    'build/generated/source/proto/main/grpc'
+                ]
+            }
+        }
+    }
 }
 
 project(':benchmarks-kafka') {
@@ -187,6 +200,7 @@ project(':benchmarks-kafka') {
         api project(':benchmarks-api')
         implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
         implementation "org.apache.zookeeper:zookeeper:${zookeeperVersion}"
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
         runtimeOnly "org.apache.kafka:kafka_2.13:${kafkaVersion}"
         runtimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
         testImplementation "org.apache.kafka:kafka_2.13:${kafkaVersion}"
