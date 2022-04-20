@@ -5,4 +5,5 @@
 <suppressions>
     <suppress files=".*generated-src.*" checks="."/>
     <suppress files=".*generated/source.*" checks="."/>
+    <suppress files=".*generated\source.*" checks="."/>
 </suppressions>
