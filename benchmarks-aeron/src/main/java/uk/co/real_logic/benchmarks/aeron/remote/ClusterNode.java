@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.CommonContext;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
@@ -34,7 +33,7 @@ public final class ClusterNode
 {
     public static void main(final String[] args)
     {
-        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
+        SystemUtil.loadPropertiesFiles(PropertyAction.REPLACE, args);
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)
@@ -43,8 +42,9 @@ public final class ClusterNode
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(CommonContext.IPC_CHANNEL)
-            .controlResponseChannel(CommonContext.IPC_CHANNEL)
+            .controlRequestChannel(archiveContext.localControlChannel())
+            .controlResponseStreamId(archiveContext.localControlStreamId())
+            .controlResponseChannel(archiveContext.localControlChannel())
             .aeronDirectoryName(archiveContext.aeronDirectoryName());
 
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
