@@ -20,20 +20,23 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.IoUtil;
-import org.agrona.PropertyAction;
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import java.nio.file.Paths;
+import java.util.Properties;
 
+import static org.agrona.PropertyAction.PRESERVE;
+import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.rethrowingErrorHandler;
+import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
+import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
 public final class ClusterNode
 {
     public static void main(final String[] args)
     {
-        SystemUtil.loadPropertiesFiles(PropertyAction.REPLACE, args);
+        mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)

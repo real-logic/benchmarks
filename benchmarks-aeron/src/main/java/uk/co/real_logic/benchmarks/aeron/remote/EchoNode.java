@@ -22,16 +22,19 @@ import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
-import org.agrona.PropertyAction;
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
 
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
 import static org.agrona.CloseHelper.closeAll;
+import static org.agrona.PropertyAction.PRESERVE;
+import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
+import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
 /**
  * Remote node which echoes original messages back to the sender.
@@ -183,7 +186,7 @@ public final class EchoNode implements AutoCloseable, Runnable
     public static void main(final String[] args)
     {
         Thread.currentThread().setName("echo");
-        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
+        mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);

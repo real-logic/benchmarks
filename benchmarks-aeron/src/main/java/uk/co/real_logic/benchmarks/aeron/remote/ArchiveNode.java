@@ -19,17 +19,20 @@ import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
-import org.agrona.PropertyAction;
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.SystemNanoClock;
 
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.agrona.CloseHelper.closeAll;
+import static org.agrona.PropertyAction.PRESERVE;
+import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
+import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
 /**
  * Remote node which archives received messages and replays persisted messages back to the sender.
@@ -97,7 +100,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
 
     public static void main(final String[] args)
     {
-        SystemUtil.loadPropertiesFiles(PropertyAction.PRESERVE, args);
+        mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);

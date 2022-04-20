@@ -16,12 +16,11 @@
 package uk.co.real_logic.benchmarks.remote;
 
 import org.agrona.LangUtil;
-import org.agrona.PropertyAction;
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 
 import java.io.PrintStream;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.min;
@@ -29,7 +28,11 @@ import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.agrona.PropertyAction.PRESERVE;
+import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.remote.MessageTransceiverBase.CHECKSUM;
+import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
+import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
 /**
  * {@code LoadTestRig} class is the core of the RTT benchmark. It is responsible for running benchmark against provided
@@ -290,7 +293,7 @@ public final class LoadTestRig
     public static void main(final String[] args) throws Exception
     {
         Thread.currentThread().setName("load-test-rig");
-        SystemUtil.loadPropertiesFiles(PropertyAction.REPLACE, args);
+        mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
 
         final Configuration configuration = Configuration.fromSystemProperties();
 
