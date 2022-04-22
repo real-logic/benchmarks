@@ -27,6 +27,7 @@ import org.mockito.InOrder;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -34,6 +35,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.benchmarks.remote.LoadTestRig.MINIMUM_NUMBER_OF_CPU_CORES;
 import static uk.co.real_logic.benchmarks.remote.MessageTransceiver.CHECKSUM;
+import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.FILE_EXTENSION;
+import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.HISTORY_FILE_EXTENSION;
 
 @Timeout(10)
 class LoadTestRigTest
@@ -345,6 +348,7 @@ class LoadTestRigTest
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("test")
+            .trackHistory(false)
             .build();
         final LoadTestRig testRig = new LoadTestRig(configuration);
 
@@ -353,8 +357,32 @@ class LoadTestRigTest
         final File[] files = tempDir.toFile().listFiles();
         assertNotNull(files);
         assertEquals(1, files.length);
-        final String fileName = files[0].getName();
-        assertTrue(fileName.endsWith(SinglePersistedHistogram.FILE_EXTENSION));
+        assertEquals(1, Stream.of(files).filter((f) -> f.getName().endsWith(FILE_EXTENSION)).count());
+    }
+
+    @Test
+    void endToEndTestWithHistory(final @TempDir Path tempDir) throws Exception
+    {
+        final Configuration configuration = new Configuration.Builder()
+            .warmupIterations(1)
+            .iterations(2)
+            .messageRate(1000)
+            .messageLength(32)
+            .batchSize(5)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(tempDir)
+            .outputFileNamePrefix("test")
+            .trackHistory(true)
+            .build();
+        final LoadTestRig testRig = new LoadTestRig(configuration);
+
+        testRig.run();
+
+        final File[] files = tempDir.toFile().listFiles();
+        assertNotNull(files);
+        assertEquals(2, files.length);
+        assertEquals(1, Stream.of(files).filter((f) -> f.getName().endsWith(FILE_EXTENSION)).count());
+        assertEquals(1, Stream.of(files).filter((f) -> f.getName().endsWith(HISTORY_FILE_EXTENSION)).count());
     }
 
     @Test

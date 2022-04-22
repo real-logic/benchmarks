@@ -78,6 +78,11 @@ public final class Configuration
     public static final int DEFAULT_BATCH_SIZE = 1;
 
     /**
+     * Default tracking of latency history
+     */
+    public static final boolean DEFAULT_TRACK_HISTORY = false;
+
+    /**
      * Minimal length in bytes of a single message. Contains enough space to hold a {@code timestamp} and a
      * {@code checksum}, i.e. two {@code long} values.
      */
@@ -155,6 +160,11 @@ public final class Configuration
      */
     public static final String OUTPUT_FILE_NAME_PROP_NAME = "uk.co.real_logic.benchmarks.remote.output.file";
 
+    /**
+     * Name of property to indicate tracking of latency history
+     */
+    public static final String TRACK_HISTORY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.track.history";
+
     private static final MessageDigest SHA256;
 
     static
@@ -179,6 +189,7 @@ public final class Configuration
     private final IdleStrategy idleStrategy;
     private final Path outputDirectory;
     private final String outputFileNamePrefix;
+    private final boolean trackHistory;
 
     private Configuration(final Builder builder)
     {
@@ -191,6 +202,7 @@ public final class Configuration
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
         this.idleStrategy = requireNonNull(builder.idleStrategy, "IdleStrategy cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
+        this.trackHistory = builder.trackHistory;
         outputFileNamePrefix = computeFileNamePrefix(builder.outputFileNamePrefix, builder.systemProperties);
     }
 
@@ -295,6 +307,16 @@ public final class Configuration
     }
 
     /**
+     * Indicate if history should be tracked for the latency test.
+     *
+     * @return true if history should be tracked.
+     */
+    public boolean trackHistory()
+    {
+        return trackHistory;
+    }
+
+    /**
      * Output file name prefix used for creating the file name to persist the results histogram.
      *
      * @return output file name prefix.
@@ -351,6 +373,7 @@ public final class Configuration
         private Path outputDirectory = Paths.get("results");
         private Properties systemProperties = System.getProperties();
         private String outputFileNamePrefix;
+        private boolean trackHistory = DEFAULT_TRACK_HISTORY;
 
         /**
          * Set the number of warmup iterations.
@@ -474,6 +497,18 @@ public final class Configuration
         }
 
         /**
+         * Toggle whether the rig should track history.
+         *
+         * @param trackHistory true to track history false otherwise.
+         * @return this for a fluent API.
+         */
+        public Builder trackHistory(final boolean trackHistory)
+        {
+            this.trackHistory = trackHistory;
+            return this;
+        }
+
+        /**
          * Create a new instance of the {@link Configuration} class from this builder.
          *
          * @return a {@link Configuration} instance
@@ -531,6 +566,11 @@ public final class Configuration
         if (isPropertyProvided(OUTPUT_DIRECTORY_PROP_NAME))
         {
             builder.outputDirectory(Paths.get(getProperty(OUTPUT_DIRECTORY_PROP_NAME)));
+        }
+
+        if (isPropertyProvided(TRACK_HISTORY_PROP_NAME))
+        {
+            builder.trackHistory(Boolean.getBoolean(TRACK_HISTORY_PROP_NAME));
         }
 
         builder

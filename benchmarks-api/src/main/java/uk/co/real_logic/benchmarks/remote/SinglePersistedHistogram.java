@@ -104,8 +104,18 @@ public final class SinglePersistedHistogram implements PersistedHistogram
         return Collections.singletonList(histogram).iterator();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void reset()
     {
         histogram.reset();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
     }
 }

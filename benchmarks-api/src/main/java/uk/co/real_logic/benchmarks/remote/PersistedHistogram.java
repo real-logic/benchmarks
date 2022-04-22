@@ -30,7 +30,7 @@ import static java.nio.file.Files.find;
 import static java.nio.file.Files.isRegularFile;
 import static org.agrona.AsciiEncoding.parseIntAscii;
 
-public interface PersistedHistogram
+public interface PersistedHistogram extends AutoCloseable
 {
     /**
      * Produce textual representation of the value distribution of histogram data by percentile. The distribution is

@@ -16,12 +16,15 @@
 package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.Histogram;
+import org.HdrHistogram.SingleWriterRecorder;
 import org.HdrHistogram.ValueRecorder;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,11 +59,7 @@ public final class LoadTestRig
 
     public LoadTestRig(final Configuration configuration)
     {
-        this(
-            configuration,
-            SystemNanoClock.INSTANCE,
-            new SinglePersistedHistogram(new Histogram(HOURS.toNanos(1), 3)),
-            System.out);
+        this(configuration, SystemNanoClock.INSTANCE, newPersistedHistogram(configuration), System.out);
     }
 
     public LoadTestRig(
@@ -132,6 +131,7 @@ public final class LoadTestRig
                 send(configuration.warmupIterations(), configuration.warmupMessageRate());
 
                 messageTransceiver.reset();
+                persistedHistogram.reset();
             }
 
             out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload and a" +
@@ -150,10 +150,16 @@ public final class LoadTestRig
             warnIfTargetRateNotAchieved(sentMessages);
 
             histogram.saveToFile(configuration.outputDirectory(), configuration.outputFileNamePrefix());
+            if (configuration.trackHistory())
+            {
+                histogram.saveHistoryToCsvFile(
+                    configuration.outputDirectory(), configuration.outputFileNamePrefix(), 50.0, 99.0, 99.99, 100.0);
+            }
         }
         finally
         {
             messageTransceiver.destroy();
+            CloseHelper.close(persistedHistogram);
         }
     }
 
@@ -327,5 +333,20 @@ public final class LoadTestRig
         final Configuration configuration = Configuration.fromSystemProperties();
 
         new LoadTestRig(configuration).run();
+    }
+
+    @SuppressWarnings("checkstyle:indentation")
+    private static PersistedHistogram newPersistedHistogram(final Configuration configuration)
+    {
+        try
+        {
+            return configuration.trackHistory() ?
+                new LoggingPersistedHistogram(configuration.outputDirectory(), new SingleWriterRecorder(3)) :
+                new SinglePersistedHistogram(new Histogram(HOURS.toNanos(1), 3));
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 }

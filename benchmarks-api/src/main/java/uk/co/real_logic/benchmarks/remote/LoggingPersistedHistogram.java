@@ -22,9 +22,11 @@ import org.agrona.concurrent.SystemEpochClock;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,6 +36,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class LoggingPersistedHistogram implements PersistedHistogram
 {
+    public static final String LOG_FILE_SUFFIX = ".hgrm";
     private final Path outputDirectory;
     private final SingleWriterRecorder recorder;
     private final long loggingIntervalMs = 1_000;
@@ -125,6 +128,18 @@ public class LoggingPersistedHistogram implements PersistedHistogram
         }
     }
 
+    public void close()
+    {
+        try
+        {
+            backgroundLogger.stop();
+        }
+        catch (final Exception ex)
+        {
+            throw new IllegalStateException("Failed to stop background logger");
+        }
+    }
+
     private void syncAndLoadHistogram()
     {
         if (null == histogram)
@@ -190,7 +205,7 @@ public class LoggingPersistedHistogram implements PersistedHistogram
                 previousLogFile = currentLogFile;
                 try
                 {
-                    currentLogFile = File.createTempFile("LoggingHistogram", ".hgrm", outputDirectory.toFile());
+                    currentLogFile = File.createTempFile("LoggingHistogram", LOG_FILE_SUFFIX, outputDirectory.toFile());
                     histogramLogWriter = new HistogramLogWriter(currentLogFile);
                 }
                 catch (final IOException ex)
@@ -227,6 +242,20 @@ public class LoggingPersistedHistogram implements PersistedHistogram
             syncLatch = new CountDownLatch(1);
             syncLatch.await();
             return previousLogFile;
+        }
+
+        private void stop() throws InterruptedException, IOException
+        {
+            backgroundLoggerThread.interrupt();
+            backgroundLoggerThread.join();
+            try (Stream<Path> logFiles =
+                Files.list(outputDirectory).filter(p -> p.toString().endsWith(LOG_FILE_SUFFIX)))
+            {
+                for (final Iterator<Path> logFilesIterator = logFiles.iterator(); logFilesIterator.hasNext();)
+                {
+                    Files.delete(logFilesIterator.next());
+                }
+            }
         }
 
         public void start()
