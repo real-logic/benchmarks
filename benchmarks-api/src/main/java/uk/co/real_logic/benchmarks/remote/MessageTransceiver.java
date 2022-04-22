@@ -15,27 +15,25 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
-import org.HdrHistogram.Histogram;
+import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.SystemNanoClock;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.HOURS;
 
 class MessageTransceiverBase
 {
     static final long CHECKSUM = ThreadLocalRandom.current().nextLong();
     final NanoClock clock;
-    final Histogram histogram;
+    final ValueRecorder valueRecorder;
     final AtomicLong receivedMessages = new AtomicLong(0);
 
-    MessageTransceiverBase(final NanoClock clock, final Histogram histogram)
+    MessageTransceiverBase(final NanoClock clock, final ValueRecorder valueRecorder)
     {
         this.clock = requireNonNull(clock);
-        this.histogram = requireNonNull(histogram);
+        this.valueRecorder = requireNonNull(valueRecorder);
     }
 }
 
@@ -54,14 +52,9 @@ public abstract class MessageTransceiver extends MessageTransceiverBase
     boolean p096, p097, p098, p099, p100, p101, p102, p103, p104, p105, p106, p107, p108, p109, p110, p111;
     boolean p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 
-    public MessageTransceiver()
+    protected MessageTransceiver(final NanoClock clock, final ValueRecorder valueRecorder)
     {
-        super(SystemNanoClock.INSTANCE, new Histogram(HOURS.toNanos(1), 3));
-    }
-
-    MessageTransceiver(final NanoClock clock, final Histogram histogram)
-    {
-        super(clock, histogram);
+        super(clock, valueRecorder);
     }
 
     /**
@@ -128,13 +121,13 @@ public abstract class MessageTransceiver extends MessageTransceiverBase
             throw new IllegalStateException("Invalid checksum: expected=" + CHECKSUM + ", actual=" + checksum);
         }
 
-        histogram.recordValue(clock.nanoTime() - timestamp);
+        valueRecorder.recordValue(clock.nanoTime() - timestamp);
         receivedMessages.getAndIncrement();
     }
 
     final void reset()
     {
-        histogram.reset();
+        valueRecorder.reset();
         receivedMessages.set(0);
     }
 }

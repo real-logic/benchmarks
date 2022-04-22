@@ -17,6 +17,8 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
+import org.HdrHistogram.ValueRecorder;
+import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -54,9 +56,13 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         return EchoMessageTransceiver.class;
     }
 
-    protected EchoMessageTransceiver createMessageTransceiver(final MediaDriver mediaDriver, final Aeron aeron)
+    protected EchoMessageTransceiver createMessageTransceiver(
+        final NanoClock nanoClock,
+        final ValueRecorder valueRecorder,
+        final MediaDriver mediaDriver,
+        final Aeron aeron)
     {
-        return new EchoMessageTransceiver(mediaDriver, aeron, false);
+        return new EchoMessageTransceiver(nanoClock, valueRecorder, mediaDriver, aeron, false);
     }
 
     @AfterEach

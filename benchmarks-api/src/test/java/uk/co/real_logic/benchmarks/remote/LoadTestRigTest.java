@@ -42,7 +42,7 @@ class LoadTestRigTest
     private final NanoClock clock = mock(NanoClock.class);
     private final PrintStream out = mock(PrintStream.class);
     private final Histogram histogram = mock(Histogram.class);
-    private final PersistedHistogram persistedHistogram = mock(PersistedHistogram.class);
+    private final SinglePersistedHistogram persistedHistogram = mock(SinglePersistedHistogram.class);
     private final MessageTransceiver messageTransceiver = spy(
         new MessageTransceiver(clock, histogram)
         {
@@ -354,7 +354,7 @@ class LoadTestRigTest
         assertNotNull(files);
         assertEquals(1, files.length);
         final String fileName = files[0].getName();
-        assertTrue(fileName.endsWith(PersistedHistogram.FILE_EXTENSION));
+        assertTrue(fileName.endsWith(SinglePersistedHistogram.FILE_EXTENSION));
     }
 
     @Test
@@ -363,7 +363,13 @@ class LoadTestRigTest
         final IllegalStateException initException = new IllegalStateException("Init failed");
         doThrow(initException).when(messageTransceiver).init(configuration);
 
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, out);
+        final LoadTestRig loadTestRig = new LoadTestRig(
+            configuration,
+            messageTransceiver,
+            out,
+            mock(NanoClock.class),
+            mock(PersistedHistogram.class),
+            1);
 
         final IllegalStateException exception = assertThrows(IllegalStateException.class, loadTestRig::run);
         assertSame(initException, exception);

@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.benchmarks.kafka.remote;
 
+import org.HdrHistogram.Histogram;
+import org.agrona.concurrent.SystemNanoClock;
 import org.apache.kafka.common.config.SslConfigs;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,9 +25,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.LoadTestRig;
-import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.*;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -104,19 +104,22 @@ class KafkaMessageTransceiverTest
 
     private void test(final int numberOfMessages, final int messageLength, final int burstSize) throws Exception
     {
-        final MessageTransceiver messageTransceiver = new KafkaMessageTransceiver();
-
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(0)
             .iterations(1)
             .messageRate(numberOfMessages)
             .batchSize(burstSize)
             .messageLength(messageLength)
-            .messageTransceiverClass(messageTransceiver.getClass())
+            .messageTransceiverClass(InMemoryMessageTransceiver.class) // Not required, created directly
             .outputFileNamePrefix("kafka")
             .build();
 
-        final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
+        final LoadTestRig loadTestRig = new LoadTestRig(
+            configuration,
+            SystemNanoClock.INSTANCE,
+            new SinglePersistedHistogram(new Histogram(3)),
+            KafkaMessageTransceiver::new,
+            mock(PrintStream.class));
         loadTestRig.run();
     }
 }

@@ -15,14 +15,16 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
+import org.HdrHistogram.Histogram;
+import org.HdrHistogram.ValueRecorder;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.LoadTestRig;
-import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.*;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -131,10 +133,15 @@ abstract class AbstractTest<
                 remoteNode.setDaemon(true);
                 remoteNode.start();
 
-                final MessageTransceiver messageTransceiver = createMessageTransceiver(driver, client);
+                final NanoClock nanoClock = SystemNanoClock.INSTANCE;
+                final PersistedHistogram persistedHistogram = new SinglePersistedHistogram(new Histogram(3));
 
-                final LoadTestRig loadTestRig =
-                    new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
+                final LoadTestRig loadTestRig = new LoadTestRig(
+                    configuration,
+                    nanoClock,
+                    persistedHistogram,
+                    (nc, ph) -> createMessageTransceiver(nc, ph, driver, client),
+                    mock(PrintStream.class));
 
                 remoteNodeStarted.await();
                 loadTestRig.run();
@@ -165,5 +172,9 @@ abstract class AbstractTest<
 
     abstract Class<MESSAGE_TRANSCEIVER> messageTransceiverClass();
 
-    abstract MESSAGE_TRANSCEIVER createMessageTransceiver(DRIVER driver, CLIENT client);
+    abstract MESSAGE_TRANSCEIVER createMessageTransceiver(
+        NanoClock nanoClock,
+        ValueRecorder valueRecorder,
+        DRIVER driver,
+        CLIENT client);
 }

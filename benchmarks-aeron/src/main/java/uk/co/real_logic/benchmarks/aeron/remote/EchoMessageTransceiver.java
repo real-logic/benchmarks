@@ -18,6 +18,8 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
+import org.HdrHistogram.ValueRecorder;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
@@ -55,13 +57,19 @@ public final class EchoMessageTransceiver extends MessageTransceiver
             onMessageReceived(timestamp, checksum);
         });
 
-    public EchoMessageTransceiver()
+    public EchoMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
-        this(launchEmbeddedMediaDriverIfConfigured(), connect(), true);
+        this(nanoClock, valueRecorder, launchEmbeddedMediaDriverIfConfigured(), connect(), true);
     }
 
-    EchoMessageTransceiver(final MediaDriver mediaDriver, final Aeron aeron, final boolean ownsAeronClient)
+    EchoMessageTransceiver(
+        final NanoClock nanoClock,
+        final ValueRecorder valueRecorder,
+        final MediaDriver mediaDriver,
+        final Aeron aeron,
+        final boolean ownsAeronClient)
     {
+        super(nanoClock, valueRecorder);
         this.mediaDriver = mediaDriver;
         this.aeron = aeron;
         this.ownsAeronClient = ownsAeronClient;

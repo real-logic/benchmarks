@@ -23,9 +23,11 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
+import org.HdrHistogram.ValueRecorder;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
@@ -40,15 +42,18 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
     private final AeronCluster.Context aeronClusterContext;
     private AeronCluster aeronCluster;
 
-    public ClusterMessageTransceiver()
+    public ClusterMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
-        this(launchEmbeddedMediaDriverIfConfigured(), new AeronCluster.Context());
+        this(nanoClock, valueRecorder, launchEmbeddedMediaDriverIfConfigured(), new AeronCluster.Context());
     }
 
     public ClusterMessageTransceiver(
+        final NanoClock nanoClock,
+        final ValueRecorder valueRecorder,
         final MediaDriver mediaDriver,
         final AeronCluster.Context aeronClusterContext)
     {
+        super(nanoClock, valueRecorder);
         this.mediaDriver = mediaDriver;
         this.aeronClusterContext = aeronClusterContext.egressListener(this).clone();
     }

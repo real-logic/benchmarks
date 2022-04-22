@@ -20,15 +20,16 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
+import org.HdrHistogram.Histogram;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpLock;
+import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.real_logic.benchmarks.remote.Configuration;
-import uk.co.real_logic.benchmarks.remote.LoadTestRig;
-import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.*;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -155,9 +156,14 @@ class ClusterTest
             ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
                 serviceContainerContext))
         {
-            final MessageTransceiver messageTransceiver = new ClusterMessageTransceiver(null, aeronClusterContext);
-
-            final LoadTestRig loadTestRig = new LoadTestRig(configuration, messageTransceiver, mock(PrintStream.class));
+            final NanoClock nanoClock = SystemNanoClock.INSTANCE;
+            final PersistedHistogram persistedHistogram = new SinglePersistedHistogram(new Histogram(3));
+            final LoadTestRig loadTestRig = new LoadTestRig(
+                configuration,
+                nanoClock,
+                persistedHistogram,
+                (nc, vr) -> new ClusterMessageTransceiver(nc, vr, null, aeronClusterContext),
+                mock(PrintStream.class));
             loadTestRig.run();
         }
 

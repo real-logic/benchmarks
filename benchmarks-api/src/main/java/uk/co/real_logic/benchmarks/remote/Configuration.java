@@ -15,9 +15,11 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
+import org.HdrHistogram.ValueRecorder;
 import org.agrona.AsciiEncoding;
 import org.agrona.AsciiNumberFormatException;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 
 import java.io.IOException;
@@ -583,7 +585,8 @@ public final class Configuration
 
         try
         {
-            final Constructor<? extends MessageTransceiver> constructor = klass.getConstructor();
+            final Constructor<? extends MessageTransceiver> constructor = klass.getConstructor(
+                NanoClock.class, ValueRecorder.class);
             if (isPublic(constructor.getModifiers()))
             {
                 return klass;
@@ -593,7 +596,8 @@ public final class Configuration
         {
         }
 
-        throw new IllegalArgumentException("MessageTransceiver class must have a zero-arg public constructor");
+        throw new IllegalArgumentException(
+            "MessageTransceiver class must have a public constructor that takes a NanoClock and a ValueRecorder");
     }
 
     private static boolean isPropertyProvided(final String propName)
