@@ -16,6 +16,7 @@
 package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.*;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 
@@ -248,6 +249,7 @@ public class LoggingPersistedHistogram implements PersistedHistogram
         {
             backgroundLoggerThread.interrupt();
             backgroundLoggerThread.join();
+            CloseHelper.close(() -> histogramLogWriter.close());
             try (Stream<Path> logFiles =
                 Files.list(outputDirectory).filter(p -> p.toString().endsWith(LOG_FILE_SUFFIX)))
             {
