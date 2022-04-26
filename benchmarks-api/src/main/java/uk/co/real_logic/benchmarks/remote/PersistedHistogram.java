@@ -23,7 +23,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static java.nio.file.Files.find;
@@ -79,7 +78,7 @@ public interface PersistedHistogram extends AutoCloseable
      *
      * @return a sequence of histograms in the form of an iterator.
      */
-    Iterator<Histogram> historyIterator();
+    Stream<Histogram> historyIterator();
 
     static Path saveHistogramToFile(
         final Histogram histogram, final Path outputDirectory, final String prefix)
@@ -112,19 +111,21 @@ public interface PersistedHistogram extends AutoCloseable
             }
             output.println();
 
-            for (final Iterator<Histogram> history = historyIterator(); history.hasNext();)
+            try (Stream<Histogram> history = historyIterator())
             {
-                final Histogram historyEntry = history.next();
-                final long midPointTimestamp =
-                    historyEntry.getStartTimeStamp() +
-                    ((historyEntry.getEndTimeStamp() - historyEntry.getStartTimeStamp()) / 2);
-                output.print(midPointTimestamp);
-                for (final double percentile : percentiles)
-                {
-                    output.print(",");
-                    output.print(historyEntry.getValueAtPercentile(percentile));
-                }
-                output.println();
+                history.forEach(
+                    (historyEntry) ->
+                    {
+                        final long midPointTimestamp = historyEntry.getStartTimeStamp() +
+                            ((historyEntry.getEndTimeStamp() - historyEntry.getStartTimeStamp()) / 2);
+                        output.print(midPointTimestamp);
+                        for (final double percentile : percentiles)
+                        {
+                            output.print(",");
+                            output.print(historyEntry.getValueAtPercentile(percentile));
+                        }
+                        output.println();
+                    });
             }
         }
 
@@ -185,4 +186,9 @@ public interface PersistedHistogram extends AutoCloseable
 
         return file;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    void close();
 }

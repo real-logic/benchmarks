@@ -24,9 +24,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.AGGREGATE_FILE_SUFFIX;
@@ -36,41 +36,50 @@ class LoggingPersistedHistogramTest
     @Test
     void shouldRecordHistory(final @TempDir Path tempDir) throws IOException, InterruptedException
     {
-        final PersistedHistogram histogram = new LoggingPersistedHistogram(tempDir, new SingleWriterRecorder(3));
-        Files.createFile(tempDir.resolve("another_one" + AGGREGATE_FILE_SUFFIX));
+        final long[] counts = { 0, 0 };
+        final int totalCountIndex = 0;
+        final int entryCountIndex = 1;
+        final Path results;
 
-        final Histogram expectedHistogram = new Histogram(3);
-        final ValueRecorder valueRecorder = histogram.valueRecorder();
-        final Random r = new Random();
-
-        histogram.reset();
-
-        for (int i = 0; i < 1000; i++)
+        try (PersistedHistogram histogram = new LoggingPersistedHistogram(tempDir, new SingleWriterRecorder(3)))
         {
-            for (int j = 0; j < 5; j++)
+            Files.createFile(tempDir.resolve("another_one" + AGGREGATE_FILE_SUFFIX));
+
+            final Histogram expectedHistogram = new Histogram(3);
+            final ValueRecorder valueRecorder = histogram.valueRecorder();
+            final Random r = new Random();
+
+            histogram.reset();
+
+            for (int i = 0; i < 1000; i++)
             {
-                final int value = r.nextInt(1000);
-                valueRecorder.recordValue(value);
-                expectedHistogram.recordValue(value);
-                Thread.sleep(1);
+                for (int j = 0; j < 5; j++)
+                {
+                    final int value = r.nextInt(1000);
+                    valueRecorder.recordValue(value);
+                    expectedHistogram.recordValue(value);
+                    Thread.sleep(1);
+                }
             }
+
+            histogram.saveToFile(tempDir, "results");
+            try (Stream<Histogram> history = histogram.historyIterator())
+            {
+                history.forEach(
+                    (h) ->
+                    {
+                        counts[totalCountIndex] += h.getTotalCount();
+                        counts[entryCountIndex]++;
+                    });
+            }
+
+            assertEquals(5000, counts[totalCountIndex]);
+            // Number of files is not deterministic and varies with the speed of the system.
+            assertEquals(6.5, counts[entryCountIndex], 2.6);
+
+            results = histogram.saveHistoryToCsvFile(tempDir, "results", 50.0, 99.0, 99.99, 100.0);
         }
-
-        histogram.saveToFile(tempDir, "results");
-        long totalCount = 0;
-        int totalEntries = 0;
-        for (final Iterator<Histogram> history = histogram.historyIterator(); history.hasNext();)
-        {
-            final Histogram historyEntry = history.next();
-            totalCount += historyEntry.getTotalCount();
-            totalEntries++;
-        }
-
-        assertEquals(5000, totalCount);
-        assertEquals(5.0, totalEntries, 2.0);
-
-        final Path results = histogram.saveHistoryToCsvFile(tempDir, "results", 50.0, 99.0, 99.99, 100.0);
         final List<String> strings = Files.readAllLines(results);
-        assertEquals(totalEntries + 1, strings.size());
+        assertEquals(counts[entryCountIndex] + 1, strings.size());
     }
 }

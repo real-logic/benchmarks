@@ -21,8 +21,7 @@ import org.HdrHistogram.ValueRecorder;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
@@ -99,9 +98,9 @@ public final class SinglePersistedHistogram implements PersistedHistogram
     /**
      * {@inheritDoc}
      */
-    public Iterator<Histogram> historyIterator()
+    public Stream<Histogram> historyIterator()
     {
-        return Collections.singletonList(histogram).iterator();
+        return Stream.of(histogram);
     }
 
     /**

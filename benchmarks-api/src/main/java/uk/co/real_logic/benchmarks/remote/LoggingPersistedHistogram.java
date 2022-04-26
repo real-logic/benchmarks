@@ -26,10 +26,13 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.Spliterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterators.spliteratorUnknownSize;
 
 /**
  * A persistent histogram that periodically logs a histogram of values. Primarily so that potential latency spikes
@@ -95,7 +98,7 @@ public class LoggingPersistedHistogram implements PersistedHistogram
         recorder.reset();
     }
 
-    public Iterator<Histogram> historyIterator()
+    public Stream<Histogram> historyIterator()
     {
         syncAndLoadHistogram();
 
@@ -103,7 +106,7 @@ public class LoggingPersistedHistogram implements PersistedHistogram
         {
             final HistogramLogReader histogramLogReader = new HistogramLogReader(histogramLogFile);
             //noinspection Convert2Diamond
-            return new Iterator<Histogram>()
+            final Iterator<Histogram> histogramIterator = new Iterator<Histogram>()
             {
                 public boolean hasNext()
                 {
@@ -122,6 +125,12 @@ public class LoggingPersistedHistogram implements PersistedHistogram
                     return (Histogram)histogramLogReader.nextIntervalHistogram();
                 }
             };
+
+            final Stream<Histogram> histogramStream = StreamSupport.stream(
+                spliteratorUnknownSize(histogramIterator, Spliterator.ORDERED | Spliterator.NONNULL),
+                false);
+            histogramStream.onClose(histogramLogReader::close);
+            return histogramStream;
         }
         catch (final IOException ex)
         {
@@ -191,7 +200,8 @@ public class LoggingPersistedHistogram implements PersistedHistogram
         void poll()
         {
             final long time = epochClock.time();
-            if (null == syncLatch && time < (lastLogTimestampMs + loggingIntervalMs))
+            final boolean applySyncLatch = null != syncLatch;
+            if (!applySyncLatch && time < (lastLogTimestampMs + loggingIntervalMs))
             {
                 return;
             }
@@ -200,7 +210,7 @@ public class LoggingPersistedHistogram implements PersistedHistogram
             histogramLogWriter.outputIntervalHistogram(sampleHistogram);
             lastLogTimestampMs = sampleHistogram.getEndTimeStamp();
 
-            if (null != syncLatch)
+            if (applySyncLatch)
             {
                 histogramLogWriter.close();
                 previousLogFile = currentLogFile;

@@ -42,8 +42,10 @@ class PersistedHistogramTest
     void saveToFileThrowsNullPointerExceptionIfOutputDirectoryIsNull(
         final Function<Path, PersistedHistogram> histogramFactory, final @TempDir Path tempDir)
     {
-        final PersistedHistogram histogram = histogramFactory.apply(tempDir);
-        assertThrows(NullPointerException.class, () -> histogram.saveToFile(null, "my-file"));
+        try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
+        {
+            assertThrows(NullPointerException.class, () -> histogram.saveToFile(null, "my-file"));
+        }
     }
 
     @ParameterizedTest
@@ -51,8 +53,10 @@ class PersistedHistogramTest
     void saveToFileThrowsNullPointerExceptionIfNamePrefixIsNull(
         final Function<Path, PersistedHistogram> histogramFactory, final @TempDir Path tempDir)
     {
-        final PersistedHistogram histogram = histogramFactory.apply(tempDir);
-        assertThrows(NullPointerException.class, () -> histogram.saveToFile(tempDir, null));
+        try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
+        {
+            assertThrows(NullPointerException.class, () -> histogram.saveToFile(tempDir, null));
+        }
     }
 
     @ParameterizedTest
@@ -60,8 +64,10 @@ class PersistedHistogramTest
     void saveToFileThrowsIllegalArgumentExceptionIfNamePrefixIsEmpty(
         final Function<Path, PersistedHistogram> histogramFactory, final @TempDir Path tempDir)
     {
-        final PersistedHistogram histogram = histogramFactory.apply(tempDir);
-        assertThrows(IllegalArgumentException.class, () -> histogram.saveToFile(tempDir, ""));
+        try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
+        {
+            assertThrows(IllegalArgumentException.class, () -> histogram.saveToFile(tempDir, ""));
+        }
     }
 
     @ParameterizedTest
@@ -69,8 +75,10 @@ class PersistedHistogramTest
     void saveToFileThrowsIllegalArgumentExceptionIfNamePrefixIsBlank(
         final Function<Path, PersistedHistogram> histogramFactory, final @TempDir Path tempDir)
     {
-        final PersistedHistogram histogram = histogramFactory.apply(tempDir);
-        assertThrows(IllegalArgumentException.class, () -> histogram.saveToFile(tempDir, " \t  \n  "));
+        try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
+        {
+            assertThrows(IllegalArgumentException.class, () -> histogram.saveToFile(tempDir, " \t  \n  "));
+        }
     }
 
     @ParameterizedTest
@@ -78,14 +86,16 @@ class PersistedHistogramTest
     void saveToFileThrowsIOExceptionIfSaveFails(
         final Function<Path, PersistedHistogram> histogramFactory, final @TempDir Path tempDir) throws IOException
     {
-        final PersistedHistogram histogram = histogramFactory.apply(tempDir);
-        final Path rootFile = Files.createFile(tempDir.resolve("my.txt"));
+        try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
+        {
+            final Path rootFile = Files.createFile(tempDir.resolve("my.txt"));
 
-        final ValueRecorder valueRecorder = histogram.valueRecorder();
-        valueRecorder.recordValue(2);
-        valueRecorder.recordValue(4);
+            final ValueRecorder valueRecorder = histogram.valueRecorder();
+            valueRecorder.recordValue(2);
+            valueRecorder.recordValue(4);
 
-        assertThrows(IOException.class, () -> histogram.saveToFile(rootFile, "ignore"));
+            assertThrows(IOException.class, () -> histogram.saveToFile(rootFile, "ignore"));
+        }
     }
 
     @ParameterizedTest
@@ -93,19 +103,23 @@ class PersistedHistogramTest
     void saveToFileCreatesNewFileWithIndexZero(
         final Function<Path, PersistedHistogram> histogramFactory, final @TempDir Path tempDir) throws IOException
     {
-        final PersistedHistogram histogram = histogramFactory.apply(tempDir);
-        Files.createFile(tempDir.resolve("another-one-13.hdr"));
         final Histogram expectedHistogram = new Histogram(3);
+        final Path file;
 
-        final ValueRecorder valueRecorder = histogram.valueRecorder();
-        valueRecorder.recordValue(100);
-        expectedHistogram.recordValue(100);
-        valueRecorder.recordValue(1000);
-        expectedHistogram.recordValue(1000);
-        valueRecorder.recordValue(250);
-        expectedHistogram.recordValue(250);
+        try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
+        {
+            Files.createFile(tempDir.resolve("another-one-13.hdr"));
 
-        final Path file = histogram.saveToFile(tempDir, "test-histogram");
+            final ValueRecorder valueRecorder = histogram.valueRecorder();
+            valueRecorder.recordValue(100);
+            expectedHistogram.recordValue(100);
+            valueRecorder.recordValue(1000);
+            expectedHistogram.recordValue(1000);
+            valueRecorder.recordValue(250);
+            expectedHistogram.recordValue(250);
+
+            file = histogram.saveToFile(tempDir, "test-histogram");
+        }
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
@@ -119,18 +133,21 @@ class PersistedHistogramTest
     void saveToFileCreatesNewFileByIncrementExistingMaxIndex(
         final Function<Path, PersistedHistogram> histogramFactory, final @TempDir Path tempDir) throws IOException
     {
-        final PersistedHistogram histogram = histogramFactory.apply(tempDir);
-        Files.createFile(tempDir.resolve("another_one-13.hdr"));
-        Files.createFile(tempDir.resolve("another_one" + AGGREGATE_FILE_SUFFIX));
-
         final Histogram expectedHistogram = new Histogram(3);
-        final ValueRecorder valueRecorder = histogram.valueRecorder();
-        valueRecorder.recordValue(2);
-        expectedHistogram.recordValue(2);
-        valueRecorder.recordValue(4);
-        expectedHistogram.recordValue(4);
+        final Path file;
+        try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
+        {
+            Files.createFile(tempDir.resolve("another_one-13.hdr"));
+            Files.createFile(tempDir.resolve("another_one" + AGGREGATE_FILE_SUFFIX));
 
-        final Path file = histogram.saveToFile(tempDir, "another_one");
+            final ValueRecorder valueRecorder = histogram.valueRecorder();
+            valueRecorder.recordValue(2);
+            expectedHistogram.recordValue(2);
+            valueRecorder.recordValue(4);
+            expectedHistogram.recordValue(4);
+
+            file = histogram.saveToFile(tempDir, "another_one");
+        }
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
@@ -146,37 +163,40 @@ class PersistedHistogramTest
         final Function<Path, PersistedHistogram> histogramFactory, final @TempDir Path tempDir)
         throws IOException, InterruptedException
     {
-        final PersistedHistogram histogram = histogramFactory.apply(tempDir);
-        Files.createFile(tempDir.resolve("another_one" + AGGREGATE_FILE_SUFFIX));
-
         final Histogram expectedHistogram = new Histogram(3);
-        final ValueRecorder valueRecorder = histogram.valueRecorder();
-        final Random r = new Random();
-
-        for (int i = 0; i < 1000; i++)
+        final Path file;
+        try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
         {
-            for (int j = 0; j < 5; j++)
+            Files.createFile(tempDir.resolve("another_one" + AGGREGATE_FILE_SUFFIX));
+
+            final ValueRecorder valueRecorder = histogram.valueRecorder();
+            final Random r = new Random();
+
+            for (int i = 0; i < 1000; i++)
             {
-                final int value = r.nextInt(1000);
-                valueRecorder.recordValue(value);
+                for (int j = 0; j < 5; j++)
+                {
+                    final int value = r.nextInt(1000);
+                    valueRecorder.recordValue(value);
+                }
+                Thread.sleep(1);
             }
-            Thread.sleep(1);
-        }
 
-        histogram.reset();
+            histogram.reset();
 
-        for (int i = 0; i < 1000; i++)
-        {
-            for (int j = 0; j < 5; j++)
+            for (int i = 0; i < 1000; i++)
             {
-                final int value = r.nextInt(1000);
-                valueRecorder.recordValue(value);
-                expectedHistogram.recordValue(value);
+                for (int j = 0; j < 5; j++)
+                {
+                    final int value = r.nextInt(1000);
+                    valueRecorder.recordValue(value);
+                    expectedHistogram.recordValue(value);
+                }
+                Thread.sleep(1);
             }
-            Thread.sleep(1);
-        }
 
-        final Path file = histogram.saveToFile(tempDir, "another_one");
+            file = histogram.saveToFile(tempDir, "another_one");
+        }
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
