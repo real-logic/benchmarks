@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.AGGREGATE_FILE_SUFFIX;
 
 class LoggingPersistedHistogramTest
@@ -75,7 +76,7 @@ class LoggingPersistedHistogramTest
 
             assertEquals(5000, counts[totalCountIndex]);
             // Number of files is not deterministic and varies with the speed of the system.
-            assertEquals(6.5, counts[entryCountIndex], 2.6);
+            assertTrue(5 <= counts[entryCountIndex]);
 
             results = histogram.saveHistoryToCsvFile(tempDir, "results", 50.0, 99.0, 99.99, 100.0);
         }
