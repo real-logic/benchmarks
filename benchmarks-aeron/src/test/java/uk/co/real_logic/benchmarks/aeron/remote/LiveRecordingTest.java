@@ -16,7 +16,9 @@
 package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.client.AeronArchive;
+import org.HdrHistogram.ValueRecorder;
 import org.agrona.IoUtil;
+import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -75,9 +77,11 @@ class LiveRecordingTest extends
     }
 
     protected LiveRecordingMessageTransceiver createMessageTransceiver(
+        final NanoClock nanoClock,
+        final ValueRecorder valueRecorder,
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive)
     {
-        return new LiveRecordingMessageTransceiver(archivingMediaDriver, aeronArchive, false);
+        return new LiveRecordingMessageTransceiver(nanoClock, valueRecorder, archivingMediaDriver, aeronArchive, false);
     }
 }

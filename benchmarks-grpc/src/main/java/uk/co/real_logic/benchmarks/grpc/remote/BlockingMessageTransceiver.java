@@ -17,6 +17,8 @@ package uk.co.real_logic.benchmarks.grpc.remote;
 
 import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
+import org.HdrHistogram.ValueRecorder;
+import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.grpc.remote.EchoBenchmarksGrpc.EchoBenchmarksBlockingStub;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
@@ -34,6 +36,11 @@ public class BlockingMessageTransceiver extends MessageTransceiver
     private EchoBenchmarksBlockingStub blockingClient;
     private EchoMessage.Builder messageBuilder;
     private ByteString payload;
+
+    public BlockingMessageTransceiver(final NanoClock clock, final ValueRecorder valueRecorder)
+    {
+        super(clock, valueRecorder);
+    }
 
     public void init(final Configuration configuration)
     {

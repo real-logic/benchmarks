@@ -22,7 +22,9 @@ import io.aeron.archive.client.RecordingEventsListener;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.HdrHistogram.ValueRecorder;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
@@ -63,16 +65,19 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     private Subscription subscription;
     private Image image;
 
-    public LiveRecordingMessageTransceiver()
+    public LiveRecordingMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
-        this(launchArchivingMediaDriver(), connect(), true);
+        this(nanoClock, valueRecorder, launchArchivingMediaDriver(), connect(), true);
     }
 
     LiveRecordingMessageTransceiver(
+        final NanoClock nanoClock,
+        final ValueRecorder valueRecorder,
         final ArchivingMediaDriver archivingMediaDriver,
         final AeronArchive aeronArchive,
         final boolean ownsArchiveClient)
     {
+        super(nanoClock, valueRecorder);
         this.archivingMediaDriver = archivingMediaDriver;
         this.aeronArchive = aeronArchive;
         this.ownsArchiveClient = ownsArchiveClient;

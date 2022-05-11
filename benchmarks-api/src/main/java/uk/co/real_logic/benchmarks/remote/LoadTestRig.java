@@ -15,19 +15,25 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
+import org.HdrHistogram.Histogram;
+import org.HdrHistogram.SingleWriterRecorder;
+import org.HdrHistogram.ValueRecorder;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.SystemNanoClock;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.remote.MessageTransceiverBase.CHECKSUM;
@@ -53,20 +59,36 @@ public final class LoadTestRig
 
     public LoadTestRig(final Configuration configuration)
     {
-        this(configuration, createTransceiver(configuration), System.out);
+        this(configuration, SystemNanoClock.INSTANCE, newPersistedHistogram(configuration), System.out);
     }
 
     public LoadTestRig(
         final Configuration configuration,
-        final MessageTransceiver messageTransceiver,
+        final NanoClock nanoClock,
+        final PersistedHistogram persistedHistogram,
         final PrintStream out)
     {
         this(
             configuration,
-            messageTransceiver,
+            nanoClock,
+            persistedHistogram,
+            (nc, ph) -> createTransceiver(configuration, nc, ph),
+            out);
+    }
+
+    public LoadTestRig(
+        final Configuration configuration,
+        final NanoClock nanoClock,
+        final PersistedHistogram persistedHistogram,
+        final BiFunction<NanoClock, ValueRecorder, MessageTransceiver> transceiverFactory,
+        final PrintStream out)
+    {
+        this(
+            configuration,
+            transceiverFactory.apply(nanoClock, persistedHistogram.valueRecorder()),
             out,
-            messageTransceiver.clock,
-            new PersistedHistogram(messageTransceiver.histogram),
+            nanoClock,
+            persistedHistogram,
             Runtime.getRuntime().availableProcessors());
     }
 
@@ -109,6 +131,7 @@ public final class LoadTestRig
                 send(configuration.warmupIterations(), configuration.warmupMessageRate());
 
                 messageTransceiver.reset();
+                persistedHistogram.reset();
             }
 
             out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload and a" +
@@ -127,10 +150,16 @@ public final class LoadTestRig
             warnIfTargetRateNotAchieved(sentMessages);
 
             histogram.saveToFile(configuration.outputDirectory(), configuration.outputFileNamePrefix());
+            if (configuration.trackHistory())
+            {
+                histogram.saveHistoryToCsvFile(
+                    configuration.outputDirectory(), configuration.outputFileNamePrefix(), 50.0, 99.0, 99.99, 100.0);
+            }
         }
         finally
         {
             messageTransceiver.destroy();
+            CloseHelper.close(persistedHistogram);
         }
     }
 
@@ -277,11 +306,17 @@ public final class LoadTestRig
         }
     }
 
-    private static MessageTransceiver createTransceiver(final Configuration configuration)
+    private static MessageTransceiver createTransceiver(
+        final Configuration configuration,
+        final NanoClock nanoClock,
+        final ValueRecorder valueRecorder)
     {
         try
         {
-            return configuration.messageTransceiverClass().getConstructor().newInstance();
+            return configuration
+                .messageTransceiverClass()
+                .getConstructor(NanoClock.class, ValueRecorder.class)
+                .newInstance(nanoClock, valueRecorder);
         }
         catch (final ReflectiveOperationException ex)
         {
@@ -298,5 +333,20 @@ public final class LoadTestRig
         final Configuration configuration = Configuration.fromSystemProperties();
 
         new LoadTestRig(configuration).run();
+    }
+
+    @SuppressWarnings("checkstyle:indentation")
+    private static PersistedHistogram newPersistedHistogram(final Configuration configuration)
+    {
+        try
+        {
+            return configuration.trackHistory() ?
+                new LoggingPersistedHistogram(configuration.outputDirectory(), new SingleWriterRecorder(3)) :
+                new SinglePersistedHistogram(new Histogram(HOURS.toNanos(1), 3));
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
     }
 }

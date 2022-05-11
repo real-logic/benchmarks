@@ -31,7 +31,7 @@ import java.util.Map.Entry;
 import static java.lang.Double.*;
 import static java.nio.file.Files.*;
 import static java.util.stream.Collectors.groupingBy;
-import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.*;
+import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.*;
 
 public final class ResultsAggregator
 {
@@ -83,7 +83,7 @@ public final class ResultsAggregator
         {
             final Histogram aggregate = aggregateHistograms(e);
             final String filePrefix = e.getKey();
-            saveToFile(aggregate, directory.resolve(filePrefix + AGGREGATE_FILE_SUFFIX));
+            PersistedHistogram.saveToFile(aggregate, directory.resolve(filePrefix + AGGREGATE_FILE_SUFFIX));
             createReportFile(aggregate, directory.resolve(filePrefix + REPORT_FILE_SUFFIX));
         }
     }

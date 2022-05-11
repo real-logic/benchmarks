@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramLogWriter;
+import org.HdrHistogram.ValueRecorder;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,22 +27,10 @@ import java.util.stream.Stream;
 
 import static java.nio.file.Files.find;
 import static java.nio.file.Files.isRegularFile;
-import static java.util.Objects.requireNonNull;
 import static org.agrona.AsciiEncoding.parseIntAscii;
 
-final class PersistedHistogram
+public interface PersistedHistogram extends AutoCloseable
 {
-    static final String FILE_EXTENSION = ".hdr";
-    static final String AGGREGATE_FILE_SUFFIX = "-combined" + FILE_EXTENSION;
-    static final String REPORT_FILE_SUFFIX = "-report.hgrm";
-
-    private final Histogram histogram;
-
-    PersistedHistogram(final Histogram histogram)
-    {
-        this.histogram = histogram;
-    }
-
     /**
      * Produce textual representation of the value distribution of histogram data by percentile. The distribution is
      * output with exponentially increasing resolution, with each exponentially decreasing half-distance containing
@@ -51,10 +40,7 @@ final class PersistedHistogram
      * @param outputValueUnitScalingRatio the scaling factor by which to divide histogram recorded values units in
      *                                    output.
      */
-    public void outputPercentileDistribution(final PrintStream printStream, final double outputValueUnitScalingRatio)
-    {
-        histogram.outputPercentileDistribution(printStream, outputValueUnitScalingRatio);
-    }
+    void outputPercentileDistribution(PrintStream printStream, double outputValueUnitScalingRatio);
 
     /**
      * Save histogram into a file on disc. Uses provided {@code namePrefix} and appending an <em>index</em> to ensure
@@ -69,45 +55,116 @@ final class PersistedHistogram
      * @throws IllegalArgumentException if {@code namePrefix} is blank.
      * @throws IOException              if IO error occurs.
      */
-    public Path saveToFile(final Path outputDirectory, final String namePrefix) throws IOException
-    {
-        requireNonNull(outputDirectory);
+    Path saveToFile(Path outputDirectory, String namePrefix) throws IOException;
 
-        final String prefix = namePrefix.trim();
-        if (prefix.isEmpty())
+    /**
+     * Provide a value recorder to be used for measurements. Values recorded through this interface will be persisted
+     * by this PersistedHistogram.
+     *
+     * @return the value recorder.
+     */
+    ValueRecorder valueRecorder();
+
+    /**
+     * Reset the histogram recording, generally between warmup and real runs.
+     */
+    void reset();
+
+    /**
+     * Returns an iterator over a sequence of histograms that form a recording history. Iterator may be empty or only
+     * contain a single value depending on the data recorded and the underlying implementation. An implementation that
+     * does not track history could return just a single value regardless of the amount of time spent during the
+     * recording.
+     *
+     * @return a sequence of histograms in the form of an iterator.
+     */
+    Stream<Histogram> historyIterator();
+
+    static Path saveHistogramToFile(
+        final Histogram histogram, final Path outputDirectory, final String prefix)
+        throws IOException
+    {
+        final String fileNamePrefix = prefix + "-";
+        final String fileExtension = SinglePersistedHistogram.FILE_EXTENSION;
+
+        final int index = determineFileIndex(outputDirectory, fileNamePrefix, fileExtension);
+        return saveToFile(histogram, outputDirectory.resolve(fileNamePrefix + index + fileExtension));
+    }
+
+    default Path saveHistoryToCsvFile(final Path outputDirectory, final String prefix, final double... percentiles)
+        throws IOException
+    {
+        final String fileNamePrefix = prefix + "-";
+        final String fileExtension = SinglePersistedHistogram.HISTORY_FILE_EXTENSION;
+
+        final int index = determineFileIndex(outputDirectory, fileNamePrefix, fileExtension);
+        final Path csvPath = outputDirectory.resolve(fileNamePrefix + index + fileExtension);
+
+        //noinspection CharsetObjectCanBeUsed
+        try (PrintStream output = new PrintStream(csvPath.toFile(), "ASCII"))
         {
-            throw new IllegalArgumentException("Name prefix cannot be blank!");
+            output.print("timestamp (ms)");
+            for (final double percentile : percentiles)
+            {
+                output.print(",");
+                output.print(percentile);
+            }
+            output.println();
+
+            try (Stream<Histogram> history = historyIterator())
+            {
+                history.forEach(
+                    (historyEntry) ->
+                    {
+                        final long midPointTimestamp = historyEntry.getStartTimeStamp() +
+                            ((historyEntry.getEndTimeStamp() - historyEntry.getStartTimeStamp()) / 2);
+                        output.print(midPointTimestamp);
+                        for (final double percentile : percentiles)
+                        {
+                            output.print(",");
+                            output.print(historyEntry.getValueAtPercentile(percentile));
+                        }
+                        output.println();
+                    });
+            }
         }
 
-        final String fileNamePrefix = prefix + "-";
-        final Stream<Path> pathStream = find(
-            outputDirectory,
-            1,
-            (file, attrs) ->
-            {
-                if (!isRegularFile(file))
+        return csvPath;
+    }
+
+    static int determineFileIndex(
+        final Path outputDirectory,
+        final String fileNamePrefix,
+        final String fileExtension) throws IOException
+    {
+        try (
+            Stream<Path> pathStream = find(
+                outputDirectory,
+                1,
+                (file, attrs) ->
                 {
-                    return false;
-                }
+                    if (!isRegularFile(file))
+                    {
+                        return false;
+                    }
 
-                final String fileName = file.getFileName().toString();
+                    final String fileName = file.getFileName().toString();
 
-                return fileName.endsWith(FILE_EXTENSION) &&
-                    !fileName.endsWith(AGGREGATE_FILE_SUFFIX) &&
-                    fileName.startsWith(fileNamePrefix);
-            });
-
-        final int index = pathStream.mapToInt(
-            (file) ->
-            {
-                final String fileName = file.getFileName().toString();
-                final int indexLength = fileName.length() - FILE_EXTENSION.length() - fileNamePrefix.length();
-                return parseIntAscii(fileName, fileNamePrefix.length(), indexLength);
-            })
+                    return fileName.endsWith(fileExtension) &&
+                        !fileName.endsWith(SinglePersistedHistogram.AGGREGATE_FILE_SUFFIX) &&
+                        fileName.startsWith(fileNamePrefix);
+                }))
+        {
+            return pathStream.mapToInt(
+                (file) ->
+                {
+                    final String fileName = file.getFileName().toString();
+                    final int indexLength = fileName.length() - fileExtension.length() - fileNamePrefix.length();
+                    return parseIntAscii(fileName, fileNamePrefix.length(), indexLength);
+                })
             .max()
             .orElse(-1) + 1;
-
-        return saveToFile(histogram, outputDirectory.resolve(fileNamePrefix + index + FILE_EXTENSION));
+        }
     }
 
     static Path saveToFile(final Histogram histogram, final Path file)
@@ -129,4 +186,9 @@ final class PersistedHistogram
 
         return file;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    void close();
 }

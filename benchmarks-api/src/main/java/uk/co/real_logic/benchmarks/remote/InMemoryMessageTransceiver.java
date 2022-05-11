@@ -16,6 +16,7 @@
 package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.Histogram;
+import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
 
 import static java.lang.Integer.numberOfLeadingZeros;
@@ -37,8 +38,9 @@ public final class InMemoryMessageTransceiver extends MessageTransceiver
     private long sendIndex = 0;
     private long receiveIndex = 0;
 
-    public InMemoryMessageTransceiver()
+    public InMemoryMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
+        super(nanoClock, valueRecorder);
     }
 
     InMemoryMessageTransceiver(final NanoClock clock, final Histogram histogram)

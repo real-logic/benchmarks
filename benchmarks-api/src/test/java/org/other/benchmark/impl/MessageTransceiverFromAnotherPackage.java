@@ -15,11 +15,18 @@
  */
 package org.other.benchmark.impl;
 
+import org.HdrHistogram.ValueRecorder;
+import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 public class MessageTransceiverFromAnotherPackage extends MessageTransceiver
 {
+    public MessageTransceiverFromAnotherPackage(final NanoClock clock, final ValueRecorder valueRecorder)
+    {
+        super(clock, valueRecorder);
+    }
+
     public void init(final Configuration configuration)
     {
     }
