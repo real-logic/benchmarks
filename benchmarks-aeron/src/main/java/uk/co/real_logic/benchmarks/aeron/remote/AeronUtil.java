@@ -76,10 +76,6 @@ final class AeronUtil
     static final String IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.idle.strategy";
     static final String CONNECTION_TIMEOUT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.connection.timeout";
     static final int FRAGMENT_LIMIT = getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
-    static final ExclusivePublication[] EMPTY_PUBLICATIONS = new ExclusivePublication[0];
-    static final Subscription[] EMPTY_SUBSCRIPTIONS = new Subscription[0];
-    static final Image[] EMPTY_IMAGES = new Image[0];
-    static final FragmentHandler NULL_FRAGMENT_HANDLER = (buffer, offset, length, header) -> {};
     private static final String MULTI_VALUE_SEPARATOR = ",";
 
     private AeronUtil()
