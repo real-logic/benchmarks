@@ -15,7 +15,11 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
+import io.aeron.FragmentAssembler;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import org.HdrHistogram.ValueRecorder;
@@ -34,9 +38,6 @@ import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 public final class EchoMessageTransceiver extends MessageTransceiver
 {
-    static final int NUMBER_OF_KEEP_ALIVE_MESSAGES = 1;
-    static final int KEEP_ALIVE_MESSAGE_LENGTH = 32;
-
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;

@@ -18,7 +18,7 @@
 ##
 # Example: Invoking `benchmark-runner` from the `scripts` directory.
 #
-# $ ./benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,224,1376" "aeron/echo-client"
+# $ ./benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,288,1344" "aeron/echo-client"
 ##
 
 RUNS=3
