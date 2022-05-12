@@ -13,7 +13,7 @@ NOTE: It is advised to have "client" and "server" run on different machines.
 Test scenarios
 --------------
 
-Three different test scenarios are covered:
+The following scenarios are covered:
 1. Echo benchmark (aka ping-pong)
 
     Start the scripts in the following order: `echo-server` -> `echo-client`.
@@ -68,7 +68,9 @@ Three different test scenarios are covered:
    For the client the following options need to be set:
    - `aeron.dir` - a dedicated directory for the `MediaDriver`.
    - `aeron.cluster.egress.channel` - the channel for the cluster to send message back to the client.
-5. Before running the nodes and client, each will need a media driver running.
+
+
+   Before running the nodes and client, each will need a media driver running.
    The commands will look similar to the following.
    Each command will block, so will need to be run in separate terminals.
    The default media driver and memory settings are configured for performance, so when running locally you may need to turn down the amount of memory committed up front to prevent OOMEs.
