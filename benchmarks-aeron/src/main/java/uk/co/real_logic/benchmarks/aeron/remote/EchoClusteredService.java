@@ -27,6 +27,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.checkPublicationResult;
 
@@ -34,6 +35,12 @@ public final class EchoClusteredService implements ClusteredService
 {
     private final BufferClaim bufferClaim = new BufferClaim();
     private IdleStrategy idleStrategy;
+    private long snapshotSize;
+
+    public EchoClusteredService(final long snapshotSize)
+    {
+        this.snapshotSize = snapshotSize;
+    }
 
     public void onStart(final Cluster cluster, final Image snapshotImage)
     {
@@ -72,6 +79,13 @@ public final class EchoClusteredService implements ClusteredService
             idleStrategy.idle();
         }
 
+        // This is not required with the latest master
+        if (ClientSession.MOCKED_OFFER == result)
+        {
+            bufferClaim.commit();
+            return;
+        }
+
         final MutableDirectBuffer dstBuffer = bufferClaim.buffer();
         final int msgOffset = bufferClaim.offset() + AeronCluster.SESSION_HEADER_LENGTH;
 
@@ -86,6 +100,22 @@ public final class EchoClusteredService implements ClusteredService
 
     public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
     {
+        final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[snapshotPublication.maxPayloadLength()]);
+        buffer.setMemory(0, buffer.capacity(), (byte)'x');
+
+        for (long written = 0; written < snapshotSize;)
+        {
+            final long remaining = snapshotSize - written;
+            final int toWrite = (int)Math.min(buffer.capacity(), remaining);
+
+            idleStrategy.reset();
+            while (0 > snapshotPublication.offer(buffer, 0, toWrite))
+            {
+                idleStrategy.idle();
+            }
+
+            written += toWrite;
+        }
     }
 
     public void onRoleChange(final Cluster.Role newRole)

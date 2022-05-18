@@ -22,6 +22,7 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
+import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -37,11 +38,11 @@ public final class ClusterNode
     public static void main(final String[] args)
     {
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
+        final Configuration configuration = Configuration.fromSystemProperties();
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)
             .recordingEventsEnabled(false);
-        archiveContext.localControlStreamId(archiveContext.controlStreamId());
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
@@ -56,7 +57,7 @@ public final class ClusterNode
             .aeronDirectoryName(archiveContext.aeronDirectoryName());
 
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
-            .clusteredService(new EchoClusteredService())
+            .clusteredService(new EchoClusteredService(configuration.snapshotSize()))
             .errorHandler(rethrowingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(archiveContext.aeronDirectoryName())

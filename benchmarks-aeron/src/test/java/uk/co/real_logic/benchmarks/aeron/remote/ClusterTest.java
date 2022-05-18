@@ -29,7 +29,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.real_logic.benchmarks.remote.*;
+import uk.co.real_logic.benchmarks.remote.Configuration;
+import uk.co.real_logic.benchmarks.remote.LoadTestRig;
+import uk.co.real_logic.benchmarks.remote.PersistedHistogram;
+import uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -140,7 +143,7 @@ class ClusterTest
             .clusterDirectoryName(clusterDirectoryName);
 
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
-            .clusteredService(new EchoClusteredService())
+            .clusteredService(new EchoClusteredService(configuration.snapshotSize()))
             .errorHandler(AeronUtil.rethrowingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)

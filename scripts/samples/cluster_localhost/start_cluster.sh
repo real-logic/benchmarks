@@ -18,8 +18,19 @@
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 AERON_SCRIPT_HOME=${DIR}/../../aeron
 
-export JVM_OPTS="-Xms16M"
+function startNode() {
+  node=$1
+  JVM_OPTS="-Xms16M"
+# Usefult for logging...
+#  JVM_OPTS="${JVM_OPTS} -javaagent:${HOME}/.m2/repository/io/aeron/aeron-agent/1.38.1-SNAPSHOT/aeron-agent-1.38.1-SNAPSHOT.jar"
+  JVM_OPTS="${JVM_OPTS} -Daeron.event.cluster.log=all -Daeron.event.cluster.log.disable=APPEND_POSITION,COMMIT_POSITION"
+  JVM_OPTS="${JVM_OPTS} -Daeron.event.log.filename=log_${node}.log"
+  export JVM_OPTS
 
+  ${AERON_SCRIPT_HOME}/cluster-node ${DIR}/cluster.properties "${DIR}/node${node}.properties" > "node${node}.out" &
+}
+
+JVM_OPTS="-Xms16M"
 echo "Starting media drivers"
 ${AERON_SCRIPT_HOME}/media-driver ${DIR}/cluster.properties ${DIR}/node0.properties > md_node0.out &
 ${AERON_SCRIPT_HOME}/media-driver ${DIR}/cluster.properties ${DIR}/node1.properties > md_node1.out &
@@ -27,9 +38,10 @@ ${AERON_SCRIPT_HOME}/media-driver ${DIR}/cluster.properties ${DIR}/node2.propert
 ${AERON_SCRIPT_HOME}/media-driver ${DIR}/cluster.properties ${DIR}/client.properties > md_client.out &
 
 echo "Cluster nodes"
-${AERON_SCRIPT_HOME}/cluster-node ${DIR}/cluster.properties ${DIR}/node0.properties > node0.out &
-${AERON_SCRIPT_HOME}/cluster-node ${DIR}/cluster.properties ${DIR}/node1.properties > node1.out &
-${AERON_SCRIPT_HOME}/cluster-node ${DIR}/cluster.properties ${DIR}/node2.properties > node2.out &
+startNode 0
+startNode 1
+startNode 2
 
 echo "Start client"
-${AERON_SCRIPT_HOME}/cluster-client ${DIR}/cluster.properties ${DIR}/node2.properties
+export JVM_OPTS="-Xms16M"
+${AERON_SCRIPT_HOME}/cluster-client ${DIR}/cluster.properties ${DIR}/client.properties

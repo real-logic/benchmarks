@@ -18,6 +18,7 @@ package uk.co.real_logic.benchmarks.remote;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.AsciiEncoding;
 import org.agrona.AsciiNumberFormatException;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
@@ -81,6 +82,11 @@ public final class Configuration
      * Default tracking of latency history
      */
     public static final boolean DEFAULT_TRACK_HISTORY = false;
+
+    /**
+     * Default snapshot size (0 means no snapshot).
+     */
+    public static final long DEFAULT_SNAPSHOT_SIZE = 0;
 
     /**
      * Minimal length in bytes of a single message. Contains enough space to hold a {@code timestamp} and a
@@ -165,6 +171,11 @@ public final class Configuration
      */
     public static final String TRACK_HISTORY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.track.history";
 
+    /**
+     * Size of the snapshot to be used in the EchoClusterService, null or 0 means no snapshot.
+     */
+    public static final String SNAPSHOT_SIZE = "uk.co.real_logic.benchmarks.cluster.snapshot.size";
+
     private static final MessageDigest SHA256;
 
     static
@@ -190,6 +201,7 @@ public final class Configuration
     private final Path outputDirectory;
     private final String outputFileNamePrefix;
     private final boolean trackHistory;
+    private final long snapshotSize;
 
     private Configuration(final Builder builder)
     {
@@ -204,6 +216,7 @@ public final class Configuration
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
         this.trackHistory = builder.trackHistory;
         outputFileNamePrefix = computeFileNamePrefix(builder.outputFileNamePrefix, builder.systemProperties);
+        this.snapshotSize = builder.snapshotSize;
     }
 
     /**
@@ -326,6 +339,16 @@ public final class Configuration
         return outputFileNamePrefix;
     }
 
+    /**
+     * The size of the snapshot for the EchoClusterService
+     *
+     * @return size in bytes to create a snapshot.
+     */
+    public long snapshotSize()
+    {
+        return snapshotSize;
+    }
+
     public String toString()
     {
         return "Configuration{" +
@@ -374,6 +397,7 @@ public final class Configuration
         private Properties systemProperties = System.getProperties();
         private String outputFileNamePrefix;
         private boolean trackHistory = DEFAULT_TRACK_HISTORY;
+        public long snapshotSize = DEFAULT_SNAPSHOT_SIZE;
 
         /**
          * Set the number of warmup iterations.
@@ -508,6 +532,12 @@ public final class Configuration
             return this;
         }
 
+        public Builder snapshotSize(final long snapshotSize)
+        {
+            this.snapshotSize = snapshotSize;
+            return this;
+        }
+
         /**
          * Create a new instance of the {@link Configuration} class from this builder.
          *
@@ -574,6 +604,7 @@ public final class Configuration
         }
 
         builder
+            .snapshotSize(SystemUtil.getSizeAsLong(SNAPSHOT_SIZE, DEFAULT_SNAPSHOT_SIZE))
             .messageRate(intProperty(MESSAGE_RATE_PROP_NAME))
             .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class))
             .outputFileNamePrefix(getPropertyValue(OUTPUT_FILE_NAME_PROP_NAME));
