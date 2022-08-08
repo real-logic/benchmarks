@@ -53,10 +53,10 @@ def disruptorVersion = '3.4.4'
 def junitVersion = '5.9.0'
 def mockitoVersion = '4.6.1'
 def checkstyleVersion = '9.2.1'
-def grpcVersion = '1.48.0'
+def grpcVersion = '1.48.1'
 def protobufVersion = '3.21.4'
 def errorproneVersion = '2.10.0'
-def kafkaVersion = '3.2.0'
+def kafkaVersion = '3.2.1'
 def zookeeperVersion = '3.7.0'
 def slf4jVersion = '1.7.36'
 def scalaVersion = '2.13.7'
@@ -297,6 +297,6 @@ task deployTar(type: Tar) {
 }
 
 wrapper {
-    gradleVersion = '7.4.2'
+    gradleVersion = '7.5.1'
     distributionType = 'ALL'
 }
