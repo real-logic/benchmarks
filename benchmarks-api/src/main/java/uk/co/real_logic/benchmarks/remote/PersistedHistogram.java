@@ -100,7 +100,6 @@ public interface PersistedHistogram extends AutoCloseable
         final int index = determineFileIndex(outputDirectory, fileNamePrefix, fileExtension);
         final Path csvPath = outputDirectory.resolve(fileNamePrefix + index + fileExtension);
 
-        //noinspection CharsetObjectCanBeUsed
         try (PrintStream output = new PrintStream(csvPath.toFile(), "ASCII"))
         {
             output.print("timestamp (ms)");
