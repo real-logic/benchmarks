@@ -140,7 +140,7 @@ Please the documentation in the `grpc` directory for more information.
 Unlike gRPC that simply echoes messages Kafka will persist them so that the test is similar to the Aeron's replay from
 the remote archive.
 
-Please the documentation in the `kafka` directory for more information.
+Please read the documentation in the `kafka` directory for more information.
 
 License (See LICENSE file for full license)
 -------------------------------------------
