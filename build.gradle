@@ -17,7 +17,7 @@
 plugins {
     id 'java-library'
     id 'checkstyle'
-    id 'com.github.ben-manes.versions' version '0.42.0'
+    id 'com.github.ben-manes.versions' version '0.43.0'
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
     id 'com.google.protobuf' version '0.8.19' apply false
 }
@@ -51,7 +51,7 @@ def joptVersion = '5.0.4'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.4'
 def junitVersion = '5.9.1'
-def mockitoVersion = '4.8.0'
+def mockitoVersion = '4.8.1'
 def checkstyleVersion = '9.2.1'
 def grpcVersion = '1.49.0'
 def protobufVersion = '3.21.6'
