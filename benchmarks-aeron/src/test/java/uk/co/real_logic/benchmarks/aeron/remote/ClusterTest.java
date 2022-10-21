@@ -108,6 +108,7 @@ class ClusterTest
         setProperty(AeronArchive.Configuration.CONTROL_CHANNEL_PROP_NAME,
             "aeron:udp?endpoint=localhost:8010|term-length=64k");
         setProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME, "aeron:ipc?term-length=64k");
+        setProperty(Archive.Configuration.REPLICATION_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:8040");
 
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(0)

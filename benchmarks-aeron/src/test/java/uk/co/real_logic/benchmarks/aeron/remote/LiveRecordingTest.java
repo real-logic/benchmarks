@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
+import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.IoUtil;
@@ -43,6 +44,11 @@ class LiveRecordingTest extends
     {
         setProperty(RECORDING_EVENTS_ENABLED_PROP_NAME, "true");
         setProperty(RECORDING_EVENTS_CHANNEL_PROP_NAME, IPC_CHANNEL);
+        setProperty(AeronArchive.Configuration.CONTROL_CHANNEL_PROP_NAME,
+            "aeron:udp?endpoint=localhost:8010|term-length=64k");
+        setProperty(AeronArchive.Configuration.CONTROL_RESPONSE_CHANNEL_PROP_NAME,
+            "aeron:udp?endpoint=localhost:8020");
+        setProperty(Archive.Configuration.REPLICATION_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:8040");
     }
 
     @AfterEach
@@ -50,6 +56,9 @@ class LiveRecordingTest extends
     {
         clearProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
         clearProperty(RECORDING_EVENTS_CHANNEL_PROP_NAME);
+        clearProperty(AeronArchive.Configuration.CONTROL_CHANNEL_PROP_NAME);
+        clearProperty(AeronArchive.Configuration.CONTROL_RESPONSE_CHANNEL_PROP_NAME);
+        clearProperty(Archive.Configuration.REPLICATION_CHANNEL_PROP_NAME);
         IoUtil.delete(archiveDir, true);
     }
 

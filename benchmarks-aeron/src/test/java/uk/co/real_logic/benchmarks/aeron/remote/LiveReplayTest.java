@@ -15,16 +15,20 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
+import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.archive.client.AeronArchive.connect;
+import static java.lang.System.clearProperty;
+import static java.lang.System.setProperty;
 import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithEmbeddedDriver;
 
 class LiveReplayTest extends
@@ -33,9 +37,22 @@ class LiveReplayTest extends
 
     private File archiveDir;
 
-    @AfterEach
-    void afterEach()
+    @BeforeEach
+    void before()
     {
+        setProperty(AeronArchive.Configuration.CONTROL_CHANNEL_PROP_NAME,
+            "aeron:udp?endpoint=localhost:8010|term-length=64k");
+        setProperty(AeronArchive.Configuration.CONTROL_RESPONSE_CHANNEL_PROP_NAME,
+            "aeron:udp?endpoint=localhost:8020");
+        setProperty(Archive.Configuration.REPLICATION_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:8040");
+    }
+
+    @AfterEach
+    void after()
+    {
+        clearProperty(AeronArchive.Configuration.CONTROL_CHANNEL_PROP_NAME);
+        clearProperty(AeronArchive.Configuration.CONTROL_RESPONSE_CHANNEL_PROP_NAME);
+        clearProperty(Archive.Configuration.REPLICATION_CHANNEL_PROP_NAME);
         IoUtil.delete(archiveDir, true);
     }
 
