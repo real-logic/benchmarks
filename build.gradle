@@ -17,9 +17,9 @@
 plugins {
     id 'java-library'
     id 'checkstyle'
-    id 'com.github.ben-manes.versions' version '0.43.0'
+    id 'com.github.ben-manes.versions' version '0.44.0'
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
-    id 'com.google.protobuf' version '0.8.19' apply false
+    id 'com.google.protobuf' version '0.9.1' apply false
 }
 
 defaultTasks 'clean', 'build'
@@ -46,15 +46,15 @@ def toolchainCompiler = javaToolchains.compilerFor {
 
 def agronaVersion = '1.17.1'
 def aeronVersion = '1.40.0'
-def jmhVersion = '1.35'
+def jmhVersion = '1.36'
 def joptVersion = '5.0.4'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.4'
 def junitVersion = '5.9.1'
-def mockitoVersion = '4.8.1'
+def mockitoVersion = '4.9.0'
 def checkstyleVersion = '9.2.1'
-def grpcVersion = '1.50.2'
-def protobufVersion = '3.21.8'
+def grpcVersion = '1.51.0'
+def protobufVersion = '3.21.9'
 def errorproneVersion = '2.10.0'
 def kafkaVersion = '3.3.1'
 def zookeeperVersion = '3.7.0'
