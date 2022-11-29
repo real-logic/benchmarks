@@ -19,7 +19,7 @@ plugins {
     id 'checkstyle'
     id 'com.github.ben-manes.versions' version '0.44.0'
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
-    id 'com.google.protobuf' version '0.8.19' apply false
+    id 'com.google.protobuf' version '0.9.1' apply false
 }
 
 defaultTasks 'clean', 'build'
@@ -185,14 +185,15 @@ project(':benchmarks-grpc') {
 
     sourceSets {
         main {
-            java {
-                srcDirs += [
-                    'build/generated/source/proto/main/java',
-                    'build/generated/source/proto/main/grpc'
-                ]
+            proto {
+                srcDir 'source/main/proto'
+                srcDir 'build/generated/source/proto/main/java'
+                srcDir 'build/generated/source/proto/main/grpc'
             }
         }
     }
+
+    tasks.processResources.dependsOn('generateProto')
 }
 
 project(':benchmarks-kafka') {
