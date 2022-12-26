@@ -21,6 +21,8 @@
 # $ ./benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,288,1344" "aeron/echo-client"
 ##
 
+set -euxo pipefail
+
 RUNS=3
 ITERATIONS=10
 MESSAGE_RATE=(100000)
