@@ -61,6 +61,7 @@ enable_c_driver=1
 enable_java_driver=1
 onload="onload --profile=latency --force-profiles "
 file_sync_levels=(0 2)
+mtu_list=(1408 8192)
 results_file="aeron-live-recording-results"
 
 while [[ $# -gt 0 ]]
@@ -95,8 +96,14 @@ do
     shift
     shift
     ;;
+  --mtu)
+    read -ra mtu_list <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
   -h|--help)
-    echo "${0} [--no-onload] [--onload \"\$onload_command\"] [--no-c-driver] [--no-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"]"
+    echo "${0} [--no-onload] [--onload \"\$onload_command\"] [--no-c-driver] [--no-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
     exit
     ;;
   *)
@@ -164,50 +171,55 @@ do
 
   for fsync in "${file_sync_levels[@]}"
   do
-    test="live-recording-${scenario}-fsync-${fsync}"
-    echo -e "\n Testing scenario: '${test}'\n"
+    for mtu in "${mtu_list[@]}"
+    do
+      test="live-recording-${scenario}-fsync-${fsync}-mtu-${mtu}"
+      echo -e "\n Testing scenario: '${test}'\n"
 
-    client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
-    server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
+      client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
+      server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
 
-    start_client="\
-    export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
-    ; $(kill_java_process "${client_class_name}") \
-    ; ${client_driver} \
-    && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/live-recording-client & \
-    $(await_java_process_start "${client_class_name}") \
-    ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
-    ; $(pin_thread \${pid} "archive-recorde" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_RECORDER_CPU_CORE}") \
-    ; $(pin_thread \${pid} "archive-replaye" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_REPLAYER_CPU_CORE}") \
-    ; $(pin_thread \${pid} "archive-conduct" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_CONDUCTOR_CPU_CORE}") \
-    && tail --pid=\$! -f /dev/null && kill -9 \${driver_pid}; wait"
+      start_client="\
+      export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
+      ; $(kill_java_process "${client_class_name}") \
+      ; ${client_driver} \
+      && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/live-recording-client & \
+      $(await_java_process_start "${client_class_name}") \
+      ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
+      ; $(pin_thread \${pid} "archive-recorde" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_RECORDER_CPU_CORE}") \
+      ; $(pin_thread \${pid} "archive-replaye" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_REPLAYER_CPU_CORE}") \
+      ; $(pin_thread \${pid} "archive-conduct" "${CLIENT_LOAD_TEST_RIG_ARCHIVE_CONDUCTOR_CPU_CORE}") \
+      && tail --pid=\$! -f /dev/null && kill -9 \${driver_pid}; wait"
 
-    start_server="\
-    export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-    ; $(kill_java_process "${server_class_name}") \
-    ; ${server_driver} \
-    && export JVM_OPTS=\"\
-    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${SERVER_INTERFACE} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${SOURCE_IP}:13100|interface=${SERVER_INTERFACE}\" \
-    && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
-    $(await_java_process_start "${server_class_name}") \
-    ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
-    && tail --pid=\$! -f /dev/null"
+      start_server="\
+      export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
+      ; $(kill_java_process "${server_class_name}") \
+      ; ${server_driver} \
+      && export JVM_OPTS=\"\
+      -Daeron.mtu.length=${mtu} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${SERVER_INTERFACE} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${SOURCE_IP}:13100|interface=${SERVER_INTERFACE}\" \
+      && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
+      $(await_java_process_start "${server_class_name}") \
+      ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
+      && tail --pid=\$! -f /dev/null"
 
-    stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
+      stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
 
-    run_benchmarks \
-      "${start_client}" \
-      "${start_server}" \
-      "${stop_server}" \
-      "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
-      "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-      "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${CLIENT_INTERFACE}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${SOURCE_IP}:13100|interface=${CLIENT_INTERFACE}" \
-      "aeron.archive.dir=${ARCHIVE_DIR}" \
-      "aeron.archive.file.sync.level=${fsync}" \
-      "aeron.archive.catalog.file.sync.level=${fsync}" \
-      "aeron.archive.recording.events.enabled=true"
+      run_benchmarks \
+        "${start_client}" \
+        "${start_server}" \
+        "${stop_server}" \
+        "aeron.mtu.length=${mtu}" \
+        "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
+        "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+        "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${CLIENT_INTERFACE}" \
+        "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${SOURCE_IP}:13100|interface=${CLIENT_INTERFACE}" \
+        "aeron.archive.dir=${ARCHIVE_DIR}" \
+        "aeron.archive.file.sync.level=${fsync}" \
+        "aeron.archive.catalog.file.sync.level=${fsync}" \
+        "aeron.archive.recording.events.enabled=true"
+    done
   done
 done
 
