@@ -216,7 +216,7 @@ function build_drivers()
       # C driver with DPDK
       commands+=("${create_benchmark_props}; \
         export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6}\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
+        && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ats}" -eq 1 ]
@@ -228,7 +228,7 @@ function build_drivers()
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-        && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "${2}" "${3}" "${4}" "${5}")")
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
 
       if [ "${enable_onload}" -eq 1 ]
       then
@@ -261,6 +261,11 @@ function build_drivers()
         # C driver with ATS and DPDK
         commands+=("${create_benchmark_props}; \
           export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6}\" \
+          AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+          AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+          AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+          AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+          AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
           && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "${2}" "${3}" "${4}" "${5}")")
       fi
     fi
