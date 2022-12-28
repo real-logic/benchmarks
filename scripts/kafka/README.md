@@ -20,10 +20,6 @@ Kafka persists messages one can change configuration to obtain different test sc
 
 Running the benchmarks
 ----------------------
-1. Start Zookeeper
-    ```bash
-    ./zookeeper-start
-    ```
 
 1. Start Kafka
     ```bash
@@ -35,7 +31,7 @@ Running the benchmarks
     ./client
     ```
 
-To stop Zookeeper and Kafka use the `stop-all` script.
+To stop Kafka use the `stop-all` script.
 
 Configuration
 -------------
@@ -59,7 +55,6 @@ Besides the properties listed above there are several config files:
 * `server.properties` - Kafka server (broker) config.
 * `client.properties` - client-side config (i.e. consumer/producer configs).
 * `topic.properties` - topic configuration.
-* `zookeeper.properties` - Zookeeper config.
 * `log4j.properties` - Log4j config for Kafka.
 
 

@@ -32,7 +32,6 @@ required_vars=(
   "SERVER_BENCHMARKS_PATH"
   "SERVER_JAVA_HOME"
   "SERVER_HOST"
-  "SERVER_ZOOKEEPER_CPU_CORES"
   "SERVER_KAFKA_CPU_CORES"
   "SERVER_KAFKA_DIR")
 
@@ -125,10 +124,6 @@ do
       && tail --pid=\$! -f /dev/null"
 
     server_scripts_path="${SERVER_BENCHMARKS_PATH}/scripts/kafka"
-    start_zookeeper="cp ${server_scripts_path}/zookeeper.properties ${server_scripts_path}/zookeeper.properties.bak \
-    && echo \"dataDir=${SERVER_KAFKA_DIR}/zookeeper\" >> ${server_scripts_path}/zookeeper.properties \
-    && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-    && ${onload} taskset -c ${SERVER_ZOOKEEPER_CPU_CORES} ${server_scripts_path}/zookeeper-start"
 
     start_kafka="cp ${server_scripts_path}/server.properties ${server_scripts_path}/server.properties.bak \
     && echo -e \"log.dirs=${SERVER_KAFKA_DIR}/logs\n\
@@ -140,12 +135,11 @@ do
 
     stop_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
     && KAFKA_DATA_DIR=\"${SERVER_KAFKA_DIR}\" ${server_scripts_path}/stop-all; \
-    mv ${server_scripts_path}/zookeeper.properties.bak ${server_scripts_path}/zookeeper.properties; \
     mv ${server_scripts_path}/server.properties.bak ${server_scripts_path}/server.properties"
 
     run_benchmarks \
       "${start_client}" \
-      "${stop_server}; ${start_zookeeper} & ${start_kafka}" \
+      "${stop_server}; ${start_kafka}" \
       "${stop_server}" \
       "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
       "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \

@@ -22,10 +22,6 @@ rem Kill Kafka process
 call :killJavaProcess "kafka.Kafka"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-rem Kill Zookeeper process
-call :killJavaProcess "org.apache.zookeeper.server.quorum.QuorumPeerMain"
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
 rem Finally delete the data directory
 if "%KAFKA_DATA_DIR%" == "" (
   set "KAFKA_DATA_DIR=%DIR%\..\kafka-data"
