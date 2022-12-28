@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import static java.lang.String.valueOf;
-import static org.agrona.CloseHelper.closeAll;
 
 class KafkaEmbeddedCluster implements AutoCloseable
 {
@@ -106,11 +105,7 @@ class KafkaEmbeddedCluster implements AutoCloseable
 
     public void close()
     {
-        closeAll(
-            () ->
-            {
-                kafka.shutdown();
-                kafka.awaitShutdown();
-            });
+        kafka.shutdown();
+        kafka.awaitShutdown();
     }
 }

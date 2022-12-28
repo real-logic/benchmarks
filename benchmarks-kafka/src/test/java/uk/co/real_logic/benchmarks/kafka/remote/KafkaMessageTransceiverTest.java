@@ -18,14 +18,17 @@ package uk.co.real_logic.benchmarks.kafka.remote;
 import org.HdrHistogram.Histogram;
 import org.agrona.concurrent.SystemNanoClock;
 import org.apache.kafka.common.config.SslConfigs;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import uk.co.real_logic.benchmarks.remote.*;
+import uk.co.real_logic.benchmarks.remote.Configuration;
+import uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver;
+import uk.co.real_logic.benchmarks.remote.LoadTestRig;
+import uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
@@ -39,16 +42,16 @@ import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.PARTITION_SEL
 
 class KafkaMessageTransceiverTest
 {
-    private static KafkaEmbeddedCluster cluster;
+    private KafkaEmbeddedCluster cluster;
 
-    @BeforeAll
-    static void beforeAll(final @TempDir Path tempDir) throws Exception
+    @BeforeEach
+    void setup(final @TempDir Path tempDir) throws Exception
     {
         cluster = new KafkaEmbeddedCluster(13501, 13502, 13503, tempDir);
     }
 
-    @AfterAll
-    static void afterAll()
+    @AfterEach
+    void tearDown()
     {
         cluster.close();
     }
