@@ -44,7 +44,7 @@ class KafkaMessageTransceiverTest
     @BeforeAll
     static void beforeAll(final @TempDir Path tempDir) throws Exception
     {
-        cluster = new KafkaEmbeddedCluster(13500, 13501, 13502, tempDir);
+        cluster = new KafkaEmbeddedCluster(13501, 13502, 13503, tempDir);
     }
 
     @AfterAll

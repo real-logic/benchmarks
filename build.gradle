@@ -57,7 +57,6 @@ def grpcVersion = '1.51.1'
 def protobufVersion = '3.21.12'
 def errorproneVersion = '2.10.0'
 def kafkaVersion = '3.3.1'
-def zookeeperVersion = '3.7.0'
 def slf4jVersion = '1.7.36'
 def scalaVersion = '2.13.7'
 def jacksonVersion = '2.13.0'
@@ -84,7 +83,6 @@ allprojects {
                   "org.slf4j:slf4j-log4j12:${slf4jVersion}",
                   "org.scala-lang:scala-library:${scalaVersion}",
                   "org.scala-lang:scala-reflect:${scalaVersion}",
-                  "org.apache.zookeeper:zookeeper:${zookeeperVersion}",
                   "net.sf.jopt-simple:jopt-simple:${joptVersion}",
                   "com.google.protobuf:protobuf-java:${protobufVersion}",
                   "com.google.errorprone:error_prone_annotations:${errorproneVersion}"
@@ -200,11 +198,11 @@ project(':benchmarks-kafka') {
     dependencies {
         api project(':benchmarks-api')
         implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
-        implementation "org.apache.zookeeper:zookeeper:${zookeeperVersion}"
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
         runtimeOnly "org.apache.kafka:kafka_2.13:${kafkaVersion}"
         runtimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
         testImplementation "org.apache.kafka:kafka_2.13:${kafkaVersion}"
+        testImplementation "org.apache.kafka:kafka-server-common:${kafkaVersion}"
         testRuntimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
     }
 }

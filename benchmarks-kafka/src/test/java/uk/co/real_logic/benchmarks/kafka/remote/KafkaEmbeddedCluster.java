@@ -17,14 +17,14 @@ package uk.co.real_logic.benchmarks.kafka.remote;
 
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaConfig$;
-import kafka.server.KafkaServer;
+import kafka.server.KafkaRaftServer;
+import kafka.tools.StorageTool;
+import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.utils.Time;
-import org.apache.zookeeper.server.NIOServerCnxnFactory;
-import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.kafka.server.common.MetadataVersion;
 import scala.Option;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 
-import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -34,50 +34,49 @@ import static org.agrona.CloseHelper.closeAll;
 
 class KafkaEmbeddedCluster implements AutoCloseable
 {
-    private final int port;
     private final Path logDir;
-    private final KafkaServer kafka;
-    private final NIOServerCnxnFactory factory;
-    private final ZooKeeperServer zookeeper;
+    private final KafkaRaftServer kafka;
 
-    KafkaEmbeddedCluster(final int zookeeperPort, final int httpPort, final int sslPort, final Path tempDir)
+    KafkaEmbeddedCluster(final int httpPort, final int sslPort, final int controllerPort, final Path tempDir)
         throws Exception
     {
-        this.port = httpPort;
-
         logDir = tempDir.resolve("log-dir");
         Files.createDirectory(logDir);
 
-        final Path zookeeperDir = tempDir.resolve("zookeeper");
-        final Path dataDir = zookeeperDir.resolve("data-dir");
-        final Path snapshotDir = zookeeperDir.resolve("snapshot-dir");
-        Files.createDirectories(dataDir);
-        Files.createDirectories(snapshotDir);
+        final Uuid clusterId = Uuid.randomUuid();
+        final KafkaConfig config = createConfig(httpPort, sslPort, controllerPort);
 
-        zookeeper = new ZooKeeperServer(dataDir.toFile(), snapshotDir.toFile(), 30000);
-        zookeeper.setMinSessionTimeout(-1);
-        zookeeper.setMaxSessionTimeout(-1);
-        factory = new NIOServerCnxnFactory();
-        factory.configure(new InetSocketAddress("localhost", zookeeperPort), 0);
-        factory.startup(zookeeper);
+        StorageTool.formatCommand(
+            System.out,
+            StorageTool.configToLogDirectories(config),
+            StorageTool.buildMetadataProperties(clusterId.toString(), config),
+            MetadataVersion.MINIMUM_BOOTSTRAP_VERSION,
+            false);
 
-        final KafkaConfig config = createConfig(httpPort, sslPort, zookeeperPort);
-        kafka = new KafkaServer(config, Time.SYSTEM, Option.empty(), false);
+        kafka = new KafkaRaftServer(config, Time.SYSTEM, Option.empty());
         kafka.startup();
     }
 
-    private KafkaConfig createConfig(final int httpPort, final int sslPort, final int zookeeperPort)
+    private KafkaConfig createConfig(final int httpPort, final int sslPort, final int controllerPort)
     {
         final Properties props = new Properties();
+        final int nodeId = 1;
 
+
+        props.put(KafkaConfig$.MODULE$.ProcessRolesProp(), "broker,controller");
+        props.put(KafkaConfig$.MODULE$.QuorumVotersProp(), "1@localhost:" + controllerPort);
+        props.put(KafkaConfig$.MODULE$.ControllerListenerNamesProp(), "CONTROLLER");
+        props.put(KafkaConfig$.MODULE$.ListenersProp(),
+            "PLAINTEXT://localhost:" + httpPort +
+            ",SSL://localhost:" + sslPort +
+            ",CONTROLLER://localhost:" + controllerPort);
+        props.put(KafkaConfig$.MODULE$.ListenerSecurityProtocolMapProp(),
+            "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL");
+        props.put(KafkaConfig$.MODULE$.NodeIdProp(), nodeId);
+        props.put(KafkaConfig$.MODULE$.BrokerIdProp(), nodeId);
         props.put(KafkaConfig$.MODULE$.LogDirProp(), logDir.toAbsolutePath().toString());
-        props.put(KafkaConfig$.MODULE$.ZkConnectProp(), "localhost:" + zookeeperPort);
-        props.put(KafkaConfig$.MODULE$.ZkSessionTimeoutMsProp(), valueOf(300000));
-        props.put(KafkaConfig$.MODULE$.ZkConnectionTimeoutMsProp(), valueOf(60000));
-        props.put(KafkaConfig$.MODULE$.BrokerIdProp(), 0);
-        final String listeners = "PLAINTEXT://localhost:" + httpPort + ",SSL://localhost:" + sslPort;
-        props.put(KafkaConfig$.MODULE$.ListenersProp(), listeners);
-        props.put(KafkaConfig$.MODULE$.AdvertisedListenersProp(), listeners);
+        props.put(KafkaConfig$.MODULE$.AdvertisedListenersProp(),
+            "PLAINTEXT://localhost:" + httpPort + ",SSL://localhost:" + sslPort);
         final Path certificatesPath = Configuration.tryResolveCertificatesDirectory();
         props.put(KafkaConfig$.MODULE$.SslTruststoreLocationProp(),
             certificatesPath.resolve("truststore.p12").toString());
@@ -112,9 +111,6 @@ class KafkaEmbeddedCluster implements AutoCloseable
             {
                 kafka.shutdown();
                 kafka.awaitShutdown();
-            },
-            factory::shutdown,
-            () -> zookeeper.shutdown(true),
-            null != zookeeper.getZKDatabase() ? () -> zookeeper.getZKDatabase().close() : null);
+            });
     }
 }
