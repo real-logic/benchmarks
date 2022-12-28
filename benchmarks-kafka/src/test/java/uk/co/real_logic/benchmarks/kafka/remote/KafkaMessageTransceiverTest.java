@@ -22,6 +22,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -40,6 +42,7 @@ import static org.apache.kafka.clients.CommonClientConfigs.SECURITY_PROTOCOL_CON
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.kafka.remote.KafkaConfig.PARTITION_SELECTION_PROP_NAME;
 
+@DisabledOnOs(OS.WINDOWS) // Temporary until https://issues.apache.org/jira/browse/KAFKA-14273 is fixed
 class KafkaMessageTransceiverTest
 {
     private KafkaEmbeddedCluster cluster;
