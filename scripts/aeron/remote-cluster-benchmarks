@@ -375,9 +375,9 @@ do
         do
           for messageLength in "${MESSAGE_LENGTH[@]}"
           do
-            for (( i=1; i<=RUNS; i++ ))
+            for (( i=0; i<RUNS; i++ ))
             do
-              echo -e '\n### Benchmark run #'"${i}"' ...\n'
+              echo -e '\n### Benchmark run #'"$((i + 1))"' ...\n'
 
               start_client="export JVM_OPTS=\"\
               -Daeron.mtu.length=${mtu} \

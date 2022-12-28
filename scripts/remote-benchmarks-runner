@@ -104,9 +104,9 @@ function run_benchmarks()
     do
       for messageLength in "${MESSAGE_LENGTH[@]}"
       do
-        for (( i=1; i<=RUNS; i++ ))
+        for (( i=0; i<RUNS; i++ ))
         do
-          echo -e '\n### Benchmark run #'${i}' ...\n'
+          echo -e '\n### Benchmark run #'$((i + 1))' ...\n'
 
           local config_options=("${config[@]}")
           config_options+=("uk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT}")
