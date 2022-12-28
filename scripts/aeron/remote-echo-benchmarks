@@ -201,18 +201,6 @@ function build_drivers()
 
     if [ "${enable_dpdk}" -eq 1 ]
     then
-      if [ -z "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" ];
-      then
-        echo 'CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS must be set if DPDK is enabled'
-        exit 1
-      fi
-
-      if [ -z "${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" ];
-      then
-        echo 'SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS must be set if DPDK is enabled'
-        exit 1
-      fi
-
       # C driver with DPDK
       commands+=("${create_benchmark_props}; \
         export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6}\" \
@@ -317,6 +305,17 @@ then
   if [ "${enable_dpdk}" -eq 1 ]
   then
     scenarios+=("c-dpdk")
+    if [ -z "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" ];
+    then
+      echo 'CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS must be set if DPDK is enabled'
+      exit 1
+    fi
+
+    if [ -z "${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" ];
+    then
+      echo 'SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS must be set if DPDK is enabled'
+      exit 1
+    fi
   fi
 
   if [ "${enable_ats}" -eq 1 ]
