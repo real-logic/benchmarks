@@ -91,6 +91,7 @@ enable_c_driver=1
 no_c_driver=0
 enable_onload=1
 enable_ef_vi=1
+enable_dpdk=1
 enable_ats=1
 file_sync_levels=(0 2)
 mtu_list=(1408 8192)
@@ -129,6 +130,10 @@ do
     enable_ef_vi=0
     shift
     ;;
+  --no-dpdk)
+    enable_dpdk=0
+    shift
+    ;;
   --no-ats)
     enable_ats=0
     shift
@@ -152,7 +157,7 @@ do
     shift
     ;;
   -h | --help)
-    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-ats] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
+    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--no-ats] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
     exit
     ;;
   *)
@@ -266,6 +271,28 @@ then
       && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
   fi
 
+  if [ "${enable_dpdk}" -eq 1 ]
+  then
+    scenarios+=("c-dpdk")
+    commands+=("${create_benchmark_props}; \
+      export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var\" \
+      && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
+
+    for ((n = 0; n < CLUSTER_SIZE; n++))
+    do
+      node_var="NODE${n}_AERON_DPDK_GATEWAY_IPV4_ADDRESS"
+      if [[ -z "${!node_var+''}" ]]; then
+        echo "env var '${node_var}' must be set"
+        exit 1
+      fi
+    done
+
+    if [[ -z "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" ]]; then
+      echo "env var 'CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS' must be set"
+      exit 1
+    fi
+  fi
+
   if [ "${enable_ats}" -eq 1 ]
   then
     scenarios+=("c-ats")
@@ -302,6 +329,19 @@ then
         AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
         && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
     fi
+
+    if [ "${enable_dpdk}" -eq 1 ]
+    then
+      scenarios+=("c-ats-dpdk")
+      commands+=("${create_benchmark_props}; \
+        export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var\" \
+        AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+        && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var" )")
+    fi
   fi
 fi
 
@@ -313,6 +353,7 @@ do
   client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
   client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
   client_driver="${client_driver//driver_receiver_cpu_core_var/${CLIENT_DRIVER_RECEIVER_CPU_CORE}}"
+  client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
 
   for fsync in "${file_sync_levels[@]}"
   do
@@ -379,11 +420,13 @@ do
                 server_driver_conductor_cpu_core=NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
                 server_driver_sender_cpu_core=NODE${n}_DRIVER_SENDER_CPU_CORE
                 server_driver_receiver_cpu_core=NODE${n}_DRIVER_RECEIVER_CPU_CORE
+                server_driver_aeron_dpdk_gateway_ipv4_address=NODE${n}_AERON_DPDK_GATEWAY_IPV4_ADDRESS
                 server_driver="${commands[index]//benchmarks_path_var/${!server_benchmarks_path}}"
                 server_driver="${server_driver//driver_other_cpu_cores_var/${!server_driver_other_cpu_cores}}"
                 server_driver="${server_driver//driver_conductor_cpu_core_var/${!server_driver_conductor_cpu_core}}"
                 server_driver="${server_driver//driver_sender_cpu_core_var/${!server_driver_sender_cpu_core}}"
                 server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
+                server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
                 execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${mtu}" "${n}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
               done
 
