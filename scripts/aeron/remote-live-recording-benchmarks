@@ -140,13 +140,15 @@ function build_drivers()
   if [ "${enable_c_driver}" -eq 1 ]
   then
     commands+=("touch ${scripts_path}/benchmark.properties; \
-    $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
+      export AERON_MD=\"${AERON_MD:-${scripts_path}/aeronmd}\" \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
 
     if [ "${enable_ef_vi}" -eq 1 ]
     then
       # C driver with ef_vi
       commands+=("${create_benchmark_props}; \
-        export AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
+        export AERON_MD=\"${AERON_MD:-${scripts_path}/aeronmd}\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
         AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
         && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
@@ -156,7 +158,8 @@ function build_drivers()
     then
       # C driver with DPDK
       commands+=("${create_benchmark_props}; \
-        export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6}\" \
+        export AERON_MD=\"${AERON_MD:-${scripts_path}/aeronmd}\" \
+        AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6}\" \
         && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "${2}" "${3}" "${4}" "${5}")")
     fi
   fi
