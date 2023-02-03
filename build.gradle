@@ -17,7 +17,7 @@
 plugins {
     id 'java-library'
     id 'checkstyle'
-    id 'com.github.ben-manes.versions' version '0.44.0'
+    id 'com.github.ben-manes.versions' version '0.45.0'
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
     id 'com.google.protobuf' version '0.9.2' apply false
 }
