@@ -80,7 +80,7 @@ do
   esac
 done
 
-if [ -z "${outputFileName+''}" ];
+if [[ -z "${outputFileName+''}" ]];
 then
   echo 'Flag -o/--output-file is required'
   exit 1

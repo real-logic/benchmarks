@@ -24,10 +24,10 @@ killJavaProcess() {
     local pid
     pid=$(pgrep -l -f "${name}" | awk '/java/{print $1}')
 
-    if [ -z "${pid}" ]; then
+    if [[ -z "${pid}" ]]; then
       echo "${name} is not running"
     else
-      kill -9 ${pid}
+      kill -9 "${pid}"
     fi
 }
 
@@ -35,7 +35,7 @@ killJavaProcess() {
 killJavaProcess "kafka.Kafka"
 
 # Delete data directory
-if [ -z "${KAFKA_DATA_DIR}" ]
+if [[ ! -v "${KAFKA_DATA_DIR}" ]]
 then
   KAFKA_DATA_DIR="${DIR}/../kafka-data"
 fi

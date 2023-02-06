@@ -17,14 +17,15 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-if [ -z "${MESSAGE_RATE}" ];
+if [[ ! -v MESSAGE_RATE ]];
 then
   export MESSAGE_RATE=25000
 fi
 
-if [ -z "${SERVER_PORT}" ];
+serverPort=13400
+if [[ -v SERVER_PORT && -n ${SERVER_PORT} ]];
 then
-  SERVER_PORT=13400
+  serverPort=${SERVER_PORT}
 fi
 
 source "${DIR}/../remote-benchmarks-runner"
@@ -117,7 +118,7 @@ do
   start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
   && export JVM_OPTS=\"\
   -Duk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST} \
-  -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT} \
+  -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort} \
   -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
   -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}\" \
   && ${onload} taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
@@ -131,7 +132,7 @@ do
     "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
     "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
     "uk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST}" \
-    "uk.co.real_logic.benchmarks.grpc.remote.server.port=${SERVER_PORT}" \
+    "uk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort}" \
     "uk.co.real_logic.benchmarks.grpc.remote.certificates=${CLIENT_BENCHMARKS_PATH}/certificates" \
     "uk.co.real_logic.benchmarks.grpc.remote.tls=${tls}"
 done

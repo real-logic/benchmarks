@@ -206,13 +206,13 @@ then
   then
     scenarios+=("c-dpdk")
 
-    if [ -z "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" ];
+    if [[ -z "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS+''}" ]];
     then
       echo 'CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS must be set if DPDK is enabled'
       exit 1
     fi
 
-    if [ -z "${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" ];
+    if [[ -z "${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS+''}" ]];
     then
       echo 'SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS must be set if DPDK is enabled'
       exit 1
