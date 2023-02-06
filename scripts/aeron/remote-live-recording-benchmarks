@@ -105,6 +105,7 @@ do
     shift
     ;;
   --mtu)
+    IFS=','
     read -ra mtu_list <<< "${2}"
     unset IFS;
     shift
