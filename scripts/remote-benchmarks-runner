@@ -36,59 +36,78 @@ then
   exit 1
 fi
 
-if [[ ! -v SSH_CONNECTION_ATTEMPTS ]];
+sshConnectionAttempts=10
+if [[ -v SSH_CONNECTION_ATTEMPTS && -n ${SSH_CONNECTION_ATTEMPTS} ]];
 then
-  SSH_CONNECTION_ATTEMPTS=10
+  sshConnectionAttempts=${SSH_CONNECTION_ATTEMPTS}
 fi
 
-if [[ ! -v SSH_CONNECT_TIMEOUT ]];
+sshConnectTimeout=30
+if [[ -v SSH_CONNECT_TIMEOUT && -n ${SSH_CONNECT_TIMEOUT} ]];
 then
-  SSH_CONNECT_TIMEOUT=30
+  sshConnectTimeout=${SSH_CONNECT_TIMEOUT}
 fi
 
-if [[ ! -v SSH_SERVER_ALIVE_INTERVAL ]];
+sshServerAliveInterval=600
+if [[ -v SSH_SERVER_ALIVE_INTERVAL && -n ${SSH_SERVER_ALIVE_INTERVAL} ]];
 then
-  SSH_SERVER_ALIVE_INTERVAL=600
+  sshServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL}
 fi
 
-if [[ ! -v RUNS ]];
+runs=3
+if [[ -v RUNS && -n ${RUNS} ]];
 then
-  RUNS=3
+  runs=${RUNS}
 fi
 
-if [[ ! -v ITERATIONS ]];
+iterations=10
+if [[ -v ITERATIONS && -n ${ITERATIONS} ]];
 then
-  ITERATIONS=10
+  iterations=${ITERATIONS}
 fi
 
-if [[ ! -v WARMUP_ITERATIONS ]];
+warmupIterations=10
+if [[ -v WARMUP_ITERATIONS && -n ${WARMUP_ITERATIONS} ]];
 then
-  WARMUP_ITERATIONS=10
+  warmupIterations=${WARMUP_ITERATIONS}
 fi
 
-if [[ ! -v WARMUP_MESSAGE_RATE ]];
+warmupMessageRates=(10000)
+if [[ -v WARMUP_MESSAGE_RATE && -n ${WARMUP_MESSAGE_RATE} ]];
 then
-  WARMUP_MESSAGE_RATE=(10000)
+  IFS=',';
+  read -ra warmupMessageRates <<< "${WARMUP_MESSAGE_RATE}"
+  unset IFS;
 fi
 
-if [[ ! -v MESSAGE_RATE ]];
+messageRates=(100000)
+if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
 then
-  MESSAGE_RATE=(100000)
+  IFS=',';
+  read -ra messageRates <<< "${MESSAGE_RATE}"
+  unset IFS;
 fi
 
-if [[ ! -v BURST_SIZE ]];
+burstSizes=(1 10)
+if [[ -v BURST_SIZE && -n ${BURST_SIZE} ]];
 then
-  BURST_SIZE=(1 10)
+  IFS=',';
+  read -ra burstSizes <<< "${BURST_SIZE}"
+  unset IFS;
 fi
 
-if [[ ! -v MESSAGE_LENGTH ]];
+messageLengths=(32 288 1344)
+if [[ -v MESSAGE_LENGTH && -n ${MESSAGE_LENGTH} ]];
 then
-  MESSAGE_LENGTH=(32 288 1344)
+  IFS=',';
+  read -ra messageLengths <<< "${MESSAGE_LENGTH}"
+  unset IFS;
 fi
 
-if [[ ! -v CONNECTION_TIMEOUT ]];
+connectionTimeout="60s"
+if [[ -v CONNECTION_TIMEOUT && -n ${CONNECTION_TIMEOUT} ]];
 then
-  CONNECTION_TIMEOUT="60s"
+  connectionTimeout=${CONNECTION_TIMEOUT}
 fi
 
 function run_benchmarks()
@@ -98,22 +117,22 @@ function run_benchmarks()
   local server_stop_command="${3}"
   local config=("${@:4}")
 
-  for rate_index in "${!MESSAGE_RATE[@]}"
+  for rate_index in "${!messageRates[@]}"
   do
-    for burstSize in "${BURST_SIZE[@]}"
+    for burstSize in "${burstSizes[@]}"
     do
-      for messageLength in "${MESSAGE_LENGTH[@]}"
+      for messageLength in "${messageLengths[@]}"
       do
-        for (( i=0; i<RUNS; i++ ))
+        for (( i=0; i<runs; i++ ))
         do
           echo -e '\n### Benchmark run #'$((i + 1))' ...\n'
 
           local config_options=("${config[@]}")
-          config_options+=("uk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.warmup.iterations=${WARMUP_ITERATIONS}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.warmup.message.rate=${WARMUP_MESSAGE_RATE[rate_index]}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}")
-          config_options+=("uk.co.real_logic.benchmarks.remote.message.rate=${MESSAGE_RATE[rate_index]}")
+          config_options+=("uk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.warmup.iterations=${warmupIterations}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.warmup.message.rate=${warmupMessageRates[rate_index]}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.iterations=${iterations}")
+          config_options+=("uk.co.real_logic.benchmarks.remote.message.rate=${messageRates[rate_index]}")
           config_options+=("uk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }")
           config_options+=("uk.co.real_logic.benchmarks.remote.message.length=${messageLength# }")
 
@@ -145,10 +164,10 @@ function download_results()
   local dest_dir="${3}"
 
   execute_remote_command "${SSH_CLIENT_NODE}" "rm -f \"${archive}\"; cd \"${results_dir}\" && tar -czf \"${archive}\" . && exit"
-  scp -i ${SSH_KEY_FILE} \
-   -o ConnectionAttempts=${SSH_CONNECTION_ATTEMPTS} \
-   -o ConnectTimeout=${SSH_CONNECT_TIMEOUT} \
-   -o ServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL} \
+  scp -i "${SSH_KEY_FILE}" \
+   -o ConnectionAttempts="${sshConnectionAttempts}" \
+   -o ConnectTimeout="${sshConnectTimeout}" \
+   -o ServerAliveInterval="${sshServerAliveInterval}" \
    "${SSH_USER}"@"${SSH_CLIENT_NODE}":"${archive}" "${dest_dir}"
 }
 
@@ -190,9 +209,9 @@ function execute_remote_command()
   local server=$1
   local command=$2
   ssh -i "${SSH_KEY_FILE}" \
-   -o ConnectionAttempts=${SSH_CONNECTION_ATTEMPTS} \
-   -o ConnectTimeout=${SSH_CONNECT_TIMEOUT} \
-   -o ServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL} \
+   -o ConnectionAttempts="${sshConnectionAttempts}" \
+   -o ConnectTimeout="${sshConnectTimeout}" \
+   -o ServerAliveInterval="${sshServerAliveInterval}" \
    "${SSH_USER}"@"${server}" \
    "${command}"
 }
