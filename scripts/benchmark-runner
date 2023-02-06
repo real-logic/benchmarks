@@ -23,49 +23,49 @@
 
 set -euxo pipefail
 
-RUNS=3
-ITERATIONS=10
-MESSAGE_RATE=(100000)
-BURST_SIZE=(1 10)
-MESSAGE_LENGTH=(32 288 1344)
+runs=3
+iterations=10
+messageRates=(100000)
+burstSizes=(1 10)
+messageLengths=(32 288 1344)
 
 while [[ $# -gt 0 ]]
 do
   option="${1}"
   case ${option} in
     -o|--output-file)
-      OUTPUT_FILE_NAME="${2}";
+      outputFileName="${2}";
       shift
       shift
       ;;
     -m|--message-rate)
       IFS=',';
-      read -ra MESSAGE_RATE <<< "${2}"
+      read -ra messageRates <<< "${2}"
       unset IFS;
       shift
       shift
       ;;
     -b|--burst-size)
       IFS=',';
-      read -ra BURST_SIZE <<< "${2}"
+      read -ra burstSizes <<< "${2}"
       unset IFS;
       shift
       shift
       ;;
     -l|--message-length)
       IFS=',';
-      read -ra MESSAGE_LENGTH <<< "${2}"
+      read -ra messageLengths <<< "${2}"
       unset IFS;
       shift
       shift
       ;;
     -i|--iterations)
-      ITERATIONS="${2}";
+      iterations="${2}";
       shift
       shift
       ;;
     -r|--runs)
-      RUNS="${2}";
+      runs="${2}";
       shift
       shift
       ;;
@@ -74,13 +74,13 @@ do
       exit
       ;;
     *)
-      COMMAND="${1}"
+      command="${1}"
       shift
       ;;
   esac
 done
 
-if [ -z "${OUTPUT_FILE_NAME}" ];
+if [ -z "${outputFileName+''}" ];
 then
   echo 'Flag -o/--output-file is required'
   exit 1
@@ -88,25 +88,23 @@ fi
 
 EXISTING_JVM_OPTS=${JVM_OPTS}
 
-for messageRate in "${MESSAGE_RATE[@]}"
+for messageRate in "${messageRates[@]}"
 do
-  for burst in "${BURST_SIZE[@]}"
+  for burst in "${burstSizes[@]}"
   do
-    for messageLength in "${MESSAGE_LENGTH[@]}"
+    for messageLength in "${messageLengths[@]}"
     do
-      for (( r=1; r<=RUNS; r++ ))
+      for (( r=1; r<=runs; r++ ))
       do
-        echo -e '\n#######################'
-        echo 'Benchmark run #'${r}' ...'
-        echo '#######################'
+        echo -e '\n### Benchmark run #'$((r + 1))' ...\n'
 
         JVM_OPTS="${EXISTING_JVM_OPTS} \
-        -Duk.co.real_logic.benchmarks.remote.output.file=${OUTPUT_FILE_NAME} \
-        -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS} \
+        -Duk.co.real_logic.benchmarks.remote.output.file=${outputFileName} \
+        -Duk.co.real_logic.benchmarks.remote.iterations=${iterations} \
         -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# } \
         -Duk.co.real_logic.benchmarks.remote.batch.size=${burst# } \
         -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# }" \
-         ${COMMAND}
+         ${command}
       done
     done
   done
