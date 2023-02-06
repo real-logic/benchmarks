@@ -48,7 +48,7 @@ for var in "${required_vars[@]}"; do
   fi
 done
 
-if [ -n "${required_var_missing}" ];
+if [[ -v required_var_missing && -n "${required_var_missing}" ]];
 then
   exit 1
 fi
