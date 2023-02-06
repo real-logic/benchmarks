@@ -79,7 +79,7 @@ public final class EchoClusteredService implements ClusteredService
             idleStrategy.idle();
         }
 
-        // This is not required with the latest master
+        // FIXME: This is not required with the latest master
         if (ClientSession.MOCKED_OFFER == result)
         {
             bufferClaim.commit();
