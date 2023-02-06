@@ -150,7 +150,7 @@ function run_benchmarks()
           execute_remote_command "${SSH_CLIENT_NODE}" "${client_jvm_opts} && ${client_command} && exit"
 
           echo -e "\nStopping server..."
-          execute_remote_command "${SSH_SERVER_NODE}" "${server_stop_command} && exit"
+          execute_remote_command "${SSH_SERVER_NODE}" "${server_stop_command}; true && exit"
         done
       done
     done
