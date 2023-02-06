@@ -31,7 +31,7 @@ export AERON_DPDK_RX_MEMPOOL_CACHE_SIZE=512
 
 echo "Starting Aeron MD (DPDK)"
 
-exec sudo --preserve-env ${DIR}/aeronmd_dpdk -l 0 \
+exec sudo --preserve-env "${DIR}/aeronmd_dpdk" -l 0 \
   "${DIR}/low-latency-driver.properties" \
   "${DIR}/benchmark.properties" \
   "$@"
