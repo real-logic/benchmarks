@@ -244,7 +244,7 @@ class LoadTestRigTest
         final Configuration configuration = new Configuration.Builder()
             .messageRate(1)
             .idleStrategy(idleStrategy)
-            .batchSize(15)
+            .batchSize(4)
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
@@ -268,19 +268,20 @@ class LoadTestRigTest
             persistedHistogram,
             MINIMUM_NUMBER_OF_CPU_CORES * 2);
 
-        final long messages = loadTestRig.send(2, 25);
+        final long messages = loadTestRig.send(2, 9);
 
-        assertEquals(50, messages);
-        verify(clock, times(55)).nanoTime();
-        verify(idleStrategy, times(26)).reset();
-        verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1000), CHECKSUM);
-        verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(1600), CHECKSUM);
-        verify(messageTransceiver).send(15, 24, MILLISECONDS.toNanos(2200), CHECKSUM);
-        verify(messageTransceiver).send(5, 24, MILLISECONDS.toNanos(2800), CHECKSUM);
-        verify(messageTransceiver, times(25)).receive();
-        verify(messageTransceiver, times(50)).onMessageReceived(anyLong(), anyLong());
-        verify(out).format("Send rate %,d msg/sec%n", 30L);
-        verify(out).format("Send rate %,d msg/sec%n", 25L);
+        assertEquals(18, messages);
+        verify(clock, times(24)).nanoTime();
+        verify(idleStrategy, times(10)).reset();
+        verify(messageTransceiver).send(4, 24, 1000000000L, CHECKSUM);
+        verify(messageTransceiver).send(4, 24, 1444444445L, CHECKSUM);
+        verify(messageTransceiver).send(4, 24, 1888888890L, CHECKSUM);
+        verify(messageTransceiver).send(4, 24, 2333333335L, CHECKSUM);
+        verify(messageTransceiver).send(2, 24, 2777777780L, CHECKSUM);
+        verify(messageTransceiver, times(9)).receive();
+        verify(messageTransceiver, times(18)).onMessageReceived(anyLong(), anyLong());
+        verify(out).format("Send rate %,d msg/sec%n", 8L);
+        verify(out).format("Send rate %,d msg/sec%n", 9L);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 

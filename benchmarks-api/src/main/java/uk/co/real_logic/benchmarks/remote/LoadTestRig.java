@@ -29,8 +29,7 @@ import java.io.PrintStream;
 import java.util.Properties;
 import java.util.function.BiFunction;
 
-import static java.lang.Math.min;
-import static java.lang.Math.round;
+import static java.lang.Math.*;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.PropertyAction.PRESERVE;
@@ -170,18 +169,18 @@ public final class LoadTestRig
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.idleStrategy();
-        final long sendIntervalNs = NANOS_PER_SECOND * burstSize / numberOfMessages;
+        final long sendIntervalNs = (long)ceil((double)NANOS_PER_SECOND * burstSize / numberOfMessages);
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
-
         final long startTimeNs = clock.nanoTime();
-        final long endTimeNs = startTimeNs + iterations * NANOS_PER_SECOND;
+        final long endTimeNs = startTimeNs + (totalNumberOfMessages * sendIntervalNs / burstSize);
+
         long sentMessages = 0;
         long timestampNs = startTimeNs;
         long nowNs = startTimeNs;
         long nextReportTimeNs = startTimeNs + NANOS_PER_SECOND;
 
         int batchSize = (int)min(totalNumberOfMessages, burstSize);
-        while (true)
+        while (sentMessages < totalNumberOfMessages)
         {
             final int sent = messageTransceiver.send(batchSize, messageSize, timestampNs, CHECKSUM);
 
@@ -229,6 +228,7 @@ public final class LoadTestRig
             else
             {
                 batchSize -= sent;
+// FIXME:               batchSize = (int)min(totalNumberOfMessages - sentMessages, batchSize - sent);
                 messageTransceiver.receive();
             }
 
