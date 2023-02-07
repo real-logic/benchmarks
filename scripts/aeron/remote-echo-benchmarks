@@ -64,8 +64,6 @@ enable_onload=1
 enable_ef_vi=1
 enable_dpdk=1
 enable_ats=1
-streams=(1 2 5 10)
-modes=("multiplexed" "dedicated")
 mtu_list=(1408 8192)
 results_file="aeron-echo-results"
 onload="onload --profile=latency --force-profiles "
@@ -110,20 +108,6 @@ do
     enable_ats=0
     shift
     ;;
-  --streams)
-    IFS=',';
-    read -ra streams <<< "${2}"
-    unset IFS;
-    shift
-    shift
-    ;;
-  --modes)
-    IFS=',';
-    read -ra modes <<< "${2}"
-    unset IFS;
-    shift
-    shift
-    ;;
   --results-file)
     results_file="${2}"
     shift
@@ -137,7 +121,7 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--no-ats] [--streams \"\${streams-csv}\"] [--modes \"\${modes-csv}\"] [--mtu \"\$mtu-csv\"]"
+    echo "${0} [--no-c-driver] [--no-java-driver] [--no-onload] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--no-ats] [--mtu \"\$mtu-csv\"]"
     exit
     ;;
   *)
@@ -354,86 +338,60 @@ do
   client_driver="${client_drivers[index]}"
   server_driver="${server_drivers[index]}"
 
-  for mode in "${modes[@]}"
+  for mtu in "${mtu_list[@]}"
   do
-    for num_streams in "${streams[@]}"
-    do
-      for mtu in "${mtu_list[@]}"
-      do
-        test="echo-${scenario}-mode-${mode}-streams-${num_streams}-mtu-${mtu}"
-        echo -e "\n Testing scenario: '${test}'\n"
-  
-        client_destination_channels=""
-        client_source_channels=""
-        server_destination_channels=""
-        server_source_channels=""
-        destination_streams=""
-        source_streams=""
-  
-        for (( i=0; i<num_streams; i++ ))
-        do
-          if [ "${mode}" == "dedicated" ]
-          then
-            dest_port=$((13000 + i))
-            src_port=$((13100 + i))
-          else
-            dest_port=13000
-            src_port=13100
-          fi
-          dest_stream=$((1000000 + i))
-          src_stream=$((2000000 + i))
-  
-          server_destination_channels+="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}|interface=${SERVER_INTERFACE},"
-          server_source_channels+="aeron:udp?endpoint=${SOURCE_IP}:${src_port}|interface=${SERVER_INTERFACE},"
-          client_destination_channels+="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}|interface=${CLIENT_INTERFACE},"
-          client_source_channels+="aeron:udp?endpoint=${SOURCE_IP}:${src_port}|interface=${CLIENT_INTERFACE},"
-  
-          destination_streams+="${dest_stream},"
-          source_streams+="${src_stream},"
-        done
-  
-        client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
-        server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
-  
-        start_client="\
-        export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
-        ; $(kill_java_process "${client_class_name}") \
-        ; ${client_driver} \
-        && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
-        $(await_java_process_start "${client_class_name}") \
-        ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
-        && tail --pid=\$! -f /dev/null; kill -9 \${driver_pid}; wait"
-  
-        start_server="\
-        export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-        && ${server_driver} \
-        && export JVM_OPTS=\"\
-        -Daeron.mtu.length=${mtu} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=${server_destination_channels%?} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=${server_source_channels%?} \
-        -Duk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}\" \
-        && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
-        $(await_java_process_start "${server_class_name}") \
-        ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
-        && tail --pid=\$! -f /dev/null"
-  
-        stop_server="$(kill_java_process "${server_class_name}"); \
-        $(stop_media_driver)"
-  
-        run_benchmarks \
-          "${start_client}" \
-          "$(kill_java_process "${server_class_name}"); ${start_server}" \
-          "${stop_server}" \
-          "aeron.mtu.length=${mtu}" \
-          "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
-          "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-          "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=${client_destination_channels%?}" \
-          "uk.co.real_logic.benchmarks.aeron.remote.destination.streams=${destination_streams%?}" \
-          "uk.co.real_logic.benchmarks.aeron.remote.source.channels=${client_source_channels%?}" \
-          "uk.co.real_logic.benchmarks.aeron.remote.source.streams=${source_streams%?}"
-      done
-    done
+    test="echo-${scenario}-mtu-${mtu}"
+    echo -e "\n Testing scenario: '${test}'\n"
+
+    dest_port=13000
+    src_port=13100
+    server_destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}|interface=${SERVER_INTERFACE}"
+    server_source_channel="aeron:udp?endpoint=${SOURCE_IP}:${src_port}|interface=${SERVER_INTERFACE}"
+    client_destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}|interface=${CLIENT_INTERFACE}"
+    client_source_channel="aeron:udp?endpoint=${SOURCE_IP}:${src_port}|interface=${CLIENT_INTERFACE}"
+    destination_stream="1000000"
+    source_stream="2000000"
+
+    client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
+    server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
+
+    start_client="\
+    export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
+    ; $(kill_java_process "${client_class_name}") \
+    ; ${client_driver} \
+    && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
+    $(await_java_process_start "${client_class_name}") \
+    ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
+    && tail --pid=\$! -f /dev/null; kill -9 \${driver_pid}; wait"
+
+    start_server="\
+    export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
+    && ${server_driver} \
+    && export JVM_OPTS=\"\
+    -Daeron.mtu.length=${mtu} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${server_destination_channel} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${server_source_channel} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream}\" \
+    && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
+    $(await_java_process_start "${server_class_name}") \
+    ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
+    && tail --pid=\$! -f /dev/null"
+
+    stop_server="$(kill_java_process "${server_class_name}"); \
+    $(stop_media_driver)"
+
+    run_benchmarks \
+      "${start_client}" \
+      "$(kill_java_process "${server_class_name}"); ${start_server}" \
+      "${stop_server}" \
+      "aeron.mtu.length=${mtu}" \
+      "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
+      "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+      "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=${client_destination_channel}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.source.channel=${client_source_channel}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream}"
   done
 done
 

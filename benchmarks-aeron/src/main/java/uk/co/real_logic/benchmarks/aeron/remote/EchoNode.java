@@ -41,10 +41,10 @@ import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemPro
  */
 public final class EchoNode implements AutoCloseable, Runnable
 {
-    private final FragmentHandler[] fragmentHandlers;
-    private final ExclusivePublication[] publications;
-    private final Subscription[] subscriptions;
-    private final Image[] images;
+    private final BufferClaim bufferClaim = new BufferClaim();
+    private final FragmentHandler fragmentHandler;
+    private final ExclusivePublication publication;
+    private final Subscription subscription;
     private final AtomicBoolean running;
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
@@ -63,87 +63,39 @@ public final class EchoNode implements AutoCloseable, Runnable
         this.aeron = aeron;
         this.ownsAeronClient = ownsAeronClient;
 
-        final String[] destinationChannels = destinationChannels();
-        final int[] destinationStreams = destinationStreams();
-        assertChannelsAndStreamsMatch(
-            destinationChannels, destinationStreams, DESTINATION_CHANNELS_PROP_NAME, DESTINATION_STREAMS_PROP_NAME);
+        publication = aeron.addExclusivePublication(sourceChannel(), sourceStreamId());
+        subscription = aeron.addSubscription(destinationChannel(), destinationStreamId());
 
-        final String[] sourceChannels = sourceChannels();
-        final int[] sourceStreams = sourceStreams();
-        assertChannelsAndStreamsMatch(
-            sourceChannels, sourceStreams, SOURCE_CHANNELS_PROP_NAME, SOURCE_STREAMS_PROP_NAME);
-
-        if (destinationChannels.length != sourceChannels.length)
+        fragmentHandler = (buffer, offset, length, header) ->
         {
-            throw new IllegalArgumentException("Number of destinations does not match the number of sources");
-        }
+            long result;
+            while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
+            {
+                checkPublicationResult(result);
+            }
 
-        final int numActiveChannels = sourceChannels.length;
-        fragmentHandlers = new FragmentHandler[numActiveChannels];
-        publications = new ExclusivePublication[numActiveChannels];
-        subscriptions = new Subscription[numActiveChannels];
-        images = new Image[numActiveChannels];
-        final BufferClaim bufferClaim = new BufferClaim();
-
-        for (int i = 0; i < numActiveChannels; i++)
-        {
-            final ExclusivePublication publication = aeron.addExclusivePublication(sourceChannels[i], sourceStreams[i]);
-            publications[i] = publication;
-            subscriptions[i] = aeron.addSubscription(destinationChannels[i], destinationStreams[i]);
-            fragmentHandlers[i] =
-                (buffer, offset, length, header) ->
-                {
-                    long result;
-                    while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
-                    {
-                        checkPublicationResult(result);
-                    }
-
-                    bufferClaim
-                        .flags(header.flags())
-                        .putBytes(buffer, offset, length)
-                        .commit();
-                };
-        }
+            bufferClaim
+                .flags(header.flags())
+                .putBytes(buffer, offset, length)
+                .commit();
+        };
 
         awaitConnected(
-            () -> allConnected(subscriptions) && allConnected(publications),
+            () -> subscription.isConnected() && publication.isConnected(),
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
     }
 
     public void run()
     {
-        final FragmentHandler[] fragmentHandlers = this.fragmentHandlers;
-        final Subscription[] subscriptions = this.subscriptions;
-        final Image[] images = this.images;
-
         final IdleStrategy idleStrategy = idleStrategy();
 
         final AtomicBoolean running = this.running;
 
-        reloadImages(subscriptions, images);
-        final int numImages = images.length;
-        int pollIndex = 0;
-
+        final Image image = subscription.imageAtIndex(0);
         while (true)
         {
-            if (++pollIndex >= numImages)
-            {
-                pollIndex = 0;
-            }
-
-            int fragments = 0;
-            for (int i = pollIndex; i < numImages && fragments < FRAGMENT_LIMIT; i++)
-            {
-                fragments += images[i].poll(fragmentHandlers[i], FRAGMENT_LIMIT - fragments);
-            }
-
-            for (int i = 0; i < pollIndex && fragments < FRAGMENT_LIMIT; i++)
-            {
-                fragments += images[i].poll(fragmentHandlers[i], FRAGMENT_LIMIT - fragments);
-            }
-
+            final int fragments = image.poll(fragmentHandler, FRAGMENT_LIMIT);
             if (0 == fragments)
             {
                 if (!running.get())
@@ -151,12 +103,9 @@ public final class EchoNode implements AutoCloseable, Runnable
                     return; // Abort execution
                 }
 
-                for (final Image image : images)
+                if (image.isClosed())
                 {
-                    if (image.isClosed())
-                    {
-                        return;  // Abort execution
-                    }
+                    return;  // Abort execution
                 }
             }
 
@@ -166,20 +115,12 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     public void close()
     {
-        closeAll(subscriptions);
-        closeAll(publications);
+        closeAll(subscription);
+        closeAll(publication);
 
         if (ownsAeronClient)
         {
             closeAll(aeron, mediaDriver);
-        }
-    }
-
-    private static void reloadImages(final Subscription[] subscriptions, final Image[] images)
-    {
-        for (int i = 0; i < subscriptions.length; i++)
-        {
-            images[i] = subscriptions[i].imageAtIndex(0);
         }
     }
 

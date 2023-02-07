@@ -28,8 +28,6 @@ import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
-import java.util.Arrays;
-
 import static io.aeron.Aeron.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -38,18 +36,7 @@ import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 public final class EchoMessageTransceiver extends MessageTransceiver
 {
-    private final MediaDriver mediaDriver;
-    private final Aeron aeron;
-    private final boolean ownsAeronClient;
-
     private final BufferClaim bufferClaim = new BufferClaim();
-    ExclusivePublication[] publications;
-    long keepAliveIntervalNs;
-    int sendIndex;
-
-    private Subscription[] subscriptions;
-    private Image[] images;
-    private int receiveIndex;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
@@ -57,6 +44,13 @@ public final class EchoMessageTransceiver extends MessageTransceiver
             final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
             onMessageReceived(timestamp, checksum);
         });
+
+    private final MediaDriver mediaDriver;
+    private final Aeron aeron;
+    private final boolean ownsAeronClient;
+    ExclusivePublication publication;
+    private Subscription subscription;
+    private Image image;
 
     public EchoMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
@@ -78,47 +72,20 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public void init(final Configuration configuration)
     {
-        final String[] destinationChannels = destinationChannels();
-        final int[] destinationStreams = destinationStreams();
-        assertChannelsAndStreamsMatch(
-            destinationChannels, destinationStreams, DESTINATION_CHANNELS_PROP_NAME, DESTINATION_STREAMS_PROP_NAME);
-
-        final String[] sourceChannels = sourceChannels();
-        final int[] sourceStreams = sourceStreams();
-        assertChannelsAndStreamsMatch(
-            sourceChannels, sourceStreams, SOURCE_CHANNELS_PROP_NAME, SOURCE_STREAMS_PROP_NAME);
-
-        if (destinationChannels.length != sourceChannels.length)
-        {
-            throw new IllegalArgumentException("Number of destinations does not match the number of sources:\n " +
-                Arrays.toString(destinationChannels) + "\n " + Arrays.toString(sourceChannels));
-        }
-
-        final int numActiveChannels = destinationChannels.length;
-        publications = new ExclusivePublication[numActiveChannels];
-        subscriptions = new Subscription[numActiveChannels];
-        images = new Image[numActiveChannels];
-        for (int i = 0; i < numActiveChannels; i++)
-        {
-            publications[i] = aeron.addExclusivePublication(destinationChannels[i], destinationStreams[i]);
-            subscriptions[i] = aeron.addSubscription(sourceChannels[i], sourceStreams[i]);
-        }
+        publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
+        subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
 
         awaitConnected(
-            () -> allConnected(subscriptions) && allConnected(publications),
+            () -> subscription.isConnected() && publication.isConnected(),
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
 
-        for (int i = 0; i < numActiveChannels; i++)
-        {
-            images[i] = subscriptions[i].imageAtIndex(0);
-        }
+        image = subscription.imageAtIndex(0);
     }
 
     public void destroy()
     {
-        closeAll(publications);
-        closeAll(subscriptions);
+        closeAll(subscription, publication);
 
         if (ownsAeronClient)
         {
@@ -128,37 +95,11 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        final ExclusivePublication[] publications = this.publications;
-        int index = sendIndex++;
-        if (index >= publications.length)
-        {
-            sendIndex = index = 0;
-        }
-
-        return sendMessages(
-            publications[index], bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
+        return sendMessages(publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
     }
 
     public void receive()
     {
-        final Image[] images = this.images;
-        final int length = images.length;
-        final FragmentAssembler dataHandler = this.dataHandler;
-        int startingIndex = receiveIndex++;
-        if (startingIndex >= length)
-        {
-            receiveIndex = startingIndex = 0;
-        }
-
-        int fragments = 0;
-        for (int i = startingIndex; i < length && fragments < FRAGMENT_LIMIT; i++)
-        {
-            fragments += images[i].poll(dataHandler, FRAGMENT_LIMIT - fragments);
-        }
-
-        for (int i = 0; i < startingIndex && fragments < FRAGMENT_LIMIT; i++)
-        {
-            fragments += images[i].poll(dataHandler, FRAGMENT_LIMIT - fragments);
-        }
+        image.poll(dataHandler, FRAGMENT_LIMIT);
     }
 }

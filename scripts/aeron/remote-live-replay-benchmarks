@@ -252,8 +252,8 @@ do
       ; ${server_driver} \
       && export JVM_OPTS=\"\
       -Daeron.mtu.length=${mtu} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${SERVER_INTERFACE} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${SOURCE_IP}:13100|interface=${SERVER_INTERFACE} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${SERVER_INTERFACE} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${SOURCE_IP}:13100|interface=${SERVER_INTERFACE} \
       -Daeron.archive.control.channel=aeron:udp?endpoint=${DESTINATION_IP}:13200|interface=${SERVER_INTERFACE} \
       -Daeron.archive.dir=${ARCHIVE_DIR} \
       -Daeron.archive.file.sync.level=${fsync} \
@@ -275,8 +275,8 @@ do
         "aeron.mtu.length=${mtu}" \
         "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
         "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-        "uk.co.real_logic.benchmarks.aeron.remote.destination.channels=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${CLIENT_INTERFACE}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.source.channels=aeron:udp?endpoint=${AERON_SOURCE_IP}:13100|interface=${CLIENT_INTERFACE}" \
+        "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${DESTINATION_IP}:13000|interface=${CLIENT_INTERFACE}" \
+        "uk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${AERON_SOURCE_IP}:13100|interface=${CLIENT_INTERFACE}" \
         "aeron.archive.control.channel=aeron:udp?endpoint=${DESTINATION_IP}:13200|interface=${CLIENT_INTERFACE}" \
         "aeron.archive.control.response.channel=aeron:udp?endpoint=${SOURCE_IP}:0|interface=${CLIENT_INTERFACE}" \
         "aeron.archive.message.timeout=30000000000"

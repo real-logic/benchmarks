@@ -55,10 +55,10 @@ class AeronUtilTest
     @Test
     void defaultConfigurationValues()
     {
-        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333|mtu=1408" }, destinationChannels());
-        assertArrayEquals(new int[]{ 1_000_000_000 }, destinationStreams());
-        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13334|mtu=1408" }, sourceChannels());
-        assertArrayEquals(new int[]{ 1_000_000_001 }, sourceStreams());
+        assertEquals("aeron:udp?endpoint=localhost:13333|mtu=1408", destinationChannel());
+        assertEquals(1_000_000_000, destinationStreamId());
+        assertEquals("aeron:udp?endpoint=localhost:13334|mtu=1408", sourceChannel());
+        assertEquals(1_000_000_001, sourceStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());
@@ -77,10 +77,10 @@ class AeronUtilTest
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "");
         setProperty(IDLE_STRATEGY_PROP_NAME, "");
 
-        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13333|mtu=1408" }, destinationChannels());
-        assertArrayEquals(new int[]{ 1_000_000_000 }, destinationStreams());
-        assertArrayEquals(new String[]{ "aeron:udp?endpoint=localhost:13334|mtu=1408" }, sourceChannels());
-        assertArrayEquals(new int[]{ 1_000_000_001 }, sourceStreams());
+        assertEquals("aeron:udp?endpoint=localhost:13333|mtu=1408", destinationChannel());
+        assertEquals(1_000_000_000, destinationStreamId());
+        assertEquals("aeron:udp?endpoint=localhost:13334|mtu=1408", sourceChannel());
+        assertEquals(1_000_000_001, sourceStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(1_000_100_000, archiveStream());
         assertFalse(embeddedMediaDriver());
@@ -91,31 +91,22 @@ class AeronUtilTest
     void explicitConfigurationValues()
     {
         setProperty(DESTINATION_CHANNELS_PROP_NAME, "ch1:5001,ch2:5002,ch3:5003");
-        setProperty(DESTINATION_STREAMS_PROP_NAME, "100,101,102,");
+        setProperty(DESTINATION_STREAMS_PROP_NAME, "100");
         setProperty(SOURCE_CHANNELS_PROP_NAME, "ch1:8001,ch2:8002,ch3:8003");
-        setProperty(SOURCE_STREAMS_PROP_NAME, "200,201,202,");
+        setProperty(SOURCE_STREAMS_PROP_NAME, "200");
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "localhost");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "777");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
         setProperty(IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
 
-        assertArrayEquals(new String[]{ "ch1:5001", "ch2:5002", "ch3:5003" }, destinationChannels());
-        assertArrayEquals(new int[]{ 100, 101, 102 }, destinationStreams());
-        assertArrayEquals(new String[]{ "ch1:8001", "ch2:8002", "ch3:8003" }, sourceChannels());
-        assertArrayEquals(new int[]{ 200, 201, 202 }, sourceStreams());
+        assertEquals("ch1:5001,ch2:5002,ch3:5003", destinationChannel());
+        assertEquals(100, destinationStreamId());
+        assertEquals("ch1:8001,ch2:8002,ch3:8003", sourceChannel());
+        assertEquals(200, sourceStreamId());
         assertEquals("localhost", archiveChannel());
         assertEquals(777, archiveStream());
         assertTrue(embeddedMediaDriver());
         assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
-    }
-
-    @Test
-    void testAssertChannelsAndStreamsMatch()
-    {
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> assertChannelsAndStreamsMatch(new String[]{ "a" }, new int[]{ 1, 2 }, "channels", "streams"));
-
-        assertEquals("Number of 'channels' does not match with 'streams':\n [a]\n [1, 2]", exception.getMessage());
     }
 
     @Test

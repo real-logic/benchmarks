@@ -15,7 +15,11 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
+import io.aeron.FragmentAssembler;
+import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
@@ -75,7 +79,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
     {
         final Aeron aeron = aeronArchive.context().aeron();
 
-        publication = aeron.addExclusivePublication(destinationChannels()[0], destinationStreams()[0]);
+        publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
 
         final long connectionTimeoutNs = connectionTimeoutNs();
         final SystemNanoClock clock = SystemNanoClock.INSTANCE;
@@ -83,8 +87,8 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
         final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStream());
 
-        final String replayChannel = sourceChannels()[0];
-        final int replayStreamId = sourceStreams()[0];
+        final String replayChannel = sourceChannel();
+        final int replayStreamId = sourceStreamId();
         final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);
