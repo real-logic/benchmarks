@@ -47,7 +47,6 @@ def toolchainCompiler = javaToolchains.compilerFor {
 def agronaVersion = '1.17.1'
 def aeronVersion = '1.40.0'
 def jmhVersion = '1.36'
-def joptVersion = '5.0.4'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.4'
 def junitVersion = '5.9.2'
@@ -55,11 +54,11 @@ def mockitoVersion = '4.11.0'
 def checkstyleVersion = '9.3'
 def grpcVersion = '1.52.1'
 def protobufVersion = '3.21.12'
-def errorproneVersion = '2.10.0'
-def kafkaVersion = '3.3.2'
+def errorproneVersion = '2.14.0'
+def kafkaVersion = '3.4.0'
 def slf4jVersion = '1.7.36'
-def scalaVersion = '2.13.7'
-def jacksonVersion = '2.13.0'
+def scalaVersion = '2.13.10'
+def jacksonVersion = '2.13.4.2'
 def annotationsApiVersion = '6.0.53'
 
 allprojects {
@@ -73,17 +72,11 @@ allprojects {
             failOnVersionConflict()
 
             force "org.agrona:agrona:${agronaVersion}",
-                  "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}",
-                  "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}",
                   "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
-                  "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jacksonVersion}",
-                  "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}",
-                  "com.fasterxml.jackson.module:jackson-module-scala_2.13:${jacksonVersion}",
                   "org.slf4j:slf4j-api:${slf4jVersion}",
                   "org.slf4j:slf4j-log4j12:${slf4jVersion}",
                   "org.scala-lang:scala-library:${scalaVersion}",
                   "org.scala-lang:scala-reflect:${scalaVersion}",
-                  "net.sf.jopt-simple:jopt-simple:${joptVersion}",
                   "com.google.protobuf:protobuf-java:${protobufVersion}",
                   "com.google.errorprone:error_prone_annotations:${errorproneVersion}"
         }
