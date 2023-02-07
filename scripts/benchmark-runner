@@ -25,8 +25,8 @@ set -euxo pipefail
 
 runs=3
 iterations=10
-messageRates=(100000)
-burstSizes=(1 10)
+messageRates=(500000)
+burstSizes=(1)
 messageLengths=(32 288 1344)
 
 while [[ $# -gt 0 ]]

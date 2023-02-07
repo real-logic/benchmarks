@@ -78,7 +78,7 @@ then
   warmupMessageRate=${WARMUP_MESSAGE_RATE}
 fi
 
-messageRates=(100000)
+messageRates=(500000)
 if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
 then
   IFS=',';
@@ -86,7 +86,7 @@ then
   unset IFS;
 fi
 
-burstSizes=(1 10)
+burstSizes=(1)
 if [[ -v BURST_SIZE && -n ${BURST_SIZE} ]];
 then
   IFS=',';
