@@ -19,7 +19,6 @@ import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
 
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,21 +34,20 @@ abstract class MessageTransceiverLhsPadding
     boolean p112, p113, p114, p115, p116, p117, p118, p119, p120, p121, p122, p123, p124, p125, p126, p127;
 }
 
-abstract class MessageTransceiverBase extends MessageTransceiverLhsPadding
+abstract class MessageTransceiverHotFields extends MessageTransceiverLhsPadding
 {
-    static final long CHECKSUM = ThreadLocalRandom.current().nextLong();
     final NanoClock clock;
     final ValueRecorder valueRecorder;
-    final AtomicLong receivedMessages = new AtomicLong(0);
+    long receivedMessages;
 
-    MessageTransceiverBase(final NanoClock clock, final ValueRecorder valueRecorder)
+    MessageTransceiverHotFields(final NanoClock clock, final ValueRecorder valueRecorder)
     {
         this.clock = requireNonNull(clock);
         this.valueRecorder = requireNonNull(valueRecorder);
     }
 }
 
-abstract class MessageTransceiverRhsPadding extends MessageTransceiverBase
+abstract class MessageTransceiverRhsPadding extends MessageTransceiverHotFields
 {
     boolean p000, p001, p002, p003, p004, p005, p006, p007, p008, p009, p010, p011, p012, p013, p014, p015;
     boolean p016, p017, p018, p019, p020, p021, p022, p023, p024, p025, p026, p027, p028, p029, p030, p031;
@@ -72,6 +70,8 @@ abstract class MessageTransceiverRhsPadding extends MessageTransceiverBase
  */
 public abstract class MessageTransceiver extends MessageTransceiverRhsPadding
 {
+    static final long CHECKSUM = ThreadLocalRandom.current().nextLong();
+
     protected MessageTransceiver(final NanoClock clock, final ValueRecorder valueRecorder)
     {
         super(clock, valueRecorder);
@@ -142,12 +142,12 @@ public abstract class MessageTransceiver extends MessageTransceiverRhsPadding
         }
 
         valueRecorder.recordValue(clock.nanoTime() - timestamp);
-        receivedMessages.getAndIncrement();
+        receivedMessages++;
     }
 
     final void reset()
     {
         valueRecorder.reset();
-        receivedMessages.set(0);
+        receivedMessages = 0;
     }
 }

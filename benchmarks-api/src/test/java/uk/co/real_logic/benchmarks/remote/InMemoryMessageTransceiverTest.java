@@ -27,7 +27,7 @@ import static java.lang.Long.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.benchmarks.remote.MessageTransceiverBase.CHECKSUM;
+import static uk.co.real_logic.benchmarks.remote.MessageTransceiver.CHECKSUM;
 
 class InMemoryMessageTransceiverTest
 {

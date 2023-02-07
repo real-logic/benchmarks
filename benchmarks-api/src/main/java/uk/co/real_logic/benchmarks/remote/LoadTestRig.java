@@ -27,7 +27,6 @@ import org.agrona.concurrent.SystemNanoClock;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 
 import static java.lang.Math.min;
@@ -36,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
-import static uk.co.real_logic.benchmarks.remote.MessageTransceiverBase.CHECKSUM;
+import static uk.co.real_logic.benchmarks.remote.MessageTransceiver.CHECKSUM;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
@@ -168,7 +167,6 @@ public final class LoadTestRig
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final NanoClock clock = this.clock;
-        final AtomicLong receivedMessages = messageTransceiver.receivedMessages;
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.idleStrategy();
@@ -202,20 +200,20 @@ public final class LoadTestRig
                 if (nowNs < timestampNs && nowNs < endTimeNs)
                 {
                     idleStrategy.reset();
-                    long received = 0;
+                    long receivedMessageCount = 0;
                     do
                     {
-                        if (received < sentMessages)
+                        if (receivedMessageCount < sentMessages)
                         {
                             messageTransceiver.receive();
-                            final long updatedReceived = receivedMessages.get();
-                            if (updatedReceived == received)
+                            final long newReceivedMessageCount = messageTransceiver.receivedMessages;
+                            if (newReceivedMessageCount == receivedMessageCount)
                             {
                                 idleStrategy.idle();
                             }
                             else
                             {
-                                received = updatedReceived;
+                                receivedMessageCount = newReceivedMessageCount;
                                 idleStrategy.reset();
                             }
                         }
@@ -247,13 +245,13 @@ public final class LoadTestRig
         }
 
         idleStrategy.reset();
-        long received = receivedMessages.get();
+        long receivedMessageCount = messageTransceiver.receivedMessages;
         final long deadline = clock.nanoTime() + RECEIVE_DEADLINE_NS;
-        while (received < sentMessages)
+        while (receivedMessageCount < sentMessages)
         {
             messageTransceiver.receive();
-            final long updatedReceived = receivedMessages.get();
-            if (updatedReceived == received)
+            final long newReceivedMessageCount = messageTransceiver.receivedMessages;
+            if (newReceivedMessageCount == receivedMessageCount)
             {
                 idleStrategy.idle();
                 if (clock.nanoTime() >= deadline)
@@ -265,7 +263,7 @@ public final class LoadTestRig
             }
             else
             {
-                received = updatedReceived;
+                receivedMessageCount = newReceivedMessageCount;
                 idleStrategy.reset();
             }
         }
