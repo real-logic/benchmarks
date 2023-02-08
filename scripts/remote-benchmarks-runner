@@ -54,7 +54,7 @@ then
   sshServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL}
 fi
 
-runs=3
+runs=5
 if [[ -v RUNS && -n ${RUNS} ]];
 then
   runs=${RUNS}
