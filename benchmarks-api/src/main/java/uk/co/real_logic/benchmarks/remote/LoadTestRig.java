@@ -196,39 +196,33 @@ public final class LoadTestRig
             {
                 batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
                 timestampNs += sendIntervalNs;
-                if (nowNs < timestampNs && nowNs < endTimeNs)
+                long receivedMessageCount = 0;
+                while (nowNs < timestampNs && nowNs < endTimeNs)
                 {
-                    idleStrategy.reset();
-                    long receivedMessageCount = 0;
-                    do
+                    if (receivedMessageCount < sentMessages)
                     {
-                        if (receivedMessageCount < sentMessages)
-                        {
-                            messageTransceiver.receive();
-                            final long newReceivedMessageCount = messageTransceiver.receivedMessages;
-                            if (newReceivedMessageCount == receivedMessageCount)
-                            {
-                                idleStrategy.idle();
-                            }
-                            else
-                            {
-                                receivedMessageCount = newReceivedMessageCount;
-                                idleStrategy.reset();
-                            }
-                        }
-                        else
+                        messageTransceiver.receive();
+                        final long newReceivedMessageCount = messageTransceiver.receivedMessages;
+                        if (newReceivedMessageCount == receivedMessageCount)
                         {
                             idleStrategy.idle();
                         }
-                        nowNs = clock.nanoTime();
+                        else
+                        {
+                            receivedMessageCount = newReceivedMessageCount;
+                            idleStrategy.reset();
+                        }
                     }
-                    while (nowNs < timestampNs && nowNs < endTimeNs);
+                    else
+                    {
+                        idleStrategy.idle();
+                    }
+                    nowNs = clock.nanoTime();
                 }
             }
             else
             {
                 batchSize -= sent;
-// FIXME:               batchSize = (int)min(totalNumberOfMessages - sentMessages, batchSize - sent);
                 messageTransceiver.receive();
             }
 
