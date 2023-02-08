@@ -19,11 +19,6 @@ set -euxo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-if [[ ! -v MESSAGE_RATE ]];
-then
-  MESSAGE_RATE=(50000)
-fi
-
 source "${DIR}/remote-benchmarks-helper"
 
 required_vars=(
