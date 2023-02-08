@@ -95,12 +95,12 @@ subprojects {
 
     checkstyle.toolVersion = "${checkstyleVersion}"
 
-    tasks.withType(Jar) {
+    tasks.withType(Jar).configureEach {
         enabled = true
         includeEmptyDirs = false
     }
 
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         if (buildJavaVersion >= 9) {
             javaCompiler.set(toolchainCompiler)
         }
@@ -114,7 +114,7 @@ subprojects {
         options.deprecation = true
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         useJUnitPlatform()
 
         if (buildJavaVersion >= 9) {
@@ -217,7 +217,7 @@ project(':benchmarks-all') {
     jar.finalizedBy shadowJar
 }
 
-def benchmarkJvmArgs() {
+static def benchmarkJvmArgs() {
     StringBuilder args = new StringBuilder("-Dagrona.disable.bounds.checks=true -XX:+UseParallelGC")
     if (buildJavaVersion > 8) {
         args.append(" --add-opens java.base/sun.nio.ch=ALL-UNNAMED")
@@ -225,14 +225,16 @@ def benchmarkJvmArgs() {
     return args.toString()
 }
 
-task runJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') {
+tasks.register('runJavaBenchmarks', Exec) {
+    dependsOn ':benchmarks-all:shadowJar'
     commandLine toolchainLauncher.get().executablePath,
     '-jar', 'benchmarks-all/build/libs/benchmarks.jar',
     '-jvmArgs', benchmarkJvmArgs(),
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
 
-task runAeronJavaBenchmarks(type: Exec, dependsOn: ':benchmarks-all:shadowJar') {
+tasks.register('runAeronJavaBenchmarks', Exec) {
+    dependsOn ':benchmarks-all:shadowJar'
     commandLine toolchainLauncher.get().executablePath,
     '-jar', 'benchmarks-all/build/libs/benchmarks.jar',
     '-jvmArgs', benchmarkJvmArgs(),
@@ -274,11 +276,11 @@ FileTree cDriverAtsTree = (project.hasProperty('aeron.cdriver.ats.package')) ?
         tarTree(resources.gzip(project.property('aeron.cdriver.ats.package'))) :
         files().asFileTree
 
-task deployTar(type: Tar) {
+tasks.register('deployTar', Tar) {
     from(cDriverTree) {
         include "*/**"
         eachFile { fcd ->
-            fcd.relativePath = new RelativePath(true, fcd.relativePath.segments.drop(1))
+            fcd.relativePath = new RelativePath(true, (String[])fcd.relativePath.segments.drop(1))
         }
         includeEmptyDirs = false
     }
