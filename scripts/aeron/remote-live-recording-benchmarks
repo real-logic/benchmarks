@@ -59,6 +59,9 @@ then
   exit 1
 fi
 
+ef_vi_rxq_size=1024 # ef_vi receive queue size
+ef_vi_txq_size=2048 # ef_vi send queue size
+
 enable_c_driver=1
 enable_java_driver=1
 enable_ef_vi=1
@@ -135,19 +138,23 @@ function build_drivers()
 
   if [ "${enable_java_driver}" -eq 1 ]
   then
-    commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
+    commands+=("export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+      && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
   fi
 
   if [ "${enable_c_driver}" -eq 1 ]
   then
-    commands+=("touch ${scripts_path}/benchmark.properties; \
-      $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
+    local create_benchmark_props="touch ${scripts_path}/benchmark.properties"
+    commands+=("${create_benchmark_props}; \
+      export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
 
     if [ "${enable_ef_vi}" -eq 1 ]
     then
       # C driver with ef_vi
       commands+=("${create_benchmark_props}; \
-        export AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
+        export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
         AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
         && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")

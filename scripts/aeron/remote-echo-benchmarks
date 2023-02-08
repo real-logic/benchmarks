@@ -56,6 +56,9 @@ then
   exit 1
 fi
 
+ef_vi_rxq_size=1024 # ef_vi receive queue size
+ef_vi_txq_size=2048 # ef_vi send queue size
+
 enable_java_driver=1
 no_java_driver=0
 enable_c_driver=1
@@ -153,7 +156,8 @@ function build_drivers()
     if [ "${enable_onload}" -eq 1 ]
     then
       # Java driver with Onload
-      commands+=("$(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
+      commands+=("export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+        && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
     fi
   fi
 
@@ -171,14 +175,16 @@ function build_drivers()
     then
       # C driver with Onload
       commands+=("${create_benchmark_props}; \
-        $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
+        export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+        && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
     fi
 
     if [ "${enable_ef_vi}" -eq 1 ]
     then
       # C driver with ef_vi
       commands+=("${create_benchmark_props}; \
-        export AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
+        export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
         AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
         && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
@@ -207,7 +213,8 @@ function build_drivers()
       then
         # C driver with ATS and Onload
         commands+=("${create_benchmark_props}; \
-          export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+          export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+          AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
@@ -219,7 +226,8 @@ function build_drivers()
       then
         # C driver with ATS and ef_vi
         commands+=("${create_benchmark_props}; \
-          export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+          export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
+          AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
           AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
