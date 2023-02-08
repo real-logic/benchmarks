@@ -183,11 +183,10 @@ public final class LoadTestRig
         while (sentMessages < totalNumberOfMessages)
         {
             final int sent = messageTransceiver.send(batchSize, messageSize, timestampNs, CHECKSUM);
-
             sentMessages += sent;
+
             if (totalNumberOfMessages == sentMessages)
             {
-                reportProgress(startTimeNs, nowNs, sentMessages);
                 break;
             }
 
@@ -233,10 +232,11 @@ public final class LoadTestRig
 
             if (nowNs >= nextReportTimeNs)
             {
-                final int elapsedSeconds = reportProgress(startTimeNs, nowNs, sentMessages);
-                nextReportTimeNs = startTimeNs + (elapsedSeconds + 1) * NANOS_PER_SECOND;
+                out.println(sentMessages);
+                nextReportTimeNs += NANOS_PER_SECOND;
             }
         }
+        out.println(sentMessages);
 
         idleStrategy.reset();
         long receivedMessageCount = messageTransceiver.receivedMessages;
@@ -263,15 +263,6 @@ public final class LoadTestRig
         }
 
         return sentMessages;
-    }
-
-    private int reportProgress(final long startTimeNs, final long nowNs, final long sentMessages)
-    {
-        final int elapsedSeconds = (int)round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
-        final long sendRate = 0 == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
-        out.format("Send rate %,d msg/sec%n", sendRate);
-
-        return elapsedSeconds;
     }
 
     private void warnIfInsufficientCpu()
