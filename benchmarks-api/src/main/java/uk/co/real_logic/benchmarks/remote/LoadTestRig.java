@@ -281,7 +281,7 @@ public final class LoadTestRig
     private void warnIfTargetRateNotAchieved(final long sentMessages)
     {
         final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.messageRate();
-        if (sentMessages < expectedTotalNumberOfMessages)
+        if (expectedTotalNumberOfMessages != sentMessages)
         {
             out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
                 "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
