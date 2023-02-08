@@ -18,13 +18,9 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set "DIR=%~dp0"
 
-if [%AERON_MD%] == [] (
-  set "AERON_MD=%DIR%\..\..\cppbuild\Release\aeron-prefix\src\aeron-build\binaries\aeronmd"
-)
+echo "Starting Aeron MD ..."
 
-echo "Starting C MediaDriver '%AERON_MD%' ..."
-
-%AERON_MD% ^
+"%DIR%\aeronmd" ^
   "%DIR%\low-latency-driver.properties" ^
   "%DIR%\benchmark.properties" ^
   %*

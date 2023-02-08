@@ -19,15 +19,16 @@ set -euxo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-mediaDriverPath="${DIR}/../../cppbuild/Release/aeron-prefix/src/aeron-build/binaries/aeronmd"
-if [[ -v AERON_MD && -n ${AERON_MD} ]];
+if [[ -v LD_LIBRARY_PATH && -n ${LD_LIBRARY_PATH} ]];
 then
-   mediaDriverPath=${AERON_MD}
+  export LD_LIBRARY_PATH="${DIR}:${LD_LIBRARY_PATH}"
+else
+  export LD_LIBRARY_PATH="${DIR}"
 fi
 
-echo "Starting C MediaDriver '${mediaDriverPath}' ..."
+echo "Starting Aeron MD ..."
 
-exec "${mediaDriverPath}" \
+exec "${DIR}/aeronmd" \
   "${DIR}/low-latency-driver.properties" \
   "${DIR}/benchmark.properties" \
   "$@"

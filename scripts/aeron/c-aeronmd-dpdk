@@ -19,7 +19,14 @@ set -euxo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-CURRENT_GROUP=$(id -g -n ${USER})
+if [[ -v LD_LIBRARY_PATH && -n ${LD_LIBRARY_PATH} ]];
+then
+  export LD_LIBRARY_PATH="${DIR}:${LD_LIBRARY_PATH}"
+else
+  export LD_LIBRARY_PATH="${DIR}"
+fi
+
+CURRENT_GROUP=$(id -g -n "${USER}")
 
 export AERON_DPDK_USER=${USER}
 export AERON_DPDK_GROUP=${CURRENT_GROUP}
@@ -29,7 +36,7 @@ export AERON_DPDK_TX_MEMPOOL_CACHE_SIZE=512
 export AERON_DPDK_RX_MEMPOOL_OPS=ring_mp_mc
 export AERON_DPDK_RX_MEMPOOL_CACHE_SIZE=512
 
-echo "Starting Aeron MD (DPDK)"
+echo "Starting Aeron MD (DPDK) ..."
 
 exec sudo --preserve-env "${DIR}/aeronmd_dpdk" -l 0 \
   "${DIR}/low-latency-driver.properties" \
