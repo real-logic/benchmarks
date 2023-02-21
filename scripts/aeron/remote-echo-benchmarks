@@ -194,7 +194,7 @@ function build_drivers()
     then
       # C driver with DPDK
       commands+=("${create_benchmark_props}; \
-        export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6} \
+        export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6} AERON_DPDK_LOCAL_IPV4_ADDRESS=${7} \
         && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "${2}" "${3}" "${4}" "${5}")")
     fi
 
@@ -241,7 +241,7 @@ function build_drivers()
       then
         # C driver with ATS and DPDK
         commands+=("${create_benchmark_props}; \
-          export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6} \
+          export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6} AERON_DPDK_LOCAL_IPV4_ADDRESS=${7} \
           AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
@@ -259,10 +259,10 @@ function build_drivers()
 IFS=$'\n'
 # shellcheck disable=SC2207
 client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" \
-"${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}" "${CLIENT_DRIVER_SENDER_CPU_CORE}" "${CLIENT_DRIVER_RECEIVER_CPU_CORE}" "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}"))
+"${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}" "${CLIENT_DRIVER_SENDER_CPU_CORE}" "${CLIENT_DRIVER_RECEIVER_CPU_CORE}" "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" "${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}"))
 # shellcheck disable=SC2207
 server_drivers=($(build_drivers "${SERVER_BENCHMARKS_PATH}" \
-"${SERVER_DRIVER_OTHER_CPU_CORES}" "${SERVER_DRIVER_CONDUCTOR_CPU_CORE}" "${SERVER_DRIVER_SENDER_CPU_CORE}" "${SERVER_DRIVER_RECEIVER_CPU_CORE}" "${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}"))
+"${SERVER_DRIVER_OTHER_CPU_CORES}" "${SERVER_DRIVER_CONDUCTOR_CPU_CORE}" "${SERVER_DRIVER_SENDER_CPU_CORE}" "${SERVER_DRIVER_RECEIVER_CPU_CORE}" "${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" "${SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS}"))
 unset IFS
 
 if [ "${enable_java_driver}" -eq 1 ]
