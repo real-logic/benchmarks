@@ -345,10 +345,25 @@ do
 
     dest_port=13000
     src_port=13100
-    server_destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}|interface=${SERVER_INTERFACE}"
-    server_source_channel="aeron:udp?endpoint=${SOURCE_IP}:${src_port}|interface=${SERVER_INTERFACE}"
-    client_destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}|interface=${CLIENT_INTERFACE}"
-    client_source_channel="aeron:udp?endpoint=${SOURCE_IP}:${src_port}|interface=${CLIENT_INTERFACE}"
+    destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}"
+    source_channel="aeron:udp?endpoint=${SOURCE_IP}:${src_port}"
+    server_destination_channel="${destination_channel}"
+    server_source_channel="${source_channel}"
+    client_destination_channel="${destination_channel}"
+    client_source_channel="${source_channel}"
+
+    if [[ -n "${SERVER_INTERFACE}" ]]
+    then
+      server_destination_channel="${destination_channel}|interface=${SERVER_INTERFACE}"
+      server_source_channel="${source_channel}|interface=${SERVER_INTERFACE}"
+    fi
+
+    if [[ -n "${CLIENT_INTERFACE}" ]]
+    then
+      client_destination_channel="${destination_channel}|interface=${CLIENT_INTERFACE}"
+      client_source_channel="${source_channel}|interface=${CLIENT_INTERFACE}"
+    fi
+
     destination_stream="1000000"
     source_stream="2000000"
 
