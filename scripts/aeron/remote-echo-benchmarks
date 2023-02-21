@@ -194,7 +194,7 @@ function build_drivers()
     then
       # C driver with DPDK
       commands+=("${create_benchmark_props}; \
-        export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6}\" \
+        export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6} \
         && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "${2}" "${3}" "${4}" "${5}")")
     fi
 
@@ -241,7 +241,7 @@ function build_drivers()
       then
         # C driver with ATS and DPDK
         commands+=("${create_benchmark_props}; \
-          export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6}\" \
+          export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6} \
           AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
           AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
           AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
