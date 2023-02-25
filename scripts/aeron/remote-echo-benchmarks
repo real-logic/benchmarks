@@ -67,7 +67,7 @@ enable_onload=1
 enable_ef_vi=1
 enable_dpdk=1
 enable_ats=1
-mtu_list=(1408 8192)
+mtu_list=(1408 8448)
 results_file="aeron-echo-results"
 onload="onload --profile=latency --force-profiles "
 

@@ -67,7 +67,7 @@ enable_java_driver=1
 enable_ef_vi=1
 enable_dpdk=1
 file_sync_levels=(0 2)
-mtu_list=(1408 8192)
+mtu_list=(1408 8448)
 results_file="aeron-live-recording-results"
 onload="onload --profile=latency --force-profiles "
 
