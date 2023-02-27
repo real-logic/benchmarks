@@ -316,7 +316,10 @@ then
 
   if [ "${enable_ats}" -eq 1 ]
   then
-    scenarios+=("c-ats")
+    if [ "${no_c_driver}" -eq 0 ]
+    then
+      scenarios+=("c-ats")
+    fi
 
     if [ "${enable_onload}" -eq 1 ]
     then
