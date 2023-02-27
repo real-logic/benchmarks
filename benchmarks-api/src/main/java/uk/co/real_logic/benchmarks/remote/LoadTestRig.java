@@ -172,7 +172,7 @@ public final class LoadTestRig
         final long sendIntervalNs = (long)ceil((double)NANOS_PER_SECOND * burstSize / numberOfMessages);
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
         final long startTimeNs = clock.nanoTime();
-        final long endTimeNs = startTimeNs + ((totalNumberOfMessages + 1) * sendIntervalNs / burstSize);
+        final long endTimeNs = startTimeNs + (totalNumberOfMessages * sendIntervalNs / burstSize) + NANOS_PER_SECOND;
 
         long nowNs, sentMessages = 0;
         long timestampNs = startTimeNs;
@@ -235,6 +235,7 @@ public final class LoadTestRig
                 nextReportTimeNs += NANOS_PER_SECOND;
             }
         }
+
         out.println(sentMessages);
 
         idleStrategy.reset();
