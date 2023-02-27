@@ -56,5 +56,5 @@ function start_media_driver()
 
 function stop_media_driver()
 {
-  echo "pkill -9 '^aeronmd'; $(kill_java_process "io.aeron.driver.MediaDriver")"
+  echo "sudo pkill -9 '^aeronmd'; $(kill_java_process "io.aeron.driver.MediaDriver")"
 }
