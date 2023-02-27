@@ -172,11 +172,10 @@ public final class LoadTestRig
         final long sendIntervalNs = (long)ceil((double)NANOS_PER_SECOND * burstSize / numberOfMessages);
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
         final long startTimeNs = clock.nanoTime();
-        final long endTimeNs = startTimeNs + (totalNumberOfMessages * sendIntervalNs / burstSize);
+        final long endTimeNs = startTimeNs + ((totalNumberOfMessages + 1) * sendIntervalNs / burstSize);
 
-        long sentMessages = 0;
+        long nowNs, sentMessages = 0;
         long timestampNs = startTimeNs;
-        long nowNs = startTimeNs;
         long nextReportTimeNs = startTimeNs + NANOS_PER_SECOND;
 
         int batchSize = (int)min(totalNumberOfMessages, burstSize);
