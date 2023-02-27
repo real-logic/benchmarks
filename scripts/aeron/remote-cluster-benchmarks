@@ -361,7 +361,6 @@ then
         AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
         && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var" )")
     fi
   fi
