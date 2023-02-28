@@ -107,7 +107,7 @@ jobs:
           echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
-          sudo apt-get update
+          sudo apt-get update || true
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev cmake
       - name: Build
         run: cppbuild/cppbuild
@@ -151,7 +151,7 @@ jobs:
         run: |
           curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${{ matrix.version }} main"
-          sudo apt-get update
+          sudo apt-get update || true
           sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev cmake
       - name: Build
         run: cppbuild/cppbuild
