@@ -13,52 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package uk.co.real_logic.benchmarks.grpc.remote;
 
 import org.HdrHistogram.Histogram;
-import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import uk.co.real_logic.benchmarks.remote.*;
+import uk.co.real_logic.benchmarks.remote.Configuration;
+import uk.co.real_logic.benchmarks.remote.LoadTestRig;
+import uk.co.real_logic.benchmarks.remote.PersistedHistogram;
+import uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram;
 
 import java.io.PrintStream;
 
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.grpc.remote.GrpcConfig.getServerBuilder;
 
-abstract class GrpcTest
+class GrpcTest
 {
-    @ParameterizedTest
+    @Test
     @Timeout(30)
-    @ValueSource(classes = { BlockingMessageTransceiver.class, StreamingMessageTransceiver.class })
-    void messageLength32bytes(final Class<MessageTransceiver> messageTransceiverClass) throws Exception
+    void messageLength32bytes() throws Exception
     {
-        test(messageTransceiverClass, 10_000, 32, 10);
+        test(10_000, 32, 10);
     }
 
-    @ParameterizedTest
+    @Test
     @Timeout(30)
-    @ValueSource(classes = { BlockingMessageTransceiver.class, StreamingMessageTransceiver.class })
-    void messageLength1344bytes(final Class<MessageTransceiver> messageTransceiverClass) throws Exception
+    void messageLength1344bytes() throws Exception
     {
-        test(messageTransceiverClass, 100, 1344, 1);
+        test(100, 1344, 1);
     }
 
-    @ParameterizedTest
+    @Test
     @Timeout(30)
-    @ValueSource(classes = { BlockingMessageTransceiver.class, StreamingMessageTransceiver.class })
-    void messageLength288bytes(final Class<MessageTransceiver> messageTransceiverClass) throws Exception
+    void messageLength288bytes() throws Exception
     {
-        test(messageTransceiverClass, 1000, 288, 5);
+        test(1000, 288, 5);
     }
-
-    protected abstract MessageTransceiver createMessageTransceiver(NanoClock nanoClock, ValueRecorder valueRecorder);
 
     private void test(
-        final Class<MessageTransceiver> messageTransceiverClass,
         final int numberOfMessages,
         final int messageLength,
         final int burstSize) throws Exception
@@ -76,7 +72,7 @@ abstract class GrpcTest
                 .messageRate(numberOfMessages)
                 .batchSize(burstSize)
                 .messageLength(messageLength)
-                .messageTransceiverClass(messageTransceiverClass) // Not required, created directly
+                .messageTransceiverClass(StreamingMessageTransceiver.class)
                 .outputFileNamePrefix("grpc")
                 .build();
 

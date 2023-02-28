@@ -13,10 +13,6 @@ NOTE: It is advised to have "client" and "server" run on different machines.
 Test scenarios
 --------------
 
-1. Echo benchmark using blocking client.
-
-    Start the scripts in the following order: `server` -> `blocking-client`.
-
 1. Echo benchmark using streaming client.
 
     Start the scripts in the following order: `server` -> `streaming-client`.
