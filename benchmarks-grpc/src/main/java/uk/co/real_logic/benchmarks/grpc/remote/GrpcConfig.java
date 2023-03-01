@@ -20,7 +20,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
-import io.grpc.netty.shaded.io.netty.channel.ChannelOption;
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth;
 import io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder;
 import org.agrona.LangUtil;
@@ -59,8 +58,7 @@ final class GrpcConfig
                     return new InetSocketAddress(getClientHost(), getClientPort());
                 }
             })
-            .directExecutor()
-            .withOption(ChannelOption.SO_REUSEADDR, true);
+            .directExecutor();
         if (getBoolean(TLS_PROP_NAME))
         {
             final Path certificatesDir = certificatesDir();
@@ -88,10 +86,8 @@ final class GrpcConfig
 
     public static NettyServerBuilder getServerBuilder()
     {
-        final NettyServerBuilder serverBuilder = NettyServerBuilder
-            .forAddress(new InetSocketAddress(getServerHost(), getServerPort()))
-            .directExecutor()
-            .withOption(ChannelOption.SO_REUSEADDR, true);
+        final NettyServerBuilder serverBuilder =
+            NettyServerBuilder.forAddress(new InetSocketAddress(getServerHost(), getServerPort())).directExecutor();
         if (getBoolean(TLS_PROP_NAME))
         {
             final Path certificatesDir = certificatesDir();
@@ -130,7 +126,7 @@ final class GrpcConfig
 
     private static int getClientPort()
     {
-        return getInteger(CLIENT_PORT_PROP_NAME, 13500);
+        return getInteger(CLIENT_PORT_PROP_NAME, 0);
     }
 
     private static String getHost(final String propName)
