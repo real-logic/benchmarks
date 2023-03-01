@@ -20,6 +20,7 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Properties;
 
 import static org.agrona.PropertyAction.PRESERVE;
@@ -40,14 +41,15 @@ public class EchoServer implements AutoCloseable
     public void start() throws IOException
     {
         server.start();
-        System.out.println("Server started, listening on: " + server.getListenSockets());
+        System.out.println(Instant.now() + " [gRPC] server started, listening on: " + server.getListenSockets());
     }
 
     public void close() throws Exception
     {
-        System.out.println("Shutting down server...");
+        System.out.println(Instant.now() + " [gRPC] shutting down server...");
         server.shutdownNow();
         server.awaitTermination();
+        System.out.println(Instant.now() + " [gRPC] shutdown complete.");
     }
 
     public static void main(final String[] args) throws Exception
