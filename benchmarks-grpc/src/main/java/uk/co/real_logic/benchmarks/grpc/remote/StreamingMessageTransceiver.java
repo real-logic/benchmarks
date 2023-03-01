@@ -16,6 +16,7 @@
 package uk.co.real_logic.benchmarks.grpc.remote;
 
 import com.google.protobuf.ByteString;
+import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -48,6 +49,20 @@ public class StreamingMessageTransceiver extends MessageTransceiver
     public void init(final Configuration configuration)
     {
         serverChannel = getServerChannel();
+
+        ConnectivityState state;
+        while (ConnectivityState.READY != (state = serverChannel.getState(true)))
+        {
+            if (ConnectivityState.SHUTDOWN == state)
+            {
+                throw new IllegalStateException("gRPC shutdown before connect");
+            }
+            Thread.yield();
+            if (Thread.currentThread().isInterrupted())
+            {
+                throw new IllegalStateException("Interrupted while yielding...");
+            }
+        }
 
         final StreamObserver<EchoMessage> responseObserver = new StreamObserver<EchoMessage>()
         {
