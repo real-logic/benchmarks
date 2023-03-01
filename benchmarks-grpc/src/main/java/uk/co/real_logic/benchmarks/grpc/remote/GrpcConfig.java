@@ -50,7 +50,7 @@ final class GrpcConfig
     public static ManagedChannel getServerChannel()
     {
         final NettyChannelBuilder channelBuilder = NettyChannelBuilder
-            .forAddress(getServerHost(), getServerPort())
+            .forAddress(new InetSocketAddress(getServerHost(), getServerPort()))
             .localSocketPicker(new NettyChannelBuilder.LocalSocketPicker()
             {
                 public SocketAddress createSocketAddress(final SocketAddress remoteAddress, final Attributes attrs)
