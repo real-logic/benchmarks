@@ -103,7 +103,10 @@ public class StreamingMessageTransceiver extends MessageTransceiver
     {
         try
         {
-            requestObserver.onCompleted();
+            if (null != requestObserver)
+            {
+                requestObserver.onCompleted();
+            }
         }
         catch (final Throwable t)
         {
@@ -112,8 +115,11 @@ public class StreamingMessageTransceiver extends MessageTransceiver
         }
         finally
         {
-            serverChannel.shutdown();
-            serverChannel.awaitTermination(1, MINUTES);
+            if (null != serverChannel)
+            {
+                serverChannel.shutdown();
+                serverChannel.awaitTermination(1, MINUTES);
+            }
         }
     }
 
