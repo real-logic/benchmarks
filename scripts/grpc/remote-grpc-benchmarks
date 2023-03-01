@@ -28,6 +28,12 @@ then
   serverPort=${SERVER_PORT}
 fi
 
+clientPort=13500
+if [[ -v CLIENT_PORT && -n ${CLIENT_PORT} ]];
+then
+  clientPort=${CLIENT_PORT}
+fi
+
 source "${DIR}/../remote-benchmarks-runner"
 
 required_vars=(
@@ -37,8 +43,8 @@ required_vars=(
   "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
   "SERVER_JAVA_HOME"
   "SERVER_BENCHMARKS_PATH"
+  "CLIENT_HOST"
   "SERVER_HOST"
-  "SERVER_PORT"
   "SERVER_CPU_CORES")
 
 for var in "${required_vars[@]}"; do
@@ -118,6 +124,7 @@ do
   start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
   && export JVM_OPTS=\"\
   -Duk.co.real_logic.benchmarks.grpc.remote.client.host=${CLIENT_HOST} \
+  -Duk.co.real_logic.benchmarks.grpc.remote.client.port=${clientPort} \
   -Duk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST} \
   -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort} \
   -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
@@ -126,12 +133,15 @@ do
 
   stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
 
+  # shellcheck disable=SC2153
   run_benchmarks \
     "${start_client}" \
     "${stop_server}; ${start_server}" \
     "${stop_server}" \
     "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
     "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
+    "uk.co.real_logic.benchmarks.grpc.remote.client.host=${CLIENT_HOST}" \
+    "uk.co.real_logic.benchmarks.grpc.remote.client.port=${clientPort}" \
     "uk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST}" \
     "uk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort}" \
     "uk.co.real_logic.benchmarks.grpc.remote.certificates=${CLIENT_BENCHMARKS_PATH}/certificates" \
