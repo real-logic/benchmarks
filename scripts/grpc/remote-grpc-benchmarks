@@ -117,6 +117,7 @@ do
   # shellcheck disable=SC2153
   start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
   && export JVM_OPTS=\"\
+  -Duk.co.real_logic.benchmarks.grpc.remote.client.host=${CLIENT_HOST} \
   -Duk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST} \
   -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort} \
   -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
