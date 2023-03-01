@@ -93,7 +93,7 @@ done
 
 for tls in "${tls_options[@]}"
 do
-  scenario="grpc-streaming"
+  scenario="streaming"
 
   if [ "${tls}" == "true" ]
   then
@@ -105,7 +105,9 @@ do
       scenario="${scenario}-onload"
   fi
 
-  echo -e "\n Testing scenario: '${scenario}'\n"
+  test="grpc_${scenario}"
+
+  echo -e "\n Testing scenario: '${test}'\n"
 
   start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
   ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
@@ -129,7 +131,7 @@ do
     "${start_client}" \
     "${stop_server}; ${start_server}" \
     "${stop_server}" \
-    "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
+    "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
     "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
     "uk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST}" \
     "uk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort}" \

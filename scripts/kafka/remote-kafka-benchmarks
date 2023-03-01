@@ -90,31 +90,34 @@ for protocol in "${security_protocols[@]}"
 do
   for flush in "" "1"
   do
-    scenario="kafka"
+    scenario=()
 
     if [ -n "${onload}" ]
     then
-        scenario="${scenario}-onload"
+        scenario+=("onload")
     fi
 
     flush_messages_prop=""
     if [ -n "${flush}" ]
     then
         flush_messages_prop="flush.messages=${flush}"
-        scenario="${scenario}-flush-${flush}"
+        scenario+=("flush-${flush}")
     else
-        scenario="${scenario}-no-flush"
+        scenario+=("no-flush")
     fi
 
     if [ "${protocol}" == "PLAINTEXT" ]
     then
       port=${plain_text_port}
     else
-      scenario="${scenario}-ssl"
+      scenario+=("ssl")
       port=${ssl_port}
     fi
 
-    echo -e "\n Testing scenario: '${scenario}'\n"
+    test=$(printf ",%s" "${foo[@]}")
+    test="kafka_${test:1}"
+
+    echo -e "\n Testing scenario: '${test}'\n"
 
     start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
     ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
@@ -141,7 +144,7 @@ do
       "${start_client}" \
       "${stop_server}; ${start_kafka}" \
       "${stop_server}" \
-      "uk.co.real_logic.benchmarks.remote.output.file=${scenario}" \
+      "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
       "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
       "bootstrap.servers=${SERVER_HOST}:${port}" \
       "security.protocol=${protocol}" \
