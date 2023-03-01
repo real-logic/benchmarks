@@ -200,7 +200,7 @@ public final class LoadTestRig
                     if (receivedMessageCount < sentMessages)
                     {
                         messageTransceiver.receive();
-                        final long newReceivedMessageCount = messageTransceiver.receivedMessages;
+                        final long newReceivedMessageCount = messageTransceiver.receivedMessages();
                         if (newReceivedMessageCount == receivedMessageCount)
                         {
                             idleStrategy.idle();
@@ -239,12 +239,12 @@ public final class LoadTestRig
         out.println(sentMessages);
 
         idleStrategy.reset();
-        long receivedMessageCount = messageTransceiver.receivedMessages;
+        long receivedMessageCount = messageTransceiver.receivedMessages();
         final long deadline = clock.nanoTime() + RECEIVE_DEADLINE_NS;
         while (receivedMessageCount < sentMessages)
         {
             messageTransceiver.receive();
-            final long newReceivedMessageCount = messageTransceiver.receivedMessages;
+            final long newReceivedMessageCount = messageTransceiver.receivedMessages();
             if (newReceivedMessageCount == receivedMessageCount)
             {
                 idleStrategy.idle();
