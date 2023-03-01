@@ -101,9 +101,20 @@ public class StreamingMessageTransceiver extends MessageTransceiver
 
     public void destroy() throws Exception
     {
-        requestObserver.onCompleted();
-
-        serverChannel.shutdown().awaitTermination(1, MINUTES);
+        try
+        {
+            requestObserver.onCompleted();
+        }
+        catch (final Throwable t)
+        {
+            System.err.println("*** gRPC cleanup failed");
+            t.printStackTrace();
+        }
+        finally
+        {
+            serverChannel.shutdown();
+            serverChannel.awaitTermination(1, MINUTES);
+        }
     }
 
     public int send(final int numberOfMessages, final int length, final long timestamp, final long checksum)
