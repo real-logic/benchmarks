@@ -46,7 +46,7 @@ final class GrpcConfig
     public static ManagedChannel getServerChannel()
     {
         final NettyChannelBuilder channelBuilder =
-            NettyChannelBuilder.forAddress(getServerHost(), getServerPort());
+            NettyChannelBuilder.forAddress(getServerHost(), getServerPort()).directExecutor();
         if (getBoolean(TLS_PROP_NAME))
         {
             final Path certificatesDir = certificatesDir();
@@ -75,7 +75,7 @@ final class GrpcConfig
     public static NettyServerBuilder getServerBuilder()
     {
         final NettyServerBuilder serverBuilder =
-            NettyServerBuilder.forAddress(new InetSocketAddress(getServerHost(), getServerPort()));
+            NettyServerBuilder.forAddress(new InetSocketAddress(getServerHost(), getServerPort())).directExecutor();
         if (getBoolean(TLS_PROP_NAME))
         {
             final Path certificatesDir = certificatesDir();
