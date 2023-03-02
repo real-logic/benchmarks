@@ -381,7 +381,7 @@ do
   do
     for mtu in "${mtu_list[@]}"
     do
-      test="cluster-${scenario}-fsync-${fsync}-mtu-${mtu}"
+      test="cluster_${scenario}_fsync-${fsync}-mtu-${mtu}"
       echo -e "\n Testing scenario: '${test}'\n"
 
       client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"

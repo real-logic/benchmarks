@@ -345,7 +345,7 @@ do
 
   for mtu in "${mtu_list[@]}"
   do
-    test="echo-${scenario}-mtu-${mtu}"
+    test="echo_${scenario}_mtu-${mtu}"
     echo -e "\n Testing scenario: '${test}'\n"
 
     dest_port=13000
