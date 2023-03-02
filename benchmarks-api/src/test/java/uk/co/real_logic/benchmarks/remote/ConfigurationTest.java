@@ -16,6 +16,7 @@
 package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.ValueRecorder;
+import org.agrona.AsciiNumberFormatException;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -398,8 +400,42 @@ class ConfigurationTest
         final IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class, Configuration::fromSystemProperties);
 
-        assertEquals("non-integer value for property '" + MESSAGE_RATE_PROP_NAME +
-            "', cause: error parsing int: 100x000", ex.getMessage());
+        assertEquals("invalid rate specified in '" + MESSAGE_RATE_PROP_NAME + "'", ex.getMessage());
+        final Throwable cause = ex.getCause();
+        assertInstanceOf(AsciiNumberFormatException.class, cause);
+        assertEquals("error parsing int: 100x000", cause.getMessage());
+    }
+
+    @Test
+    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfNumberOfMessagesHasInvalidValueWithSuffix()
+    {
+        setProperty(MESSAGE_RATE_PROP_NAME, "25i");
+
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class, Configuration::fromSystemProperties);
+
+        assertEquals("invalid rate specified in '" + MESSAGE_RATE_PROP_NAME + "'", ex.getMessage());
+        final Throwable cause = ex.getCause();
+        assertInstanceOf(NumberFormatException.class, cause);
+        assertEquals(MESSAGE_RATE_PROP_NAME + ": 25i should end with: K or M.", cause.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "uk.co.real_logic.benchmarks.remote.message.rate, 3000M",
+        "uk.co.real_logic.benchmarks.remote.warmup.message.rate, 2456789K" })
+    void fromSystemPropertiesThrowsIllegalArgumentExceptionIfRateOverflows(final String prop, final String value)
+    {
+        setProperty(MESSAGE_RATE_PROP_NAME, "1");
+        setProperty(prop, value);
+
+        final IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class, Configuration::fromSystemProperties);
+
+        assertEquals("invalid rate specified in '" + prop + "'", ex.getMessage());
+        final Throwable cause = ex.getCause();
+        assertInstanceOf(NumberFormatException.class, cause);
+        assertEquals(prop + " would overflow an int: " + value, cause.getMessage());
     }
 
     @Test
@@ -416,7 +452,7 @@ class ConfigurationTest
     @Test
     void fromSystemPropertiesThrowsIllegalArgumentExceptionIfMessageTransceiverHasInvalidValue()
     {
-        setProperty(MESSAGE_RATE_PROP_NAME, "20");
+        setProperty(MESSAGE_RATE_PROP_NAME, "20M");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, Integer.class.getName());
 
         final IllegalArgumentException ex = assertThrows(
@@ -430,12 +466,12 @@ class ConfigurationTest
     void fromSystemPropertiesDefaults()
     {
         setProperty(OUTPUT_FILE_NAME_PROP_NAME, "test-out-prefix");
-        setProperty(MESSAGE_RATE_PROP_NAME, "42");
+        setProperty(MESSAGE_RATE_PROP_NAME, "42K");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
 
         final Configuration configuration = fromSystemProperties();
 
-        assertEquals(42, configuration.messageRate());
+        assertEquals(42_000, configuration.messageRate());
         assertEquals(DEFAULT_WARMUP_ITERATIONS, configuration.warmupIterations());
         assertEquals(DEFAULT_WARMUP_MESSAGE_RATE, configuration.warmupMessageRate());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
@@ -450,9 +486,9 @@ class ConfigurationTest
     void fromSystemPropertiesOverrideAll(final @TempDir Path tempDir)
     {
         setProperty(WARMUP_ITERATIONS_PROP_NAME, "2");
-        setProperty(WARMUP_MESSAGE_RATE_PROP_NAME, "78");
+        setProperty(WARMUP_MESSAGE_RATE_PROP_NAME, "78K");
         setProperty(ITERATIONS_PROP_NAME, "4");
-        setProperty(MESSAGE_RATE_PROP_NAME, "200");
+        setProperty(MESSAGE_RATE_PROP_NAME, "200M");
         setProperty(BATCH_SIZE_PROP_NAME, "3");
         setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
@@ -464,9 +500,9 @@ class ConfigurationTest
         final Configuration configuration = fromSystemProperties();
 
         assertEquals(2, configuration.warmupIterations());
-        assertEquals(78, configuration.warmupMessageRate());
+        assertEquals(78_000, configuration.warmupMessageRate());
         assertEquals(4, configuration.iterations());
-        assertEquals(200, configuration.messageRate());
+        assertEquals(200_000_000, configuration.messageRate());
         assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());

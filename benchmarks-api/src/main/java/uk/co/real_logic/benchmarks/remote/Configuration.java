@@ -176,6 +176,8 @@ public final class Configuration
      */
     public static final String SNAPSHOT_SIZE = "uk.co.real_logic.benchmarks.cluster.snapshot.size";
 
+    private static final int MAX_K_VALUE = Integer.MAX_VALUE / 1000;
+    private static final int MAX_M_VALUE = Integer.MAX_VALUE / 1_000_000;
     private static final MessageDigest SHA256;
 
     static
@@ -570,7 +572,7 @@ public final class Configuration
 
         if (isPropertyProvided(WARMUP_MESSAGE_RATE_PROP_NAME))
         {
-            builder.warmupMessageRate(intProperty(WARMUP_MESSAGE_RATE_PROP_NAME));
+            builder.warmupMessageRate(rateProperty(WARMUP_MESSAGE_RATE_PROP_NAME));
         }
 
         if (isPropertyProvided(ITERATIONS_PROP_NAME))
@@ -605,7 +607,7 @@ public final class Configuration
 
         builder
             .snapshotSize(SystemUtil.getSizeAsLong(SNAPSHOT_SIZE, DEFAULT_SNAPSHOT_SIZE))
-            .messageRate(intProperty(MESSAGE_RATE_PROP_NAME))
+            .messageRate(rateProperty(MESSAGE_RATE_PROP_NAME))
             .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class))
             .outputFileNamePrefix(getPropertyValue(OUTPUT_FILE_NAME_PROP_NAME));
 
@@ -676,11 +678,52 @@ public final class Configuration
         return !isEmpty(getProperty(propName));
     }
 
-    private static int intProperty(final String propName)
+    private static int rateProperty(final String propName)
     {
+        final String value = getPropertyValue(propName);
         try
         {
-            final String value = getPropertyValue(propName);
+            final int lastIndex = value.length() - 1;
+            final char lastCharacter = value.charAt(lastIndex);
+            if (Character.isDigit(lastCharacter))
+            {
+                return AsciiEncoding.parseIntAscii(value, 0, value.length());
+            }
+
+            final int prefix = AsciiEncoding.parseIntAscii(value, 0, lastIndex);
+
+            switch (lastCharacter)
+            {
+                case 'K':
+                    if (prefix > MAX_K_VALUE)
+                    {
+                        throw new NumberFormatException(propName + " would overflow an int: " + value);
+                    }
+                    return prefix * 1000;
+
+                case 'M':
+                    if (prefix > MAX_M_VALUE)
+                    {
+                        throw new NumberFormatException(propName + " would overflow an int: " + value);
+                    }
+                    return prefix * 1_000_000;
+
+                default:
+                    throw new NumberFormatException(
+                        propName + ": " + value + " should end with: K or M.");
+            }
+        }
+        catch (final RuntimeException ex)
+        {
+            throw new IllegalArgumentException("invalid rate specified in '" + propName + "'", ex);
+        }
+    }
+
+    private static int intProperty(final String propName)
+    {
+        final String value = getPropertyValue(propName);
+        try
+        {
             return AsciiEncoding.parseIntAscii(value, 0, value.length());
         }
         catch (final AsciiNumberFormatException ex)
