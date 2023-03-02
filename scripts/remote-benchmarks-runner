@@ -72,13 +72,13 @@ then
   warmupIterations=${WARMUP_ITERATIONS}
 fi
 
-warmupMessageRate=10000
+warmupMessageRate="10K"
 if [[ -v WARMUP_MESSAGE_RATE && -n ${WARMUP_MESSAGE_RATE} ]];
 then
   warmupMessageRate=${WARMUP_MESSAGE_RATE}
 fi
 
-messageRates=(1000000 500000 100000)
+messageRates=("1M" "500K" "100K")
 if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
 then
   IFS=',';
