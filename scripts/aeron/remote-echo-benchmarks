@@ -69,21 +69,21 @@ then
 fi
 
 so_sndbuf="2m"
-if [[ -v DRIVER_SO_SNDBUF && -n ${DRIVER_SO_SNDBUF} ]];
+if [[ -v AERON_SOCKET_SO_SNDBUF && -n ${AERON_SOCKET_SO_SNDBUF} ]];
 then
-  so_sndbuf=${DRIVER_SO_SNDBUF}
+  so_sndbuf=${AERON_SOCKET_SO_SNDBUF}
 fi
 
 so_rcvbuf="2m"
-if [[ -v DRIVER_SO_RCVBUF && -n ${DRIVER_SO_RCVBUF} ]];
+if [[ -v AERON_SOCKET_SO_RCVBUF && -n ${AERON_SOCKET_SO_RCVBUF} ]];
 then
-  so_rcvbuf=${DRIVER_SO_RCVBUF}
+  so_rcvbuf=${AERON_SOCKET_SO_RCVBUF}
 fi
 
-receiver_initial_window="2m"
-if [[ -v DRIVER_RECEIVER_INITIAL_WINDOW && -n ${DRIVER_RECEIVER_INITIAL_WINDOW} ]];
+rcv_initial_window="2m"
+if [[ -v AERON_RCV_INITIAL_WINDOW_LENGTH && -n ${AERON_RCV_INITIAL_WINDOW_LENGTH} ]];
 then
-  receiver_initial_window=${DRIVER_RECEIVER_INITIAL_WINDOW}
+  rcv_initial_window=${AERON_RCV_INITIAL_WINDOW_LENGTH}
 fi
 
 enable_java_driver=1
@@ -294,36 +294,31 @@ fi
 for index in "${!scenarios[@]}"
 do
   scenario="${scenarios[index]}"
-  client_driver="${commands[index]//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
-  client_driver="${client_driver//driver_other_cpu_cores_var/${CLIENT_DRIVER_OTHER_CPU_CORES}}"
-  client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
-  client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
-  client_driver="${client_driver//driver_receiver_cpu_core_var/${CLIENT_DRIVER_RECEIVER_CPU_CORE}}"
-  client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
-  client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
-
-  server_driver="${commands[index]//benchmarks_path_var/${SERVER_BENCHMARKS_PATH}}"
-  server_driver="${server_driver//driver_other_cpu_cores_var/${SERVER_DRIVER_OTHER_CPU_CORES}}"
-  server_driver="${server_driver//driver_conductor_cpu_core_var/${SERVER_DRIVER_CONDUCTOR_CPU_CORE}}"
-  server_driver="${server_driver//driver_sender_cpu_core_var/${SERVER_DRIVER_SENDER_CPU_CORE}}"
-  server_driver="${server_driver//driver_receiver_cpu_core_var/${SERVER_DRIVER_RECEIVER_CPU_CORE}}"
-  server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
-  server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
-
   for mtu in "${mtu_list[@]}"
   do
-    test="echo_${scenario}_mtu-${mtu}_so_sndbuf-${so_sndbuf}_so_rcvbuf-${so_rcvbuf}-rvcwnd-${receiver_initial_window}"
+    test="echo_${scenario}_mtu-${mtu}_so_sndbuf-${so_sndbuf}_so_rcvbuf-${so_rcvbuf}-rcvwnd-${rcv_initial_window}"
     echo -e "\n Testing scenario: '${test}'\n"
 
-    client_driver="${client_driver//driver_mtu_var/${mtu}}"
-    client_driver="${client_driver//driver_so_sndbuf_var/${so_sndbuf}}"
-    client_driver="${client_driver//driver_so_rcvbuf_var/${so_rcvbuf}}"
-    client_driver="${client_driver//driver_receiver_initial_window_var/${receiver_initial_window}}"
+    driver="${commands[index]//driver_mtu_var/${mtu}}"
+    driver="${driver//driver_so_sndbuf_var/${so_sndbuf}}"
+    driver="${driver//driver_so_rcvbuf_var/${so_rcvbuf}}"
+    driver="${driver//driver_receiver_initial_window_var/${rcv_initial_window}}"
 
-    server_driver="${server_driver//driver_mtu_var/${mtu}}"
-    server_driver="${server_driver//driver_so_sndbuf_var/${so_sndbuf}}"
-    server_driver="${server_driver//driver_so_rcvbuf_var/${so_rcvbuf}}"
-    server_driver="${server_driver//driver_receiver_initial_window_var/${receiver_initial_window}}"
+    client_driver="${driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
+    client_driver="${client_driver//driver_other_cpu_cores_var/${CLIENT_DRIVER_OTHER_CPU_CORES}}"
+    client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
+    client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
+    client_driver="${client_driver//driver_receiver_cpu_core_var/${CLIENT_DRIVER_RECEIVER_CPU_CORE}}"
+    client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
+    client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
+
+    server_driver="${driver//benchmarks_path_var/${SERVER_BENCHMARKS_PATH}}"
+    server_driver="${server_driver//driver_other_cpu_cores_var/${SERVER_DRIVER_OTHER_CPU_CORES}}"
+    server_driver="${server_driver//driver_conductor_cpu_core_var/${SERVER_DRIVER_CONDUCTOR_CPU_CORE}}"
+    server_driver="${server_driver//driver_sender_cpu_core_var/${SERVER_DRIVER_SENDER_CPU_CORE}}"
+    server_driver="${server_driver//driver_receiver_cpu_core_var/${SERVER_DRIVER_RECEIVER_CPU_CORE}}"
+    server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
+    server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
     dest_port=13000
     src_port=13100
