@@ -36,47 +36,15 @@ then
   exit 1
 fi
 
-sshConnectionAttempts=10
-if [[ -v SSH_CONNECTION_ATTEMPTS && -n ${SSH_CONNECTION_ATTEMPTS} ]];
-then
-  sshConnectionAttempts=${SSH_CONNECTION_ATTEMPTS}
-fi
+sshConnectionAttempts=${SSH_CONNECTION_ATTEMPTS:-10}
+sshConnectTimeout=${SSH_CONNECT_TIMEOUT:-30}
+sshServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL:-600}
+connectionTimeout="${CONNECTION_TIMEOUT:-60s}"
 
-sshConnectTimeout=30
-if [[ -v SSH_CONNECT_TIMEOUT && -n ${SSH_CONNECT_TIMEOUT} ]];
-then
-  sshConnectTimeout=${SSH_CONNECT_TIMEOUT}
-fi
-
-sshServerAliveInterval=600
-if [[ -v SSH_SERVER_ALIVE_INTERVAL && -n ${SSH_SERVER_ALIVE_INTERVAL} ]];
-then
-  sshServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL}
-fi
-
-runs=5
-if [[ -v RUNS && -n ${RUNS} ]];
-then
-  runs=${RUNS}
-fi
-
-iterations=10
-if [[ -v ITERATIONS && -n ${ITERATIONS} ]];
-then
-  iterations=${ITERATIONS}
-fi
-
-warmupIterations=10
-if [[ -v WARMUP_ITERATIONS && -n ${WARMUP_ITERATIONS} ]];
-then
-  warmupIterations=${WARMUP_ITERATIONS}
-fi
-
-warmupMessageRate="10K"
-if [[ -v WARMUP_MESSAGE_RATE && -n ${WARMUP_MESSAGE_RATE} ]];
-then
-  warmupMessageRate=${WARMUP_MESSAGE_RATE}
-fi
+runs=${RUNS:-5}
+iterations=${ITERATIONS:-10}
+warmupIterations=${WARMUP_ITERATIONS:-10}
+warmupMessageRate="${WARMUP_MESSAGE_RATE:-10K}"
 
 messageRates=("1M" "500K" "100K")
 if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
@@ -106,12 +74,6 @@ then
   IFS=',';
   read -ra burstSizes <<< "${BURST_SIZE}"
   unset IFS;
-fi
-
-connectionTimeout="60s"
-if [[ -v CONNECTION_TIMEOUT && -n ${CONNECTION_TIMEOUT} ]];
-then
-  connectionTimeout=${CONNECTION_TIMEOUT}
 fi
 
 function run_benchmarks()

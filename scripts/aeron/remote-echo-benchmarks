@@ -56,35 +56,11 @@ then
   exit 1
 fi
 
-ef_vi_rxq_size=1024 # ef_vi receive queue size
-if [[ -v EF_VI_RXQ_SIZE && -n ${EF_VI_RXQ_SIZE} ]];
-then
-  ef_vi_rxq_size=${EF_VI_RXQ_SIZE}
-fi
-
-ef_vi_txq_size=2048 # ef_vi send queue size
-if [[ -v EF_VI_TXQ_SIZE && -n ${EF_VI_TXQ_SIZE} ]];
-then
-  ef_vi_txq_size=${EF_VI_TXQ_SIZE}
-fi
-
-so_sndbuf="2m"
-if [[ -v AERON_SOCKET_SO_SNDBUF && -n ${AERON_SOCKET_SO_SNDBUF} ]];
-then
-  so_sndbuf=${AERON_SOCKET_SO_SNDBUF}
-fi
-
-so_rcvbuf="2m"
-if [[ -v AERON_SOCKET_SO_RCVBUF && -n ${AERON_SOCKET_SO_RCVBUF} ]];
-then
-  so_rcvbuf=${AERON_SOCKET_SO_RCVBUF}
-fi
-
-rcv_initial_window="2m"
-if [[ -v AERON_RCV_INITIAL_WINDOW_LENGTH && -n ${AERON_RCV_INITIAL_WINDOW_LENGTH} ]];
-then
-  rcv_initial_window=${AERON_RCV_INITIAL_WINDOW_LENGTH}
-fi
+ef_vi_rxq_size=${EF_VI_RXQ_SIZE:-1024} # ef_vi receive queue size
+ef_vi_txq_size=${EF_VI_TXQ_SIZE:-2048} # ef_vi send queue size
+so_sndbuf="${AERON_SOCKET_SO_SNDBUF:-2m}"
+so_rcvbuf="${AERON_SOCKET_SO_RCVBUF:-2m}"
+rcv_initial_window="${AERON_RCV_INITIAL_WINDOW_LENGTH:-2m}"
 
 enable_java_driver=1
 no_java_driver=0

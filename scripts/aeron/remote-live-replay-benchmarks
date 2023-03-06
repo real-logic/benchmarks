@@ -60,8 +60,11 @@ then
   exit 1
 fi
 
-ef_vi_rxq_size=1024 # ef_vi receive queue size
-ef_vi_txq_size=2048 # ef_vi send queue size
+ef_vi_rxq_size=${EF_VI_RXQ_SIZE:-1024} # ef_vi receive queue size
+ef_vi_txq_size=${EF_VI_TXQ_SIZE:-2048} # ef_vi send queue size
+so_sndbuf="${AERON_SOCKET_SO_SNDBUF:-2m}"
+so_rcvbuf="${AERON_SOCKET_SO_RCVBUF:-2m}"
+rcv_initial_window="${AERON_RCV_INITIAL_WINDOW_LENGTH:-2m}"
 
 enable_c_driver=1
 enable_java_driver=1
