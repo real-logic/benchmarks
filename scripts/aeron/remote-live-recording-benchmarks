@@ -134,56 +134,17 @@ then
   exit 1
 fi
 
-function build_drivers()
-{
-  local scripts_path="${1}/scripts/aeron"
-  local commands=()
+commands=()
+scenarios=()
+scripts_path="benchmarks_path_var/scripts/aeron"
 
-  if [ "${enable_java_driver}" -eq 1 ]
-  then
-    commands+=("export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
-      && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
-  fi
-
-  if [ "${enable_c_driver}" -eq 1 ]
-  then
-    local create_benchmark_props="touch ${scripts_path}/benchmark.properties"
-    commands+=("${create_benchmark_props}; \
-      export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
-      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "${2}" "${3}" "${4}" "${5}")")
-
-    if [ "${enable_ef_vi}" -eq 1 ]
-    then
-      # C driver with ef_vi
-      commands+=("${create_benchmark_props}; \
-        export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
-        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
-        AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
-        AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "" "${2}" "${3}" "${4}" "${5}")")
-    fi
-
-    if [ "${enable_dpdk}" -eq 1 ]
-    then
-      # C driver with DPDK
-      commands+=("${create_benchmark_props}; \
-        export AERON_DPDK_GATEWAY_IPV4_ADDRESS=${6} AERON_DPDK_LOCAL_IPV4_ADDRESS=${7} \
-        && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "${2}" "${3}" "${4}" "${5}")")
-    fi
-  fi
-
-  local IFS=$'\n'
-  echo "${commands[*]}"
-}
-
-IFS=$'\n'
-# shellcheck disable=SC2207
-client_drivers=($(build_drivers "${CLIENT_BENCHMARKS_PATH}" \
-"${CLIENT_DRIVER_OTHER_CPU_CORES}" "${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}" "${CLIENT_DRIVER_SENDER_CPU_CORE}" "${CLIENT_DRIVER_RECEIVER_CPU_CORE}" "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" "${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}"))
-# shellcheck disable=SC2207
-server_drivers=($(build_drivers "${SERVER_BENCHMARKS_PATH}" \
-"${SERVER_DRIVER_OTHER_CPU_CORES}" "${SERVER_DRIVER_CONDUCTOR_CPU_CORE}" "${SERVER_DRIVER_SENDER_CPU_CORE}" "${SERVER_DRIVER_RECEIVER_CPU_CORE}" "${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}" "${SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS}"))
-unset IFS
+driver_properties="echo -e \"\
+aeron.mtu.length=driver_mtu_var\n \
+aeron.ipc.mtu.length=driver_mtu_var\n \
+aeron.socket.so_sndbuf=driver_so_sndbuf_var\n \
+aeron.socket.so_rcvbuf=driver_so_rcvbuf_var\n \
+aeron.rcv.initial.window.length=driver_receiver_initial_window_var\n \
+\" > ${scripts_path}/benchmark.properties"
 
 if [ "${enable_java_driver}" -eq 1 ]
 then
@@ -193,6 +154,9 @@ then
   else
     scenarios+=("java")
   fi
+  commands+=("${driver_properties}; \
+    export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+    && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
 fi
 
 if [ "${enable_c_driver}" -eq 1 ]
@@ -203,42 +167,62 @@ then
   else
     scenarios+=("c")
   fi
+  commands+=("${driver_properties}; \
+    export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+    && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
 
   if [ "${enable_ef_vi}" -eq 1 ]
   then
     scenarios+=("c-ef_vi")
+    commands+=("${driver_properties}; \
+      export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
+      AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
+      AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+      AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
   fi
 
   if [ "${enable_dpdk}" -eq 1 ]
   then
     scenarios+=("c-dpdk")
-
-    if [[ -z "${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS+''}" ]];
-    then
-      echo 'CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS must be set if DPDK is enabled'
-      exit 1
-    fi
-
-    if [[ -z "${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS+''}" ]];
-    then
-      echo 'SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS must be set if DPDK is enabled'
-      exit 1
-    fi
+    commands+=("${driver_properties}; \
+      export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var \
+      AERON_DPDK_LOCAL_IPV4_ADDRESS=driver_aeron_dpdk_local_ipv4_address_var \
+      && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
   fi
 fi
 
 for index in "${!scenarios[@]}"
 do
   scenario="${scenarios[index]}"
-  client_driver="${client_drivers[index]}"
-  server_driver="${server_drivers[index]}"
 
   for fsync in "${file_sync_levels[@]}"
   do
     for mtu in "${mtu_list[@]}"
     do
-      test="live-recording_${scenario}_fsync-${fsync}-mtu-${mtu}"
+      test="live-recording_${scenario}_fsync-${fsync}_mtu-${mtu}_so_sndbuf-${so_sndbuf}_so_rcvbuf-${so_rcvbuf}-rcvwnd-${rcv_initial_window}"
       echo -e "\n Testing scenario: '${test}'\n"
+
+      driver="${commands[index]//driver_mtu_var/${mtu}}"
+      driver="${driver//driver_so_sndbuf_var/${so_sndbuf}}"
+      driver="${driver//driver_so_rcvbuf_var/${so_rcvbuf}}"
+      driver="${driver//driver_receiver_initial_window_var/${rcv_initial_window}}"
+
+      client_driver="${driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
+      client_driver="${client_driver//driver_other_cpu_cores_var/${CLIENT_DRIVER_OTHER_CPU_CORES}}"
+      client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
+      client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
+      client_driver="${client_driver//driver_receiver_cpu_core_var/${CLIENT_DRIVER_RECEIVER_CPU_CORE}}"
+      client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
+      client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
+
+      server_driver="${driver//benchmarks_path_var/${SERVER_BENCHMARKS_PATH}}"
+      server_driver="${server_driver//driver_other_cpu_cores_var/${SERVER_DRIVER_OTHER_CPU_CORES}}"
+      server_driver="${server_driver//driver_conductor_cpu_core_var/${SERVER_DRIVER_CONDUCTOR_CPU_CORE}}"
+      server_driver="${server_driver//driver_sender_cpu_core_var/${SERVER_DRIVER_SENDER_CPU_CORE}}"
+      server_driver="${server_driver//driver_receiver_cpu_core_var/${SERVER_DRIVER_RECEIVER_CPU_CORE}}"
+      server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
+      server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
       client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
       server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"

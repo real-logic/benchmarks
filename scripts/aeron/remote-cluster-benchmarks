@@ -233,37 +233,46 @@ function start_server()
 commands=()
 scenarios=()
 scripts_path="benchmarks_path_var/scripts/aeron"
+
+driver_properties="echo -e \"\
+aeron.mtu.length=driver_mtu_var\n \
+aeron.ipc.mtu.length=driver_mtu_var\n \
+aeron.socket.so_sndbuf=driver_so_sndbuf_var\n \
+aeron.socket.so_rcvbuf=driver_so_rcvbuf_var\n \
+aeron.rcv.initial.window.length=driver_receiver_initial_window_var\n \
+\" > ${scripts_path}/benchmark.properties"
+
 if [ "${enable_java_driver}" -eq 1 ]
 then
   if [ "${no_java_driver}" -eq 0 ]
   then
     scenarios=("java")
-    commands+=("$(start_media_driver "${scripts_path}/media-driver" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var" )")
+    commands+=("${driver_properties}; \
+      $(start_media_driver "${scripts_path}/media-driver" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var" )")
   fi
 
   if [ "${enable_onload}" -eq 1 ]
   then
     scenarios+=("java-onload")
-    commands+=("export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+    commands+=("${driver_properties}; \
+      export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
       && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
   fi
 fi
 
 if [ "${enable_c_driver}" -eq 1 ]
 then
-  # FIXME: Fix MTU ...
-  create_benchmark_props="touch ${scripts_path}/benchmark.properties"
   if [ "${no_c_driver}" -eq 0 ]
   then
     scenarios+=("c")
-     commands+=("${create_benchmark_props}; \
+     commands+=("${driver_properties}; \
       $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
   fi
 
   if [ "${enable_onload}" -eq 1 ]
   then
     scenarios+=("c-onload")
-    commands+=("${create_benchmark_props}; \
+    commands+=("${driver_properties}; \
       export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
       && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
   fi
@@ -271,7 +280,7 @@ then
   if [ "${enable_ef_vi}" -eq 1 ]
   then
     scenarios+=("c-ef_vi")
-    commands+=("${create_benchmark_props}; \
+    commands+=("${driver_properties}; \
       export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
       AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
       AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
@@ -282,7 +291,7 @@ then
   if [ "${enable_dpdk}" -eq 1 ]
   then
     scenarios+=("c-dpdk")
-    commands+=("${create_benchmark_props}; \
+    commands+=("${driver_properties}; \
       export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var \
       AERON_DPDK_LOCAL_IPV4_ADDRESS=driver_aeron_dpdk_local_ipv4_address_var \
       && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
@@ -318,7 +327,7 @@ then
     if [ "${no_c_driver}" -eq 0 ]
     then
       scenarios+=("c-ats")
-      commands+=("${create_benchmark_props}; \
+      commands+=("${driver_properties}; \
         export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
         AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
@@ -330,7 +339,7 @@ then
     if [ "${enable_onload}" -eq 1 ]
     then
       scenarios+=("c-ats-onload")
-      commands+=("${create_benchmark_props}; \
+      commands+=("${driver_properties}; \
         export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
         AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
         AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
@@ -343,7 +352,7 @@ then
     if [ "${enable_ef_vi}" -eq 1 ]
     then
       scenarios+=("c-ats-ef_vi")
-      commands+=("${create_benchmark_props}; \
+      commands+=("${driver_properties}; \
         export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
         AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
         AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
@@ -358,7 +367,7 @@ then
     if [ "${enable_dpdk}" -eq 1 ]
     then
       scenarios+=("c-ats-dpdk")
-      commands+=("${create_benchmark_props}; \
+      commands+=("${driver_properties}; \
         export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var \
         AERON_DPDK_LOCAL_IPV4_ADDRESS=driver_aeron_dpdk_local_ipv4_address_var \
         AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
@@ -373,20 +382,25 @@ fi
 for index in "${!scenarios[@]}"
 do
   scenario="${scenarios[index]}"
-  client_driver="${commands[index]//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
-  client_driver="${client_driver//driver_other_cpu_cores_var/${CLIENT_DRIVER_OTHER_CPU_CORES}}"
-  client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
-  client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
-  client_driver="${client_driver//driver_receiver_cpu_core_var/${CLIENT_DRIVER_RECEIVER_CPU_CORE}}"
-  client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
-  client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
-
   for fsync in "${file_sync_levels[@]}"
   do
     for mtu in "${mtu_list[@]}"
     do
-      test="cluster_${scenario}_fsync-${fsync}-mtu-${mtu}"
+      test="cluster_${scenario}_fsync-${fsync}_mtu-${mtu}_so_sndbuf-${so_sndbuf}_so_rcvbuf-${so_rcvbuf}-rcvwnd-${rcv_initial_window}"
       echo -e "\n Testing scenario: '${test}'\n"
+
+      driver="${commands[index]//driver_mtu_var/${mtu}}"
+      driver="${driver//driver_so_sndbuf_var/${so_sndbuf}}"
+      driver="${driver//driver_so_rcvbuf_var/${so_rcvbuf}}"
+      driver="${driver//driver_receiver_initial_window_var/${rcv_initial_window}}"
+
+      client_driver="${driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
+      client_driver="${client_driver//driver_other_cpu_cores_var/${CLIENT_DRIVER_OTHER_CPU_CORES}}"
+      client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
+      client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
+      client_driver="${client_driver//driver_receiver_cpu_core_var/${CLIENT_DRIVER_RECEIVER_CPU_CORE}}"
+      client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
+      client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
       client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
       cluster_node_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterNode"
@@ -448,7 +462,7 @@ do
                 server_driver_receiver_cpu_core=NODE${n}_DRIVER_RECEIVER_CPU_CORE
                 server_driver_aeron_dpdk_gateway_ipv4_address=NODE${n}_AERON_DPDK_GATEWAY_IPV4_ADDRESS
                 server_driver_aeron_dpdk_local_ipv4_address=NODE${n}_AERON_DPDK_LOCAL_IPV4_ADDRESS
-                server_driver="${commands[index]//benchmarks_path_var/${!server_benchmarks_path}}"
+                server_driver="${driver//benchmarks_path_var/${!server_benchmarks_path}}"
                 server_driver="${server_driver//driver_other_cpu_cores_var/${!server_driver_other_cpu_cores}}"
                 server_driver="${server_driver//driver_conductor_cpu_core_var/${!server_driver_conductor_cpu_core}}"
                 server_driver="${server_driver//driver_sender_cpu_core_var/${!server_driver_sender_cpu_core}}"
