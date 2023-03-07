@@ -66,6 +66,7 @@ so_rcvbuf="${AERON_SOCKET_SO_RCVBUF:-2m}"
 rcv_initial_window="${AERON_RCV_INITIAL_WINDOW_LENGTH:-2m}"
 
 enable_c_driver=1
+no_c_driver=0
 enable_java_driver=1
 enable_ef_vi=1
 enable_dpdk=1
@@ -77,17 +78,21 @@ onload="onload --profile=latency --force-profiles "
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
-  --onload)
-    onload="${2}"
-    shift
-    shift
-    ;;
-  --no-c-driver)
+  --disable-c-driver)
     enable_c_driver=0
     shift
     ;;
-  --no-java-driver)
+  --no-c-driver)
+    no_c_driver=1
+    shift
+    ;;
+  --disable-java-driver)
     enable_java_driver=0
+    shift
+    ;;
+  --onload)
+    onload="${2}"
+    shift
     shift
     ;;
   --no-ef_vi)
@@ -118,11 +123,11 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--no-c-driver] [--no-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
+    echo "${0} [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--disable-c-driver] [--no-c-driver] [--disable-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
     exit
     ;;
   *)
-    echo "Invalid parameter. Use --help to get a list of supported parameters."
+    echo "Invalid parameter: ${1}. Use --help to get a list of supported parameters."
     exit 1
     ;;
   esac
@@ -161,15 +166,18 @@ fi
 
 if [ "${enable_c_driver}" -eq 1 ]
 then
-  if [ -n "${onload}" ]
+  if [ "${no_c_driver}" -eq 0 ]
   then
-    scenarios+=("c-onload")
-  else
-    scenarios+=("c")
+    if [ -n "${onload}" ]
+    then
+      scenarios+=("c-onload")
+    else
+      scenarios+=("c")
+    fi
+    commands+=("${driver_properties}; \
+      export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
   fi
-  commands+=("${driver_properties}; \
-    export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
-    && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_other_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
 
   if [ "${enable_ef_vi}" -eq 1 ]
   then
