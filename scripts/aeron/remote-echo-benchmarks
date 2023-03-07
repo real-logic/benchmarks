@@ -296,25 +296,19 @@ do
     server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
     server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
-    dest_port=13000
-    src_port=13100
-    destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:${dest_port}"
-    source_channel="aeron:udp?endpoint=${SOURCE_IP}:${src_port}"
-    server_destination_channel="${destination_channel}"
-    server_source_channel="${source_channel}"
-    client_destination_channel="${destination_channel}"
-    client_source_channel="${source_channel}"
+    destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:13000"
+    source_channel="aeron:udp?endpoint=${SOURCE_IP}:13100"
 
+    server_interface=''
     if [[ -n "${SERVER_INTERFACE}" ]]
     then
-      server_destination_channel="${destination_channel}|interface=${SERVER_INTERFACE}"
-      server_source_channel="${source_channel}|interface=${SERVER_INTERFACE}"
+      server_interface="|interface=${SERVER_INTERFACE}"
     fi
 
+    client_interface=''
     if [[ -n "${CLIENT_INTERFACE}" ]]
     then
-      client_destination_channel="${destination_channel}|interface=${CLIENT_INTERFACE}"
-      client_source_channel="${source_channel}|interface=${CLIENT_INTERFACE}"
+      client_interface="|interface=${CLIENT_INTERFACE}"
     fi
 
     destination_stream="1000000"
@@ -336,9 +330,9 @@ do
     export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
     && ${server_driver} \
     && export JVM_OPTS=\"\
-    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${server_destination_channel} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${destination_channel}${server_interface} \
     -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${server_source_channel} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${source_channel}${server_interface} \
     -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream}\" \
     && taskset -c ${SERVER_OTHER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
     $(await_java_process_start "${server_class_name}") \
@@ -354,9 +348,9 @@ do
       "${stop_server}" \
       "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
       "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-      "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=${client_destination_channel}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=${destination_channel}${client_interface}" \
       "uk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.source.channel=${client_source_channel}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.source.channel=${source_channel}${client_interface}" \
       "uk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream}"
   done
 done
