@@ -386,7 +386,7 @@ do
   do
     for mtu in "${mtu_list[@]}"
     do
-      test="cluster_${scenario}_fsync-${fsync}_mtu-${mtu}_so_sndbuf-${so_sndbuf}_so_rcvbuf-${so_rcvbuf}-rcvwnd-${rcv_initial_window}"
+      test="cluster_${scenario}_fsync-${fsync}_mtu-${mtu}_rcvwnd-${rcv_initial_window}"
       echo -e "\n Testing scenario: '${test}'\n"
 
       driver="${commands[index]//driver_mtu_var/${mtu}}"
