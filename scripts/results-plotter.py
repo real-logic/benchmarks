@@ -26,7 +26,7 @@ import sys
 from collections import defaultdict
 
 # <type>_<scenario>_[p1-v1-p2-v2-...]_<msg rate>_<burst size>_<msg size>_<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z]+)_(?P<scenario>[a-z0-9-]+)_(?P<params>([a-z]+-[0-9]+-?)*)_(?P<msg_rate>[0-9]+)_(?P<burst_size>[0-9]+)_(?P<msg_size>[0-9]+)_(?P<sha>[a-z0-9]+)-report.hgrm')
+regex_common = re.compile('(?P<type>[a-z]+)_(?P<scenario>[a-z0-9-]+)_(?P<params>([a-z]+-[0-9a-zA-Z]+-?)*)_(?P<msg_rate>[0-9]+)_(?P<burst_size>[0-9]+)_(?P<msg_size>[0-9]+)_(?:[a-z0-9]+)-report.hgrm')
 regex_params = re.compile('([a-z]+)-([0-9]+)')
 
 # echo-<scenario>-mtu-<mtu>_<msg rate>_<burst size>_<msg size>_<sha1>
@@ -105,6 +105,10 @@ def get_key_components(file_name):
 
     components = dict(match.groupdict())
     components.update(params)
+
+    # remove components we don't want to use for grouping
+    components.pop('scenario')
+
     return components
 
 
@@ -116,16 +120,16 @@ def get_plot_filename_and_title(key_dict):
     burst_size = components.pop('burst_size')
     msg_size = components.pop('msg_size')
 
+    params_filename_str = components.pop('params')
+
     # we're only left with params by now
-    params_filename = []
     params_title = []
     for k, v in components.items():
-        params_filename.append(f'{k}-{v}')
-    params_filename_str = params_title.join('-')
-    params_title_str = params_filename.join(' ')
+        params_title.append(f'{k} {v}')
+    params_title_str = ', '.join(params_title)
 
     filename = f'{type}_{params_filename_str}_{rate}_{burst_size}_{msg_size}.png'
-    title = f'{type} {msg_size}@{rate} burst size {burst_size} {params_title_str}'
+    title = f'{type} {msg_size}@{rate} burst size {burst_size}, {params_title_str}'
 
     return filename, title
 
