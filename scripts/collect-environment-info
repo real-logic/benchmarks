@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2023 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+## Script to capture environment information useful to contextualize benchmark results
+##
+
+set -e
+
+MANUFACTURER=`cat /sys/class/dmi/id/chassis_vendor`
+PRODUCT_NAME=`cat /sys/class/dmi/id/product_name`
+MACHINE_TYPE=`vserver=$(lscpu | grep Hypervisor | wc -l); if [ $vserver -gt 0 ]; then echo "VM"; else echo "Physical"; fi`
+OPERATING_SYSTEM=`lsb_release -d -s`
+KERNEL=`uname -r`
+ARCHITECTURE=`arch`
+CPU_NAME=`awk -F':' '/^model name/ {print $2}' /proc/cpuinfo | uniq | sed -e 's/^[ \t]*//'`
+CMDLINE=`cat /proc/cmdline`
+JAVA_VERSION=`java -version`
+
+JSON_SUMMARY=$( jq -n \
+                  --arg ma "$MANUFACTURER" \
+                  --arg pn "$PRODUCT_NAME" \
+                  --arg mt "$MACHINE_TYPE" \
+                  --arg os "$OPERATING_SYSTEM" \
+                  --arg ke "$KERNEL" \
+                  --arg ar "$ARCHITECTURE" \
+                  --arg cpu "$CPU_NAME" \
+                  --arg cm "$CMDLINE" \
+                  --arg ja "$JAVA_VERSION" \
+                  '{manufacturer: $ma, product_name: $pn, machine_type: $mt, operating_system: $os, kernel: $ke, architecture: $ar, cpu_name: $cpu, cmdline: $cm, java_version: $ja}' )
+
+MOUNTS=$(cat /proc/mounts | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
+
+STORAGE_SUMMARY=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps --json)
+
+JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS $STORAGE_SUMMARY" | jq -s add)
+echo "$JSON_SUMMARY" > env-summary.json
+
+# TODO: capture full output in another file
+# sudo lshw -json
