@@ -518,7 +518,7 @@ do
             do
               echo -e "\nStopping node ${n}..."
               ssh_node=SSH_CLUSTER_NODE${n}
-              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
+              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); true && exit"
             done
           done
         done
