@@ -228,6 +228,7 @@ function start_server()
   local cluster_replication_channel_var=NODE${node_id}_CLUSTER_REPLICATION_CHANNEL
   local archive_dir_var=NODE${node_id}_ARCHIVE_DIR
   local archive_control_channel_var=NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
+  local archive_replication_channel_var=NODE${node_id}_ARCHIVE_REPLICATION_CHANNEL
   local other_cpu_cores_var=NODE${node_id}_OTHER_CPU_CORES
   local archive_recorder_cpu_var=NODE${node_id}_ARCHIVE_RECORDER_CPU_CORE
   local archive_replayer_cpu_var=NODE${node_id}_ARCHIVE_REPLAYER_CPU_CORE
@@ -254,6 +255,7 @@ function start_server()
     -Daeron.cluster.service.name=echo-service \
     -Daeron.archive.dir=${!archive_dir_var} \
     -Daeron.archive.control.channel=${!archive_control_channel_var} \
+    -Daeron.archive.replication.channel=${!archive_replication_channel_var} \
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false\" \
