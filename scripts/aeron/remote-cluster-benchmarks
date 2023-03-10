@@ -175,6 +175,43 @@ then
   exit 1
 fi
 
+connectionTimeout="${CONNECTION_TIMEOUT:-60s}"
+
+runs=${RUNS:-5}
+iterations=${iterations:-10}
+warmupIterations=${warmupIterations:-10}
+warmupMessageRate="${WARMUP_MESSAGE_RATE:-10K}"
+
+messageRates=("1M" "500K" "100K")
+if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
+then
+  IFS=',';
+  read -ra messageRates <<< "${MESSAGE_RATE}"
+  unset IFS;
+fi
+
+messageLengths=(32 288 1344)
+if [[ -v MESSAGE_LENGTH && -n ${MESSAGE_LENGTH} ]];
+then
+  IFS=',';
+  read -ra messageLengths <<< "${MESSAGE_LENGTH}"
+  unset IFS;
+fi
+
+if [[ "${#messageRates[@]}" != "${#messageLengths[@]}" ]];
+then
+  echo "MESSAGE_RATE and MESSAGE_LENGTH number of elements do not match: ${#messageRates[@]} vs ${#messageLengths[@]}"
+  exit 1
+fi
+
+burstSizes=(1)
+if [[ -v BURST_SIZE && -n ${BURST_SIZE} ]];
+then
+  IFS=',';
+  read -ra burstSizes <<< "${BURST_SIZE}"
+  unset IFS;
+fi
+
 function start_server()
 {
   local cluster_node_class_name=${1}
@@ -204,7 +241,7 @@ function start_server()
     ; rm -rf \"${!archive_dir_var}\" \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
-    -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout} \
     -Daeron.mtu.length=${mtu} \
     -Daeron.cluster.dir=${!cluster_dir_var} \
     -Daeron.cluster.idle.strategy=noop \
@@ -409,78 +446,77 @@ do
         client_ingress_endpoints="-Daeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}"
       fi
 
-      for rate_index in "${!MESSAGE_RATE[@]}"
+      for rateIndex in "${!messageRates[@]}"
       do
-        for burstSize in "${BURST_SIZE[@]}"
+        messageRate=${messageRates[rateIndex]}
+        messageLength=${messageLengths[rateIndex]}
+        for burstSize in "${burstSizes[@]}"
         do
-          for messageLength in "${MESSAGE_LENGTH[@]}"
+          for (( i=0; i<runs; i++ ))
           do
-            for (( i=0; i<RUNS; i++ ))
+            echo -e '\n### Benchmark run #'"$((i + 1))"' ...\n'
+
+            start_client="export JVM_OPTS=\"\
+            -Daeron.mtu.length=${mtu} \
+            -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout}\
+            -Duk.co.real_logic.benchmarks.remote.warmup.iterations=${warmupIterations}\
+            -Duk.co.real_logic.benchmarks.remote.warmup.message.rate=${warmupMessageRate}\
+            -Duk.co.real_logic.benchmarks.remote.iterations=${iterations}\
+            -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# }\
+            -Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }\
+            -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# }\
+            -Duk.co.real_logic.benchmarks.remote.output.file=${test}\
+            -Duk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results\
+            -Daeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}\
+            ${client_ingress_endpoints}\
+            -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
+            -Daeron.cluster.message.timeout=300000000000\"\
+            && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\"\
+            ; $(kill_java_process "${client_class_name}")\
+            ; ${client_driver}\
+            && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client & \
+            $(await_java_process_start "${client_class_name}")\
+            ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
+            && tail --pid=\$! -f /dev/null; kill -9 \${driver_pid}; wait"
+
+            for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
-              echo -e '\n### Benchmark run #'"$((i + 1))"' ...\n'
+              echo -e "\nStopping rouge node ${n} and cleanup data..."
+              ssh_node=SSH_CLUSTER_NODE${n}
+              archive_dir_var=NODE${n}_ARCHIVE_DIR
+              cluster_dir_var=NODE${n}_CLUSTER_DIR
+              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
+            done
 
-              start_client="export JVM_OPTS=\"\
-              -Daeron.mtu.length=${mtu} \
-              -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${CONNECTION_TIMEOUT}\
-              -Duk.co.real_logic.benchmarks.remote.warmup.iterations=${WARMUP_ITERATIONS}\
-              -Duk.co.real_logic.benchmarks.remote.warmup.message.rate=${WARMUP_MESSAGE_RATE[rate_index]}\
-              -Duk.co.real_logic.benchmarks.remote.iterations=${ITERATIONS}\
-              -Duk.co.real_logic.benchmarks.remote.message.rate=${MESSAGE_RATE[rate_index]}\
-              -Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }\
-              -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# }\
-              -Duk.co.real_logic.benchmarks.remote.output.file=${test}\
-              -Duk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results\
-              -Daeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}\
-              ${client_ingress_endpoints}\
-              -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
-              -Daeron.cluster.message.timeout=300000000000\"\
-              && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\"\
-              ; $(kill_java_process "${client_class_name}")\
-              ; ${client_driver}\
-              && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client & \
-              $(await_java_process_start "${client_class_name}")\
-              ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
-              && tail --pid=\$! -f /dev/null; kill -9 \${driver_pid}; wait"
+            for (( n=0; n<CLUSTER_SIZE; n++ ))
+            do
+              echo -e "\nStarting node ${n}..."
+              ssh_node=SSH_CLUSTER_NODE${n}
+              server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
+              server_driver_other_cpu_cores=NODE${n}_DRIVER_OTHER_CPU_CORES
+              server_driver_conductor_cpu_core=NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
+              server_driver_sender_cpu_core=NODE${n}_DRIVER_SENDER_CPU_CORE
+              server_driver_receiver_cpu_core=NODE${n}_DRIVER_RECEIVER_CPU_CORE
+              server_driver_aeron_dpdk_gateway_ipv4_address=NODE${n}_AERON_DPDK_GATEWAY_IPV4_ADDRESS
+              server_driver_aeron_dpdk_local_ipv4_address=NODE${n}_AERON_DPDK_LOCAL_IPV4_ADDRESS
+              server_driver="${driver//benchmarks_path_var/${!server_benchmarks_path}}"
+              server_driver="${server_driver//driver_other_cpu_cores_var/${!server_driver_other_cpu_cores}}"
+              server_driver="${server_driver//driver_conductor_cpu_core_var/${!server_driver_conductor_cpu_core}}"
+              server_driver="${server_driver//driver_sender_cpu_core_var/${!server_driver_sender_cpu_core}}"
+              server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
+              server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
+              server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
+              execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${mtu}" "${n}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
+            done
 
-              for (( n=0; n<CLUSTER_SIZE; n++ ))
-              do
-                echo -e "\nStopping rouge node ${n} and cleanup data..."
-                ssh_node=SSH_CLUSTER_NODE${n}
-                archive_dir_var=NODE${n}_ARCHIVE_DIR
-                cluster_dir_var=NODE${n}_CLUSTER_DIR
-                execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
-              done
+            echo -e "\nRunning benchmark..."
+            execute_remote_command "${SSH_CLIENT_NODE}" "${start_client} && exit"
 
-              for (( n=0; n<CLUSTER_SIZE; n++ ))
-              do
-                echo -e "\nStarting node ${n}..."
-                ssh_node=SSH_CLUSTER_NODE${n}
-                server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
-                server_driver_other_cpu_cores=NODE${n}_DRIVER_OTHER_CPU_CORES
-                server_driver_conductor_cpu_core=NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
-                server_driver_sender_cpu_core=NODE${n}_DRIVER_SENDER_CPU_CORE
-                server_driver_receiver_cpu_core=NODE${n}_DRIVER_RECEIVER_CPU_CORE
-                server_driver_aeron_dpdk_gateway_ipv4_address=NODE${n}_AERON_DPDK_GATEWAY_IPV4_ADDRESS
-                server_driver_aeron_dpdk_local_ipv4_address=NODE${n}_AERON_DPDK_LOCAL_IPV4_ADDRESS
-                server_driver="${driver//benchmarks_path_var/${!server_benchmarks_path}}"
-                server_driver="${server_driver//driver_other_cpu_cores_var/${!server_driver_other_cpu_cores}}"
-                server_driver="${server_driver//driver_conductor_cpu_core_var/${!server_driver_conductor_cpu_core}}"
-                server_driver="${server_driver//driver_sender_cpu_core_var/${!server_driver_sender_cpu_core}}"
-                server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
-                server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
-                server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
-                execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${mtu}" "${n}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
-              done
-
-              echo -e "\nRunning benchmark..."
-              execute_remote_command "${SSH_CLIENT_NODE}" "${start_client} && exit"
-
-              for (( n=0; n<CLUSTER_SIZE; n++ ))
-              do
-                echo -e "\nStopping node ${n}..."
-                ssh_node=SSH_CLUSTER_NODE${n}
-                execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
-              done
+            for (( n=0; n<CLUSTER_SIZE; n++ ))
+            do
+              echo -e "\nStopping node ${n}..."
+              ssh_node=SSH_CLUSTER_NODE${n}
+              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver) && exit"
             done
           done
         done
