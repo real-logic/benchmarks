@@ -174,7 +174,7 @@ public final class Configuration
     /**
      * Size of the snapshot to be used in the EchoClusterService, null or 0 means no snapshot.
      */
-    public static final String SNAPSHOT_SIZE = "uk.co.real_logic.benchmarks.cluster.snapshot.size";
+    public static final String SNAPSHOT_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.cluster.snapshot.size";
 
     private static final int MAX_K_VALUE = Integer.MAX_VALUE / 1000;
     private static final int MAX_M_VALUE = Integer.MAX_VALUE / 1_000_000;
@@ -606,7 +606,7 @@ public final class Configuration
         }
 
         builder
-            .snapshotSize(SystemUtil.getSizeAsLong(SNAPSHOT_SIZE, DEFAULT_SNAPSHOT_SIZE))
+            .snapshotSize(SystemUtil.getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE))
             .messageRate(rateProperty(MESSAGE_RATE_PROP_NAME))
             .messageTransceiverClass(classProperty(MESSAGE_TRANSCEIVER_PROP_NAME, MessageTransceiver.class))
             .outputFileNamePrefix(getPropertyValue(OUTPUT_FILE_NAME_PROP_NAME));

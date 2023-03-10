@@ -22,14 +22,16 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
-import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.nio.file.Paths;
 import java.util.Properties;
 
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
+import static org.agrona.SystemUtil.getSizeAsLong;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.rethrowingErrorHandler;
+import static uk.co.real_logic.benchmarks.remote.Configuration.DEFAULT_SNAPSHOT_SIZE;
+import static uk.co.real_logic.benchmarks.remote.Configuration.SNAPSHOT_SIZE_PROP_NAME;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
@@ -38,7 +40,6 @@ public final class ClusterNode
     public static void main(final String[] args)
     {
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
-        final Configuration configuration = Configuration.fromSystemProperties();
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)
@@ -57,7 +58,7 @@ public final class ClusterNode
             .aeronDirectoryName(archiveContext.aeronDirectoryName());
 
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
-            .clusteredService(new EchoClusteredService(configuration.snapshotSize()))
+            .clusteredService(new EchoClusteredService(getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE)))
             .errorHandler(rethrowingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(archiveContext.aeronDirectoryName())
