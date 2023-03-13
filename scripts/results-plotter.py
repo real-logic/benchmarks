@@ -8,7 +8,7 @@ usage: results-plotter.py [-h] [--group-by GROUP_BY] [--filter FILTER] [--percen
 
 The script expects files to be in the format
 
-    <type>_<scenario>_ctx_<context parameters>_params_<experiment parameters>_sha-<sha1>-report.hgrm
+    <type>_<scenario>_[ctx_<context parameters>_]params_<experiment parameters>_sha-<sha1>-report.hgrm
 
 e.g.
 
@@ -23,8 +23,8 @@ import re
 import sys
 from collections import defaultdict
 
-# <type>_<scenario>_ctx_[c1-v1_c2-v2_...]_params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z]+)_(?P<scenario>[a-z0-9-]+)_ctx_(?P<context>([a-z]+-[0-9a-zA-Z-\.]+_)+)params_(?P<params>([a-z]+-[0-9a-zA-Z-\.]+_)+)sha-(?:[a-z0-9]+)-report.hgrm')
+# <type>_<scenario>_[ctx_[c1-v1_c2-v2_...]_]params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm
+regex_common = re.compile('(?P<type>[a-z]+)_(?P<scenario>[a-z0-9-]+)_(?:ctx_)?(?P<context>([a-z]+-[0-9a-zA-Z-\.]+_)*)params_(?P<params>([a-z]+-[0-9a-zA-Z-\.]+_)+)sha-(?:[a-z0-9]+)-report.hgrm')
 regex_params = re.compile('([a-z]+)-([0-9a-zA-Z\.-]+)')
 
 
@@ -131,7 +131,9 @@ def parse_file_name(file):
     match = re.search(regex_common, file.name)
 
     # given the regex, the last context and parameters will end in _ which we need to remove
-    ctx_str = match.group('context')[:-1]
+    ctx_str = match.group('context')
+    if ctx_str:
+        ctx_str = ctx_str[:-1]
     params_str = match.group('params')[:-1]
 
     params = dict()
@@ -173,7 +175,6 @@ def get_plot_filename_and_title(key):
         params_filename.append(f'{k}-{v}')
     params_title_str = ', '.join(params_title)
     params_filename_str = '_'.join(params_filename)
-    print(params_filename_str)
     title = f'{type} {params_title_str}'
     filename = f'{type}_{params_filename_str}.png'
 
