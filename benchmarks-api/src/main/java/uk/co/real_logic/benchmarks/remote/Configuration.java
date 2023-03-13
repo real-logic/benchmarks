@@ -376,9 +376,9 @@ public final class Configuration
         }
 
         return prefix +
-            "_msgrate-" + messageRate +
-            "_batchsize-" + batchSize +
-            "_msglength-" + messageLength +
+            "_rate-" + messageRate +
+            "_batch-" + batchSize +
+            "_length-" + messageLength +
             "_sha-" + computeSha256(systemProperties);
     }
 

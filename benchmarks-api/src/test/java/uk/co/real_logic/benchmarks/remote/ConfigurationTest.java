@@ -294,7 +294,7 @@ class ConfigurationTest
             .build();
 
         assertEquals(
-            "the-prefix_msgrate-12_batchsize-3_msglength-75" +
+            "the-prefix_rate-12_batch-3_length-75" +
             "_sha-a2bea3034417edbbe21e66dd9b68d43fe53e287e04a1f6b119741ab9e0729f60",
             configuration.outputFileNamePrefix());
     }
@@ -318,7 +318,7 @@ class ConfigurationTest
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.idleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
-        assertEquals("defaults_msgrate-123_batchsize-" + DEFAULT_BATCH_SIZE + "_msglength-" + MIN_MESSAGE_LENGTH +
+        assertEquals("defaults_rate-123_batch-" + DEFAULT_BATCH_SIZE + "_length-" + MIN_MESSAGE_LENGTH +
             "_sha-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             configuration.outputFileNamePrefix());
     }
@@ -378,7 +378,7 @@ class ConfigurationTest
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
             "\n    idleStrategy=NoOpIdleStrategy{alias=noop}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
-            "\n    outputFileNamePrefix=my-file_msgrate-777_batchsize-2_msglength-64" +
+            "\n    outputFileNamePrefix=my-file_rate-777_batch-2_length-64" +
             "_sha-73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
             "\n}",
             configuration.toString());
