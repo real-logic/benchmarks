@@ -376,10 +376,10 @@ public final class Configuration
         }
 
         return prefix +
-            "_" + messageRate +
-            "_" + batchSize +
-            "_" + messageLength +
-            "_" + computeSha256(systemProperties);
+            "_msgrate-" + messageRate +
+            "_batchsize-" + batchSize +
+            "_msglength-" + messageLength +
+            "_sha-" + computeSha256(systemProperties);
     }
 
     /**
