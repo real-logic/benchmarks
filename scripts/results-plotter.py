@@ -4,17 +4,15 @@
 Script for plotting aggregated benchmark results, grouping them by scenario.
 Generated png files are stored in the source directory.
 
-usage: results-plotter.py [-h] [--type TYPE] [--percentiles-range-max PERCENTILES_RANGE_MAX] directory
+usage: results-plotter.py [-h] [--group-by GROUP_BY] [--filter FILTER] [--percentiles-range-max PERCENTILES_RANGE_MAX] directory
 
 The script expects files to be in the format
 
-    <type>_<scenario>_<optional parameters for the scenario>_<msg rate>_<burst size>_<msg size>_<sha1>-report.hgrm
+    <type>_<scenario>_ctx_<context parameters>_params_<experiment parameters>_sha-<sha1>-report.hgrm
 
 e.g.
 
-    cluster_java-onload_fsync-0-mtu-1408_50000_10_224_a3a5e4dbc707a50dd508bdcc5416e0e580596cf14aeb540dec31b752895623e8-report.hgrm
-
-Legacy formats are supported for echo, cluster and archive (live replay and live recording).
+    echo_java_ctx_instance-c5n.9xlarge_window-2m_params_mtu-8896_sndbuf-2m_rcvbuf-2m_rcvwnd-2m_msgrate-100000_burstsize-1_msgsize-1344_sha-c68b27d86b43946be1a4a1aaebcfa69c4506cb37af013ced29daccf39412d3c3-report.hgrm
 """
 
 import argparse
@@ -25,197 +23,183 @@ import re
 import sys
 from collections import defaultdict
 
-# <type>_<scenario>_[p1-v1-p2-v2-...]_<msg rate>_<burst size>_<msg size>_<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z]+)_(?P<scenario>[a-z0-9-]+)_(?P<params>([a-z]+-[0-9a-zA-Z]+-?)*)_(?P<msg_rate>[0-9]+)_(?P<burst_size>[0-9]+)_(?P<msg_size>[0-9]+)_(?:[a-z0-9]+)-report.hgrm')
-regex_params = re.compile('([a-z]+)-([0-9]+)')
-
-# echo-<scenario>-mtu-<mtu>_<msg rate>_<burst size>_<msg size>_<sha1>
-regex_echo = re.compile('echo-(?P<scenario>[a-z-]+)-(?:mtu-)([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)_([a-z0-9]+)-report.hgrm')
-
-# cluster-<scenario>-fsync-<fsync>[-mtu-<mtu>]_<msg rate>_<burst size>_<msg size>_<sha1>
-regex_cluster = re.compile('cluster-(?P<scenario>[a-z-_]+)-(?:fsync-)([0-9]+)-?(?:mtu-)?([0-9]*)_([0-9]+)_([0-9]+)_([0-9]+)_([a-z0-9]+)-report.hgrm')
-
-# <scenario>-fsync-<fsync>[-mtu-<mtu>]_<msg rate>_<burst size>_<msg size>_<sha1>
-regex_archive = re.compile('(live-replay|live-recording)-(?P<scenario>[a-z-_]+)-(?:fsync-)([0-9]+)-?(?:mtu-)?([0-9]*)_([0-9]+)_([0-9]+)_([0-9]+)_([a-z0-9]+)-report.hgrm')
+# <type>_<scenario>_ctx_[c1-v1_c2-v2_...]_params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm
+regex_common = re.compile('(?P<type>[a-z]+)_(?P<scenario>[a-z0-9-]+)_ctx_(?P<context>([a-z]+-[0-9a-zA-Z-\.]+_)+)params_(?P<params>([a-z]+-[0-9a-zA-Z-\.]+_)+)sha-(?:[a-z0-9]+)-report.hgrm')
+regex_params = re.compile('([a-z]+)-([0-9a-zA-Z\.-]+)')
 
 
+# TODO feature to overwrite the graph title
 def main():
     parser = argparse.ArgumentParser(description='Plot benchmark results.')
     parser.add_argument('directory', help='path of the directory containing the aggregated results.')
-    parser.add_argument('--type', help='type of the benchmark, required for legacy benchmark results. can be: echo, cluster, archive')
-    parser.add_argument('--percentiles-range-max', default='99.9999', help='maximum percentiles to display, e.g. 99.999')
+    parser.add_argument('--group-by', default='scenario', help='comma-separated list of fields by which to group the results on a graph. Example: instance,msgsize')
+    parser.add_argument('--filter', help='comma-separated list of fields to filter for (include). multiple values should be repeated, Example: msgsize=32,msgsize=288,scenario=c-ats')
+    parser.add_argument('--exclude', help='comma-separated list of fields to filter for (exclude). for. multiple values should be repeated, Example: msgsize=1344,scenario=java')
+    parser.add_argument('--percentiles-range-max', default='99.9999', help='maximum percentiles to display. Example: 99.999')
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
+
+    group_by = args.group_by.strip().split(',')
+    filters = parse_filter(args.filter)
+    excludes = parse_filter(args.exclude)
 
     path = os.path.abspath(args.directory)
 
     if not os.path.exists(path):
         sys.exit('Directory ' + args.directory + ' does not exist.')
 
-    if not is_legacy_result(path):
-        plot_graphs(path, args.percentiles_range_max, regex_common, get_key_components, get_plot_filename_and_title)
+    if has_processable_files(path):
+        plot_graphs(path, args.percentiles_range_max, regex_common, group_by, filters, excludes)
     else:
-        if not args.type:
-            sys.exit("Legacy benchmark results require the --type argument to be provided")
-        match args.type:
-            case 'echo':
-                plot_graphs(path, args.percentiles_range_max, regex_echo, get_echo_key_components, get_echo_plot_filename_and_title)
-            case 'cluster':
-                plot_graphs(path, args.percentiles_range_max, regex_cluster, get_cluster_key_components, get_cluster_plot_filename_and_title)
-            case 'archive':
-                plot_graphs(path, args.percentiles_range_max, regex_archive, get_archive_key_components, get_archive_plot_filename_and_title)
-            case other:
-                sys.exit(f'Legacy benchmark type {other} not supported ')
+        sys.exit("No files in the correct format found, expected files with names like <type>_<scenario>_ctx_[c1-v1_c2-v2_...]_params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm")
 
 
-def plot_graphs(path, percentiles_range_max, regex, key_getter, filename_and_title_getter):
+def plot_graphs(path, percentiles_range_max, regex, group_by, filters, excludes):
+    """Plots the graphs by invoking hdr-plot"""
+
     grouped = defaultdict(list)
-    files = (file for file in os.scandir(path) if re.match(regex, file.name))
-    for f in files:
-        key = tuple(sorted(key_getter(f.name) .items()))
+    files = list((parse_file_name(file) for file in os.scandir(path) if re.match(regex, file.name)))
+
+    accepted_files = filter_files(filter_files(files, filters), excludes, exclude=True)
+
+    for f in accepted_files:
+        keys = get_key_fields(f, group_by)
+        key = tuple(keys .items())
         grouped[key].append(f)
 
     for key in grouped.keys():
         with tempfile.TemporaryDirectory() as tmpdir:
-            scenario_files = []
+            grouped_files = []
             for f in grouped[key]:
-                scenario = re.search(regex, f.name).group('scenario')
-                scenario_files.append(scenario + '.hgrm')
-                shutil.copyfile(f.path, os.path.join(tmpdir, scenario + '.' + 'hgrm'))
+                field_values = []
+                for field in group_by:
+                    # rename this for hdr-plot
+                    valid_field_value = f.fields[field].replace('.', '-')
+                    field_values.append(valid_field_value)
+                grouped_files.append('_'.join(field_values) + '.hgrm')
+                shutil.copyfile(f.file.path, os.path.join(tmpdir, '_'.join(field_values) + '.' + 'hgrm'))
 
-            histogram_files = ' '.join(sorted(scenario_files, reverse=True))
-            filename, title = filename_and_title_getter(key)
+            histogram_files = ' '.join(sorted(grouped_files, reverse=True))
+
+            filename, title = get_plot_filename_and_title(key)
             os.chdir(tmpdir)
             os.system(f'hdr-plot --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {histogram_files}')
 
             shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(path, filename))
 
 
-def is_legacy_result(path):
+def has_processable_files(path):
+    """Checks if the path has any files that can be processed by the script."""
+
     files = (file for file in os.scandir(path) if re.match(regex_common, file.name))
-    return not list(files)
+    return list(files)
 
 
-def get_key_components(file_name):
-    match = regex_common.search(file_name)
+def filter_files(files, filters, exclude=False):
+    """Filters the list of files based on the provided filters (inclusive by default, or exclusive)"""
 
-    # extract optional scenario parameters
+    accepted_files = set()
+    for f in files:
+        for filter_field in filters:
+            field_value = f.fields[filter_field]
+            if field_value in filters[filter_field]:
+                if not exclude:
+                    accepted_files.add(f)
+            elif exclude:
+                accepted_files.add(f)
+
+    if not filters:
+        accepted_files = files
+
+    return accepted_files
+
+
+def get_key_fields(benchmark_file, group_by):
+    """Returns the fields that should be used as the key to group files by."""
+
+    key = dict(benchmark_file.fields)
+
+    # remove fields we want to group by
+    for k in group_by:
+        key.pop(k)
+
+    return key
+
+
+def parse_file_name(file):
+    """Returns a BenchmarkFile representation of the file which contains the parsed fields in a useful representation."""
+
+    match = re.search(regex_common, file.name)
+
+    # given the regex, the last context and parameters will end in _ which we need to remove
+    ctx_str = match.group('context')[:-1]
+    params_str = match.group('params')[:-1]
+
     params = dict()
-    for k, v in re.findall(regex_params, match.group('params')):
+    ctx = dict()
+    for k, v in re.findall(regex_params, params_str):
         params[k] = v
+    for k, v in re.findall(regex_params, ctx_str):
+        ctx[k] = v
 
-    components = dict(match.groupdict())
-    components.update(params)
-
-    # remove components we don't want to use for grouping
-    components.pop('scenario')
-
-    return components
+    return BenchmarkFile(file=file, type=match.group('type'), scenario=match.group('scenario'), ctx=ctx, params=params, ctx_raw=ctx_str, params_raw=params_str)
 
 
-def get_plot_filename_and_title(key_dict):
-    components = dict(key_dict)
-    type = components.pop('type')
+def parse_filter(filter_str):
+    """Parses a filter command-line argument, expecting the format field1=value1,field1=value2,field2=value3"""
 
-    rate = components.pop('msg_rate')
-    burst_size = components.pop('burst_size')
-    msg_size = components.pop('msg_size')
+    filters = defaultdict(set)
 
-    params_filename_str = components.pop('params')
+    if not filter_str:
+        return filters
 
-    # we're only left with params by now
+    filter_args = filter_str.strip().split(',')
+    for f in filter_args:
+        param, value = f.split('=')
+        filters[param].add(value)
+
+    return filters
+
+
+def get_plot_filename_and_title(key):
+    """Builds a default title and filename for the graph, using the available parameters."""
+    fields = dict(key)
+    type = fields.pop('type')
+
+    # we're only left with params by now, generate a title from all parameters
     params_title = []
-    for k, v in components.items():
+    params_filename = []
+    for k, v in fields.items():
         params_title.append(f'{k} {v}')
+        params_filename.append(f'{k}-{v}')
     params_title_str = ', '.join(params_title)
-
-    filename = f'{type}_{params_filename_str}_{rate}_{burst_size}_{msg_size}.png'
-    title = f'{type} {msg_size}@{rate} burst size {burst_size}, {params_title_str}'
-
-    return filename, title
-
-
-def get_echo_key_components(file_name):
-    match = re.findall(regex_echo, file_name)
-    return {
-        'type': 'echo',
-        'mtu': match[0][1],
-        'rate': match[0][2],
-        'burst_size': match[0][3],
-        'msg_size': match[0][4]
-    }
-
-
-def get_cluster_key_components(file_name):
-    match = re.findall(regex_cluster, file_name)
-    return {
-        'type': 'cluster',
-        'fsync': match[0][1],
-        'mtu': match[0][2],
-        'rate': match[0][3],
-        'burst_size': match[0][4],
-        'msg_size': match[0][5]
-    }
-
-
-def get_archive_key_components(file_name):
-    match = re.findall(regex_cluster, file_name)
-    return {
-        'type': 'archive',
-        'fsync': match[0][1],
-        'mtu': match[0][2],
-        'rate': match[0][3],
-        'burst_size': match[0][4],
-        'msg_size': match[0][5]
-    }
-
-
-def get_echo_plot_filename_and_title(key_dict):
-    components = dict(key_dict)
-    mtu = components['mtu']
-    rate = components['rate']
-    burst_size = components['burst_size']
-    msg_size = components['msg_size']
-
-    filename = f'echo-mtu-{mtu}_{rate}_{burst_size}_{msg_size}.png'
-    title = f'Echo {msg_size}@{rate}, burst size {burst_size}, MTU {mtu}'
+    params_filename_str = '_'.join(params_filename)
+    print(params_filename_str)
+    title = f'{type} {params_title_str}'
+    filename = f'{type}_{params_filename_str}.png'
 
     return filename, title
 
 
-def get_cluster_plot_filename_and_title(key_dict):
-    components = dict(key_dict)
-    fsync = components['fsync']
-    mtu = components['mtu']
-    rate = components['rate']
-    burst_size = components['burst_size']
-    msg_size = components['msg_size']
+class BenchmarkFile:
+    def __init__(self, file, type, scenario, ctx, params, ctx_raw, params_raw):
+        self.file = file
+        self.type = type
+        self.scenario = scenario
+        self.ctx = ctx
+        self.params = params
+        self.ctx_raw = ctx_raw
+        self.params_raw = params_raw
 
-    if mtu != '':
-        filename = f'cluster_fsync-{fsync}-mtu-{mtu}_{rate}_{burst_size}_{msg_size}.png'
-        title = f'Cluster {msg_size}@{rate}, fsync {fsync}, burst size {burst_size}, MTU {mtu}'
-    else:
-        filename = f'cluster_fsync-{fsync}_{rate}_{burst_size}_{msg_size}.png'
-        title = f'Cluster {msg_size}@{rate}, fsync {fsync}, burst size {burst_size}'
+        self.fields = self.to_keys_dict()
 
-    return filename, title
-
-
-def get_archive_plot_filename_and_title(key_dict):
-    components = dict(key_dict)
-    fsync = components['fsync']
-    mtu = components['mtu']
-    rate = components['rate']
-    burst_size = components['burst_size']
-    msg_size = components['msg_size']
-
-    if mtu != '':
-        filename = f'archive_fsync-{fsync}-mtu-{mtu}_{rate}_{burst_size}_{msg_size}.png'
-        title = f'Archive {msg_size}@{rate}, fsync {fsync}, burst size {burst_size}, MTU {mtu}'
-    else:
-        filename = f'archive_fsync-{fsync}_{rate}_{burst_size}_{msg_size}.png'
-        title = f'Archive {msg_size}@{rate}, fsync {fsync}, burst size {burst_size}'
-
-    return filename, title
+    def to_keys_dict(self):
+        keys = {
+            "type": self.type,
+            "scenario": self.scenario
+        }
+        keys.update(self.ctx)
+        keys.update(self.params)
+        return keys
 
 
 if __name__ == "__main__":
