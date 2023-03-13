@@ -4,7 +4,7 @@
 Script for plotting aggregated benchmark results, grouping them by scenario.
 Generated png files are stored in the source directory.
 
-usage: results-plotter.py [-h] [--group-by GROUP_BY] [--filter FILTER] [--percentiles-range-max PERCENTILES_RANGE_MAX] directory
+usage: results-plotter.py [-h] [--group-by GROUP_BY] [--filter FILTER] [--exclude EXCLUDE] [--percentiles-range-max PERCENTILES_RANGE_MAX] [--title TITLE] directory
 
 The script expects files to be in the format
 
@@ -24,7 +24,7 @@ import sys
 from collections import defaultdict
 
 # <type>_<scenario>_[ctx_[c1-v1_c2-v2_...]_]params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z]+)_(?P<scenario>[a-z0-9-]+)_(?:ctx_)?(?P<context>([a-z]+-[0-9a-zA-Z-\.]+_)*)params_(?P<params>([a-z]+-[0-9a-zA-Z-\.]+_)+)sha-(?:[a-z0-9]+)-report.hgrm')
+regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[a-z0-9-]+)_(?:ctx_)?(?P<context>([a-z]+-[0-9a-zA-Z-\.]+_)*)params_(?P<params>([a-z]+-[0-9a-zA-Z-\.]+_)+)sha-(?:[a-z0-9]+)-report.hgrm')
 regex_params = re.compile('([a-z]+)-([0-9a-zA-Z\.-]+)')
 
 
@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--filter', help='comma-separated list of fields to filter for (include). multiple values should be repeated, Example: msgsize=32,msgsize=288,scenario=c-ats')
     parser.add_argument('--exclude', help='comma-separated list of fields to filter for (exclude). for. multiple values should be repeated, Example: msgsize=1344,scenario=java')
     parser.add_argument('--percentiles-range-max', default='99.9999', help='maximum percentiles to display. Example: 99.999')
+    parser.add_argument('--title', help='custom title for the graphs')
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
     group_by = args.group_by.strip().split(',')
@@ -48,12 +49,12 @@ def main():
         sys.exit('Directory ' + args.directory + ' does not exist.')
 
     if has_processable_files(path):
-        plot_graphs(path, args.percentiles_range_max, regex_common, group_by, filters, excludes)
+        plot_graphs(path, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
     else:
         sys.exit("No files in the correct format found, expected files with names like <type>_<scenario>_ctx_[c1-v1_c2-v2_...]_params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm")
 
 
-def plot_graphs(path, percentiles_range_max, regex, group_by, filters, excludes):
+def plot_graphs(path, percentiles_range_max, regex, group_by, filters, excludes, custom_title):
     """Plots the graphs by invoking hdr-plot"""
 
     grouped = defaultdict(list)
@@ -81,6 +82,8 @@ def plot_graphs(path, percentiles_range_max, regex, group_by, filters, excludes)
             histogram_files = ' '.join(sorted(grouped_files, reverse=True))
 
             filename, title = get_plot_filename_and_title(key)
+            if custom_title:
+                title = custom_title
             os.chdir(tmpdir)
             os.system(f'hdr-plot --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {histogram_files}')
 
