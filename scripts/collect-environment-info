@@ -41,12 +41,16 @@ JSON_SUMMARY=$( jq -n \
                   --arg ja "$JAVA_VERSION" \
                   '{manufacturer: $ma, product_name: $pn, machine_type: $mt, operating_system: $os, kernel: $ke, architecture: $ar, cpu_name: $cpu, cmdline: $cm, java_version: $ja}' )
 
-MOUNTS=$(cat /proc/mounts | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
+MOUNTS=$(cat /proc/mounts | grep -v "loop" | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
 
 STORAGE_SUMMARY=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps --json)
 
-JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS $STORAGE_SUMMARY" | jq -s add)
-echo "$JSON_SUMMARY" > env-summary.json
+EC2_VOLUMES=""
+if [[ $MANUFACTURER == "Amazon EC2" ]]; then
+  if command -v aws &> /dev/null; then
+    EC2_VOLUMES=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values=`curl http://169.254.169.254/latest/meta-data/instance-id`)
+  fi
+fi
 
-# TODO: capture full output in another file
-# sudo lshw -json
+JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS $STORAGE_SUMMARY $EC2_VOLUMES" | jq -s add)
+echo "$JSON_SUMMARY" > env-summary.json
