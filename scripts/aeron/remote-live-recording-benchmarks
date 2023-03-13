@@ -64,6 +64,7 @@ ef_vi_txq_size=${EF_VI_TXQ_SIZE:-2048} # ef_vi send queue size
 so_sndbuf="${AERON_SOCKET_SO_SNDBUF:-2m}"
 so_rcvbuf="${AERON_SOCKET_SO_RCVBUF:-2m}"
 rcv_initial_window="${AERON_RCV_INITIAL_WINDOW_LENGTH:-2m}"
+max_messages_per_send="${AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND:-2}"
 
 enable_c_driver=1
 no_c_driver=0
@@ -146,9 +147,10 @@ scripts_path="benchmarks_path_var/scripts/aeron"
 driver_properties="echo -e \"\
 aeron.mtu.length=driver_mtu_var\n \
 aeron.ipc.mtu.length=driver_mtu_var\n \
-aeron.socket.so_sndbuf=driver_so_sndbuf_var\n \
-aeron.socket.so_rcvbuf=driver_so_rcvbuf_var\n \
-aeron.rcv.initial.window.length=driver_receiver_initial_window_var\n \
+aeron.socket.so_sndbuf=${so_sndbuf}\n \
+aeron.socket.so_rcvbuf=${so_rcvbuf}\n \
+aeron.rcv.initial.window.length=${rcv_initial_window}\n \
+aeron.network.publication.max.messages.per.send=${max_messages_per_send}\n \
 \" > ${scripts_path}/benchmark.properties"
 
 if [ "${enable_java_driver}" -eq 1 ]
@@ -212,9 +214,6 @@ do
       echo -e "\n Testing scenario: '${test}'\n"
 
       driver="${commands[index]//driver_mtu_var/${mtu}}"
-      driver="${driver//driver_so_sndbuf_var/${so_sndbuf}}"
-      driver="${driver//driver_so_rcvbuf_var/${so_rcvbuf}}"
-      driver="${driver//driver_receiver_initial_window_var/${rcv_initial_window}}"
 
       client_driver="${driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
       client_driver="${client_driver//driver_other_cpu_cores_var/${CLIENT_DRIVER_OTHER_CPU_CORES}}"
