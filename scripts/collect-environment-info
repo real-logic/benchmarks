@@ -19,6 +19,16 @@
 
 set -e
 
+REQUIRED_TOOLS=( "jq" "lsb_release" )
+
+for i in "${REQUIRED_TOOLS[@]}"
+do
+  if ! command -v $i &> /dev/null; then
+    echo "$i not installed, cannot collect environment information."
+    exit 0
+  fi
+done
+
 MANUFACTURER=`cat /sys/class/dmi/id/chassis_vendor`
 PRODUCT_NAME=`cat /sys/class/dmi/id/product_name`
 MACHINE_TYPE=`vserver=$(lscpu | grep Hypervisor | wc -l); if [ $vserver -gt 0 ]; then echo "VM"; else echo "Physical"; fi`
