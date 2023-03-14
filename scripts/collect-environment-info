@@ -30,6 +30,7 @@ do
 done
 
 OUTPUT_PATH=${1:-.}
+JDK_HOME=${2:-$JAVA_HOME}
 
 MANUFACTURER=`cat /sys/class/dmi/id/chassis_vendor`
 PRODUCT_NAME=`cat /sys/class/dmi/id/product_name`
@@ -39,7 +40,7 @@ KERNEL=`uname -r`
 ARCHITECTURE=`arch`
 CPU_NAME=`awk -F':' '/^model name/ {print $2}' /proc/cpuinfo | uniq | sed -e 's/^[ \t]*//'`
 CMDLINE=`cat /proc/cmdline`
-JAVA_VERSION=`java -version`
+JAVA_VERSION=`$JDK_HOME/bin/java -version`
 
 JSON_SUMMARY=$( jq -n \
                   --arg ma "$MANUFACTURER" \
@@ -53,16 +54,54 @@ JSON_SUMMARY=$( jq -n \
                   --arg ja "$JAVA_VERSION" \
                   '{manufacturer: $ma, product_name: $pn, machine_type: $mt, operating_system: $os, kernel: $ke, architecture: $ar, cpu_name: $cpu, cmdline: $cm, java_version: $ja}' )
 
-MOUNTS=$(cat /proc/mounts | grep -v "loop" | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
+MOUNTS_TXT=$(mount | grep -v "loop" | grep -v "cgroup" )
+MOUNTS_JSON=$(cat /proc/mounts | grep -v "loop" | grep -v "cgroup" | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
 
-STORAGE_SUMMARY=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps --json)
+STORAGE_SUMMARY_TXT=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps)
+STORAGE_SUMMARY_JSON=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps --json)
 
-EC2_VOLUMES=""
+EC2_VOLUMES_JSON=""
 if [[ $MANUFACTURER == "Amazon EC2" ]]; then
   if command -v aws &> /dev/null; then
-    EC2_VOLUMES=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values=`curl http://169.254.169.254/latest/meta-data/instance-id`)
+    EC2_VOLUMES_JSON=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values=`curl http://169.254.169.254/latest/meta-data/instance-id`)
   fi
 fi
+EC2_VOLUMES_SUMMARY_TXT=$(echo $EC2_VOLUMES_JSON | jq -r '.Volumes[] | "\(.VolumeId) type: \(.VolumeType) iops: \(.Iops) throughput: \(.Throughput)"')
 
-JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS $STORAGE_SUMMARY $EC2_VOLUMES" | jq -s add)
+JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $EC2_VOLUMES_JSON" | jq -s add)
 echo "$JSON_SUMMARY" > $OUTPUT_PATH/env-summary.json
+
+CPU_INFO=$(lscpu)
+
+TXT_SUMMARY="Manufacturer:     $MANUFACTURER
+Product name:     $PRODUCT_NAME
+Machine type:     $MACHINE_TYPE
+Operating system: $OPERATING_SYSTEM
+Kernel:           $KERNEL
+Kernel cmdline:   $CMDLINE
+Architecture:     $ARCHITECTURE
+CPU name:         $CPU_NAME
+Java version:     $JAVA_VERSION
+
+Mount points
+============
+$MOUNTS_TXT
+
+Block devices
+=============
+$STORAGE_SUMMARY_TXT
+
+CPUs
+====
+$CPU_INFO
+"
+
+echo "$TXT_SUMMARY" > $OUTPUT_PATH/env-summary.txt
+
+if [[ ! -z "$EC2_VOLUMES_JSON" ]]; then
+  EC2_SUMMARY="Amazon EC2 Volumes
+==================
+$EC2_VOLUMES_SUMMARY_TXT
+"
+  echo "$EC2_SUMMARY" >> $OUTPUT_PATH/env-summary.txt
+fi
