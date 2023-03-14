@@ -23,7 +23,7 @@ REQUIRED_TOOLS=( "jq" "lsb_release" )
 
 for i in "${REQUIRED_TOOLS[@]}"
 do
-  if ! command -v $i &> /dev/null; then
+  if ! command -v "$i" &> /dev/null; then
     echo "$i not installed, cannot collect environment information."
     exit 0
   fi
@@ -32,15 +32,19 @@ done
 OUTPUT_PATH=${1:-.}
 JDK_HOME=${2:-$JAVA_HOME}
 
-MANUFACTURER=`cat /sys/class/dmi/id/chassis_vendor`
-PRODUCT_NAME=`cat /sys/class/dmi/id/product_name`
-MACHINE_TYPE=`vserver=$(lscpu | grep Hypervisor | wc -l); if [ $vserver -gt 0 ]; then echo "VM"; else echo "Physical"; fi`
-OPERATING_SYSTEM=`lsb_release -d -s`
-KERNEL=`uname -r`
-ARCHITECTURE=`arch`
-CPU_NAME=`awk -F':' '/^model name/ {print $2}' /proc/cpuinfo | uniq | sed -e 's/^[ \t]*//'`
-CMDLINE=`cat /proc/cmdline`
-JAVA_VERSION=`$JDK_HOME/bin/java -version`
+MANUFACTURER=$(cat /sys/class/dmi/id/chassis_vendor)
+PRODUCT_NAME=$(cat /sys/class/dmi/id/product_name)
+MACHINE_TYPE=$(vserver=$(lscpu | grep -c Hypervisor); if [ "$vserver" -gt 0 ]; then echo "VM"; else echo "Physical"; fi)
+OPERATING_SYSTEM=$(lsb_release -d -s)
+KERNEL=$(uname -r)
+ARCHITECTURE=$(arch)
+CPU_NAME=$(awk -F':' '/^model name/ {print $2}' /proc/cpuinfo | uniq | sed -e 's/^[ \t]*//')
+CMDLINE=$(cat /proc/cmdline)
+if [[ -z $JDK_HOME ]]; then
+  JAVA_VERSION="Java not available"
+else
+  JAVA_VERSION=$("$JDK_HOME"/bin/java -version)
+fi
 
 JSON_SUMMARY=$( jq -n \
                   --arg ma "$MANUFACTURER" \
@@ -55,7 +59,7 @@ JSON_SUMMARY=$( jq -n \
                   '{manufacturer: $ma, product_name: $pn, machine_type: $mt, operating_system: $os, kernel: $ke, architecture: $ar, cpu_name: $cpu, cmdline: $cm, java_version: $ja}' )
 
 MOUNTS_TXT=$(mount | grep -v "loop" | grep -v "cgroup" )
-MOUNTS_JSON=$(cat /proc/mounts | grep -v "loop" | grep -v "cgroup" | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
+MOUNTS_JSON=$(grep -v "loop" /proc/mounts | grep -v "cgroup" | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
 
 STORAGE_SUMMARY_TXT=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps)
 STORAGE_SUMMARY_JSON=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps --json)
@@ -63,13 +67,13 @@ STORAGE_SUMMARY_JSON=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-S
 EC2_VOLUMES_JSON=""
 if [[ $MANUFACTURER == "Amazon EC2" ]]; then
   if command -v aws &> /dev/null; then
-    EC2_VOLUMES_JSON=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values=`curl http://169.254.169.254/latest/meta-data/instance-id`)
+    EC2_VOLUMES_JSON=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$(curl http://169.254.169.254/latest/meta-data/instance-id)")
   fi
 fi
-EC2_VOLUMES_SUMMARY_TXT=$(echo $EC2_VOLUMES_JSON | jq -r '.Volumes[] | "\(.VolumeId) type: \(.VolumeType) iops: \(.Iops) throughput: \(.Throughput)"')
+EC2_VOLUMES_SUMMARY_TXT=$(echo "$EC2_VOLUMES_JSON" | jq -r '.Volumes[] | "\(.VolumeId) type: \(.VolumeType) iops: \(.Iops) throughput: \(.Throughput)"')
 
 JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $EC2_VOLUMES_JSON" | jq -s add)
-echo "$JSON_SUMMARY" > $OUTPUT_PATH/env-summary.json
+echo "$JSON_SUMMARY" > "$OUTPUT_PATH/env-summary.json"
 
 CPU_INFO=$(lscpu)
 
@@ -96,12 +100,12 @@ CPUs
 $CPU_INFO
 "
 
-echo "$TXT_SUMMARY" > $OUTPUT_PATH/env-summary.txt
+echo "$TXT_SUMMARY" > "$OUTPUT_PATH"/env-summary.txt
 
-if [[ ! -z "$EC2_VOLUMES_JSON" ]]; then
+if [[ -n "$EC2_VOLUMES_JSON" ]]; then
   EC2_SUMMARY="Amazon EC2 Volumes
 ==================
 $EC2_VOLUMES_SUMMARY_TXT
 "
-  echo "$EC2_SUMMARY" >> $OUTPUT_PATH/env-summary.txt
+  echo "$EC2_SUMMARY" >> "$OUTPUT_PATH"/env-summary.txt
 fi
