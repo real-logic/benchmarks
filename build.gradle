@@ -149,6 +149,7 @@ project(':benchmarks-aeron') {
         implementation "io.aeron:aeron-cluster:${aeronVersion}"
         implementation "com.lmax:disruptor:${disruptorVersion}"
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+        runtimeOnly "io.aeron:aeron-samples:${aeronVersion}"
     }
 }
 
