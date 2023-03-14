@@ -124,12 +124,11 @@ function run_benchmarks()
 
 function collect_environment_info()
 {
-  local collect_env_script = "collect-environment-info"
   local scripts_path = "${1}"
   local output_path = "${2}"
   local java_home = "${3}"
 
-  execute_remote_command "${SSH_CLIENT_NODE}" "${scripts_path}/${collect_env_script} $output_path $java_home; true && exit"
+  execute_remote_command "${SSH_CLIENT_NODE}" "${scripts_path}/collect-environment-info $output_path $java_home; true && exit"
 }
 
 function download_results()
