@@ -354,4 +354,6 @@ do
   done
 done
 
+collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
+
 download_results "${results_file}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

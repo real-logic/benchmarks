@@ -29,6 +29,8 @@ do
   fi
 done
 
+OUTPUT_PATH=${1:-.}
+
 MANUFACTURER=`cat /sys/class/dmi/id/chassis_vendor`
 PRODUCT_NAME=`cat /sys/class/dmi/id/product_name`
 MACHINE_TYPE=`vserver=$(lscpu | grep Hypervisor | wc -l); if [ $vserver -gt 0 ]; then echo "VM"; else echo "Physical"; fi`
@@ -63,4 +65,4 @@ if [[ $MANUFACTURER == "Amazon EC2" ]]; then
 fi
 
 JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS $STORAGE_SUMMARY $EC2_VOLUMES" | jq -s add)
-echo "$JSON_SUMMARY" > env-summary.json
+echo "$JSON_SUMMARY" > $OUTPUT_PATH/env-summary.json
