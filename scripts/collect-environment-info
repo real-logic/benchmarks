@@ -43,7 +43,7 @@ CMDLINE=$(cat /proc/cmdline)
 if [[ -z $JDK_HOME ]]; then
   JAVA_VERSION="Java not available"
 else
-  JAVA_VERSION=$("$JDK_HOME"/bin/java -version)
+  JAVA_VERSION=$("$JDK_HOME/bin/java" -Xinternalversion 2>&1)
 fi
 
 JSON_SUMMARY=$( jq -n \
