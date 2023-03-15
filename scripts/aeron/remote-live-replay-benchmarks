@@ -182,7 +182,7 @@ then
 
   if [ "${enable_ef_vi}" -eq 1 ]
   then
-    scenarios+=("c-ef_vi")
+    scenarios+=("c-efvi")
     commands+=("${driver_properties}; \
       export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
       AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
@@ -209,7 +209,7 @@ do
   do
     for mtu in "${mtu_list[@]}"
     do
-      test="live-replay_${scenario}_fsync-${fsync}_mtu-${mtu}_rcvwnd-${rcv_initial_window}"
+      test="live-replay_${scenario}_params_fsync-${fsync}_mtu-${mtu}_rcvwnd-${rcv_initial_window}"
       echo -e "\n Testing scenario: '${test}'\n"
 
       driver="${commands[index]//driver_mtu_var/${mtu}}"
