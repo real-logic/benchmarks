@@ -25,6 +25,8 @@ import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
 
+import java.io.PrintStream;
+import java.time.Instant;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -52,11 +54,15 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     EchoNode(final AtomicBoolean running)
     {
-        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true);
+        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true, System.out);
     }
 
     EchoNode(
-        final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron, final boolean ownsAeronClient)
+        final AtomicBoolean running,
+        final MediaDriver mediaDriver,
+        final Aeron aeron,
+        final boolean ownsAeronClient,
+        final PrintStream out)
     {
         this.running = running;
         this.mediaDriver = mediaDriver;
@@ -80,6 +86,7 @@ public final class EchoNode implements AutoCloseable, Runnable
                 .commit();
         };
 
+        out.println(Instant.now() + " " + getClass().getSimpleName() + " awaiting connections...");
         awaitConnected(
             () -> subscription.isConnected() && publication.isConnected(),
             connectionTimeoutNs(),

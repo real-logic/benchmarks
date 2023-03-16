@@ -21,17 +21,19 @@ import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
 import org.junit.jupiter.api.AfterEach;
 
+import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
 import static java.lang.System.clearProperty;
+import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, EchoNode>
 {
     protected EchoNode createNode(final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron)
     {
-        return new EchoNode(running, mediaDriver, aeron, false);
+        return new EchoNode(running, mediaDriver, aeron, false, mock(PrintStream.class));
     }
 
     protected MediaDriver createDriver()
