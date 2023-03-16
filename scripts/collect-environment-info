@@ -58,21 +58,36 @@ JSON_SUMMARY=$( jq -n \
                   --arg ja "$JAVA_VERSION" \
                   '{manufacturer: $ma, product_name: $pn, machine_type: $mt, operating_system: $os, kernel: $ke, architecture: $ar, cpu_name: $cpu, cmdline: $cm, java_version: $ja}' )
 
-MOUNTS_TXT=$(mount | grep -v "loop" | grep -v "cgroup" )
-MOUNTS_JSON=$(grep -v "loop" /proc/mounts | grep -v "cgroup" | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
+MOUNTS_TXT=$(mount | grep -P '^[0-9]+|^\/dev\/(?!loop)|^tmpfs')
+MOUNTS_JSON=$(grep -P '^[0-9]+|^\/dev\/(?!loop)|^tmpfs' /proc/mounts | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
 
 STORAGE_SUMMARY_TXT=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps)
 STORAGE_SUMMARY_JSON=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps --json)
 
-EC2_VOLUMES_JSON=""
+EC2_JSON=""
+EC2_TXT=""
 if [[ $MANUFACTURER == "Amazon EC2" ]]; then
   if command -v aws &> /dev/null; then
-    EC2_VOLUMES_JSON=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$(curl http://169.254.169.254/latest/meta-data/instance-id)")
+    EC2_INFO=()
+    readarray -t instance_ids < <(aws ec2 describe-instances --filters Name=tag:Experiment,Values="$(curl -s http://169.254.169.254/latest/meta-data/tags/instance/Experiment)" | jq -r '.Reservations[] .Instances[] .InstanceId')
+        for id in "${instance_ids[@]}"; do
+            INSTANCE_INFO=$(aws ec2 describe-instances --instance-ids "$id" | jq '.Reservations[] .Instances[] | { instanceId: .InstanceId, name:(.Tags[] | select(.Key=="Name") .Value) }')
+            VOLUME_INFO=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$id")
+            EC2_INFO+=("$(echo "$INSTANCE_INFO $VOLUME_INFO" | jq -s add)")
+            EC2_TXT="$EC2_TXT
+$(echo "$INSTANCE_INFO" | jq -r '.instanceId')
+===================
+Name:    $(echo "$INSTANCE_INFO" | jq -r '.name')
+Volumes:
+$(echo "$VOLUME_INFO" | jq -r '.Volumes[] | "- \(.VolumeId) size: \(.Size)GB type: \(.VolumeType) iops: \(.Iops) throughput: \(.Throughput)"')
+
+"
+    done
+    EC2_JSON=$(echo "${EC2_INFO[@]}" | jq -s '{ instances: . }')
   fi
 fi
-EC2_VOLUMES_SUMMARY_TXT=$(echo "$EC2_VOLUMES_JSON" | jq -r '.Volumes[] | "\(.VolumeId) type: \(.VolumeType) iops: \(.Iops) throughput: \(.Throughput)"')
 
-JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $EC2_VOLUMES_JSON" | jq -s add)
+JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $EC2_JSON" | jq -s add)
 echo "$JSON_SUMMARY" > "$OUTPUT_PATH/env-summary.json"
 
 CPU_INFO=$(lscpu)
@@ -102,10 +117,10 @@ $CPU_INFO
 
 echo "$TXT_SUMMARY" > "$OUTPUT_PATH"/env-summary.txt
 
-if [[ -n "$EC2_VOLUMES_JSON" ]]; then
-  EC2_SUMMARY="Amazon EC2 Volumes
-==================
-$EC2_VOLUMES_SUMMARY_TXT
+if [[ -n "$EC2_TXT" ]]; then
+  EC2_SUMMARY="Amazon EC2
+==========
+$EC2_TXT
 "
   echo "$EC2_SUMMARY" >> "$OUTPUT_PATH"/env-summary.txt
 fi
