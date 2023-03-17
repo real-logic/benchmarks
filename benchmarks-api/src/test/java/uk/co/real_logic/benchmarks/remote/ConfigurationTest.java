@@ -72,7 +72,7 @@ class ConfigurationTest
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Warmup iterations cannot be less than 0, got: -1", ex.getMessage());
+        assertEquals("'" + WARMUP_ITERATIONS_PROP_NAME + "' cannot be less than 0, got: -1", ex.getMessage());
     }
 
     @Test
@@ -110,20 +110,49 @@ class ConfigurationTest
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Iterations cannot be less than 1, got: " + iterations,
+        assertEquals("'" + ITERATIONS_PROP_NAME + "' cannot be less than 1, got: " + iterations,
             ex.getMessage());
     }
 
     @ParameterizedTest
     @ValueSource(ints = { -123, 0 })
-    void throwsIllegalArgumentExceptionIfMessageRateIsInvalid(final int messageRate)
+    void throwsIllegalArgumentExceptionIfMessageRateIsLessThanOne(final int messageRate)
     {
         final Builder builder = new Builder()
             .messageRate(messageRate);
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Message rate cannot be less than 1, got: " + messageRate, ex.getMessage());
+        assertEquals("'" + MESSAGE_RATE_PROP_NAME + "' cannot be less than 1, got: " + messageRate, ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 1_000_000_001, Integer.MAX_VALUE })
+    void throwsIllegalArgumentExceptionIfMessageRateExceedsMaxValue(final int messageRate)
+    {
+        final Builder builder = new Builder()
+            .messageRate(messageRate);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
+
+        assertEquals(
+            "'" + MESSAGE_RATE_PROP_NAME + "' cannot be greater than " + MAX_MESSAGE_RATE + ", got: " + messageRate,
+            ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 1_000_000_001, Integer.MAX_VALUE })
+    void throwsIllegalArgumentExceptionIfWarmupMessageRateExceedsMaxValue(final int messageRate)
+    {
+        final Builder builder = new Builder()
+            .warmupMessageRate(messageRate);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
+
+        assertEquals(
+            "'" + WARMUP_MESSAGE_RATE_PROP_NAME + "' cannot be greater than " + MAX_MESSAGE_RATE + ", got: " +
+            messageRate,
+            ex.getMessage());
     }
 
     @ParameterizedTest
@@ -136,7 +165,7 @@ class ConfigurationTest
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Batch size cannot be less than 1, got: " + size, ex.getMessage());
+        assertEquals("'" + BATCH_SIZE_PROP_NAME + "' cannot be less than 1, got: " + size, ex.getMessage());
     }
 
     @ParameterizedTest
@@ -149,7 +178,8 @@ class ConfigurationTest
 
         final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
 
-        assertEquals("Message length cannot be less than " + MIN_MESSAGE_LENGTH + ", got: " + length,
+        assertEquals(
+            "'" + MESSAGE_LENGTH_PROP_NAME + "' cannot be less than " + MIN_MESSAGE_LENGTH + ", got: " + length,
             ex.getMessage());
     }
 
@@ -200,7 +230,7 @@ class ConfigurationTest
 
         final NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
 
-        assertEquals("IdleStrategy cannot be null", ex.getMessage());
+        assertEquals("'" + IDLE_STRATEGY_PROP_NAME + "' cannot be null", ex.getMessage());
     }
 
     @Test
@@ -489,7 +519,7 @@ class ConfigurationTest
         setProperty(WARMUP_ITERATIONS_PROP_NAME, "2");
         setProperty(WARMUP_MESSAGE_RATE_PROP_NAME, "78K");
         setProperty(ITERATIONS_PROP_NAME, "4");
-        setProperty(MESSAGE_RATE_PROP_NAME, "200M");
+        setProperty(MESSAGE_RATE_PROP_NAME, "1000M");
         setProperty(BATCH_SIZE_PROP_NAME, "3");
         setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
@@ -503,7 +533,7 @@ class ConfigurationTest
         assertEquals(2, configuration.warmupIterations());
         assertEquals(78_000, configuration.warmupMessageRate());
         assertEquals(4, configuration.iterations());
-        assertEquals(200_000_000, configuration.messageRate());
+        assertEquals(MAX_MESSAGE_RATE, configuration.messageRate());
         assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());

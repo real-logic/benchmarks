@@ -176,6 +176,11 @@ public final class Configuration
      */
     public static final String SNAPSHOT_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.cluster.snapshot.size";
 
+    /**
+     * Max message rate allowed, i.e. 1 message per nanosecond.
+     */
+    public static final int MAX_MESSAGE_RATE = 1_000_000_000;
+
     private static final int MAX_K_VALUE = Integer.MAX_VALUE / 1000;
     private static final int MAX_M_VALUE = Integer.MAX_VALUE / 1_000_000;
     private static final MessageDigest SHA256;
@@ -207,14 +212,17 @@ public final class Configuration
 
     private Configuration(final Builder builder)
     {
-        this.warmupIterations = checkMinValue(builder.warmupIterations, 0, "Warmup iterations");
-        this.iterations = checkMinValue(builder.iterations, 1, "Iterations");
-        this.warmupMessageRate = checkMinValue(builder.warmupMessageRate, 0, "Warmup message rate");
-        this.messageRate = checkMinValue(builder.messageRate, 1, "Message rate");
-        this.batchSize = checkMinValue(builder.batchSize, 1, "Batch size");
-        this.messageLength = checkMinValue(builder.messageLength, MIN_MESSAGE_LENGTH, "Message length");
+        this.warmupIterations = checkValueRange(
+            builder.warmupIterations, 0, Integer.MAX_VALUE, WARMUP_ITERATIONS_PROP_NAME);
+        this.iterations = checkValueRange(builder.iterations, 1, Integer.MAX_VALUE, ITERATIONS_PROP_NAME);
+        this.warmupMessageRate = checkValueRange(
+            builder.warmupMessageRate, 0, MAX_MESSAGE_RATE, WARMUP_MESSAGE_RATE_PROP_NAME);
+        this.messageRate = checkValueRange(builder.messageRate, 1, MAX_MESSAGE_RATE, MESSAGE_RATE_PROP_NAME);
+        this.batchSize = checkValueRange(builder.batchSize, 1, Integer.MAX_VALUE, BATCH_SIZE_PROP_NAME);
+        this.messageLength =
+            checkValueRange(builder.messageLength, MIN_MESSAGE_LENGTH, Integer.MAX_VALUE, MESSAGE_LENGTH_PROP_NAME);
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
-        this.idleStrategy = requireNonNull(builder.idleStrategy, "IdleStrategy cannot be null");
+        this.idleStrategy = requireNonNull(builder.idleStrategy, "'" + IDLE_STRATEGY_PROP_NAME + "' cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
         this.trackHistory = builder.trackHistory;
         outputFileNamePrefix = computeFileNamePrefix(builder.outputFileNamePrefix, builder.systemProperties);
@@ -637,11 +645,18 @@ public final class Configuration
         throw new IllegalStateException("could not find 'certificates' directory under: " + userDir.toAbsolutePath());
     }
 
-    private static int checkMinValue(final int value, final int minValue, final String prefix)
+    private static int checkValueRange(final int value, final int minValue, final int maxValue, final String propName)
     {
         if (value < minValue)
         {
-            throw new IllegalArgumentException(prefix + " cannot be less than " + minValue + ", got: " + value);
+            throw new IllegalArgumentException(
+                "'" + propName + "' cannot be less than " + minValue + ", got: " + value);
+        }
+
+        if (value > maxValue)
+        {
+            throw new IllegalArgumentException(
+                "'" + propName + "' cannot be greater than " + maxValue + ", got: " + value);
         }
 
         return value;
