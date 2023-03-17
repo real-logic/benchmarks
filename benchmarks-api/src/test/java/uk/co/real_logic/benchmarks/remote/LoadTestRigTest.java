@@ -362,7 +362,10 @@ class LoadTestRigTest
         testRig.run();
         final long durationNs = System.nanoTime() - startTimeNs;
 
-        final long maxDurationNs = SECONDS.toNanos(configuration.warmupIterations() + configuration.iterations());
+        final long maxDurationNs = SECONDS.toNanos(
+            configuration.warmupIterations() +
+            configuration.iterations() +
+            1 /* init + report + destroy */);
         assertTrue(durationNs <= maxDurationNs,
             () -> "Too long: duration=" + durationNs + " vs maxDurationNs=" + maxDurationNs);
         final File[] files = tempDir.toFile().listFiles();
