@@ -169,10 +169,13 @@ public final class LoadTestRig
         final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.idleStrategy();
-        final long sendIntervalNs = (long)ceil((double)NANOS_PER_SECOND * burstSize / numberOfMessages);
+        // The `sendIntervalNs` might be off if the division is not exact in which case more messages will be sent per
+        // second than specified via `numberOfMessages`. However, this guarantees that the duration of the send
+        // operation is bound by the number of iterations.
+        final long sendIntervalNs = NANOS_PER_SECOND * burstSize / numberOfMessages;
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
         final long startTimeNs = clock.nanoTime();
-        final long endTimeNs = startTimeNs + (totalNumberOfMessages * sendIntervalNs / burstSize);
+        final long stopTimeNs = startTimeNs + (iterations * NANOS_PER_SECOND);
 
         long sentMessages = 0;
         long nowNs = startTimeNs, timestampNs = startTimeNs;
@@ -196,8 +199,14 @@ public final class LoadTestRig
                 batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
                 timestampNs += sendIntervalNs;
                 long receivedMessageCount = 0;
-                while (nowNs < timestampNs && nowNs < endTimeNs)
+                while (nowNs < timestampNs && nowNs < stopTimeNs)
                 {
+                    if (nowNs >= nextReportTimeNs)
+                    {
+                        reportProgress(startTimeNs, nowNs, sentMessages, numberOfMessages);
+                        nextReportTimeNs += NANOS_PER_SECOND;
+                    }
+
                     if (receivedMessageCount < sentMessages)
                     {
                         messageTransceiver.receive();
@@ -216,6 +225,7 @@ public final class LoadTestRig
                     {
                         idleStrategy.idle();
                     }
+
                     nowNs = clock.nanoTime();
                 }
             }
@@ -225,7 +235,7 @@ public final class LoadTestRig
                 messageTransceiver.receive();
             }
 
-            if (nowNs >= endTimeNs)
+            if (nowNs >= stopTimeNs)
             {
                 break;
             }

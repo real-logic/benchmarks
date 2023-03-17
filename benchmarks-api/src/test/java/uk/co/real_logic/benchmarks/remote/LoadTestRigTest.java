@@ -275,10 +275,10 @@ class LoadTestRigTest
         verify(clock, times(24)).nanoTime();
         verify(idleStrategy, times(10)).reset();
         verify(messageTransceiver).send(4, 24, 1000000000L, CHECKSUM);
-        verify(messageTransceiver).send(4, 24, 1444444445L, CHECKSUM);
-        verify(messageTransceiver).send(4, 24, 1888888890L, CHECKSUM);
-        verify(messageTransceiver).send(4, 24, 2333333335L, CHECKSUM);
-        verify(messageTransceiver).send(2, 24, 2777777780L, CHECKSUM);
+        verify(messageTransceiver).send(4, 24, 1444444444L, CHECKSUM);
+        verify(messageTransceiver).send(4, 24, 1888888888L, CHECKSUM);
+        verify(messageTransceiver).send(4, 24, 2333333332L, CHECKSUM);
+        verify(messageTransceiver).send(2, 24, 2777777776L, CHECKSUM);
         verify(messageTransceiver, times(9)).receive();
         verify(messageTransceiver, times(10)).receivedMessages();
         verify(messageTransceiver, times(18)).onMessageReceived(anyLong(), anyLong());
@@ -347,10 +347,10 @@ class LoadTestRigTest
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(2)
             .warmupMessageRate(100)
-            .iterations(3)
-            .messageRate(7777)
+            .iterations(5)
+            .messageRate(777)
             .messageLength(32)
-            .batchSize(19)
+            .batchSize(9)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("test")
@@ -358,8 +358,13 @@ class LoadTestRigTest
             .build();
         final LoadTestRig testRig = new LoadTestRig(configuration);
 
+        final long startTimeNs = System.nanoTime();
         testRig.run();
+        final long durationNs = System.nanoTime() - startTimeNs;
 
+        final long maxDurationNs = SECONDS.toNanos(configuration.warmupIterations() + configuration.iterations());
+        assertTrue(durationNs <= maxDurationNs,
+            () -> "Too long: duration=" + durationNs + " vs maxDurationNs=" + maxDurationNs);
         final File[] files = tempDir.toFile().listFiles();
         assertNotNull(files);
         assertEquals(1, files.length);
