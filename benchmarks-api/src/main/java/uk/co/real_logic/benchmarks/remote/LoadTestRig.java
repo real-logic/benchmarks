@@ -279,7 +279,7 @@ public final class LoadTestRig
     {
         final long elapsedSeconds = round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
         final long sendRate = 0d == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
-        out.format("Send rate %,d msg/sec%n", sendRate <= numberOfMessages ? sendRate : numberOfMessages);
+        out.format("Send rate: %,d msgs/sec%n", sendRate <= numberOfMessages ? sendRate : numberOfMessages);
     }
 
     private void warnIfInsufficientCpu()
