@@ -129,7 +129,7 @@ class LoadTestRigTest
             configuration.messageLength(),
             configuration.batchSize());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);
-        inOrder.verify(out).println(1L);
+        inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(messageTransceiver).reset();
         inOrder.verify(out).printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes" +
             " payload and a burst size of %,d...%n",
@@ -138,7 +138,7 @@ class LoadTestRigTest
             configuration.messageLength(),
             configuration.batchSize());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);
-        inOrder.verify(out).println(1L);
+        inOrder.verify(out).format("Send rate %,d msg/sec%n", 1L);
         inOrder.verify(out).printf("%nHistogram of RTT latencies in microseconds.%n");
         inOrder.verify(persistedHistogram).outputPercentileDistribution(out, 1000.0);
         inOrder.verify(persistedHistogram).saveToFile(configuration.outputDirectory(), configuration
@@ -282,8 +282,8 @@ class LoadTestRigTest
         verify(messageTransceiver, times(9)).receive();
         verify(messageTransceiver, times(10)).receivedMessages();
         verify(messageTransceiver, times(18)).onMessageReceived(anyLong(), anyLong());
-        verify(out).println(8L);
-        verify(out).println(18L);
+        verify(out).format("Send rate %,d msg/sec%n", 8L);
+        verify(out).format("Send rate %,d msg/sec%n", 9L);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
@@ -335,10 +335,9 @@ class LoadTestRigTest
         verify(messageTransceiver, times(120)).receive();
         verify(messageTransceiver, times(119)).receivedMessages();
         verify(messageTransceiver, times(120)).onMessageReceived(anyLong(), anyLong());
-        verify(out).println(30L);
-        verify(out).println(60L);
-        verify(out).println(90L);
-        verify(out).println(120L);
+        verify(out).format("Send rate %,d msg/sec%n", 5L);
+        verify(out).format("Send rate %,d msg/sec%n", 6L);
+        verify(out).format("Send rate %,d msg/sec%n", 10L);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
@@ -351,7 +350,7 @@ class LoadTestRigTest
             .iterations(3)
             .messageRate(7777)
             .messageLength(32)
-            .batchSize(5)
+            .batchSize(19)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("test")
@@ -376,7 +375,7 @@ class LoadTestRigTest
             .iterations(3)
             .messageRate(3040)
             .messageLength(32)
-            .batchSize(5)
+            .batchSize(13)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("test")
