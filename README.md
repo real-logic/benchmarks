@@ -70,7 +70,7 @@ second will have a different message length (i.e. `224` bytes) etc.
 
 To aggregate the results of the multiple runs into a single file there is the `aggregate-results` script.
 
-For example if the `results` directory contains the following files:
+For example if the ``results`` directory contains the following files:
 ```bash
 results
 ├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-0.hdr
@@ -125,7 +125,7 @@ The biggest difference between scenario 2 and this scenario is that there is no 
 reading from the disc of the saved data but still allowing consumption of those messages that were successfully
 persisted.
 
-Please the documentation in the `aeron` directory for more information.
+Please the documentation in the ``aeron`` directory for more information.
 
 #### gRPC
 
@@ -133,7 +133,7 @@ For gRPC there is only ping-pong test with two different implementations:
 - Blocking client - client uses blocking API to send messages.
 - Streaming client - client uses streaming API to send/receive messages.
 
-Please the documentation in the `grpc` directory for more information.
+Please read the documentation in then ``grpc`` directory for more information.
 
 #### Kafka
 
