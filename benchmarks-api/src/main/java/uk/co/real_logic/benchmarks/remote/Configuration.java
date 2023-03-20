@@ -384,10 +384,10 @@ public final class Configuration
         }
 
         return prefix +
-            "_rate-" + messageRate +
-            "_batch-" + batchSize +
-            "_length-" + messageLength +
-            "_sha-" + computeSha256(systemProperties);
+            "^rate=" + messageRate +
+            "^batch=" + batchSize +
+            "^length=" + messageLength +
+            "^sha=" + computeSha256(systemProperties);
     }
 
     /**

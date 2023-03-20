@@ -133,9 +133,9 @@ function collect_environment_info()
 
 function download_results()
 {
-  local archive="/home/${SSH_USER}/${1}.tar.gz"
-  local results_dir="${2}"
-  local dest_dir="${3}"
+  local archive="/home/${SSH_USER}/${1}_$(date '+%Y-%m-%d-%H-%M-%S')_${2}.tar.gz"
+  local results_dir="${3}"
+  local dest_dir="${4}"
 
   execute_remote_command "${SSH_CLIENT_NODE}" "rm -f \"${archive}\"; cd \"${results_dir}\" && tar -czf \"${archive}\" . && exit"
   scp -i "${SSH_KEY_FILE}" \

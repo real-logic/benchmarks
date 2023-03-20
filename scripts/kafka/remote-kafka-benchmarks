@@ -48,13 +48,17 @@ then
   exit 1
 fi
 
+context=""
 security_protocols=("PLAINTEXT" "SSL")
 onload="onload --profile=latency --force-profiles"
-results_file="kafka-results"
 
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
+  --context)
+    context="${2}"
+    shift
+    ;;
   --no-ssl)
     security_protocols=("PLAINTEXT")
     shift
@@ -68,13 +72,8 @@ do
     shift
     shift
     ;;
-  --results-file)
-    results_file="${2}"
-    shift
-    shift
-    ;;
   -h|--help)
-    echo "${0} [--no-ssl] [--no-onload] [--onload \"\$onload_command\"]"
+    echo "${0} [--context] [--no-ssl] [--no-onload] [--onload \"\$onload_command\"]"
     exit
     ;;
   *)
@@ -114,8 +113,8 @@ do
       port=${ssl_port}
     fi
 
-    test=$(printf ",%s" "${foo[@]}")
-    test="kafka_${test:1}"
+    test=$(printf "-%s" "${scenario[@]}")
+    test="kafka_${test:1}_${context}"
 
     echo -e "\n Testing scenario: '${test}'\n"
 
@@ -156,4 +155,4 @@ done
 
 collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
 
-download_results "${results_file}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "kafka" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

@@ -66,6 +66,7 @@ so_rcvbuf="${AERON_SOCKET_SO_RCVBUF:-2m}"
 rcv_initial_window="${AERON_RCV_INITIAL_WINDOW_LENGTH:-2m}"
 max_messages_per_send="${AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND:-2}"
 
+context=""
 enable_c_driver=1
 no_c_driver=0
 enable_java_driver=1
@@ -73,12 +74,15 @@ enable_ef_vi=1
 enable_dpdk=1
 file_sync_levels=(0 2)
 mtu_list=(1408 8896)
-results_file="aeron-live-recording-results"
 onload="onload --profile=latency --force-profiles "
 
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
+  --context)
+    context="${2}"
+    shift
+    ;;
   --disable-c-driver)
     enable_c_driver=0
     shift
@@ -111,11 +115,6 @@ do
     shift
     shift
     ;;
-  --results-file)
-    results_file="${2}"
-    shift
-    shift
-    ;;
   --mtu)
     IFS=','
     read -ra mtu_list <<< "${2}"
@@ -124,7 +123,7 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--disable-c-driver] [--no-c-driver] [--disable-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
+    echo "${0} [--context] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--disable-c-driver] [--no-c-driver] [--disable-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
     exit
     ;;
   *)
@@ -210,7 +209,7 @@ do
   do
     for mtu in "${mtu_list[@]}"
     do
-      test="live-recording_${scenario}_params_fsync-${fsync}_mtu-${mtu}_rcvwnd-${rcv_initial_window}"
+      test="live-recording_${scenario}_${context}^fsync=${fsync}^mtu=${mtu}^rcvwnd=${rcv_initial_window}"
       echo -e "\n Testing scenario: '${test}'\n"
 
       driver="${commands[index]//driver_mtu_var/${mtu}}"
@@ -292,4 +291,4 @@ done
 
 collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
 
-download_results "${results_file}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "live-recording" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

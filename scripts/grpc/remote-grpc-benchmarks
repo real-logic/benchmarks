@@ -60,14 +60,17 @@ then
   exit 1
 fi
 
-
+context=""
 tls_options=("false" "true")
-results_file="grpc-results"
 onload="onload --profile=latency --force-profiles"
 
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
+  --context)
+    context="${2}"
+    shift
+    ;;
   --no-tls)
     tls_options=("false")
     shift
@@ -81,13 +84,8 @@ do
     shift
     shift
     ;;
-  --results-file)
-    results_file="${2}"
-    shift
-    shift
-    ;;
   -h|--help)
-    echo "${0} [--no-tls] [--no-onload] [--onload \"\$onload_command\"]"
+    echo "${0} [--context] [--no-tls] [--no-onload] [--onload \"\$onload_command\"]"
     exit
     ;;
   *)
@@ -111,7 +109,7 @@ do
       scenario="${scenario}-onload"
   fi
 
-  test="grpc_${scenario}"
+  test="grpc_${scenario}_${context}"
 
   echo -e "\n Testing scenario: '${test}'\n"
 
@@ -152,4 +150,4 @@ done
 
 collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
 
-download_results "${results_file}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "grpc" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
