@@ -106,13 +106,22 @@ def filter_files(files, filters, exclude=False):
 
     accepted_files = set()
     for f in files:
+        should_append = True
         for filter_field in filters:
             field_value = f.fields[filter_field]
             if field_value in filters[filter_field]:
                 if not exclude:
-                    accepted_files.add(f)
-            elif exclude:
-                accepted_files.add(f)
+                    should_append = should_append and True
+                else:
+                    should_append = should_append and False
+            else:
+                if not exclude:
+                    should_append = should_append and False
+                else:
+                    should_append = should_append and True
+
+        if filters and should_append:
+            accepted_files.add(f)
 
     if not filters:
         accepted_files = files
