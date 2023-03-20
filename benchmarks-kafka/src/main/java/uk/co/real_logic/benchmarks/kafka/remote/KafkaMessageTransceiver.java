@@ -116,7 +116,7 @@ public class KafkaMessageTransceiver extends MessageTransceiver
     private void createTopic(final Configuration configuration)
     {
         final String outputFileNamePrefix = configuration.outputFileNamePrefix();
-        topic = "benchmark-" + outputFileNamePrefix.substring(outputFileNamePrefix.lastIndexOf('_') + 1);
+        topic = "benchmark-" + outputFileNamePrefix.substring(outputFileNamePrefix.lastIndexOf("sha=") + 4);
 
         final Properties config = new Properties();
         config.putAll(getCommonProperties());

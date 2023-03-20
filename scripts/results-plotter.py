@@ -8,11 +8,11 @@ usage: results-plotter.py [-h] [--group-by GROUP_BY] [--filter FILTER] [--exclud
 
 The script expects files to be in the format
 
-    <type>_<scenario>_[ctx_<context parameters>_]params_<experiment parameters>_sha-<sha1>-report.hgrm
+    <type>_<scenario>_<parameters>^sha=<sha1>-report.hgrm
 
 e.g.
 
-    echo_java_ctx_instance-c5n.9xlarge_window-2m_params_mtu-8896_sndbuf-2m_rcvbuf-2m_rcvwnd-2m_msgrate-100000_burstsize-1_msgsize-1344_sha-c68b27d86b43946be1a4a1aaebcfa69c4506cb37af013ced29daccf39412d3c3-report.hgrm
+    echo_java_instance=c5n.9xlarge^window=2m^mtu=8896^so_sndbuf=2m^so_rcvbuf=2m^rcvwnd=2m^rate=100000^batch=1^length=1344^sha=c68b27d86b43946be1a4a1aaebcfa69c4506cb37af013ced29daccf39412d3c3-report.hgrm
 """
 
 import argparse
@@ -23,15 +23,14 @@ import re
 import sys
 from collections import defaultdict
 
-# <type>_<scenario>_[ctx_[c1-v1_c2-v2_...]_]params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[a-z0-9-]+)_(?:ctx_)?(?P<context>([a-z]+-[0-9a-zA-Z-\.]+_)*)params_(?P<params>([a-z]+-[0-9a-zA-Z-\.]+_)+)sha-(?:[a-z0-9]+)-report.hgrm')
-regex_params = re.compile('([a-z]+)-([0-9a-zA-Z\.-]+)')
+# <type>_<scenario>_[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm
+regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[^_]+)_(?P<params>([^=\^]+=[^\^]+\^?)+)\^sha=(?:[a-z0-9]+)-report.hgrm')
+regex_params = re.compile('([^=\^]+)=([^\^]+)')
 
 
-# TODO feature to overwrite the graph title
 def main():
     parser = argparse.ArgumentParser(description='Plot benchmark results.')
-    parser.add_argument('directory', help='path of the directory containing the aggregated results.')
+    parser.add_argument('directories', nargs='+', help='list of directories containing the aggregated results.')
     parser.add_argument('--group-by', default='scenario', help='comma-separated list of fields by which to group the results on a graph. Example: instance,msgsize')
     parser.add_argument('--filter', help='comma-separated list of fields to filter for (include). multiple values should be repeated, Example: msgsize=32,msgsize=288,scenario=c-ats')
     parser.add_argument('--exclude', help='comma-separated list of fields to filter for (exclude). for. multiple values should be repeated, Example: msgsize=1344,scenario=java')
@@ -43,22 +42,27 @@ def main():
     filters = parse_filter(args.filter)
     excludes = parse_filter(args.exclude)
 
-    path = os.path.abspath(args.directory)
+    paths = []
+    for dir in args.directories:
+        path = os.path.abspath(dir)
+        if not os.path.exists(path):
+            sys.exit('Directory ' + args.directory + ' does not exist.')
+        if not has_processable_files(path):
+            sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm".format(path))
+        paths.append(path)
 
-    if not os.path.exists(path):
-        sys.exit('Directory ' + args.directory + ' does not exist.')
-
-    if has_processable_files(path):
-        plot_graphs(path, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
-    else:
-        sys.exit("No files in the correct format found, expected files with names like <type>_<scenario>_ctx_[c1-v1_c2-v2_...]_params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm")
+    plot_graphs(paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
 
 
-def plot_graphs(path, percentiles_range_max, regex, group_by, filters, excludes, custom_title):
+def plot_graphs(paths, percentiles_range_max, regex, group_by, filters, excludes, custom_title):
     """Plots the graphs by invoking hdr-plot"""
 
+    output_path = paths[0]
+    files = []
+    for path in paths:
+        files.extend(list((parse_file_name(file) for file in os.scandir(path) if re.match(regex, file.name))))
+
     grouped = defaultdict(list)
-    files = list((parse_file_name(file) for file in os.scandir(path) if re.match(regex, file.name)))
 
     accepted_files = filter_files(filter_files(files, filters), excludes, exclude=True)
 
@@ -87,7 +91,7 @@ def plot_graphs(path, percentiles_range_max, regex, group_by, filters, excludes,
             os.chdir(tmpdir)
             os.system(f'hdr-plot --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {histogram_files}')
 
-            shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(path, filename))
+            shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(output_path, filename))
 
 
 def has_processable_files(path):
@@ -102,13 +106,22 @@ def filter_files(files, filters, exclude=False):
 
     accepted_files = set()
     for f in files:
+        should_append = True
         for filter_field in filters:
             field_value = f.fields[filter_field]
             if field_value in filters[filter_field]:
                 if not exclude:
-                    accepted_files.add(f)
-            elif exclude:
-                accepted_files.add(f)
+                    should_append = should_append and True
+                else:
+                    should_append = should_append and False
+            else:
+                if not exclude:
+                    should_append = should_append and False
+                else:
+                    should_append = should_append and True
+
+        if filters and should_append:
+            accepted_files.add(f)
 
     if not filters:
         accepted_files = files
@@ -133,20 +146,13 @@ def parse_file_name(file):
 
     match = re.search(regex_common, file.name)
 
-    # given the regex, the last context and parameters will end in _ which we need to remove
-    ctx_str = match.group('context')
-    if ctx_str:
-        ctx_str = ctx_str[:-1]
-    params_str = match.group('params')[:-1]
+    params_str = match.group('params')
 
     params = dict()
-    ctx = dict()
     for k, v in re.findall(regex_params, params_str):
         params[k] = v
-    for k, v in re.findall(regex_params, ctx_str):
-        ctx[k] = v
 
-    return BenchmarkFile(file=file, type=match.group('type'), scenario=match.group('scenario'), ctx=ctx, params=params, ctx_raw=ctx_str, params_raw=params_str)
+    return BenchmarkFile(file=file, type=match.group('type'), scenario=match.group('scenario'), params=params, params_raw=params_str)
 
 
 def parse_filter(filter_str):
@@ -185,13 +191,11 @@ def get_plot_filename_and_title(key):
 
 
 class BenchmarkFile:
-    def __init__(self, file, type, scenario, ctx, params, ctx_raw, params_raw):
+    def __init__(self, file, type, scenario, params, params_raw):
         self.file = file
         self.type = type
         self.scenario = scenario
-        self.ctx = ctx
         self.params = params
-        self.ctx_raw = ctx_raw
         self.params_raw = params_raw
 
         self.fields = self.to_keys_dict()
@@ -201,7 +205,6 @@ class BenchmarkFile:
             "type": self.type,
             "scenario": self.scenario
         }
-        keys.update(self.ctx)
         keys.update(self.params)
         return keys
 
