@@ -329,6 +329,27 @@ class ConfigurationTest
             configuration.outputFileNamePrefix());
     }
 
+    @ParameterizedTest
+    @CsvSource({ "1000000000,1000M", "5000,5K", "12345,12345", "7890000,7890K" })
+    void outputFileNamePrefixUsesHumanReadableRateValues(
+        final String rate, final String expectedOutput, final @TempDir Path tempDir)
+    {
+        final Configuration configuration = new Builder()
+            .messageRate(Integer.parseInt(rate))
+            .batchSize(3)
+            .messageLength(75)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .outputDirectory(tempDir)
+            .outputFileNamePrefix("the-prefix")
+            .systemProperties(props("E", "m*c^2"))
+            .build();
+
+        final String outputFileNamePrefix = configuration.outputFileNamePrefix();
+        final int startIndex = outputFileNamePrefix.indexOf("rate=");
+        final int endIndex = outputFileNamePrefix.indexOf('^', startIndex + 1);
+        assertEquals("rate=" + expectedOutput, outputFileNamePrefix.substring(startIndex, endIndex));
+    }
+
     @Test
     void defaultOptions()
     {
@@ -389,7 +410,7 @@ class ConfigurationTest
             .warmupIterations(4)
             .warmupMessageRate(999)
             .iterations(10)
-            .messageRate(777)
+            .messageRate(777000)
             .batchSize(2)
             .messageLength(64)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
@@ -402,13 +423,13 @@ class ConfigurationTest
             "\n    warmUpIterations=4" +
             "\n    warmupMessageRate=999" +
             "\n    iterations=10" +
-            "\n    messageRate=777" +
+            "\n    messageRate=777K" +
             "\n    batchSize=2" +
             "\n    messageLength=64" +
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
             "\n    idleStrategy=NoOpIdleStrategy{alias=noop}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
-            "\n    outputFileNamePrefix=my-file^rate=777^batch=2^length=64" +
+            "\n    outputFileNamePrefix=my-file^rate=777K^batch=2^length=64" +
             "^sha=73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
             "\n}",
             configuration.toString());

@@ -206,6 +206,7 @@ public final class Configuration
     private final Class<? extends MessageTransceiver> messageTransceiverClass;
     private final IdleStrategy idleStrategy;
     private final Path outputDirectory;
+    private final String rate;
     private final String outputFileNamePrefix;
     private final boolean trackHistory;
     private final long snapshotSize;
@@ -225,6 +226,7 @@ public final class Configuration
         this.idleStrategy = requireNonNull(builder.idleStrategy, "'" + IDLE_STRATEGY_PROP_NAME + "' cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
         this.trackHistory = builder.trackHistory;
+        rate = rateAsString();
         outputFileNamePrefix = computeFileNamePrefix(builder.outputFileNamePrefix, builder.systemProperties);
         this.snapshotSize = builder.snapshotSize;
     }
@@ -365,7 +367,7 @@ public final class Configuration
             "\n    warmUpIterations=" + warmupIterations +
             "\n    warmupMessageRate=" + warmupMessageRate +
             "\n    iterations=" + iterations +
-            "\n    messageRate=" + messageRate +
+            "\n    messageRate=" + rate +
             "\n    batchSize=" + batchSize +
             "\n    messageLength=" + messageLength +
             "\n    messageTransceiverClass=" + messageTransceiverClass.getName() +
@@ -373,6 +375,23 @@ public final class Configuration
             "\n    outputDirectory=" + outputDirectory +
             "\n    outputFileNamePrefix=" + outputFileNamePrefix +
             "\n}";
+    }
+
+    private String rateAsString()
+    {
+        final int numTrailingZeroes = Integer.numberOfTrailingZeros(messageRate);
+        if (numTrailingZeroes >= 6)
+        {
+            return (messageRate / 1_000_000) + "M";
+        }
+        else if (numTrailingZeroes >= 3)
+        {
+            return (messageRate / 1_000) + "K";
+        }
+        else
+        {
+            return Integer.toString(messageRate);
+        }
     }
 
     private String computeFileNamePrefix(final String outputFileNamePrefix, final Properties systemProperties)
@@ -384,7 +403,7 @@ public final class Configuration
         }
 
         return prefix +
-            "^rate=" + messageRate +
+            "^rate=" + rate +
             "^batch=" + batchSize +
             "^length=" + messageLength +
             "^sha=" + computeSha256(systemProperties);
