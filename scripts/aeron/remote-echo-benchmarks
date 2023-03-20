@@ -268,12 +268,13 @@ then
   fi
 fi
 
+test_type="aeron-echo"
 for index in "${!scenarios[@]}"
 do
   scenario="${scenarios[index]}"
   for mtu in "${mtu_list[@]}"
   do
-    test="aeron-echo_${scenario}_${context}^mtu=${mtu}^rcvwnd=${rcv_initial_window}"
+    test="${test_type}_${scenario}_${context}^mtu=${mtu}^rcvwnd=${rcv_initial_window}"
     echo -e "\n Testing scenario: '${test}'\n"
 
     driver="${commands[index]//driver_mtu_var/${mtu}}"
@@ -355,4 +356,4 @@ done
 
 collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
 
-download_results "echo" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "${test_type}" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

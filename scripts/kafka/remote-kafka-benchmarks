@@ -85,6 +85,7 @@ done
 
 plain_text_port=13592
 ssl_port=13593
+test_type="kafka"
 for protocol in "${security_protocols[@]}"
 do
   for flush in "" "1"
@@ -114,7 +115,7 @@ do
     fi
 
     test=$(printf "-%s" "${scenario[@]}")
-    test="kafka_${test:1}_${context}"
+    test="${test_type}_${test:1}_${context}"
 
     echo -e "\n Testing scenario: '${test}'\n"
 
@@ -155,4 +156,4 @@ done
 
 collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
 
-download_results "kafka" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "${test_type}" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."

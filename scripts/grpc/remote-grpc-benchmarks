@@ -95,6 +95,7 @@ do
   esac
 done
 
+test_type="grpc"
 for tls in "${tls_options[@]}"
 do
   scenario="streaming"
@@ -109,7 +110,7 @@ do
       scenario="${scenario}-onload"
   fi
 
-  test="grpc_${scenario}_${context}"
+  test="${test_type}_${scenario}_${context}"
 
   echo -e "\n Testing scenario: '${test}'\n"
 
@@ -150,4 +151,4 @@ done
 
 collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
 
-download_results "grpc" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+download_results "${test_type}" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
