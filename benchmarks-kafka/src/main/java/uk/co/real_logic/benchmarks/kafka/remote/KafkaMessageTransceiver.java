@@ -152,7 +152,10 @@ public class KafkaMessageTransceiver extends MessageTransceiver
 
     public void destroy()
     {
-        consumer.commitSync();
+        if (null != consumer)
+        {
+            consumer.commitSync();
+        }
         closeAll(producer, consumer);
         final Throwable throwable = error.get();
         if (null != throwable)
