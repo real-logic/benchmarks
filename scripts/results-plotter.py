@@ -24,14 +24,13 @@ import sys
 from collections import defaultdict
 
 # <type>_<scenario>_[ctx_[c1-v1_c2-v2_...]_]params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[a-z0-9-]+)_(?:ctx_)?(?P<context>([a-z]+-[0-9a-zA-Z-\.]+_)*)params_(?P<params>([a-z]+-[0-9a-zA-Z-\.]+_)+)sha-(?:[a-z0-9]+)-report.hgrm')
-regex_params = re.compile('([a-z]+)-([0-9a-zA-Z\.-]+)')
+regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[a-z0-9-]+)_(?:ctx_)?(?P<context>([a-zA-Z\.]+-[0-9a-zA-Z-\.]+_)*)params_(?P<params>([a-zA-Z\.]+-[0-9a-zA-Z-\.]+_)+)sha-(?:[a-z0-9]+)-report.hgrm')
+regex_params = re.compile('([a-zA-Z\.]+)-([0-9a-zA-Z\.-]+)')
 
 
-# TODO feature to overwrite the graph title
 def main():
     parser = argparse.ArgumentParser(description='Plot benchmark results.')
-    parser.add_argument('directory', help='path of the directory containing the aggregated results.')
+    parser.add_argument('directories', nargs='+', help='list of directories containing the aggregated results.')
     parser.add_argument('--group-by', default='scenario', help='comma-separated list of fields by which to group the results on a graph. Example: instance,msgsize')
     parser.add_argument('--filter', help='comma-separated list of fields to filter for (include). multiple values should be repeated, Example: msgsize=32,msgsize=288,scenario=c-ats')
     parser.add_argument('--exclude', help='comma-separated list of fields to filter for (exclude). for. multiple values should be repeated, Example: msgsize=1344,scenario=java')
@@ -43,22 +42,27 @@ def main():
     filters = parse_filter(args.filter)
     excludes = parse_filter(args.exclude)
 
-    path = os.path.abspath(args.directory)
+    paths = []
+    for dir in args.directories:
+        path = os.path.abspath(dir)
+        if not os.path.exists(path):
+            sys.exit('Directory ' + args.directory + ' does not exist.')
+        if not has_processable_files(path):
+            sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_ctx_[c1-v1_c2-v2_...]_params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm".format(path))
+        paths.append(path)
 
-    if not os.path.exists(path):
-        sys.exit('Directory ' + args.directory + ' does not exist.')
-
-    if has_processable_files(path):
-        plot_graphs(path, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
-    else:
-        sys.exit("No files in the correct format found, expected files with names like <type>_<scenario>_ctx_[c1-v1_c2-v2_...]_params_[p1-v1_p2-v2_...]_sha-<sha1>-report.hgrm")
+    plot_graphs(paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
 
 
-def plot_graphs(path, percentiles_range_max, regex, group_by, filters, excludes, custom_title):
+def plot_graphs(paths, percentiles_range_max, regex, group_by, filters, excludes, custom_title):
     """Plots the graphs by invoking hdr-plot"""
 
+    output_path = paths[0]
+    files = []
+    for path in paths:
+        files.extend(list((parse_file_name(file) for file in os.scandir(path) if re.match(regex, file.name))))
+
     grouped = defaultdict(list)
-    files = list((parse_file_name(file) for file in os.scandir(path) if re.match(regex, file.name)))
 
     accepted_files = filter_files(filter_files(files, filters), excludes, exclude=True)
 
@@ -87,7 +91,7 @@ def plot_graphs(path, percentiles_range_max, regex, group_by, filters, excludes,
             os.chdir(tmpdir)
             os.system(f'hdr-plot --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {histogram_files}')
 
-            shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(path, filename))
+            shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(output_path, filename))
 
 
 def has_processable_files(path):
