@@ -85,7 +85,7 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--context] [--no-tls] [--no-onload] [--onload \"\$onload_command\"]"
+    echo "${0} [--context \"\$context\"] [--no-tls] [--no-onload] [--onload \"\$onload_command\"]"
     exit
     ;;
   *)

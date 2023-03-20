@@ -122,7 +122,7 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--context] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--disable-c-driver] [--no-c-driver] [--disable-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
+    echo "${0} [--context \"\$context\"] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--disable-c-driver] [--no-c-driver] [--disable-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
     exit
     ;;
   *)

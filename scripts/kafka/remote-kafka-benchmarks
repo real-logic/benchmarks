@@ -73,7 +73,7 @@ do
     shift
     ;;
   -h|--help)
-    echo "${0} [--context] [--no-ssl] [--no-onload] [--onload \"\$onload_command\"]"
+    echo "${0} [--context \"\$context\"] [--no-ssl] [--no-onload] [--onload \"\$onload_command\"]"
     exit
     ;;
   *)
