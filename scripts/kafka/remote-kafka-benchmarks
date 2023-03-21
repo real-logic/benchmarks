@@ -77,7 +77,7 @@ do
     exit
     ;;
   *)
-    echo "Invalid parameter. Use --help to get a list of supported parameters."
+    echo "Invalid parameter '${1}'. Use --help to get a list of supported parameters."
     exit 1
     ;;
   esac
