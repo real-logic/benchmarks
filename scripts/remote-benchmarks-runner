@@ -148,7 +148,7 @@ function download_results()
 function await_process_start()
 {
   local pid=${1}
-  echo "pid=${pid}; while [ -z \"\${pid}\" ]; do sleep 0.5; pid=${pid}; done; echo \"pid=\${pid}\""
+  echo "pid=${pid}; while [ -z \"\${pid}\" ]; do sleep 0.5; pid=${pid}; done; echo \"pid='\${pid}'\""
 }
 
 function find_java_process()
@@ -168,8 +168,8 @@ function pin_thread()
   local pid=${1}
   local thread_name=${2}
   local core=${3}
-  local tid="\$(ps Ho tid,comm -p ${pid} | awk '/${thread_name}/{print \$1}')"
-  echo "tid=${tid}; while [ -z \"\${tid}\" ]; do sleep 0.1; tid=${tid}; done; echo \"tid_${thread_name}=\${tid}\"; taskset -p -c ${core} \${tid}"
+  local tid="\$(ps Ho tid,comm -p ${pid} | awk '/${thread_name}/{print \$1}' | head -1)"
+  echo "tid=${tid}; while [ -z \"\${tid}\" ]; do sleep 0.1; tid=${tid}; done; echo \"tid_${thread_name}='\${tid}'\"; taskset -p -c ${core} \${tid}"
 }
 
 function kill_java_process()
