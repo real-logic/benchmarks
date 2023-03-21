@@ -24,7 +24,7 @@ import sys
 from collections import defaultdict
 
 # <type>^<scenario>^[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z-]+)^(?P<scenario>[^_]+)^(?P<params>([^=\^]+=[^\^]+\^?)+)\^sha=(?:[a-z0-9]+)-report.hgrm')
+regex_common = re.compile('(?P<type>[a-z-]+)\^(?P<scenario>[^\^]+)\^(?P<params>([^=\^]+=[^\^]+\^?)+)\^sha=(?:[a-z0-9]+)-report.hgrm')
 regex_params = re.compile('([^=\^]+)=([^\^]+)')
 
 
@@ -48,7 +48,7 @@ def main():
         if not os.path.exists(path):
             sys.exit('Directory ' + dir + ' does not exist.')
         if not has_processable_files(path):
-            sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm".format(path))
+            sys.exit("No files in the correct format found in {}, expected files with names like <type>^<scenario>^[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm".format(path))
         paths.append(path)
 
     plot_graphs(paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
