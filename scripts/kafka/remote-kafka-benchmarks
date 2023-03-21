@@ -58,6 +58,7 @@ do
   --context)
     context="${2}"
     shift
+    shift
     ;;
   --no-ssl)
     security_protocols=("PLAINTEXT")

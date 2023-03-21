@@ -106,6 +106,7 @@ do
   --context)
     context="${2}"
     shift
+    shift
     ;;
   --disable-c-driver)
     enable_c_driver=0

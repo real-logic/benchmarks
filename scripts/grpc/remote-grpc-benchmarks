@@ -70,6 +70,7 @@ do
   --context)
     context="${2}"
     shift
+    shift
     ;;
   --no-tls)
     tls_options=("false")
