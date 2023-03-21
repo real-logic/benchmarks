@@ -110,7 +110,7 @@ do
       scenario="${scenario}-onload"
   fi
 
-  test="${test_type}_${scenario}_${context}"
+  test="${test_type}^${scenario}^${context}"
 
   echo -e "\n Testing scenario: '${test}'\n"
 
