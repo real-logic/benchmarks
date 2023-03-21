@@ -379,14 +379,13 @@ public final class Configuration
 
     private String rateAsString()
     {
-        final int numTrailingZeroes = Integer.numberOfTrailingZeros(messageRate);
-        if (numTrailingZeroes >= 6)
+        if (0 == messageRate % 1_000_000)
         {
             return (messageRate / 1_000_000) + "M";
         }
-        else if (numTrailingZeroes >= 3)
+        else if (0 == messageRate % 1000)
         {
-            return (messageRate / 1_000) + "K";
+            return (messageRate / 1000) + "K";
         }
         else
         {

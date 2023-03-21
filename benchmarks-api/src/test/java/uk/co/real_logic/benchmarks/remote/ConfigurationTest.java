@@ -330,7 +330,16 @@ class ConfigurationTest
     }
 
     @ParameterizedTest
-    @CsvSource({ "1000000000,1000M", "5000,5K", "12345,12345", "7890000,7890K" })
+    @CsvSource({
+        "1000000000,1000M",
+        "5000,5K",
+        "12345,12345",
+        "7890000,7890K",
+        "400000,400K",
+        "5430,5430",
+        "100,100",
+        "7600,7600",
+        "10,10" })
     void outputFileNamePrefixUsesHumanReadableRateValues(
         final String rate, final String expectedOutput, final @TempDir Path tempDir)
     {
