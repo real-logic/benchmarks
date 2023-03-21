@@ -324,8 +324,8 @@ class ConfigurationTest
             .build();
 
         assertEquals(
-            "the-prefix^rate=12^batch=3^length=75" +
-            "^sha=a2bea3034417edbbe21e66dd9b68d43fe53e287e04a1f6b119741ab9e0729f60",
+            "the-prefix_rate=12_batch=3_length=75" +
+            "_sha=a2bea3034417edbbe21e66dd9b68d43fe53e287e04a1f6b119741ab9e0729f60",
             configuration.outputFileNamePrefix());
     }
 
@@ -355,7 +355,7 @@ class ConfigurationTest
 
         final String outputFileNamePrefix = configuration.outputFileNamePrefix();
         final int startIndex = outputFileNamePrefix.indexOf("rate=");
-        final int endIndex = outputFileNamePrefix.indexOf('^', startIndex + 1);
+        final int endIndex = outputFileNamePrefix.indexOf('_', startIndex + 1);
         assertEquals("rate=" + expectedOutput, outputFileNamePrefix.substring(startIndex, endIndex));
     }
 
@@ -378,8 +378,8 @@ class ConfigurationTest
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.idleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
-        assertEquals("defaults^rate=123^batch=" + DEFAULT_BATCH_SIZE + "^length=" + MIN_MESSAGE_LENGTH +
-            "^sha=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        assertEquals("defaults_rate=123_batch=" + DEFAULT_BATCH_SIZE + "_length=" + MIN_MESSAGE_LENGTH +
+            "_sha=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             configuration.outputFileNamePrefix());
     }
 
@@ -438,8 +438,8 @@ class ConfigurationTest
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
             "\n    idleStrategy=NoOpIdleStrategy{alias=noop}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
-            "\n    outputFileNamePrefix=my-file^rate=777K^batch=2^length=64" +
-            "^sha=73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
+            "\n    outputFileNamePrefix=my-file_rate=777K_batch=2_length=64" +
+            "_sha=73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
             "\n}",
             configuration.toString());
     }

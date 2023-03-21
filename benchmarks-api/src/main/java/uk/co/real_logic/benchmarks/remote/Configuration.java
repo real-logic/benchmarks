@@ -402,10 +402,10 @@ public final class Configuration
         }
 
         return prefix +
-            "^rate=" + rate +
-            "^batch=" + batchSize +
-            "^length=" + messageLength +
-            "^sha=" + computeSha256(systemProperties);
+            "_rate=" + rate +
+            "_batch=" + batchSize +
+            "_length=" + messageLength +
+            "_sha=" + computeSha256(systemProperties);
     }
 
     /**
