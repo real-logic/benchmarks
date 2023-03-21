@@ -24,8 +24,8 @@ import sys
 from collections import defaultdict
 
 # <type>^<scenario>^[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z-]+)\^(?P<scenario>[^\^]+)\^(?P<params>([^=\^]+=[^\^]+\^?)+)\^sha=(?:[a-z0-9]+)-report.hgrm')
-regex_params = re.compile('([^=\^]+)=([^\^]+)')
+regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[^_]+)_(?P<params>([^=_]+=[^_]+_?)+)_sha=(?:[a-z0-9]+)-report.hgrm')
+regex_params = re.compile('([^=_]+)=([^_]+)')
 
 
 def main():

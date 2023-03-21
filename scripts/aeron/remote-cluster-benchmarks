@@ -428,7 +428,7 @@ do
   do
     for mtu in "${mtu_list[@]}"
     do
-      test="${test_type}^${scenario}^${context}^fsync=${fsync}^mtu=${mtu}"
+      test="${test_type}_${scenario}_${context}_fsync=${fsync}_mtu=${mtu}"
       echo -e "\n Testing scenario: '${test}'\n"
 
       driver="${commands[index]//driver_mtu_var/${mtu}}"

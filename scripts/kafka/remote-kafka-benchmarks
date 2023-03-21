@@ -116,7 +116,7 @@ do
     fi
 
     test=$(printf "-%s" "${scenario[@]}")
-    test="${test_type}^${test:1}^${context}"
+    test="${test_type}_${test:1}_${context}"
 
     echo -e "\n Testing scenario: '${test}'\n"
 
