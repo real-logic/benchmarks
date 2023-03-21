@@ -8,7 +8,7 @@ usage: results-plotter.py [-h] [--group-by GROUP_BY] [--filter FILTER] [--exclud
 
 The script expects files to be in the format
 
-    <type>_<scenario>_<parameters>^sha=<sha1>-report.hgrm
+    <type>^<scenario>^<parameters>^sha=<sha1>-report.hgrm
 
 e.g.
 
@@ -23,8 +23,8 @@ import re
 import sys
 from collections import defaultdict
 
-# <type>_<scenario>_[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[^_]+)_(?P<params>([^=\^]+=[^\^]+\^?)+)\^sha=(?:[a-z0-9]+)-report.hgrm')
+# <type>^<scenario>^[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm
+regex_common = re.compile('(?P<type>[a-z-]+)^(?P<scenario>[^_]+)^(?P<params>([^=\^]+=[^\^]+\^?)+)\^sha=(?:[a-z0-9]+)-report.hgrm')
 regex_params = re.compile('([^=\^]+)=([^\^]+)')
 
 
@@ -46,7 +46,7 @@ def main():
     for dir in args.directories:
         path = os.path.abspath(dir)
         if not os.path.exists(path):
-            sys.exit('Directory ' + args.directory + ' does not exist.')
+            sys.exit('Directory ' + dir + ' does not exist.')
         if not has_processable_files(path):
             sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm".format(path))
         paths.append(path)
@@ -85,11 +85,9 @@ def plot_graphs(paths, percentiles_range_max, regex, group_by, filters, excludes
 
             histogram_files = ' '.join(sorted(grouped_files, reverse=True))
 
-            filename, title = get_plot_filename_and_title(key)
-            if custom_title:
-                title = custom_title
+            filename, title = get_plot_filename_and_title(key, custom_title)
             os.chdir(tmpdir)
-            os.system(f'hdr-plot --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {histogram_files}')
+            os.system(f'hdr-plot --summary-fields=p50,p90,p999,p9999,max --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {histogram_files}')
 
             shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(output_path, filename))
 
@@ -171,7 +169,7 @@ def parse_filter(filter_str):
     return filters
 
 
-def get_plot_filename_and_title(key):
+def get_plot_filename_and_title(key, custom_title):
     """Builds a default title and filename for the graph, using the available parameters."""
     fields = dict(key)
     type = fields.pop('type')
@@ -180,11 +178,13 @@ def get_plot_filename_and_title(key):
     params_title = []
     params_filename = []
     for k, v in fields.items():
-        params_title.append(f'{k} {v}')
+        params_title.append(f'{k}={v}')
         params_filename.append(f'{k}-{v}')
-    params_title_str = ', '.join(params_title)
+    params_title_str = ' '.join(params_title)
     params_filename_str = '_'.join(params_filename)
-    title = f'{type} {params_title_str}'
+    title = f'{type}\n {params_title_str}'
+    if custom_title:
+        title = f'{custom_title}\n {params_title_str}'
     filename = f'{type}_{params_filename_str}.png'
 
     return filename, title
