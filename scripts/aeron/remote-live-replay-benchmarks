@@ -253,7 +253,7 @@ do
       && taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/live-replay-client & \
       $(await_java_process_start "${client_class_name}") \
       ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
-      && tail --pid=\$! -f /dev/null && kill -9 \${driver_pid}; wait"
+      && tail --pid=\$! -f /dev/null && kill -9 \${media_driver_pid}; wait"
 
       start_server="\
       export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
