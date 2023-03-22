@@ -178,7 +178,7 @@ fi
 
 connectionTimeout="${CONNECTION_TIMEOUT:-60s}"
 
-runs=${RUNS:-3}
+runs=${RUNS:-5}
 iterations=${ITERATIONS:-20}
 warmupIterations=${WARMUP_ITERATIONS:-10}
 warmupMessageRate="${WARMUP_MESSAGE_RATE:-10K}"
