@@ -87,7 +87,7 @@ def plot_graphs(paths, percentiles_range_max, regex, group_by, filters, excludes
 
             filename, title = get_plot_filename_and_title(key, custom_title)
             os.chdir(tmpdir)
-            os.system(f'hdr-plot --summary-fields=p50,p90,p999,p9999,max --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {histogram_files}')
+            os.system(f'hdr-plot --summary-fields=median,p90,p99,p999,p9999,max --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {histogram_files}')
 
             shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(output_path, filename))
 
