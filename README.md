@@ -1,8 +1,9 @@
 # Benchmarks
 
+## Local benchmarks (single machine)
 Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures and messaging systems.
 
-## Java Benchmarks
+### Java Benchmarks
 
 To run the Java benchmarks execute the Gradle script in the base directory.
 
@@ -14,7 +15,7 @@ or just the Aeron benchmarks
 
     $ ./gradlew runAeronJavaBenchmarks
 
-## C++ Benchmarks
+### C++ Benchmarks
 
 To generate the benchmarks, execute the `cppbuild` script from the base directory.
 
@@ -44,40 +45,111 @@ cppbuild/cppbuild --aeron-git-tag="1.27.0"
 ```
 will use Aeron `1.27.0` release.
 
-## Remote benchmarks
+## Remote benchmarks (multiple machines)
 
-The `scripts` directory contains scripts to run the _remote benchmarks_, i.e. the benchmarks that test sending data
-between the _client_ (benchmarking harness) and the _server_ in different scenarios.
+The `scripts` directory contains scripts to run the _remote benchmarks_, i.e. the benchmarks that involve multiple
+machines where one is the _client_ (the benchmarking harness) and the rest are the _server nodes_.
 
-`uk.co.real_logic.benchmarks.remote.LoadTestRig` implements the benchmarking harness. The
+The `uk.co.real_logic.benchmarks.remote.LoadTestRig` class implements the benchmarking harness. Whereas the
 `uk.co.real_logic.benchmarks.remote.Configuration` class provides the configuration for the benchmarking harness.
 
-#### Running benchmarks
-
-The common way to run the benchmarks is to use `benchmark-runner` to run the benchmarking harness with the given client.
-This script will run benchmarks multiple times for each permutation of the configuration parameters.
-
-For example:
+Before the benchmarks can be executed they have to be built. This can be done by running the following command in the
+root directory of this project:
 ```bash
-$ ./benchmark-runner --output-file "echo-test" --messages "1000, 5000" --burst-size "1, 10" --message-length "32, 224, 1376" "aeron/echo-client"
+./gradlew clean deployTar
 ```
-Will execute `aeron/echo-client` script for every permutation of the number of messages, burst size and the message 
-length. Each execution will run five times doing ten measurement iterations. 
-The first execution will be with `1000` messages, burst size of `1` and message payload length of `32` bytes. The
-second will have a different message length (i.e. `224` bytes) etc. 
+Once complete it will create a `build/distributions/benchmarks.tar` file that should be deployed to the remote machines.
 
-#### Aggregating the results
+### Running benchmarks via SSH (i.e. automated way)
 
-To aggregate the results of the multiple runs into a single file there is the `aggregate-results` script.
+The easiest way to run the benchmarks is by using the `remote_*` wrapper scripts which invoke scripts remotely using
+the SSH protocol. When the script finishes its execution it will download an archive with the results (histograms).
+
+The following steps are required to run the benchmarks:
+1. Build the tar file (see above).
+2. Copy tar file to the destination machines and unpack it, i.e. `tar xf benchmarks.tar -C <destination_dir>`.
+3. On the local machine create a wrapper script that sets all the configuration parameters for the target benchmark.
+See example below.
+4. Run the wrapper script from step 3.
+5. Once execution is finished an archive file with the results will be downloaded. By default, it will be placed under 
+the `scripts` directory in this project.
+
+For example here is how to run the Aeron echo benchmarks via a wrapper script.
+_NB: All the values in angle brackets (`<...>`) will have to be replaced with proper values._
+```bash
+# SSH connection properties
+export SSH_USER=<SSH user>
+export SSH_KEY_FILE=<private SSH key for connecting to client and server machines>
+export SSH_CLIENT_NODE=<IP of the client machine>
+export SSH_SERVER_NODE=<IP of the server machine>
+
+# Set of required configuration options
+export CLIENT_BENCHMARKS_PATH=<directory containing the unpacked benchmarks.tar>
+export CLIENT_JAVA_HOME=<path to JAVA_HOME (JDK 8+)>
+export CLIENT_DRIVER_CONDUCTOR_CPU_CORE=<CPU core to pin the 'conductor' thread>
+export CLIENT_DRIVER_SENDER_CPU_CORE=<CPU core to pin the 'sender' thread>
+export CLIENT_DRIVER_RECEIVER_CPU_CORE=<CPU core to pin the 'receiver' thread>
+export CLIENT_DRIVER_OTHER_CPU_CORES=<other CPU cores for non-pinned threads of the MediaDriver process>
+export CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE=<CPU core to pin 'load-test-rig' thread>
+export CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES=<other CPU cores for non-pinned threads of the LoadTestRig process>
+export SOURCE_IP=<IP address of the client machine>
+export CLIENT_INTERFACE=${SOURCE_IP}/24
+export CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS=${SOURCE_IP%.*}.1
+export SERVER_BENCHMARKS_PATH=<directory containing the unpacked benchmarks.tar>
+export SERVER_JAVA_HOME=<path to JAVA_HOME (JDK 8+)>
+export SERVER_DRIVER_CONDUCTOR_CPU_CORE=<CPU core to pin the 'conductor' thread>
+export SERVER_DRIVER_SENDER_CPU_CORE=<CPU core to pin the 'sender' thread>
+export SERVER_DRIVER_RECEIVER_CPU_CORE=<CPU core to pin the 'receiver' thread>
+export SERVER_DRIVER_OTHER_CPU_CORES=<other CPU cores for non-pinned threads of the MediaDriver process>
+export SERVER_ECHO_CPU_CORE=<CPU core to pin 'echo' thread>
+export SERVER_OTHER_CPU_CORES=<other CPU cores for non-pinned threads of the EchoNode process>
+export DESTINATION_IP=<IP address of the server machine>
+export SERVER_INTERFACE=${DESTINATION_IP}/24
+export SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS=${DESTINATION_IP%.*}.1
+
+# (Optional) Overrides for the runner configuration options 
+export MESSAGE_LENGTH="288" # defaults to "32,288,1344"
+export MESSAGE_RATE="100K"  # defaults to "1M,500K,100K"
+
+# Invoke the actual script and optionally configure specific parameters
+"aeron/remote-echo-benchmarks" --mtu 8192 --no-onload --no-dpdk --no-ef_vi --no-ats --context "my-test"
+```
+
+### Running benchmarks manually
+
+The following steps are required to run the benchmarks:
+1. Build the tar file (see above).
+2. Copy tar file to the destination machines and unpack it, i.e. `tar xf benchmarks.tar -C <destination_dir>`.
+3. Follow the documentation for a particular benchmark to know which scripts to run and in which order.
+4. Run the `benchmark-runner` script specifying the _benchmark client script_ to execute.
+
+Here is an example of running the Aeron echo benchmark using the embedded Java MediaDriver on two nodes:
+server (`192.168.0.20`) and client (`192.168.0.10`).
+```bash
+server:~/benchmarks/scripts$ JVM_OPTS="\
+-Duk.co.real_logic.benchmarks.aeron.remote.embedded.media.driver=true \
+-Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=192.168.0.10:13000 \
+-Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=192.168.0.20:13001" aeron/echo-server
+
+client:~/benchmarks/scripts$ JVM_OPTS="\
+-Duk.co.real_logic.benchmarks.aeron.remote.embedded.media.driver=true \
+-Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=192.168.0.10:13000 \
+-Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=192.168.0.20:13001" \
+./benchmark-runner --output-file "aeron-echo-test" --messages "100K" --burst-size "1" --message-length "32,288,1344" --runs 5 "aeron/echo-client"
+```
+
+### Aggregating the results
+
+To aggregate the results of the multiple runs into a single file use the `aggregate-results` script.
 
 For example if the ``results`` directory contains the following files:
 ```bash
 results
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-0.hdr
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-1.hdr
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-2.hdr
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-3.hdr
-└── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-4.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-0.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-1.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-2.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-3.hdr
+└── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-4.hdr
 ```   
 
 Running:
@@ -88,17 +160,17 @@ Running:
 Will produce the following result:
 ```bash
 results
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-0.hdr
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-1.hdr
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-2.hdr
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-3.hdr
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-4.hdr
-├── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-combined.hdr
-└── echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-report.hgrm
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-0.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-1.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-2.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-3.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-4.hdr
+├── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-combined.hdr
+└── echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-report.hgrm
 ```
-where `echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-combined.hdr` is the
+where `echo-test_rate=1000_batch=1_length=32_sha=c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-combined.hdr` is the
 aggregated histogram of five runs and the 
-`echo-test_1000_1_32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-report.hgrm` is an export of the
+`echo-test_rate=1000_batch=1_length=32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-report.hgrm` is an export of the
 aggregated histogram that can be plotted using http://hdrhistogram.github.io/HdrHistogram/plotFiles.html.
 
 ### Systems under test
@@ -129,15 +201,14 @@ Please the documentation in the ``aeron`` directory for more information.
 
 #### gRPC
 
-For gRPC there is only ping-pong test with two different implementations:
-- Blocking client - client uses blocking API to send messages.
+For the gRPC there is only ping-pong test with a single implementation:
 - Streaming client - client uses streaming API to send/receive messages.
 
 Please read the documentation in then ``grpc`` directory for more information.
 
 #### Kafka
 
-Unlike gRPC that simply echoes messages Kafka will persist them so that the test is similar to the Aeron's replay from
+Unlike the gRPC that simply echoes messages Kafka will persist them so the test is similar to the Aeron's replay from
 the remote archive.
 
 Please read the documentation in the `kafka` directory for more information.
