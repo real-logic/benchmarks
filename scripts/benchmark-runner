@@ -86,7 +86,7 @@ then
   exit 1
 fi
 
-EXISTING_JVM_OPTS=${JVM_OPTS}
+original_jvm_opts=${JVM_OPTS:-""}
 
 for messageRate in "${messageRates[@]}"
 do
@@ -98,7 +98,7 @@ do
       do
         echo -e '\n### Benchmark run #'$((r + 1))' ...\n'
 
-        JVM_OPTS="${EXISTING_JVM_OPTS} \
+        JVM_OPTS="${original_jvm_opts} \
         -Duk.co.real_logic.benchmarks.remote.output.file=${outputFileName} \
         -Duk.co.real_logic.benchmarks.remote.iterations=${iterations} \
         -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# } \
@@ -109,5 +109,3 @@ do
     done
   done
 done
-
-JVM_OPTS=${EXISTING_JVM_OPTS}

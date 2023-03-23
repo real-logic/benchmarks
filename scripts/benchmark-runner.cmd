@@ -90,6 +90,8 @@ if [%OUTPUT_FILE_NAME%] == [] (
   exit -1
 )
 
+set original_jvm_opts="%JVM_OPTS%"
+
 for %%m in (%MESSAGE_RATE%) do (
   for %%b in (%BURST_SIZE%) do (
     for %%l in (%MESSAGE_LENGTH%) do (
@@ -101,7 +103,8 @@ for %%m in (%MESSAGE_RATE%) do (
 
         setlocal
 
-        set JVM_OPTS=-Duk.co.real_logic.benchmarks.remote.output.file=%OUTPUT_FILE_NAME% ^
+        set JVM_OPTS=%original_jvm_opts% ^
+        -Duk.co.real_logic.benchmarks.remote.output.file=%OUTPUT_FILE_NAME% ^
         -Duk.co.real_logic.benchmarks.remote.iterations=%ITERATIONS% ^
         -Duk.co.real_logic.benchmarks.remote.message.rate=%%m ^
         -Duk.co.real_logic.benchmarks.remote.batch.size=%%b ^
