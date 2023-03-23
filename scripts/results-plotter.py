@@ -12,7 +12,7 @@ The script expects files to be in the format
 
 e.g.
 
-    echo_java_instance=c5n.9xlarge^window=2m^mtu=8896^so_sndbuf=2m^so_rcvbuf=2m^rcvwnd=2m^rate=100000^batch=1^length=1344^sha=c68b27d86b43946be1a4a1aaebcfa69c4506cb37af013ced29daccf39412d3c3-report.hgrm
+    echo_java_instance=c5n.9xlarge^window=2m^mtu=8192^so_sndbuf=2m^so_rcvbuf=2m^rcvwnd=2m^rate=100000^batch=1^length=1344^sha=c68b27d86b43946be1a4a1aaebcfa69c4506cb37af013ced29daccf39412d3c3-report.hgrm
 """
 
 import argparse
