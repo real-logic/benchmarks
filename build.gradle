@@ -260,6 +260,7 @@ tasks.named("dependencyUpdates").configure {
 FileTree benchmarksFileTree = fileTree('.') {
     include 'benchmarks-all/build/libs/benchmarks.jar'
     include 'scripts/**'
+    include 'certificates/**'
 }
 
 FileTree cDriverTree = (project.hasProperty('aeron.cdriver.package')) ?
@@ -279,6 +280,8 @@ FileTree cDriverAtsTree = (project.hasProperty('aeron.cdriver.ats.package')) ?
         files().asFileTree
 
 tasks.register('deployTar', Tar) {
+    dependsOn ':benchmarks-all:shadowJar'
+    from(benchmarksFileTree)
     from(cDriverTree) {
         include "*/**"
         eachFile { fcd ->
@@ -286,7 +289,6 @@ tasks.register('deployTar', Tar) {
         }
         includeEmptyDirs = false
     }
-    from(benchmarksFileTree)
     from(cDriverDpdkTree)
     from(cDriverAtsTree)
     from(cDriverEfviTree)
