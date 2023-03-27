@@ -173,6 +173,18 @@ aggregated histogram of five runs and the
 `echo-test_rate=1000_batch=1_length=32_c7a083c84b45f77fdee5cedc272d898d44b6e18deaf963b3e2b2c074006b0b10-report.hgrm` is an export of the
 aggregated histogram that can be plotted using http://hdrhistogram.github.io/HdrHistogram/plotFiles.html.
 
+### Plotting the results
+
+Aggregated results can be plotted using the `results-plotter.py` script which uses [hdr-plot](https://github.com/BrunoBonacci/hdr-plot) in order to produce latency plots of the histograms (the library needs to be installed in order to use the script).
+
+Running
+
+```bash
+./results-plotter.py results
+```
+
+will produce plots in which the histograms are grouped by test scenario by default. It is possible to produce graphs with a different kind of aggregation and to apply filters on the histograms to plot within a directory. Run `./results-plotter.py` (without arguments) in order to get an overview of the capabilities of the plotting script.
+
 ### Systems under test
 
 This section lists the systems under test which implement remote benchmarks.
