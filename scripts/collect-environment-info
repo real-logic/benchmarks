@@ -40,6 +40,7 @@ KERNEL=$(uname -r)
 ARCHITECTURE=$(arch)
 CPU_NAME=$(awk -F':' '/^model name/ {print $2}' /proc/cpuinfo | uniq | sed -e 's/^[ \t]*//')
 CMDLINE=$(cat /proc/cmdline)
+TUNED_PROFILE=$(tuned-adm profile | grep "Current active profile:" | cut -d':' -f2 | sed 's/^ *//g')
 if [[ -z $JDK_HOME ]]; then
   JAVA_VERSION="Java not available"
 else
@@ -55,8 +56,9 @@ JSON_SUMMARY=$( jq -n \
                   --arg ar "$ARCHITECTURE" \
                   --arg cpu "$CPU_NAME" \
                   --arg cm "$CMDLINE" \
+                  --arg tp "$TUNED_PROFILE" \
                   --arg ja "$JAVA_VERSION" \
-                  '{manufacturer: $ma, product_name: $pn, machine_type: $mt, operating_system: $os, kernel: $ke, architecture: $ar, cpu_name: $cpu, cmdline: $cm, java_version: $ja}' )
+                  '{manufacturer: $ma, product_name: $pn, machine_type: $mt, operating_system: $os, kernel: $ke, architecture: $ar, cpu_name: $cpu, cmdline: $cm, tuned_profile: $tp, java_version: $ja}' )
 
 MOUNTS_TXT=$(mount | grep -P '^[0-9]+|^\/dev\/(?!loop)|^tmpfs')
 MOUNTS_JSON=$(grep -P '^[0-9]+|^\/dev\/(?!loop)|^tmpfs' /proc/mounts | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
@@ -100,6 +102,7 @@ Kernel:           $KERNEL
 Kernel cmdline:   $CMDLINE
 Architecture:     $ARCHITECTURE
 CPU name:         $CPU_NAME
+tuned profile:    $TUNED_PROFILE
 Java version:     $JAVA_VERSION
 
 Mount points
