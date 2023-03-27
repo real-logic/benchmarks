@@ -189,7 +189,7 @@ public final class LoadTestRig
 
             if (totalNumberOfMessages == sentMessages)
             {
-                reportProgress(startTimeNs, nowNs, sentMessages, numberOfMessages);
+                reportProgress(startTimeNs, nowNs, sentMessages);
                 break;
             }
 
@@ -203,7 +203,7 @@ public final class LoadTestRig
                 {
                     if (nowNs >= nextReportTimeNs)
                     {
-                        reportProgress(startTimeNs, nowNs, sentMessages, numberOfMessages);
+                        reportProgress(startTimeNs, nowNs, sentMessages);
                         nextReportTimeNs += NANOS_PER_SECOND;
                     }
 
@@ -242,7 +242,7 @@ public final class LoadTestRig
 
             if (nowNs >= nextReportTimeNs)
             {
-                reportProgress(startTimeNs, nowNs, sentMessages, numberOfMessages);
+                reportProgress(startTimeNs, nowNs, sentMessages);
                 nextReportTimeNs += NANOS_PER_SECOND;
             }
         }
@@ -274,12 +274,11 @@ public final class LoadTestRig
         return sentMessages;
     }
 
-    private void reportProgress(
-        final long startTimeNs, final long nowNs, final long sentMessages, final int numberOfMessages)
+    private void reportProgress(final long startTimeNs, final long nowNs, final long sentMessages)
     {
         final long elapsedSeconds = round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
         final long sendRate = 0d == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
-        out.format("Send rate: %,d msgs/sec%n", sendRate <= numberOfMessages ? sendRate : numberOfMessages);
+        out.format("Send rate: %,d msgs/sec%n", sendRate);
     }
 
     private void warnIfInsufficientCpu()
