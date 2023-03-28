@@ -33,7 +33,9 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.AGGREGATE_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.*;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.FAIL;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.OK;
 
 class PersistedHistogramTest
 {
@@ -44,7 +46,7 @@ class PersistedHistogramTest
     {
         try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
         {
-            assertThrows(NullPointerException.class, () -> histogram.saveToFile(null, "my-file"));
+            assertThrows(NullPointerException.class, () -> histogram.saveToFile(null, "my-file", OK));
         }
     }
 
@@ -55,7 +57,7 @@ class PersistedHistogramTest
     {
         try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
         {
-            assertThrows(NullPointerException.class, () -> histogram.saveToFile(tempDir, null));
+            assertThrows(NullPointerException.class, () -> histogram.saveToFile(tempDir, null, OK));
         }
     }
 
@@ -66,7 +68,7 @@ class PersistedHistogramTest
     {
         try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
         {
-            assertThrows(IllegalArgumentException.class, () -> histogram.saveToFile(tempDir, ""));
+            assertThrows(IllegalArgumentException.class, () -> histogram.saveToFile(tempDir, "", OK));
         }
     }
 
@@ -77,7 +79,7 @@ class PersistedHistogramTest
     {
         try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
         {
-            assertThrows(IllegalArgumentException.class, () -> histogram.saveToFile(tempDir, " \t  \n  "));
+            assertThrows(IllegalArgumentException.class, () -> histogram.saveToFile(tempDir, " \t  \n  ", OK));
         }
     }
 
@@ -94,7 +96,7 @@ class PersistedHistogramTest
             valueRecorder.recordValue(2);
             valueRecorder.recordValue(4);
 
-            assertThrows(IOException.class, () -> histogram.saveToFile(rootFile, "ignore"));
+            assertThrows(IOException.class, () -> histogram.saveToFile(rootFile, "ignore", OK));
         }
     }
 
@@ -118,12 +120,14 @@ class PersistedHistogramTest
             valueRecorder.recordValue(250);
             expectedHistogram.recordValue(250);
 
-            file = histogram.saveToFile(tempDir, "test-histogram");
+            file = histogram.saveToFile(tempDir, "test-histogram", FAIL);
         }
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
-        assertEquals("test-histogram-0.hdr", file.getFileName().toString());
+        assertEquals(
+            "test-histogram" + SEPARATOR + STATUS_ATTRIBUTE_NAME + "=FAIL" + SEPARATOR + "0.hdr",
+            file.getFileName().toString());
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(expectedHistogram, savedHistogram);
     }
@@ -137,7 +141,7 @@ class PersistedHistogramTest
         final Path file;
         try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
         {
-            Files.createFile(tempDir.resolve("another_one-13.hdr"));
+            Files.createFile(tempDir.resolve("another_one" + SEPARATOR + "13.hdr"));
             Files.createFile(tempDir.resolve("another_one" + AGGREGATE_FILE_SUFFIX));
 
             final ValueRecorder valueRecorder = histogram.valueRecorder();
@@ -146,12 +150,12 @@ class PersistedHistogramTest
             valueRecorder.recordValue(4);
             expectedHistogram.recordValue(4);
 
-            file = histogram.saveToFile(tempDir, "another_one");
+            file = histogram.saveToFile(tempDir, "another_one", OK);
         }
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
-        assertEquals("another_one-14.hdr", file.getFileName().toString());
+        assertEquals("another_one_status=OK_14.hdr", file.getFileName().toString());
 
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(expectedHistogram, savedHistogram);
@@ -195,12 +199,12 @@ class PersistedHistogramTest
                 Thread.sleep(1);
             }
 
-            file = histogram.saveToFile(tempDir, "another_one");
+            file = histogram.saveToFile(tempDir, "another_one", FAIL);
         }
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
-        assertEquals("another_one-0.hdr", file.getFileName().toString());
+        assertEquals("another_one_status=FAIL_0.hdr", file.getFileName().toString());
 
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(expectedHistogram.getTotalCount(), savedHistogram.getTotalCount());

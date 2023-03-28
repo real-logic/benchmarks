@@ -70,7 +70,7 @@ public class LoggingPersistedHistogram implements PersistedHistogram
         histogram.outputPercentileDistribution(printStream, outputValueUnitScalingRatio);
     }
 
-    public Path saveToFile(final Path outputDirectory, final String namePrefix) throws IOException
+    public Path saveToFile(final Path outputDirectory, final String namePrefix, final Status status) throws IOException
     {
         syncAndLoadHistogram();
 
@@ -82,7 +82,7 @@ public class LoggingPersistedHistogram implements PersistedHistogram
             throw new IllegalArgumentException("Name prefix cannot be blank!");
         }
 
-        return PersistedHistogram.saveHistogramToFile(histogram, outputDirectory, prefix);
+        return PersistedHistogram.saveHistogramToFile(histogram, outputDirectory, prefix, status);
     }
 
     public ValueRecorder valueRecorder()

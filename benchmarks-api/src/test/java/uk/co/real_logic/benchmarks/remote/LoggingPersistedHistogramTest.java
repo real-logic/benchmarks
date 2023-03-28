@@ -30,7 +30,8 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.AGGREGATE_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.AGGREGATE_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.OK;
 
 class LoggingPersistedHistogramTest
 {
@@ -63,7 +64,7 @@ class LoggingPersistedHistogramTest
                 }
             }
 
-            histogram.saveToFile(tempDir, "results");
+            histogram.saveToFile(tempDir, "results", OK);
             try (Stream<Histogram> history = histogram.historyIterator())
             {
                 history.forEach(
@@ -78,7 +79,7 @@ class LoggingPersistedHistogramTest
             // Number of files is not deterministic and varies with the speed of the system.
             assertTrue(5 <= counts[entryCountIndex]);
 
-            results = histogram.saveHistoryToCsvFile(tempDir, "results", 50.0, 99.0, 99.99, 100.0);
+            results = histogram.saveHistoryToCsvFile(tempDir, "results", OK, 50.0, 99.0, 99.99, 100.0);
         }
         final List<String> strings = Files.readAllLines(results);
         assertEquals(counts[entryCountIndex] + 1, strings.size());

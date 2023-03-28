@@ -26,6 +26,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.OK;
 import static uk.co.real_logic.benchmarks.remote.PersistedHistogramTest.readHistogram;
 
 class SinglePersistedHistogramTest
@@ -59,11 +60,11 @@ class SinglePersistedHistogramTest
 
         final SinglePersistedHistogram singlePersistedHistogram = new SinglePersistedHistogram(histogram.copy());
 
-        final Path file = singlePersistedHistogram.saveToFile(tempDir, "test-histogram");
+        final Path file = singlePersistedHistogram.saveToFile(tempDir, "test-histogram", OK);
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
-        assertEquals("test-histogram-0.hdr", file.getFileName().toString());
+        assertEquals("test-histogram_status=OK_0.hdr", file.getFileName().toString());
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(histogram, savedHistogram);
         assertEquals(histogram.getStartTimeStamp(), savedHistogram.getStartTimeStamp());

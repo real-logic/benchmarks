@@ -29,12 +29,15 @@ import java.io.PrintStream;
 import java.util.Properties;
 import java.util.function.BiFunction;
 
-import static java.lang.Math.*;
+import static java.lang.Math.min;
+import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.*;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.remote.MessageTransceiver.CHECKSUM;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.FAIL;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.OK;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
@@ -145,13 +148,21 @@ public final class LoadTestRig
             histogram.outputPercentileDistribution(out, 1000.0);
 
             warnIfInsufficientCpu();
-            warnIfTargetRateNotAchieved(sentMessages);
+            final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.messageRate();
+            warnIfTargetRateNotAchieved(sentMessages, expectedTotalNumberOfMessages);
 
-            histogram.saveToFile(configuration.outputDirectory(), configuration.outputFileNamePrefix());
+            final PersistedHistogram.Status status = expectedTotalNumberOfMessages == sentMessages ? OK : FAIL;
+            histogram.saveToFile(
+                configuration.outputDirectory(),
+                configuration.outputFileNamePrefix(),
+                status);
             if (configuration.trackHistory())
             {
                 histogram.saveHistoryToCsvFile(
-                    configuration.outputDirectory(), configuration.outputFileNamePrefix(), 50.0, 99.0, 99.99, 100.0);
+                    configuration.outputDirectory(),
+                    configuration.outputFileNamePrefix(),
+                    status,
+                    50.0, 99.0, 99.99, 100.0);
             }
         }
         finally
@@ -294,9 +305,8 @@ public final class LoadTestRig
         }
     }
 
-    private void warnIfTargetRateNotAchieved(final long sentMessages)
+    private void warnIfTargetRateNotAchieved(final long sentMessages, final long expectedTotalNumberOfMessages)
     {
-        final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.messageRate();
         if (expectedTotalNumberOfMessages != sentMessages)
         {
             out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +

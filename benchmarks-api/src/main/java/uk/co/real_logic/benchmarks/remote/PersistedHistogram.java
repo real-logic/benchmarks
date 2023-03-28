@@ -32,6 +32,42 @@ import static org.agrona.AsciiEncoding.parseIntAscii;
 public interface PersistedHistogram extends AutoCloseable
 {
     /**
+     * Character used to separate parameters in the file name.
+     */
+    char SEPARATOR = '_';
+
+    /**
+     * File extension used to persist histogram values on disc.
+     */
+    String FILE_EXTENSION = ".hdr";
+
+    /**
+     * File extension used to persist history of the histogram values on disc.
+     */
+    String HISTORY_FILE_EXTENSION = ".csv";
+
+    /**
+     * File suffix for aggregated histogram.
+     */
+    String AGGREGATE_FILE_SUFFIX = SEPARATOR + "combined" + FILE_EXTENSION;
+
+    /**
+     * File name suffix for the report file, i.e. the plottable results.
+     */
+    String REPORT_FILE_SUFFIX = SEPARATOR + "report.hgrm";
+
+    /**
+     * Name of the attribute to contain status of the benchmark execution.
+     */
+    String STATUS_ATTRIBUTE_NAME = "status";
+
+    enum Status
+    {
+        OK,
+        FAIL
+    }
+
+    /**
      * Produce textual representation of the value distribution of histogram data by percentile. The distribution is
      * output with exponentially increasing resolution, with each exponentially decreasing half-distance containing
      * five (5) percentile reporting tick points.
@@ -50,12 +86,13 @@ public interface PersistedHistogram extends AutoCloseable
      *
      * @param outputDirectory output directory where files should be stored.
      * @param namePrefix      name prefix to use when creating a file.
+     * @param status          of the execution.
      * @return created file.
      * @throws NullPointerException     if {@code null == outputDirectory || null == namePrefix}.
      * @throws IllegalArgumentException if {@code namePrefix} is blank.
      * @throws IOException              if IO error occurs.
      */
-    Path saveToFile(Path outputDirectory, String namePrefix) throws IOException;
+    Path saveToFile(Path outputDirectory, String namePrefix, Status status) throws IOException;
 
     /**
      * Provide a value recorder to be used for measurements. Values recorded through this interface will be persisted
@@ -81,24 +118,31 @@ public interface PersistedHistogram extends AutoCloseable
     Stream<Histogram> historyIterator();
 
     static Path saveHistogramToFile(
-        final Histogram histogram, final Path outputDirectory, final String prefix)
+        final Histogram histogram, final Path outputDirectory, final String prefix, final Status status)
         throws IOException
     {
-        final String fileNamePrefix = prefix + "-";
-        final String fileExtension = SinglePersistedHistogram.FILE_EXTENSION;
+        final String fileNamePrefix = prefix + SEPARATOR;
+        final String fileExtension = FILE_EXTENSION;
 
         final int index = determineFileIndex(outputDirectory, fileNamePrefix, fileExtension);
-        return saveToFile(histogram, outputDirectory.resolve(fileNamePrefix + index + fileExtension));
+        return saveToFile(histogram, outputDirectory.resolve(fileName(status, fileNamePrefix, fileExtension, index)));
     }
 
-    default Path saveHistoryToCsvFile(final Path outputDirectory, final String prefix, final double... percentiles)
+    static String fileName(
+        final Status status, final String fileNamePrefix, final String fileExtension, final int index)
+    {
+        return fileNamePrefix + STATUS_ATTRIBUTE_NAME + "=" + status + SEPARATOR + index + fileExtension;
+    }
+
+    default Path saveHistoryToCsvFile(
+        final Path outputDirectory, final String prefix, final Status status, final double... percentiles)
         throws IOException
     {
-        final String fileNamePrefix = prefix + "-";
-        final String fileExtension = SinglePersistedHistogram.HISTORY_FILE_EXTENSION;
+        final String fileNamePrefix = prefix + SEPARATOR;
+        final String fileExtension = HISTORY_FILE_EXTENSION;
 
         final int index = determineFileIndex(outputDirectory, fileNamePrefix, fileExtension);
-        final Path csvPath = outputDirectory.resolve(fileNamePrefix + index + fileExtension);
+        final Path csvPath = outputDirectory.resolve(fileName(status, fileNamePrefix, fileExtension, index));
 
         try (PrintStream output = new PrintStream(csvPath.toFile(), "ASCII"))
         {
@@ -150,7 +194,7 @@ public interface PersistedHistogram extends AutoCloseable
                     final String fileName = file.getFileName().toString();
 
                     return fileName.endsWith(fileExtension) &&
-                        !fileName.endsWith(SinglePersistedHistogram.AGGREGATE_FILE_SUFFIX) &&
+                        !fileName.endsWith(AGGREGATE_FILE_SUFFIX) &&
                         fileName.startsWith(fileNamePrefix);
                 }))
         {
@@ -158,8 +202,10 @@ public interface PersistedHistogram extends AutoCloseable
                 (file) ->
                 {
                     final String fileName = file.getFileName().toString();
-                    final int indexLength = fileName.length() - fileExtension.length() - fileNamePrefix.length();
-                    return parseIntAscii(fileName, fileNamePrefix.length(), indexLength);
+                    final int indexStart =
+                        fileName.lastIndexOf(SEPARATOR, fileName.length() - fileExtension.length()) + 1;
+                    final int indexLength = fileName.length() - fileExtension.length() - indexStart;
+                    return parseIntAscii(fileName, indexStart, indexLength);
                 })
             .max()
             .orElse(-1) + 1;

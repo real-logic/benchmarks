@@ -27,11 +27,12 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 
 import static java.lang.Double.*;
 import static java.nio.file.Files.*;
 import static java.util.stream.Collectors.groupingBy;
-import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.*;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.*;
 
 public final class ResultsAggregator
 {
@@ -62,29 +63,62 @@ public final class ResultsAggregator
 
     public void run() throws IOException
     {
-        final Map<String, List<Path>> byPrefix = walk(directory)
-            .filter((path) ->
-            {
-                if (!isRegularFile(path))
-                {
-                    return false;
-                }
-
-                final String fileName = path.getFileName().toString();
-                return fileName.endsWith(FILE_EXTENSION) && !fileName.endsWith(AGGREGATE_FILE_SUFFIX);
-            })
-            .collect(groupingBy((file) ->
-            {
-                final String fileName = file.getFileName().toString();
-                return fileName.substring(0, fileName.lastIndexOf('-'));
-            }));
-
-        for (final Entry<String, List<Path>> e : byPrefix.entrySet())
+        final String statusPrefix = SEPARATOR + STATUS_ATTRIBUTE_NAME + "=";
+        final String okStatus = statusPrefix + Status.OK;
+        try (Stream<Path> stream = walk(directory))
         {
-            final Histogram aggregate = aggregateHistograms(e);
-            final String filePrefix = e.getKey();
-            PersistedHistogram.saveToFile(aggregate, directory.resolve(filePrefix + AGGREGATE_FILE_SUFFIX));
-            createReportFile(aggregate, directory.resolve(filePrefix + REPORT_FILE_SUFFIX));
+            final Map<String, List<Path>> byPrefix = stream
+                .filter((path) ->
+                {
+                    if (!isRegularFile(path))
+                    {
+                        return false;
+                    }
+
+                    final String fileName = path.getFileName().toString();
+                    return fileName.endsWith(FILE_EXTENSION) && !fileName.endsWith(AGGREGATE_FILE_SUFFIX);
+                })
+                .collect(groupingBy((file) ->
+                {
+                    final String fileName = file.getFileName().toString();
+                    final int fileIndexSeparator = fileName.lastIndexOf(SEPARATOR);
+                    final int statusIndex = fileName.lastIndexOf(statusPrefix, fileIndexSeparator - 1);
+                    if (statusIndex > 0)
+                    {
+                        for (int i = statusPrefix.length(); i < fileIndexSeparator; i++)
+                        {
+                            if (fileName.charAt(i) == SEPARATOR)
+                            {
+                                return fileName.substring(0, fileIndexSeparator);
+                            }
+                        }
+                        return fileName.substring(0, statusIndex);
+                    }
+                    return fileName.substring(0, fileIndexSeparator);
+                }));
+
+            for (final Entry<String, List<Path>> e : byPrefix.entrySet())
+            {
+                final Histogram aggregate = aggregateHistograms(e);
+                final String filePrefix = e.getKey();
+                String status = okStatus;
+                for (final Path p : e.getValue())
+                {
+                    final String fileName = p.getFileName().toString();
+                    final int statusIndex = fileName.lastIndexOf(statusPrefix);
+                    if (statusIndex > 0)
+                    {
+                        final int index = fileName.lastIndexOf(SEPARATOR);
+                        final String newStatus = fileName.substring(statusIndex, index);
+                        if (!okStatus.equals(newStatus))
+                        {
+                            status = newStatus;
+                        }
+                    }
+                }
+                saveToFile(aggregate, directory.resolve(filePrefix + status + AGGREGATE_FILE_SUFFIX));
+                createReportFile(aggregate, directory.resolve(filePrefix + status + REPORT_FILE_SUFFIX));
+            }
         }
     }
 

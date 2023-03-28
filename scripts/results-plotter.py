@@ -8,11 +8,11 @@ usage: results-plotter.py [-h] [--group-by GROUP_BY] [--filter FILTER] [--exclud
 
 The script expects files to be in the format
 
-    <type>^<scenario>^<parameters>^sha=<sha1>-report.hgrm
+    <type>_<scenario>_<parameters>_sha=<sha1>-report.hgrm
 
 e.g.
 
-    echo_java_instance=c5n.9xlarge^window=2m^mtu=8192^so_sndbuf=2m^so_rcvbuf=2m^rcvwnd=2m^rate=100000^batch=1^length=1344^sha=c68b27d86b43946be1a4a1aaebcfa69c4506cb37af013ced29daccf39412d3c3-report.hgrm
+    echo_java_instance=c5n.9xlarge_window=2m_mtu=8192_so_sndbuf=2m_so_rcvbuf=2m_rcvwnd=2m_rate=100000_batch=1_length=1344_sha=c68b27d86b43946be1a4a1aaebcfa69c4506cb37af013ced29daccf39412d3c3-report.hgrm
 """
 
 import argparse
@@ -23,9 +23,9 @@ import re
 import sys
 from collections import defaultdict
 
-# <type>^<scenario>^[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm
-regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[^_]+)_(?P<params>([^=_]+=[^_]+_?)+)_sha=(?:[a-z0-9]+)-report.hgrm')
-regex_params = re.compile('([^=_]+)=([^_]+)')
+# <type>_<scenario>_[p1=v1_p2=v2_...]_sha=<sha1>_report.hgrm
+regex_common = re.compile('(?P<type>[a-z-]+)_(?P<scenario>[__]+)_(?P<params>([_=_]+=[__]+_?)+)[-_]report.hgrm')
+regex_params = re.compile('([_=_]+)=([__]+)')
 
 
 def main():
@@ -48,7 +48,7 @@ def main():
         if not os.path.exists(path):
             sys.exit('Directory ' + dir + ' does not exist.')
         if not has_processable_files(path):
-            sys.exit("No files in the correct format found in {}, expected files with names like <type>^<scenario>^[p1=v1^p2=v2^...]^sha=<sha1>-report.hgrm".format(path))
+            sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1_p2=v2_...]_report.hgrm".format(path))
         paths.append(path)
 
     plot_graphs(paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)

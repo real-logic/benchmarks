@@ -35,8 +35,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.benchmarks.remote.LoadTestRig.MINIMUM_NUMBER_OF_CPU_CORES;
 import static uk.co.real_logic.benchmarks.remote.MessageTransceiver.CHECKSUM;
-import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.FILE_EXTENSION;
-import static uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram.HISTORY_FILE_EXTENSION;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.FILE_EXTENSION;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.HISTORY_FILE_EXTENSION;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.OK;
 
 @Timeout(10)
 class LoadTestRigTest
@@ -141,8 +142,10 @@ class LoadTestRigTest
         inOrder.verify(out).format("Send rate: %,d msgs/sec%n", 1L);
         inOrder.verify(out).printf("%nHistogram of RTT latencies in microseconds.%n");
         inOrder.verify(persistedHistogram).outputPercentileDistribution(out, 1000.0);
-        inOrder.verify(persistedHistogram).saveToFile(configuration.outputDirectory(), configuration
-            .outputFileNamePrefix());
+        inOrder.verify(persistedHistogram).saveToFile(
+            configuration.outputDirectory(),
+            configuration.outputFileNamePrefix(),
+            OK);
         inOrder.verify(messageTransceiver).destroy();
     }
 

@@ -30,11 +30,6 @@ import static java.util.Objects.requireNonNull;
  */
 public final class SinglePersistedHistogram implements PersistedHistogram
 {
-    static final String FILE_EXTENSION = ".hdr";
-    static final String HISTORY_FILE_EXTENSION = ".csv";
-    static final String AGGREGATE_FILE_SUFFIX = "-combined" + FILE_EXTENSION;
-    static final String REPORT_FILE_SUFFIX = "-report.hgrm";
-
     private final Histogram histogram;
 
     /**
@@ -69,12 +64,13 @@ public final class SinglePersistedHistogram implements PersistedHistogram
      *
      * @param outputDirectory output directory where files should be stored.
      * @param namePrefix      name prefix to use when creating a file.
+     * @param status
      * @return created file.
      * @throws NullPointerException     if {@code null == outputDirectory || null == namePrefix}.
      * @throws IllegalArgumentException if {@code namePrefix} is blank.
      * @throws IOException              if IO error occurs.
      */
-    public Path saveToFile(final Path outputDirectory, final String namePrefix) throws IOException
+    public Path saveToFile(final Path outputDirectory, final String namePrefix, final Status status) throws IOException
     {
         requireNonNull(outputDirectory);
 
@@ -84,7 +80,7 @@ public final class SinglePersistedHistogram implements PersistedHistogram
             throw new IllegalArgumentException("Name prefix cannot be blank!");
         }
 
-        return PersistedHistogram.saveHistogramToFile(histogram, outputDirectory, prefix);
+        return PersistedHistogram.saveHistogramToFile(histogram, outputDirectory, prefix, status);
     }
 
     /**
