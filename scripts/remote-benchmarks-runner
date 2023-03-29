@@ -44,9 +44,9 @@ connectionTimeout="${CONNECTION_TIMEOUT:-60s}"
 runs=${RUNS:-3}
 iterations=${ITERATIONS:-20}
 warmupIterations=${WARMUP_ITERATIONS:-10}
-warmupMessageRate="${WARMUP_MESSAGE_RATE:-10K}"
+warmupMessageRate="${WARMUP_MESSAGE_RATE:-25K}"
 
-messageRates=("1M" "500K" "100K")
+messageRates=("1001K" "501K" "101K")
 if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
 then
   IFS=',';
