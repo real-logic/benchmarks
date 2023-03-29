@@ -69,6 +69,18 @@ jobs:
           java-version: 8
       - name: Build with Gradle
         run: ./gradlew
+      - name: Copy test logs
+        id: copy_test_logs
+        if: failure()
+        run: |
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
+      - name: Upload crash logs
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
+        uses: actions/upload-artifact@v3
+        with:
+          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}
@@ -111,6 +123,18 @@ jobs:
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev cmake
       - name: Build
         run: cppbuild/cppbuild
+      - name: Copy test logs
+        id: copy_test_logs
+        if: failure()
+        run: |
+          echo "::set-output name=file::build/distributions/test_logs.tbz2"
+          ./gradlew tarTestLogs
+      - name: Upload crash logs
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
+        uses: actions/upload-artifact@v3
+        with:
+          name: crash-logs-${{ matrix.os }}-gcc-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
 
   cpp-clang-build:
     name: C++ Clang ${{ matrix.version }}
@@ -155,3 +179,9 @@ jobs:
           sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev cmake
       - name: Build
         run: cppbuild/cppbuild
+      - name: Upload crash logs
+        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
+        uses: actions/upload-artifact@v3
+        with:
+          name: crash-logs-${{ matrix.os }}-clang-${{ matrix.version }}
+          path: ${{ steps.copy_test_logs.outputs.file }}
