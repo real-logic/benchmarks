@@ -47,7 +47,7 @@ def main():
         if not os.path.exists(path):
             sys.exit('Directory ' + dir + ' does not exist.')
         if not has_processable_files(path):
-            sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1_p2=v2_...]-report.hgrm".format(path))
+            sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1_p2=v2_...]_sha=<sha1>-report.hgrm".format(path))
         paths.append(path)
 
     plot_graphs(paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
