@@ -64,7 +64,7 @@ class SinglePersistedHistogramTest
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
-        assertEquals("test-histogram_status=OK_0.hdr", file.getFileName().toString());
+        assertEquals("test-histogram-0.hdr", file.getFileName().toString());
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(histogram, savedHistogram);
         assertEquals(histogram.getStartTimeStamp(), savedHistogram.getStartTimeStamp());

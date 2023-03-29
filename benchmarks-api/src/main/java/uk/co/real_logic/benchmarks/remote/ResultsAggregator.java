@@ -63,8 +63,6 @@ public final class ResultsAggregator
 
     public void run() throws IOException
     {
-        final String statusPrefix = SEPARATOR + STATUS_ATTRIBUTE_NAME + "=";
-        final String okStatus = statusPrefix + Status.OK;
         try (Stream<Path> stream = walk(directory))
         {
             final Map<String, List<Path>> byPrefix = stream
@@ -74,50 +72,31 @@ public final class ResultsAggregator
                     {
                         return false;
                     }
-
                     final String fileName = path.getFileName().toString();
-                    return fileName.endsWith(FILE_EXTENSION) && !fileName.endsWith(AGGREGATE_FILE_SUFFIX);
+                    return isHdrFile(fileName, FILE_EXTENSION);
                 })
                 .collect(groupingBy((file) ->
                 {
                     final String fileName = file.getFileName().toString();
-                    final int fileIndexSeparator = fileName.lastIndexOf(SEPARATOR);
-                    final int statusIndex = fileName.lastIndexOf(statusPrefix, fileIndexSeparator - 1);
-                    if (statusIndex > 0)
-                    {
-                        for (int i = statusPrefix.length(); i < fileIndexSeparator; i++)
-                        {
-                            if (fileName.charAt(i) == SEPARATOR)
-                            {
-                                return fileName.substring(0, fileIndexSeparator);
-                            }
-                        }
-                        return fileName.substring(0, statusIndex);
-                    }
-                    return fileName.substring(0, fileIndexSeparator);
+                    return fileName.substring(0, fileName.lastIndexOf(INDEX_SEPARATOR));
                 }));
 
             for (final Entry<String, List<Path>> e : byPrefix.entrySet())
             {
                 final Histogram aggregate = aggregateHistograms(e);
                 final String filePrefix = e.getKey();
-                String status = okStatus;
+                String suffix = "";
                 for (final Path p : e.getValue())
                 {
                     final String fileName = p.getFileName().toString();
-                    final int statusIndex = fileName.lastIndexOf(statusPrefix);
-                    if (statusIndex > 0)
+                    if (fileName.endsWith(FAILED_FILE_SUFFIX))
                     {
-                        final int index = fileName.lastIndexOf(SEPARATOR);
-                        final String newStatus = fileName.substring(statusIndex, index);
-                        if (!okStatus.equals(newStatus))
-                        {
-                            status = newStatus;
-                        }
+                        suffix = FAILED_FILE_SUFFIX;
+                        break;
                     }
                 }
-                saveToFile(aggregate, directory.resolve(filePrefix + status + AGGREGATE_FILE_SUFFIX));
-                createReportFile(aggregate, directory.resolve(filePrefix + status + REPORT_FILE_SUFFIX));
+                saveToFile(aggregate, directory.resolve(filePrefix + AGGREGATE_FILE_SUFFIX + suffix));
+                createReportFile(aggregate, directory.resolve(filePrefix + REPORT_FILE_SUFFIX + suffix));
             }
         }
     }

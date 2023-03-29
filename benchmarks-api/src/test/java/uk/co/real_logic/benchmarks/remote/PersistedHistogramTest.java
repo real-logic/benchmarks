@@ -126,7 +126,7 @@ class PersistedHistogramTest
         assertNotNull(file);
         assertTrue(Files.exists(file));
         assertEquals(
-            "test-histogram" + SEPARATOR + STATUS_ATTRIBUTE_NAME + "=FAIL" + SEPARATOR + "0.hdr",
+            "test-histogram" + INDEX_SEPARATOR + "0.hdr" + FAILED_FILE_SUFFIX,
             file.getFileName().toString());
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(expectedHistogram, savedHistogram);
@@ -141,7 +141,8 @@ class PersistedHistogramTest
         final Path file;
         try (PersistedHistogram histogram = histogramFactory.apply(tempDir))
         {
-            Files.createFile(tempDir.resolve("another_one" + SEPARATOR + "13.hdr"));
+            Files.createFile(tempDir.resolve("another_one-13.hdr"));
+            Files.createFile(tempDir.resolve("another_one-5.hdr.FAIL"));
             Files.createFile(tempDir.resolve("another_one" + AGGREGATE_FILE_SUFFIX));
 
             final ValueRecorder valueRecorder = histogram.valueRecorder();
@@ -155,7 +156,7 @@ class PersistedHistogramTest
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
-        assertEquals("another_one_status=OK_14.hdr", file.getFileName().toString());
+        assertEquals("another_one-14.hdr", file.getFileName().toString());
 
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(expectedHistogram, savedHistogram);
@@ -204,7 +205,7 @@ class PersistedHistogramTest
 
         assertNotNull(file);
         assertTrue(Files.exists(file));
-        assertEquals("another_one_status=FAIL_0.hdr", file.getFileName().toString());
+        assertEquals("another_one-0.hdr.FAIL", file.getFileName().toString());
 
         final Histogram savedHistogram = readHistogram(file);
         assertEquals(expectedHistogram.getTotalCount(), savedHistogram.getTotalCount());

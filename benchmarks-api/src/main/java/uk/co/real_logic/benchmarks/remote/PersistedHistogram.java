@@ -32,11 +32,6 @@ import static org.agrona.AsciiEncoding.parseIntAscii;
 public interface PersistedHistogram extends AutoCloseable
 {
     /**
-     * Character used to separate parameters in the file name.
-     */
-    char SEPARATOR = '_';
-
-    /**
      * File extension used to persist histogram values on disc.
      */
     String FILE_EXTENSION = ".hdr";
@@ -49,17 +44,22 @@ public interface PersistedHistogram extends AutoCloseable
     /**
      * File suffix for aggregated histogram.
      */
-    String AGGREGATE_FILE_SUFFIX = SEPARATOR + "combined" + FILE_EXTENSION;
+    String AGGREGATE_FILE_SUFFIX = "-combined" + FILE_EXTENSION;
 
     /**
      * File name suffix for the report file, i.e. the plottable results.
      */
-    String REPORT_FILE_SUFFIX = SEPARATOR + "report.hgrm";
+    String REPORT_FILE_SUFFIX = "-report.hgrm";
 
     /**
-     * Name of the attribute to contain status of the benchmark execution.
+     * File name suffix for failed benchmark results.
      */
-    String STATUS_ATTRIBUTE_NAME = "status";
+    String FAILED_FILE_SUFFIX = ".FAIL";
+
+    /**
+     * Separator character used to separate file name from the index.
+     */
+    char INDEX_SEPARATOR = '-';
 
     enum Status
     {
@@ -121,7 +121,7 @@ public interface PersistedHistogram extends AutoCloseable
         final Histogram histogram, final Path outputDirectory, final String prefix, final Status status)
         throws IOException
     {
-        final String fileNamePrefix = prefix + SEPARATOR;
+        final String fileNamePrefix = prefix + INDEX_SEPARATOR;
         final String fileExtension = FILE_EXTENSION;
 
         final int index = determineFileIndex(outputDirectory, fileNamePrefix, fileExtension);
@@ -131,14 +131,19 @@ public interface PersistedHistogram extends AutoCloseable
     static String fileName(
         final Status status, final String fileNamePrefix, final String fileExtension, final int index)
     {
-        return fileNamePrefix + STATUS_ATTRIBUTE_NAME + "=" + status + SEPARATOR + index + fileExtension;
+        final String name = fileNamePrefix + index + fileExtension;
+        if (Status.FAIL == status)
+        {
+            return name + FAILED_FILE_SUFFIX;
+        }
+        return name;
     }
 
     default Path saveHistoryToCsvFile(
         final Path outputDirectory, final String prefix, final Status status, final double... percentiles)
         throws IOException
     {
-        final String fileNamePrefix = prefix + SEPARATOR;
+        final String fileNamePrefix = prefix + INDEX_SEPARATOR;
         final String fileExtension = HISTORY_FILE_EXTENSION;
 
         final int index = determineFileIndex(outputDirectory, fileNamePrefix, fileExtension);
@@ -192,9 +197,7 @@ public interface PersistedHistogram extends AutoCloseable
                     }
 
                     final String fileName = file.getFileName().toString();
-
-                    return fileName.endsWith(fileExtension) &&
-                        !fileName.endsWith(AGGREGATE_FILE_SUFFIX) &&
+                    return isHdrFile(fileName, fileExtension) &&
                         fileName.startsWith(fileNamePrefix);
                 }))
         {
@@ -202,14 +205,24 @@ public interface PersistedHistogram extends AutoCloseable
                 (file) ->
                 {
                     final String fileName = file.getFileName().toString();
-                    final int indexStart =
-                        fileName.lastIndexOf(SEPARATOR, fileName.length() - fileExtension.length()) + 1;
-                    final int indexLength = fileName.length() - fileExtension.length() - indexStart;
-                    return parseIntAscii(fileName, indexStart, indexLength);
+                    final int failedSuffix = fileName.lastIndexOf(FAILED_FILE_SUFFIX);
+                    final int lengthWithoutSuffix = failedSuffix > 0 ? failedSuffix : fileName.length();
+                    final int indexStart = fileName.lastIndexOf(INDEX_SEPARATOR, lengthWithoutSuffix - 1) + 1;
+                    return parseIntAscii(
+                        fileName, indexStart, lengthWithoutSuffix - fileExtension.length() - indexStart);
                 })
             .max()
             .orElse(-1) + 1;
         }
+    }
+
+    static boolean isHdrFile(final String fileName, final String fileExtension)
+    {
+        final int failedSuffix = fileName.lastIndexOf(FAILED_FILE_SUFFIX);
+        final int lengthWithoutSuffix = failedSuffix > 0 ? failedSuffix : fileName.length();
+        return fileName.startsWith(fileExtension, lengthWithoutSuffix - fileExtension.length()) &&
+            !fileName.startsWith(
+                AGGREGATE_FILE_SUFFIX, lengthWithoutSuffix - AGGREGATE_FILE_SUFFIX.length());
     }
 
     static Path saveToFile(final Histogram histogram, final Path file)

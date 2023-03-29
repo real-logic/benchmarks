@@ -29,13 +29,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.util.Arrays.sort;
 import static org.junit.jupiter.api.Assertions.*;
-import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.AGGREGATE_FILE_SUFFIX;
-import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.REPORT_FILE_SUFFIX;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.*;
 
 class ResultsAggregatorTest
 {
@@ -106,37 +106,40 @@ class ResultsAggregatorTest
     @Test
     void multipleHistogramFiles() throws IOException
     {
-        saveToDisc("my_status=OK_5.hdr", createHistogram(10, 25, 100, 555, 777, 999));
-        saveToDisc("my_status=FAIL_0.hdr", createHistogram(2, 4, 555555, 1232343));
-        saveToDisc("my_status=FAIL_combined.hdr", createHistogram(3, 4, 11, 1, 1, 22));
-        saveToDisc("other_78.hdr", createHistogram(1, 45, 200));
-        write(tempDir.resolve("other_status=OK_report.hgrm"), new byte[]{ 0, -128, 127 }, CREATE_NEW);
-        saveToDisc("hidden_4.ccc", createHistogram(0, 0, 1, 2, 3, 4, 5, 6));
-        saveToDisc("hidden_6.ccc", createHistogram(0, 0, 6, 6, 0));
+        saveToDisc("my-5.hdr", createHistogram(10, 25, 100, 555, 777, 999));
+        saveToDisc("my-0.hdr.FAIL", createHistogram(2, 4, 555555, 1232343));
+        saveToDisc("my-combined.hdr.FAIL", createHistogram(3, 4, 11, 1, 1, 22));
+        saveToDisc("other-78.hdr", createHistogram(1, 45, 200));
+        write(tempDir.resolve("other-report.hgrm"), new byte[]{ 0, -128, 127 }, CREATE_NEW);
+        saveToDisc("hidden-4.ccc", createHistogram(0, 0, 1, 2, 3, 4, 5, 6));
+        saveToDisc("hidden-6.ccc", createHistogram(0, 0, 6, 6, 0));
 
         final double reportOutputScalingRatio = 250.0;
         final ResultsAggregator aggregator = new ResultsAggregator(tempDir, reportOutputScalingRatio);
 
         aggregator.run();
 
-        final String[] aggregateFiles = tempDir.toFile().list((dir, name) -> name.endsWith(AGGREGATE_FILE_SUFFIX));
+        final String[] aggregateFiles = tempDir.toFile().list((dir, name) ->
+            name.endsWith(AGGREGATE_FILE_SUFFIX) || name.endsWith(AGGREGATE_FILE_SUFFIX + FAILED_FILE_SUFFIX));
         assertNotNull(aggregateFiles);
         sort(aggregateFiles);
+        System.out.println(Arrays.toString(aggregateFiles));
         assertArrayEquals(
-            new String[]{ "my_status=FAIL_combined.hdr", "other_status=OK_combined.hdr" }, aggregateFiles);
+            new String[]{ "my-combined.hdr.FAIL", "other-combined.hdr" }, aggregateFiles);
         final Histogram myAggregate = createHistogram(2, 25, 100, 555, 777, 999, 555555, 1232343);
-        assertEquals(myAggregate, loadFromDisc("my_status=FAIL_combined.hdr"));
+        assertEquals(myAggregate, loadFromDisc("my-combined.hdr.FAIL"));
         final Histogram otherAggregate = createHistogram(1, 45, 200);
-        assertEquals(otherAggregate, loadFromDisc("other_status=OK_combined.hdr"));
+        assertEquals(otherAggregate, loadFromDisc("other-combined.hdr"));
 
-        final String[] reportFiles = tempDir.toFile().list((dir, name) -> name.endsWith(REPORT_FILE_SUFFIX));
+        final String[] reportFiles = tempDir.toFile().list((dir, name) ->
+            name.endsWith(REPORT_FILE_SUFFIX) || name.endsWith(REPORT_FILE_SUFFIX + FAILED_FILE_SUFFIX));
         assertNotNull(reportFiles);
         sort(reportFiles);
-        assertArrayEquals(new String[]{ "my_status=FAIL_report.hgrm", "other_status=OK_report.hgrm" }, reportFiles);
+        assertArrayEquals(new String[]{ "my-report.hgrm.FAIL", "other-report.hgrm" }, reportFiles);
         assertArrayEquals(outputPercentileDistribution(myAggregate, reportOutputScalingRatio),
-            readAllBytes(tempDir.resolve("my_status=FAIL_report.hgrm")));
+            readAllBytes(tempDir.resolve("my-report.hgrm.FAIL")));
         assertArrayEquals(outputPercentileDistribution(otherAggregate, reportOutputScalingRatio),
-            readAllBytes(tempDir.resolve("other_status=OK_report.hgrm")));
+            readAllBytes(tempDir.resolve("other-report.hgrm")));
     }
 
     private byte[] outputPercentileDistribution(final Histogram histogram, final double outputValueUnitScalingRatio)
