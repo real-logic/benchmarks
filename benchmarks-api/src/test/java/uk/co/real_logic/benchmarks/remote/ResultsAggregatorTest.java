@@ -29,7 +29,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
@@ -123,7 +122,6 @@ class ResultsAggregatorTest
             name.endsWith(AGGREGATE_FILE_SUFFIX) || name.endsWith(AGGREGATE_FILE_SUFFIX + FAILED_FILE_SUFFIX));
         assertNotNull(aggregateFiles);
         sort(aggregateFiles);
-        System.out.println(Arrays.toString(aggregateFiles));
         assertArrayEquals(
             new String[]{ "my-combined.hdr.FAIL", "other-combined.hdr" }, aggregateFiles);
         final Histogram myAggregate = createHistogram(2, 25, 100, 555, 777, 999, 555555, 1232343);
