@@ -46,19 +46,21 @@ if [[ -z $JDK_HOME ]]; then
 else
   JAVA_VERSION=$("$JDK_HOME/bin/java" -Xinternalversion 2>&1)
 fi
+OPENSSL_VERSION=$(openssl version)
 
 JSON_SUMMARY=$( jq -n \
-                  --arg ma "$MANUFACTURER" \
-                  --arg pn "$PRODUCT_NAME" \
-                  --arg mt "$MACHINE_TYPE" \
+                  --arg manufacturer "$MANUFACTURER" \
+                  --arg product_name "$PRODUCT_NAME" \
+                  --arg machine_type "$MACHINE_TYPE" \
                   --arg os "$OPERATING_SYSTEM" \
-                  --arg ke "$KERNEL" \
-                  --arg ar "$ARCHITECTURE" \
+                  --arg kernel "$KERNEL" \
+                  --arg arch "$ARCHITECTURE" \
                   --arg cpu "$CPU_NAME" \
-                  --arg cm "$CMDLINE" \
-                  --arg tp "$TUNED_PROFILE" \
-                  --arg ja "$JAVA_VERSION" \
-                  '{manufacturer: $ma, product_name: $pn, machine_type: $mt, operating_system: $os, kernel: $ke, architecture: $ar, cpu_name: $cpu, cmdline: $cm, tuned_profile: $tp, java_version: $ja}' )
+                  --arg cmd_line "$CMDLINE" \
+                  --arg tuned_profile "$TUNED_PROFILE" \
+                  --arg java_version "$JAVA_VERSION" \
+                  --arg ssl_version "$OPENSSL_VERSION" \
+                  '{manufacturer: $manufacturer, product_name: $product_name, machine_type: $machine_type, operating_system: $os, kernel: $kernel, architecture: $arch, cpu_name: $cpu, cmdline: $cmd_line, tuned_profile: $tuned_profile, java_version: $java_version, openssl_version: $ssl_version}' )
 
 MOUNTS_TXT=$(mount | grep -P '^[0-9]+|^\/dev\/(?!loop)|^tmpfs')
 MOUNTS_JSON=$(grep -P '^[0-9]+|^\/dev\/(?!loop)|^tmpfs' /proc/mounts | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
@@ -104,6 +106,7 @@ Architecture:     $ARCHITECTURE
 CPU name:         $CPU_NAME
 tuned profile:    $TUNED_PROFILE
 Java version:     $JAVA_VERSION
+OpenSSL version:  $OPENSSL_VERSION
 
 Mount points
 ============
