@@ -27,11 +27,13 @@ function start_media_driver()
   local wrapper_script=${2}
   local resolve_media_driver_pid
   local driver_thread
+  local manually_pin_driver_threads=0
 
   if [[ "${executable}" =~ /media-driver$ ]]
   then
     resolve_media_driver_pid="$(await_java_process_start "io.aeron.driver.MediaDriver"); media_driver_pid=\${pid}"
     driver_thread="driver-conducto"
+    manually_pin_driver_threads=1
   elif [[ "${executable}" =~ /c-aeronmd-dpdk$ ]]
   then
     resolve_media_driver_pid="$(await_process_start "\$(pgrep -x '^aeronmd_dpdk\$')"); media_driver_pid=\${pid}"
@@ -45,11 +47,14 @@ function start_media_driver()
   command="$(stop_media_driver); \
   rm -rf /dev/shm/aeron; \
   ${wrapper_script} taskset -c ${3} \"${executable}\" & ${resolve_media_driver_pid}"
-
   command+="; echo \"media_driver_pid='\${media_driver_pid}'\""
-  command+="; $(pin_thread \${media_driver_pid} "receiver" "${6}")"
-  command+="; $(pin_thread \${media_driver_pid} "sender" "${5}")"
-  command+="; $(pin_thread \${media_driver_pid} "${driver_thread}" "${4}")"
+
+  if [[ "${manually_pin_driver_threads}" -eq 1 ]]
+  then
+    command+="; $(pin_thread \${media_driver_pid} "receiver" "${6}")"
+    command+="; $(pin_thread \${media_driver_pid} "sender" "${5}")"
+    command+="; $(pin_thread \${media_driver_pid} "${driver_thread}" "${4}")"
+  fi
 
   echo ${command}
 }

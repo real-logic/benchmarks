@@ -275,6 +275,9 @@ scenarios=()
 scripts_path="benchmarks_path_var/scripts/aeron"
 
 driver_properties="echo -e \"\
+aeron.conductor.cpu.affinity=driver_conductor_cpu_core_var\n \
+aeron.sender.cpu.affinity=driver_sender_cpu_core_var\n \
+aeron.receiver.cpu.affinity=driver_receiver_cpu_core_var\n \
 aeron.mtu.length=driver_mtu_var\n \
 aeron.ipc.mtu.length=driver_mtu_var\n \
 aeron.socket.so_sndbuf=${so_sndbuf}\n \
