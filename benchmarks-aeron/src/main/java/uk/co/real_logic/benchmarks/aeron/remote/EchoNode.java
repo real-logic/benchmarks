@@ -26,7 +26,6 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
-import java.time.Instant;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -86,7 +85,6 @@ public final class EchoNode implements AutoCloseable, Runnable
                 .commit();
         };
 
-        out.println(Instant.now() + " " + getClass().getSimpleName() + " awaiting connections...");
         awaitConnected(
             () -> subscription.isConnected() && publication.isConnected(),
             connectionTimeoutNs(),
