@@ -34,6 +34,8 @@ required_vars=(
   "CLIENT_INGRESS_ENDPOINTS"
   "CLIENT_EGRESS_CHANNEL"
   "CLUSTER_MEMBERS"
+  "CLUSTER_CONSENSUS_ENDPOINTS"
+  "CLUSTER_ID"
   "CLUSTER_SIZE"
   "_BENCHMARKS_PATH"
   "_JAVA_HOME"
@@ -80,6 +82,7 @@ then
   exit 1
 fi
 
+CLUSTER_BACKUP_NODES=${CLUSTER_BACKUP_NODES:-0}
 ef_vi_rxq_size=${EF_VI_RXQ_SIZE:-1024} # ef_vi receive queue size
 ef_vi_txq_size=${EF_VI_TXQ_SIZE:-2048} # ef_vi send queue size
 so_sndbuf="${AERON_SOCKET_SO_SNDBUF:-2m}"
@@ -213,13 +216,12 @@ then
   unset IFS;
 fi
 
-function start_server()
+function start_cluster_node()
 {
-  local cluster_node_class_name=${1}
-  local server_driver=${2}
-  local fsync=${3}
-  local mtu=${4}
-  local node_id=${5}
+  local node_id=${1}
+  local cluster_node_class_name=${2}
+  local server_driver=${3}
+  local fsync=${4}
   local benchmarks_path_var=NODE${node_id}_BENCHMARKS_PATH
   local java_home_var=NODE${node_id}_JAVA_HOME
   local cluster_dir_var=NODE${node_id}_CLUSTER_DIR
@@ -244,9 +246,9 @@ function start_server()
     ; ${server_driver} \
     && export JVM_OPTS=\"\
     -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout} \
-    -Daeron.mtu.length=${mtu} \
     -Daeron.cluster.dir=${!cluster_dir_var} \
     -Daeron.cluster.idle.strategy=noop \
+    -Daeron.cluster.id=${CLUSTER_ID} \
     -Daeron.cluster.members=${CLUSTER_MEMBERS} \
     -Daeron.cluster.member.id=${node_id} \
     -Daeron.cluster.consensus.channel=${!cluster_consensus_channel_var} \
@@ -267,6 +269,57 @@ function start_server()
     ; $(pin_thread \${pid} "archive-conduct" "${!archive_conductor_cpu_var}") \
     ; $(pin_thread \${pid} "consensus-modul" "${!consensus_module_cpu_var}") \
     ; $(pin_thread \${pid} "echo-service" "${!clustered_service_cpu_var}") \
+    && tail --pid=\$! -f /dev/null"
+}
+
+function start_cluster_backup_node()
+{
+  local node_id=${1}
+  local cluster_backup_node_class_name=${2}
+  local server_driver=${3}
+  local fsync=2
+  local benchmarks_path_var=BACKUP_NODE${node_id}_BENCHMARKS_PATH
+  local java_home_var=BACKUP_NODE${node_id}_JAVA_HOME
+  local cluster_dir_var=BACKUP_NODE${node_id}_CLUSTER_DIR
+  local cluster_consensus_channel_var=BACKUP_NODE${node_id}_CLUSTER_CONSENSUS_CHANNEL
+  local cluster_backup_catchup_channel_var=BACKUP_NODE${node_id}_CLUSTER_BACKUP_CATCHUP_CHANNEL
+  local archive_dir_var=BACKUP_NODE${node_id}_ARCHIVE_DIR
+  local archive_control_channel_var=BACKUP_NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
+  local archive_control_response_channel_var=BACKUP_NODE${node_id}_ARCHIVE_CONTROL_RESPONSE_CHANNEL
+  local archive_replication_channel_var=BACKUP_NODE${node_id}_ARCHIVE_REPLICATION_CHANNEL
+  local other_cpu_cores_var=BACKUP_NODE${node_id}_OTHER_CPU_CORES
+  local archive_recorder_cpu_var=BACKUP_NODE${node_id}_ARCHIVE_RECORDER_CPU_CORE
+  local archive_replayer_cpu_var=BACKUP_NODE${node_id}_ARCHIVE_REPLAYER_CPU_CORE
+  local archive_conductor_cpu_var=BACKUP_NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
+  local cluster_backup_cpu_var=BACKUP_NODE${node_id}_CLUSTER_BACKUP_CPU_CORE
+  echo "
+    export JAVA_HOME=\"${!java_home_var}\" \
+    ; $(kill_java_process "${cluster_backup_node_class_name}") \
+    ; rm -rf \"${!cluster_dir_var}\" \
+    ; rm -rf \"${!archive_dir_var}\" \
+    ; ${server_driver} \
+    && export JVM_OPTS=\"\
+    -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout} \
+    -Daeron.cluster.dir=${!cluster_dir_var} \
+    -Daeron.cluster.id=${CLUSTER_ID} \
+    -Daeron.cluster.consensus.channel=${!cluster_consensus_channel_var} \
+    -Daeron.cluster.consensus.endpoints=${CLUSTER_CONSENSUS_ENDPOINTS} \
+    -Daeron.cluster.backup.catchup.channel=${!cluster_backup_catchup_channel_var} \
+    -Daeron.cluster.backup.source.type=FOLLOWER \
+    -Daeron.cluster.backup.progress.timeout=30s \
+    -Daeron.archive.dir=${!archive_dir_var} \
+    -Daeron.archive.control.channel=${!archive_control_channel_var} \
+    -Daeron.archive.control.response.channel=${!archive_control_response_channel_var} \
+    -Daeron.archive.replication.channel=${!archive_replication_channel_var} \
+    -Daeron.archive.file.sync.level=${fsync} \
+    -Daeron.archive.catalog.file.sync.level=${fsync} \
+    -Daeron.archive.recording.events.enabled=false\" \
+    && taskset -c ${!other_cpu_cores_var} ${!benchmarks_path_var}/scripts/aeron/cluster-backup-node & \
+    $(await_java_process_start "${cluster_backup_node_class_name}") \
+    ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
+    ; $(pin_thread \${pid} "archive-replaye" "${!archive_replayer_cpu_var}") \
+    ; $(pin_thread \${pid} "archive-conduct" "${!archive_conductor_cpu_var}") \
+    ; $(pin_thread \${pid} "cluster-backup" "${!cluster_backup_cpu_var}") \
     && tail --pid=\$! -f /dev/null"
 }
 
@@ -446,6 +499,7 @@ do
 
       client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
       cluster_node_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterNode"
+      cluster_backup_node_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterBackupNode"
       client_ingress_endpoints=''
       if [ -n "${CLIENT_INGRESS_ENDPOINTS}" ]; then
         client_ingress_endpoints="-Daeron.cluster.ingress.endpoints=${CLIENT_INGRESS_ENDPOINTS}"
@@ -486,16 +540,25 @@ do
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
-              echo -e "\nStopping rouge node ${n} and cleanup data..."
+              echo -e "\Stopping Cluster node ${n}..."
               ssh_node=SSH_CLUSTER_NODE${n}
               archive_dir_var=NODE${n}_ARCHIVE_DIR
               cluster_dir_var=NODE${n}_CLUSTER_DIR
               execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
             done
 
+            for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
+            do
+              echo -e "\Stopping Cluster Backup node ${n}..."
+              ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
+              archive_dir_var=BACKUP_NODE${n}_ARCHIVE_DIR
+              cluster_dir_var=BACKUP_NODE${n}_CLUSTER_DIR
+              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
+            done
+
             for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
-              echo -e "\nStarting node ${n}..."
+              echo -e "\nStarting Cluster node ${n}..."
               ssh_node=SSH_CLUSTER_NODE${n}
               server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
               server_driver_other_cpu_cores=NODE${n}_DRIVER_OTHER_CPU_CORES
@@ -511,15 +574,43 @@ do
               server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
               server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
               server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
-              execute_remote_command "${!ssh_node}" "($(start_server "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${mtu}" "${n}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
+              execute_remote_command "${!ssh_node}" "($(start_cluster_node "${n}" "${cluster_node_class_name}" "${server_driver}" "${fsync}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
+            done
+
+            for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
+            do
+              echo -e "\nStarting Cluster Backup node ${n}..."
+              ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
+              server_benchmarks_path=BACKUP_NODE${n}_BENCHMARKS_PATH
+              server_driver_other_cpu_cores=BACKUP_NODE${n}_DRIVER_OTHER_CPU_CORES
+              server_driver_conductor_cpu_core=BACKUP_NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
+              server_driver_sender_cpu_core=BACKUP_NODE${n}_DRIVER_SENDER_CPU_CORE
+              server_driver_receiver_cpu_core=BACKUP_NODE${n}_DRIVER_RECEIVER_CPU_CORE
+              server_driver_aeron_dpdk_gateway_ipv4_address=BACKUP_NODE${n}_AERON_DPDK_GATEWAY_IPV4_ADDRESS
+              server_driver_aeron_dpdk_local_ipv4_address=BACKUP_NODE${n}_AERON_DPDK_LOCAL_IPV4_ADDRESS
+              server_driver="${driver//benchmarks_path_var/${!server_benchmarks_path}}"
+              server_driver="${server_driver//driver_other_cpu_cores_var/${!server_driver_other_cpu_cores}}"
+              server_driver="${server_driver//driver_conductor_cpu_core_var/${!server_driver_conductor_cpu_core}}"
+              server_driver="${server_driver//driver_sender_cpu_core_var/${!server_driver_sender_cpu_core}}"
+              server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
+              server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
+              server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
+              execute_remote_command "${!ssh_node}" "($(start_cluster_backup_node "${n}" "${cluster_backup_node_class_name}" "${server_driver}") &) >  /tmp/benchmarks-cluster-backup-node-${n}.log 2>&1 && exit"
             done
 
             echo -e "\nRunning benchmark..."
             execute_remote_command "${SSH_CLIENT_NODE}" "${start_client} && exit"
 
+            for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
+            do
+              echo -e "\nStopping Cluster Backup node ${n}..."
+              ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
+              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); true && exit"
+            done
+
             for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
-              echo -e "\nStopping node ${n}..."
+              echo -e "\nStopping Cluster node ${n}..."
               ssh_node=SSH_CLUSTER_NODE${n}
               execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); true && exit"
             done
