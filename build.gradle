@@ -316,6 +316,6 @@ tasks.register('tarTestLogs', Tar) {
 }
 
 wrapper {
-    gradleVersion = '7.6'
+    gradleVersion = '8.1'
     distributionType = 'ALL'
 }
