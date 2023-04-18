@@ -46,6 +46,7 @@ def toolchainCompiler = javaToolchains.compilerFor {
 
 def agronaVersion = '1.18.1'
 def aeronVersion = '1.41.1'
+def byteBuddyVersion = '1.14.3'
 def jmhVersion = '1.36'
 def hdrHistogramVersion = '2.1.12'
 def disruptorVersion = '3.4.4'
@@ -72,6 +73,8 @@ allprojects {
             failOnVersionConflict()
 
             force "org.agrona:agrona:${agronaVersion}",
+                  "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
+                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
                   "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
                   "org.slf4j:slf4j-api:${slf4jVersion}",
                   "org.slf4j:slf4j-log4j12:${slf4jVersion}",
