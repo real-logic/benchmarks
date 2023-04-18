@@ -18,10 +18,11 @@ package uk.co.real_logic.benchmarks.util;
 import org.agrona.PropertyAction;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.Properties;
 
 public class PropertiesUtil
@@ -32,7 +33,7 @@ public class PropertiesUtil
      * File is first searched for in resources using the system {@link ClassLoader},
      * then file system, then URL. All are loaded if multiples found.
      *
-     * @param properties to fill with values.
+     * @param properties     to fill with values.
      * @param propertyAction to take with each loaded property.
      * @param filenameOrUrl  that holds properties.
      * @return the properties collection filled with values.
@@ -57,7 +58,7 @@ public class PropertiesUtil
         final File file = new File(filenameOrUrl);
         if (file.exists())
         {
-            try (InputStream in = new FileInputStream(file))
+            try (InputStream in = Files.newInputStream(file.toPath()))
             {
                 loadProperties(properties, propertyAction, in);
             }
@@ -66,7 +67,7 @@ public class PropertiesUtil
             }
         }
 
-        try (InputStream in = new URL(filenameOrUrl).openStream())
+        try (InputStream in = new URI(filenameOrUrl).toURL().openStream())
         {
             loadProperties(properties, propertyAction, in);
         }
@@ -81,7 +82,7 @@ public class PropertiesUtil
      * Load system properties from a given set of filenames or URLs. File is first searched for in resources using the
      * system {@link ClassLoader}, then file system, then URL. All are loaded if multiples found.
      *
-     * @param properties to fill with values.
+     * @param properties      to fill with values.
      * @param propertyAction  to take with each loaded property.
      * @param filenamesOrUrls that holds properties.
      * @return the properties collection filled with values.
@@ -101,8 +102,9 @@ public class PropertiesUtil
     /**
      * Merge a set of properties with the system properties. Use the supplied action to determine the behaviour
      * when a property already exists.
+     *
      * @param propertyAction action to take on existing property.
-     * @param properties properties to merge into system.
+     * @param properties     properties to merge into system.
      */
     public static void mergeWithSystemProperties(final PropertyAction propertyAction, final Properties properties)
     {
