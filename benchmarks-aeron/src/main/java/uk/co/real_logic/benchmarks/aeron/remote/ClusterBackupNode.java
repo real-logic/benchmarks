@@ -17,10 +17,15 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.Archive;
 import io.aeron.cluster.ClusterBackup;
+import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.concurrent.ShutdownSignalBarrier;
+import org.agrona.concurrent.SystemEpochClock;
 
+import java.io.File;
 import java.util.Properties;
 
+import static io.aeron.cluster.codecs.mark.ClusterComponentType.BACKUP;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.rethrowingErrorHandler;
@@ -40,7 +45,15 @@ public final class ClusterBackupNode
         final ClusterBackup.Context clusterBackupContext = new ClusterBackup.Context()
             .deleteDirOnStart(true)
             .errorHandler(rethrowingErrorHandler("cluster-backup"))
-            .aeronDirectoryName(archiveContext.aeronDirectoryName());
+            .aeronDirectoryName(archiveContext.aeronDirectoryName())
+            .epochClock(SystemEpochClock.INSTANCE);
+
+        clusterBackupContext.clusterMarkFile(new ClusterMarkFile(
+            new File(archiveContext.aeronDirectoryName(), ClusterMarkFile.FILENAME),
+            BACKUP,
+            clusterBackupContext.errorBufferLength(),
+            clusterBackupContext.epochClock(),
+            LIVENESS_TIMEOUT_MS));
 
         try (Archive archive = Archive.launch(archiveContext);
             ClusterBackup clusterBackup = ClusterBackup.launch(clusterBackupContext))

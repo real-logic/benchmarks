@@ -18,14 +18,21 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
+import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.IoUtil;
+import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
+import org.agrona.concurrent.SystemEpochClock;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
+import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONTAINER;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
 import static org.agrona.SystemUtil.getSizeAsLong;
@@ -45,24 +52,42 @@ public final class ClusterNode
             .deleteArchiveOnStart(true)
             .recordingEventsEnabled(false);
 
+        final String aeronDirectoryName = archiveContext.aeronDirectoryName();
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(archiveContext.localControlChannel())
             .controlResponseStreamId(archiveContext.localControlStreamId())
             .controlResponseChannel(archiveContext.localControlChannel())
-            .aeronDirectoryName(archiveContext.aeronDirectoryName());
+            .aeronDirectoryName(aeronDirectoryName);
 
+        final EpochClock epochClock = SystemEpochClock.INSTANCE;
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
             .errorHandler(rethrowingErrorHandler("consensus-module"))
             .archiveContext(aeronArchiveContext.clone())
-            .aeronDirectoryName(archiveContext.aeronDirectoryName());
+            .aeronDirectoryName(aeronDirectoryName)
+            .epochClock(epochClock);
+
+        consensusModuleContext.clusterMarkFile(new ClusterMarkFile(
+            new File(aeronDirectoryName, ClusterMarkFile.FILENAME),
+            CONSENSUS_MODULE,
+            consensusModuleContext.errorBufferLength(),
+            epochClock,
+            LIVENESS_TIMEOUT_MS));
 
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
             .clusteredService(new EchoClusteredService(getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE)))
             .errorHandler(rethrowingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
-            .aeronDirectoryName(archiveContext.aeronDirectoryName())
-            .clusterDirectoryName(consensusModuleContext.clusterDirectoryName());
+            .aeronDirectoryName(aeronDirectoryName)
+            .clusterDirectoryName(consensusModuleContext.clusterDirectoryName())
+            .epochClock(epochClock);
+
+        serviceContainerContext.clusterMarkFile(new ClusterMarkFile(
+            new File(aeronDirectoryName, ClusterMarkFile.markFilenameForService(serviceContainerContext.serviceId())),
+            CONTAINER,
+            serviceContainerContext.errorBufferLength(),
+            epochClock,
+            LIVENESS_TIMEOUT_MS));
 
         IoUtil.delete(Paths.get(consensusModuleContext.clusterDirectoryName()).toFile(), false);
 
