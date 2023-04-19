@@ -287,6 +287,7 @@ do
         "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${DESTINATION_IP}:13000${client_interface}" \
         "uk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${SOURCE_IP}:13100${client_interface}" \
         "aeron.archive.dir=${ARCHIVE_DIR}" \
+        "aeron.archive.mark.file.dir=/dev/shm/aeron" \
         "aeron.archive.file.sync.level=${fsync}" \
         "aeron.archive.catalog.file.sync.level=${fsync}" \
         "aeron.archive.recording.events.enabled=true"

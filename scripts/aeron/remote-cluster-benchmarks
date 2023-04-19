@@ -257,6 +257,7 @@ function start_cluster_node()
     -Daeron.cluster.replication.channel=${!cluster_replication_channel_var} \
     -Daeron.cluster.service.name=echo-service \
     -Daeron.archive.dir=${!archive_dir_var} \
+    -Daeron.archive.mark.file.dir=/dev/shm/aeron \
     -Daeron.archive.control.channel=${!archive_control_channel_var} \
     -Daeron.archive.replication.channel=${!archive_replication_channel_var} \
     -Daeron.archive.file.sync.level=${fsync} \
@@ -516,7 +517,6 @@ do
             echo -e '\n### Benchmark run #'"$((i + 1))"' ...\n'
 
             start_client="export JVM_OPTS=\"\
-            -Daeron.mtu.length=${mtu} \
             -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout}\
             -Duk.co.real_logic.benchmarks.remote.warmup.iterations=${warmupIterations}\
             -Duk.co.real_logic.benchmarks.remote.warmup.message.rate=${warmupMessageRate}\

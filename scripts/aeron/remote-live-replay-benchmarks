@@ -269,6 +269,7 @@ do
       -Daeron.archive.control.response.channel=aeron:udp?endpoint=${DESTINATION_IP}:0${server_interface} \
       -Daeron.archive.replication.channel=aeron:udp?endpoint=${DESTINATION_IP}:0${server_interface} \
       -Daeron.archive.dir=${ARCHIVE_DIR} \
+      -Daeron.archive.mark.file.dir=/dev/shm/aeron \
       -Daeron.archive.file.sync.level=${fsync} \
       -Daeron.archive.catalog.file.sync.level=${fsync} \
       -Daeron.archive.recording.events.enabled=false\" \
