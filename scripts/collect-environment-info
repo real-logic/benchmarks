@@ -62,8 +62,8 @@ JSON_SUMMARY=$( jq -n \
                   --arg ssl_version "$OPENSSL_VERSION" \
                   '{manufacturer: $manufacturer, product_name: $product_name, machine_type: $machine_type, operating_system: $os, kernel: $kernel, architecture: $arch, cpu_name: $cpu, cmdline: $cmd_line, tuned_profile: $tuned_profile, java_version: $java_version, openssl_version: $ssl_version}' )
 
-MOUNTS_TXT=$(mount | grep -P '^[0-9]+|^\/dev\/(?!loop)|^tmpfs')
-MOUNTS_JSON=$(grep -P '^[0-9]+|^\/dev\/(?!loop)|^tmpfs' /proc/mounts | jq -R '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
+MOUNTS_TXT=$(mount | grep -P '^[0-9]+|^\/dev\/(?!loop)|\/dev\/shm')
+MOUNTS_JSON=$(grep -P '^[0-9]+|^\/dev\/(?!loop)|\/dev\/shm' /proc/mounts | jq -nR '{ mounts: [inputs | split(" ")] | map({ device_location: .[0], mount_point: .[1], type: .[2], options: .[3] }) }')
 
 STORAGE_SUMMARY_TXT=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps)
 STORAGE_SUMMARY_JSON=$(lsblk --output NAME,MODEL,FSTYPE,SIZE,SCHED,PHY-SEC,LOG-SEC,RQ-SIZE --exclude 7 --nodeps --json)
@@ -89,9 +89,30 @@ $(echo "$VOLUME_INFO" | jq -r '.Volumes[] | "- \(.VolumeId) size: \(.Size)GB typ
     done
     EC2_JSON=$(echo "${EC2_INFO[@]}" | jq -s '{ instances: . }')
   fi
+  elif [[ $MANUFACTURER == "Google" ]]; then
+    if command -v gcloud &> /dev/null; then
+      GCP_TXT=""
+      EXPERIMENT="$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/experiment" -H "Metadata-Flavor: Google")"
+      for instance in $(gcloud compute instances list --filter metadata.experiment=$EXPERIMENT --format="get(selfLink)")
+      do
+        INSTANCE=$(gcloud compute instances list --filter selfLink=$instance --format="table(name, zone, machine_type.basename())")
+        DISKS="$(gcloud compute disks list --filter users=$instance)"
+        GCP_TXT="$GCP_TXT
+
+$(echo "$INSTANCE" | tail -1)
+=================================================
+
+Volumes
+-------
+
+$DISKS"
+      done
+
+      GCP_JSON=$(gcloud compute instances list --filter metadata.experiment=$EXPERIMENT --format="json" | jq -s '{ compute_instances: . }')
+    fi
 fi
 
-JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $EC2_JSON" | jq -s add)
+JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $EC2_JSON $GCP_JSON" | jq -s add)
 echo "$JSON_SUMMARY" > "$OUTPUT_PATH/env-summary.json"
 
 CPU_INFO=$(lscpu)
@@ -129,4 +150,12 @@ if [[ -n "$EC2_TXT" ]]; then
 $EC2_TXT
 "
   echo "$EC2_SUMMARY" >> "$OUTPUT_PATH"/env-summary.txt
+fi
+
+if [[ -n "$GCP_TXT" ]]; then
+  GCP_SUMMARY="Google Cloud Compute
+====================
+$GCP_TXT
+"
+  echo "$GCP_SUMMARY" >> "$OUTPUT_PATH"/env-summary.txt
 fi
