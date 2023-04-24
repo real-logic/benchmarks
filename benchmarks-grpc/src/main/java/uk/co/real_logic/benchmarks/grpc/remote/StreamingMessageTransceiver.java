@@ -68,7 +68,8 @@ public class StreamingMessageTransceiver extends MessageTransceiver
         {
             public void onNext(final EchoMessage response)
             {
-                onMessageReceived(response.getTimestamp(), response.getChecksum());
+                onMessageReceived(
+                    StreamingMessageTransceiver.this.clock.nanoTime(), response.getTimestamp(), response.getChecksum());
             }
 
             public void onError(final Throwable t)

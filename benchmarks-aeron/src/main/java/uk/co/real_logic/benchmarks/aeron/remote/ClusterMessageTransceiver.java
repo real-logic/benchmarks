@@ -41,6 +41,7 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
     private final MediaDriver mediaDriver;
     private final AeronCluster.Context aeronClusterContext;
     private AeronCluster aeronCluster;
+    private long nowNs;
 
     public ClusterMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
@@ -110,6 +111,7 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
 
     public void receive()
     {
+        nowNs = 0;
         aeronCluster.pollEgress();
     }
 
@@ -121,9 +123,14 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
         final int length,
         final Header header)
     {
+        long nowNs = this.nowNs;
+        if (0 == nowNs)
+        {
+            nowNs = this.nowNs = clock.nanoTime();
+        }
         final long msgTimestamp = buffer.getLong(offset, LITTLE_ENDIAN);
         final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
-        onMessageReceived(msgTimestamp, checksum);
+        onMessageReceived(nowNs, msgTimestamp, checksum);
     }
 
     public void onSessionEvent(

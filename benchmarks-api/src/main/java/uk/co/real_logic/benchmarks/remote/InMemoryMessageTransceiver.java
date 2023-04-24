@@ -97,7 +97,7 @@ public final class InMemoryMessageTransceiver extends MessageTransceiver
             final long timestamp = UNSAFE.getLong(messages, timestampOffset);
             UNSAFE.putLong(messages, timestampOffset, 0L);
             UNSAFE.putOrderedLong(messages, checksumOffset, 0L);
-            onMessageReceived(timestamp, checksum);
+            onMessageReceived(clock.nanoTime(), timestamp, checksum);
             receiveIndex += (1 + PADDING);
         }
     }

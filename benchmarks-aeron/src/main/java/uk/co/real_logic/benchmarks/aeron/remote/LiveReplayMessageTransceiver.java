@@ -47,12 +47,18 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     private Subscription subscription;
     private Image image;
+    private long nowNs;
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
+            long nowNs = this.nowNs;
+            if (0 == nowNs)
+            {
+                nowNs = this.nowNs = clock.nanoTime();
+            }
             final long timestamp = buffer.getLong(offset, LITTLE_ENDIAN);
             final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
-            onMessageReceived(timestamp, checksum);
+            onMessageReceived(clock.nanoTime(), timestamp, checksum);
         });
 
     public LiveReplayMessageTransceiver(
