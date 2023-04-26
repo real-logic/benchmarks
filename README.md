@@ -135,8 +135,11 @@ client:~/benchmarks/scripts$ JVM_OPTS="\
 -Duk.co.real_logic.benchmarks.aeron.remote.embedded.media.driver=true \
 -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=192.168.0.10:13000 \
 -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=192.168.0.20:13001" \
-./benchmark-runner --output-file "aeron-echo-test" --messages "100K" --burst-size "1" --message-length "32,288,1344" --runs 5 "aeron/echo-client"
+./benchmark-runner --output-file "aeron-echo-test" --messages "100K" --burst-size "1" --message-length "288" --iterations 30 --runs 1 "aeron/echo-client"
 ```
+_**Note**: At the end of a single run the server-side process (e.g. `aeron/echo-server`) will exit, i.e. in order to do
+another manual run (with different parameters etc.) one has to start the server process again. Alternative is to run the
+benchmarks [over the SSH](#running-benchmarks-via-ssh-ie-automated-way)._
 
 ### Aggregating the results
 
@@ -192,14 +195,14 @@ This section lists the systems under test which implement remote benchmarks.
 #### Aeron
 
 Aeron remote benchmarks implement the following test scenarios:
-1. Echo benchmark (aka ping-pong)
+1. Echo benchmark (aka ping-pong).
 
-2. Live replay from remote archive
+2. Live replay from remote archive.
 
 The client publishes messages to the server using publication over UDP. The server pipes those messages into a local IPC
 publication which records them into an archive. Finally, the client subscribes to the replay from that archive over UDP.
 
-3. Live recording, i.e. client runs records a publication into local archive
+3. Live recording, i.e. client runs records a publication into local archive.
 
 The client publishes messages over UDP to the server. It also has a recording running on that publication using local
 archive. The server simply pipes message back. Finally, the client performs a controlled poll on the subscription from
@@ -208,6 +211,11 @@ the server limited by the "recording progress" which it gets via the recording e
 The biggest difference between scenario 2 and this scenario is that there is no replay of recorded message and hence no
 reading from the disc of the saved data but still allowing consumption of those messages that were successfully
 persisted.
+
+4. Cluster echo benchmark.
+
+The client sends messages to the Aeron Cluster over UDP. The Cluster sequences the message into a single log, reaches
+the consensus on the received messages, processes them and then replies to the client over UDP.
 
 Please the documentation in the ``aeron`` directory for more information.
 
