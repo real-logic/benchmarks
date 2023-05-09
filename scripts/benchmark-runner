@@ -18,44 +18,37 @@
 ##
 # Example: Invoking `benchmark-runner` from the `scripts` directory.
 #
-# $ ./benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,288,1344" "aeron/echo-client"
+# $ ./benchmark-runner --output-file "echo-test" --message-rate 100K --burst-size 1 --message-length 288 "aeron/echo-client"
 ##
 
 set -euxo pipefail
 
-runs=3
 iterations=10
-messageRates=(500000)
-burstSizes=(1)
-messageLengths=(32 288 1344)
+messageRate=100K
+burstSize=1
+messageLength=288
 
 while [[ $# -gt 0 ]]
 do
   option="${1}"
   case ${option} in
     -o|--output-file)
-      outputFileName="${2}";
+      outputFileName="${2}"
       shift
       shift
       ;;
     -m|--message-rate)
-      IFS=',';
-      read -ra messageRates <<< "${2}"
-      unset IFS;
+      messageRate="${2}"
       shift
       shift
       ;;
     -b|--burst-size)
-      IFS=',';
-      read -ra burstSizes <<< "${2}"
-      unset IFS;
+      burstSize="${2}"
       shift
       shift
       ;;
     -l|--message-length)
-      IFS=',';
-      read -ra messageLengths <<< "${2}"
-      unset IFS;
+      messageLength="${2}"
       shift
       shift
       ;;
@@ -64,13 +57,8 @@ do
       shift
       shift
       ;;
-    -r|--runs)
-      runs="${2}";
-      shift
-      shift
-      ;;
     -h|--help)
-      echo "${0} (-o|--output-file) \"\${output-file-name-prefix}\" [(-m|--message-rate) \"\${message-rate-csv}\"] [(-b|--burst-size) \"\${burst-size-csv}\"] [(-l|--message-length) \"\${message-length-in-bytes-csv}\"] [(-i|--iterations) \${iterations}] [(-r|--runs) \${runs}] \"\${command} \${cmdArg1} ...\""
+      echo "${0} (-o|--output-file) \"\${output-file-name-prefix}\" [(-m|--message-rate) \"\${message-rate}\"] [(-b|--burst-size) \"\${burst-size-csv}\"] [(-l|--message-length) \"\${message-length}\"] [(-i|--iterations) \${iterations}] \"\${command} \${cmdArg1} ...\""
       exit
       ;;
     *)
@@ -86,26 +74,10 @@ then
   exit 1
 fi
 
-original_jvm_opts=${JVM_OPTS:-""}
-
-for messageRate in "${messageRates[@]}"
-do
-  for burst in "${burstSizes[@]}"
-  do
-    for messageLength in "${messageLengths[@]}"
-    do
-      for (( r=1; r<=runs; r++ ))
-      do
-        echo -e '\n### Benchmark run #'$((r + 1))' ...\n'
-
-        JVM_OPTS="${original_jvm_opts} \
-        -Duk.co.real_logic.benchmarks.remote.output.file=${outputFileName} \
-        -Duk.co.real_logic.benchmarks.remote.iterations=${iterations} \
-        -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# } \
-        -Duk.co.real_logic.benchmarks.remote.batch.size=${burst# } \
-        -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# }" \
-         ${command}
-      done
-    done
-  done
-done
+JVM_OPTS="${JVM_OPTS:-""} \
+-Duk.co.real_logic.benchmarks.remote.output.file=${outputFileName} \
+-Duk.co.real_logic.benchmarks.remote.iterations=${iterations} \
+-Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate} \
+-Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize} \
+-Duk.co.real_logic.benchmarks.remote.message.length=${messageLength}" \
+ ${command}

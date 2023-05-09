@@ -115,7 +115,7 @@ export MESSAGE_RATE="100K"  # defaults to "1M,500K,100K"
 "aeron/remote-echo-benchmarks" --mtu 8192 --no-onload --no-dpdk --no-ef_vi --no-ats --context "my-test"
 ```
 
-### Running benchmarks manually
+### Running benchmarks manually (single shot execution)
 
 The following steps are required to run the benchmarks:
 1. Build the tar file (see above).
@@ -135,11 +135,11 @@ client:~/benchmarks/scripts$ JVM_OPTS="\
 -Duk.co.real_logic.benchmarks.aeron.remote.embedded.media.driver=true \
 -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=192.168.0.10:13000 \
 -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=192.168.0.20:13001" \
-./benchmark-runner --output-file "aeron-echo-test" --messages "100K" --burst-size "1" --message-length "288" --iterations 30 --runs 1 "aeron/echo-client"
+./benchmark-runner --output-file "aeron-echo-test" --messages "100K" --burst-size "1" --message-length "288" --iterations 30 "aeron/echo-client"
 ```
 _**Note**: At the end of a single run the server-side process (e.g. `aeron/echo-server`) will exit, i.e. in order to do
 another manual run (with different parameters etc.) one has to start the server process again. Alternative is to run the
-benchmarks [over the SSH](#running-benchmarks-via-ssh-ie-automated-way)._
+benchmarks [via the SSH](#running-benchmarks-via-ssh-ie-automated-way)._
 
 ### Aggregating the results
 

@@ -22,11 +22,10 @@ rem
 rem $ benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,288,1344" "aeron\echo-client"
 rem
 
-set RUNS=3
 set ITERATIONS=10
-set MESSAGE_RATE=500000
-set BURST_SIZE="1"
-set MESSAGE_LENGTH="32,288,1344"
+set MESSAGE_RATE=100K
+set BURST_SIZE=1
+set MESSAGE_LENGTH="288
 
 :loop
 if not "%1"=="" (
@@ -66,17 +65,10 @@ if not "%1"=="" (
   )
 
   set "FLAG="
-  if "%1"=="--runs" set FLAG=1
-  if "%1"=="-r" set FLAG=1
-  if defined FLAG (
-      set "RUNS=%2";
-  )
-
-  set "FLAG="
   if "%1"=="--help" set FLAG=1
   if "%1"=="-h" set FLAG=1
   if defined FLAG (
-      echo "%0 (-o|--output-file) ^"\${output-file-name-prefix}\" [(-m|--message-rate) ^"\${message-rate-csv}\"] [(-b|--burst-size) ^"\${burst-size-csv}\"] [(-l|--message-length) ^"\${message-length-in-bytes-csv}\"] [(-i|--iterations) ^${iterations}] [(-r|--runs) ^${runs}] ^"\${command} ^${cmdArg1} ...\""
+      echo "%0 (-o|--output-file) ^"\${output-file-name-prefix}\" [(-m|--message-rate) ^"\${message-rate}\"] [(-b|--burst-size) ^"\${burst-size}\"] [(-l|--message-length) ^"\${message-length}\"] [(-i|--iterations) ^${iterations}] ^"\${command} ^${cmdArg1} ...\""
       exit /b
   )
 
@@ -90,30 +82,11 @@ if [%OUTPUT_FILE_NAME%] == [] (
   exit -1
 )
 
-set original_jvm_opts="%JVM_OPTS%"
+set JVM_OPTS=%JVM_OPTS% ^
+-Duk.co.real_logic.benchmarks.remote.output.file=%OUTPUT_FILE_NAME% ^
+-Duk.co.real_logic.benchmarks.remote.iterations=%ITERATIONS% ^
+-Duk.co.real_logic.benchmarks.remote.message.rate=%MESSAGE_RATE% ^
+-Duk.co.real_logic.benchmarks.remote.batch.size=%BURST_SIZE% ^
+-Duk.co.real_logic.benchmarks.remote.message.length=%MESSAGE_LENGTH%
 
-for %%m in (%MESSAGE_RATE%) do (
-  for %%b in (%BURST_SIZE%) do (
-    for %%l in (%MESSAGE_LENGTH%) do (
-      for /L %%r in (1,1,%RUNS%) do (
-        echo
-        echo #####################
-        echo Benchmark run #%%r ...
-        echo #####################
-
-        setlocal
-
-        set JVM_OPTS=%original_jvm_opts% ^
-        -Duk.co.real_logic.benchmarks.remote.output.file=%OUTPUT_FILE_NAME% ^
-        -Duk.co.real_logic.benchmarks.remote.iterations=%ITERATIONS% ^
-        -Duk.co.real_logic.benchmarks.remote.message.rate=%%m ^
-        -Duk.co.real_logic.benchmarks.remote.batch.size=%%b ^
-        -Duk.co.real_logic.benchmarks.remote.message.length=%%l
-
-         %COMMAND%
-
-         endlocal
-      )
-    )
-  )
-)
+ %COMMAND%
