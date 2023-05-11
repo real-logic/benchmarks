@@ -338,6 +338,8 @@ aeron.socket.so_sndbuf=${so_sndbuf}\n \
 aeron.socket.so_rcvbuf=${so_rcvbuf}\n \
 aeron.rcv.initial.window.length=${rcv_initial_window}\n \
 aeron.network.publication.max.messages.per.send=${max_messages_per_send}\n \
+aeron.receiver.io.vector.capacity=${max_messages_per_send}\n \
+aeron.sender.io.vector.capacity=${max_messages_per_send}\n \
 \" > ${scripts_path}/benchmark.properties"
 
 if [ "${enable_java_driver}" -eq 1 ]
