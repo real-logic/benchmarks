@@ -48,6 +48,9 @@ else
 fi
 OPENSSL_VERSION=$(openssl version)
 
+TOPO=$(lstopo --of txt)
+TOPO_JSON=$(jq -n --arg topo "$TOPO" '{ topology: $topo }')
+
 JSON_SUMMARY=$( jq -n \
                   --arg manufacturer "$MANUFACTURER" \
                   --arg product_name "$PRODUCT_NAME" \
@@ -95,12 +98,12 @@ $(echo "$VOLUME_INFO" | jq -r '.Volumes[] | "- \(.VolumeId) size: \(.Size)GB typ
       EXPERIMENT="$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/experiment" -H "Metadata-Flavor: Google")"
       for instance in $(gcloud compute instances list --filter metadata.experiment=$EXPERIMENT --format="get(selfLink)")
       do
-        INSTANCE=$(gcloud compute instances list --filter selfLink=$instance --format="table(name, zone, machine_type.basename())")
+        INSTANCE=$(gcloud compute instances list --filter selfLink=$instance --format="table(name, zone, machine_type.basename())" | tail -1)
         DISKS="$(gcloud compute disks list --filter users=$instance)"
         GCP_TXT="$GCP_TXT
 
-$(echo "$INSTANCE" | tail -1)
-=================================================
+$(echo "$INSTANCE")
+$(for ((i=0;i<=$(echo $INSTANCE | wc -c);i++)); do echo -n "="; done)
 
 Volumes
 -------
@@ -112,7 +115,7 @@ $DISKS"
     fi
 fi
 
-JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $EC2_JSON $GCP_JSON" | jq -s add)
+JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $TOPO_JSON $EC2_JSON $GCP_JSON" | jq -s add)
 echo "$JSON_SUMMARY" > "$OUTPUT_PATH/env-summary.json"
 
 CPU_INFO=$(lscpu)
@@ -140,6 +143,10 @@ $STORAGE_SUMMARY_TXT
 CPUs
 ====
 $CPU_INFO
+
+Topology
+========
+$TOPO
 "
 
 echo "$TXT_SUMMARY" > "$OUTPUT_PATH"/env-summary.txt
