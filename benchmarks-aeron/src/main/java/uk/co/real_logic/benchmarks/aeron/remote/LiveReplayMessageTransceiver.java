@@ -58,7 +58,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             }
             final long timestamp = buffer.getLong(offset, LITTLE_ENDIAN);
             final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
-            onMessageReceived(clock.nanoTime(), timestamp, checksum);
+            onMessageReceived(nowNs, timestamp, checksum);
         });
 
     public LiveReplayMessageTransceiver(
@@ -122,6 +122,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public void receive()
     {
+        nowNs = 0;
         final int fragments = image.poll(dataHandler, FRAGMENT_LIMIT);
         if (0 == fragments && image.isClosed())
         {
