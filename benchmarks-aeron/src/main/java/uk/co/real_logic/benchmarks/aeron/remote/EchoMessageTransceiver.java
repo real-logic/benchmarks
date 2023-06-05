@@ -40,14 +40,9 @@ public final class EchoMessageTransceiver extends MessageTransceiver
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
-            long nowNs = this.nowNs;
-            if (0 == nowNs)
-            {
-                nowNs = this.nowNs = clock.nanoTime();
-            }
             final long timestamp = buffer.getLong(offset, LITTLE_ENDIAN);
             final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
-            onMessageReceived(nowNs, timestamp, checksum);
+            onMessageReceived(timestamp, checksum);
         });
 
     private final MediaDriver mediaDriver;
@@ -56,7 +51,6 @@ public final class EchoMessageTransceiver extends MessageTransceiver
     ExclusivePublication publication;
     private Subscription subscription;
     private Image image;
-    private long nowNs;
 
     public EchoMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
@@ -106,7 +100,6 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public void receive()
     {
-        nowNs = 0;
         image.poll(dataHandler, FRAGMENT_LIMIT);
     }
 }

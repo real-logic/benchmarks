@@ -39,7 +39,7 @@ abstract class MessageTransceiverHotFields extends MessageTransceiverLhsPadding
 {
     static final AtomicLongFieldUpdater<MessageTransceiverHotFields> RECEIVED_MESSAGES_UPDATER =
         AtomicLongFieldUpdater.newUpdater(MessageTransceiverHotFields.class, "receivedMessages");
-    protected final NanoClock clock;
+    final NanoClock clock;
     final ValueRecorder valueRecorder;
     private volatile long receivedMessages;
 
@@ -139,18 +139,17 @@ public abstract class MessageTransceiver extends MessageTransceiverRhsPadding
     /**
      * Callback method to be invoked for every message received.
      *
-     * @param nowNs current time in nanoseconds.
-     * @param sendTimeNs from the received message.
+     * @param timestamp from the received message.
      * @param checksum  from the received message.
      */
-    protected final void onMessageReceived(final long nowNs, final long sendTimeNs, final long checksum)
+    protected final void onMessageReceived(final long timestamp, final long checksum)
     {
         if (CHECKSUM != checksum)
         {
             throw new IllegalStateException("Invalid checksum: expected=" + CHECKSUM + ", actual=" + checksum);
         }
 
-        valueRecorder.recordValue(nowNs - sendTimeNs);
+        valueRecorder.recordValue(clock.nanoTime() - timestamp);
         RECEIVED_MESSAGES_UPDATER.getAndIncrement(this);
     }
 

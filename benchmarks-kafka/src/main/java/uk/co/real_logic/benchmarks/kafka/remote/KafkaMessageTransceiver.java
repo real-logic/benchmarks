@@ -237,13 +237,11 @@ public class KafkaMessageTransceiver extends MessageTransceiver
         }
 
         final UnsafeBuffer buffer = this.receiverBuffer;
-        final long nowNs = clock.nanoTime();
         for (final ConsumerRecord<byte[], byte[]> record : records)
         {
             final byte[] value = record.value();
             buffer.wrap(value);
             onMessageReceived(
-                nowNs,
                 buffer.getLong(0, LITTLE_ENDIAN),
                 buffer.getLong(value.length - SIZE_OF_LONG, LITTLE_ENDIAN));
         }

@@ -64,7 +64,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     private RecordingEventsAdapter recordingEventsAdapter;
     private Subscription subscription;
     private Image image;
-    private long nowNs;
 
     public LiveRecordingMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
@@ -140,7 +139,6 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
             }
         }
 
-        nowNs = 0;
         final int fragments = image.controlledPoll(messageHandler, FRAGMENT_LIMIT);
         if (0 == fragments && image.isClosed())
         {
@@ -156,15 +154,9 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
             return ABORT;
         }
 
-        long nowNs = this.nowNs;
-        if (0 == nowNs)
-        {
-            nowNs = this.nowNs = clock.nanoTime();
-        }
-
         final long timestamp = buffer.getLong(offset, LITTLE_ENDIAN);
         final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
-        onMessageReceived(nowNs, timestamp, checksum);
+        onMessageReceived(timestamp, checksum);
         recordingPositionConsumed += align(length, FRAME_ALIGNMENT);
 
         return CONTINUE;
