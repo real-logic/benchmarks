@@ -47,8 +47,6 @@ import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemPro
  */
 public final class LoadTestRig
 {
-    static final int MINIMUM_NUMBER_OF_CPU_CORES = 6;
-
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
     private static final long RECEIVE_DEADLINE_NS = SECONDS.toNanos(30);
     private final Configuration configuration;
@@ -56,7 +54,6 @@ public final class LoadTestRig
     private final PrintStream out;
     private final NanoClock clock;
     private final PersistedHistogram persistedHistogram;
-    private final int availableProcessors;
 
     public LoadTestRig(final Configuration configuration)
     {
@@ -89,8 +86,7 @@ public final class LoadTestRig
             transceiverFactory.apply(nanoClock, persistedHistogram.valueRecorder()),
             out,
             nanoClock,
-            persistedHistogram,
-            Runtime.getRuntime().availableProcessors());
+            persistedHistogram);
     }
 
     LoadTestRig(
@@ -98,15 +94,13 @@ public final class LoadTestRig
         final MessageTransceiver messageTransceiver,
         final PrintStream out,
         final NanoClock clock,
-        final PersistedHistogram persistedHistogram,
-        final int availableProcessors)
+        final PersistedHistogram persistedHistogram)
     {
         this.configuration = requireNonNull(configuration);
         this.messageTransceiver = requireNonNull(messageTransceiver);
         this.out = requireNonNull(out);
         this.clock = requireNonNull(clock);
         this.persistedHistogram = requireNonNull(persistedHistogram);
-        this.availableProcessors = availableProcessors;
     }
 
     /**
@@ -147,7 +141,6 @@ public final class LoadTestRig
             final PersistedHistogram histogram = persistedHistogram;
             histogram.outputPercentileDistribution(out, 1000.0);
 
-            warnIfInsufficientCpu();
             final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.messageRate();
             warnIfTargetRateNotAchieved(sentMessages, expectedTotalNumberOfMessages);
 
@@ -290,19 +283,6 @@ public final class LoadTestRig
         final long elapsedSeconds = round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
         final long sendRate = 0d == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
         out.format("Send rate: %,d msgs/sec%n", sendRate);
-    }
-
-    private void warnIfInsufficientCpu()
-    {
-        if ((availableProcessors >>> 1) < MINIMUM_NUMBER_OF_CPU_CORES)
-        {
-            out.printf("%n*** WARNING: Insufficient number of CPU cores detected!" +
-                "%nThe benchmarking harness requires at least %d physical CPU cores." +
-                "%nThe current system reports %d logical cores which, assuming the hyper-threading is enabled, is " +
-                "insufficient." +
-                "%nPlease ensure that the sufficient number of physical CPU cores are available in order to obtain " +
-                "reliable results.%n", MINIMUM_NUMBER_OF_CPU_CORES, availableProcessors);
-        }
     }
 
     private void warnIfTargetRateNotAchieved(final long sentMessages, final long expectedTotalNumberOfMessages)

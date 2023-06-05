@@ -33,7 +33,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.benchmarks.remote.LoadTestRig.MINIMUM_NUMBER_OF_CPU_CORES;
 import static uk.co.real_logic.benchmarks.remote.MessageTransceiver.CHECKSUM;
 import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.FILE_EXTENSION;
 import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.HISTORY_FILE_EXTENSION;
@@ -114,8 +113,7 @@ class LoadTestRigTest
             messageTransceiver,
             out,
             clock,
-            persistedHistogram,
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            persistedHistogram);
 
         loadTestRig.run();
 
@@ -150,32 +148,6 @@ class LoadTestRigTest
     }
 
     @Test
-    void runWarnsAboutInsufficientCpu() throws Exception
-    {
-        final long nanoTime = SECONDS.toNanos(123);
-        final NanoClock clock = () -> nanoTime;
-
-        final LoadTestRig loadTestRig = new LoadTestRig(
-            configuration,
-            messageTransceiver,
-            out,
-            clock,
-            persistedHistogram,
-            MINIMUM_NUMBER_OF_CPU_CORES + 1);
-
-        loadTestRig.run();
-
-
-        verify(out).printf("%n*** WARNING: Insufficient number of CPU cores detected!" +
-            "%nThe benchmarking harness requires at least %d physical CPU cores." +
-            "%nThe current system reports %d logical cores which, assuming the hyper-threading is enabled, is " +
-            "insufficient." +
-            "%nPlease ensure that the sufficient number of physical CPU cores are available in order to obtain " +
-            "reliable results.%n",
-            MINIMUM_NUMBER_OF_CPU_CORES, MINIMUM_NUMBER_OF_CPU_CORES + 1);
-    }
-
-    @Test
     void runWarnsAboutMissedTargetRate() throws Exception
     {
         when(clock.nanoTime()).thenReturn(1L, 9_000_000_000L);
@@ -196,8 +168,7 @@ class LoadTestRigTest
             messageTransceiver,
             out,
             clock,
-            persistedHistogram,
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            persistedHistogram);
 
         loadTestRig.run();
 
@@ -223,8 +194,7 @@ class LoadTestRigTest
             configuration,
             messageTransceiver,
             out, clock,
-            persistedHistogram,
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            persistedHistogram);
 
         loadTestRig.send(1, 3);
 
@@ -269,8 +239,7 @@ class LoadTestRigTest
             messageTransceiver,
             out,
             clock,
-            persistedHistogram,
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            persistedHistogram);
 
         final long messages = loadTestRig.send(2, 9);
 
@@ -321,8 +290,7 @@ class LoadTestRigTest
             configuration,
             messageTransceiver,
             out, clock,
-            persistedHistogram,
-            MINIMUM_NUMBER_OF_CPU_CORES * 2);
+            persistedHistogram);
 
         final long messages = loadTestRig.send(10, 100);
 
@@ -414,8 +382,7 @@ class LoadTestRigTest
             messageTransceiver,
             out,
             mock(NanoClock.class),
-            mock(PersistedHistogram.class),
-            1);
+            mock(PersistedHistogram.class));
 
         final IllegalStateException exception = assertThrows(IllegalStateException.class, loadTestRig::run);
         assertSame(initException, exception);
