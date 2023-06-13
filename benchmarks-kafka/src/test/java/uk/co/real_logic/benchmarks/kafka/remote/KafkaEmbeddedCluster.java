@@ -22,7 +22,6 @@ import kafka.tools.StorageTool;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.server.common.MetadataVersion;
-import scala.Option;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.nio.file.Files;
@@ -49,10 +48,10 @@ class KafkaEmbeddedCluster implements AutoCloseable
             System.out,
             StorageTool.configToLogDirectories(config),
             StorageTool.buildMetadataProperties(clusterId.toString(), config),
-            MetadataVersion.IBP_3_4_IV0,
+            MetadataVersion.IBP_3_5_IV2,
             false);
 
-        kafka = new KafkaRaftServer(config, Time.SYSTEM, Option.empty());
+        kafka = new KafkaRaftServer(config, Time.SYSTEM);
         kafka.startup();
     }
 
