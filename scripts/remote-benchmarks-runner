@@ -42,7 +42,7 @@ sshServerAliveInterval=${SSH_SERVER_ALIVE_INTERVAL:-600}
 connectionTimeout="${CONNECTION_TIMEOUT:-60s}"
 
 runs=${RUNS:-3}
-iterations=${ITERATIONS:-20}
+iterations=${ITERATIONS:-60}
 warmupIterations=${WARMUP_ITERATIONS:-10}
 warmupMessageRate="${WARMUP_MESSAGE_RATE:-25K}"
 
