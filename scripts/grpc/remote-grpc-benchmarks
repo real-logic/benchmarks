@@ -40,12 +40,12 @@ required_vars=(
   "CLIENT_JAVA_HOME"
   "CLIENT_BENCHMARKS_PATH"
   "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
-  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
+  "CLIENT_CPU_NODE"
   "SERVER_JAVA_HOME"
   "SERVER_BENCHMARKS_PATH"
   "CLIENT_HOST"
   "SERVER_HOST"
-  "SERVER_CPU_CORES")
+  "SERVER_CPU_NODE")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var+''}" ]]
@@ -117,7 +117,7 @@ do
 
   start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
   ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-  ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client & \
+  ; numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} ${onload} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client & \
   $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
   $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
   && tail --pid=\$! -f /dev/null"
@@ -131,7 +131,7 @@ do
   -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort} \
   -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
   -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}\" \
-  && ${onload} taskset -c ${SERVER_CPU_CORES} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
+  && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} ${onload} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
 
   stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
 

@@ -28,11 +28,11 @@ required_vars=(
   "CLIENT_BENCHMARKS_PATH"
   "CLIENT_JAVA_HOME"
   "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
-  "CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES"
+  "CLIENT_CPU_NODE"
   "SERVER_BENCHMARKS_PATH"
   "SERVER_JAVA_HOME"
   "SERVER_HOST"
-  "SERVER_KAFKA_CPU_CORES"
+  "SERVER_CPU_NODE"
   "SERVER_KAFKA_DIR")
 
 for var in "${required_vars[@]}"; do
@@ -122,7 +122,7 @@ do
 
     start_client="export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" \
     ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
-      ; ${onload} taskset -c ${CLIENT_LOAD_TEST_RIG_OTHER_CPU_CORES} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client &
+      ; numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} ${onload} ${CLIENT_BENCHMARKS_PATH}/scripts/kafka/client &
       $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
       $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
       && tail --pid=\$! -f /dev/null"
@@ -135,7 +135,7 @@ do
     ssl.keystore.location=${SERVER_BENCHMARKS_PATH}/certificates/server.keystore\n\
     advertised.listeners=PLAINTEXT://${SERVER_HOST}:${plain_text_port},SSL://${SERVER_HOST}:${ssl_port}\" >> ${server_scripts_path}/server.properties \
     && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-    && ${onload} taskset -c ${SERVER_KAFKA_CPU_CORES} ${server_scripts_path}/kafka-start"
+    && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} ${onload} ${server_scripts_path}/kafka-start"
 
     stop_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
     && KAFKA_DATA_DIR=\"${SERVER_KAFKA_DIR}\" ${server_scripts_path}/stop-all; \

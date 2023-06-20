@@ -25,6 +25,7 @@ function start_media_driver()
 {
   local executable=${1}
   local wrapper_script=${2}
+  local cpu_node=${3}
   local resolve_media_driver_pid
   local driver_thread
   local manually_pin_driver_threads=0
@@ -46,7 +47,7 @@ function start_media_driver()
   local command=""
   command="$(stop_media_driver); \
   rm -rf /dev/shm/aeron; \
-  ${wrapper_script} taskset -c ${3} \"${executable}\" & ${resolve_media_driver_pid}"
+  numactl --membind=${cpu_node} --cpunodebind=${cpu_node} ${wrapper_script} \"${executable}\" & ${resolve_media_driver_pid}"
   command+="; echo \"media_driver_pid='\${media_driver_pid}'\""
 
   if [[ "${manually_pin_driver_threads}" -eq 1 ]]
