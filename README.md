@@ -1,49 +1,78 @@
 # Benchmarks
 
-## Local benchmarks (single machine)
-Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures and messaging systems.
+This project is a collection of the various benchmarks primarily targeting the [Aeron](https://github.com/real-logic/aeron) project.
+The benchmarks can be divided into two major categories:
+- [Messaging (remote) benchmarks](#remote-benchmarks-multiple-machines).
 
-### Java Benchmarks
+    The core of the remote benchmarks is implemented by the [`LoadTestRig`](https://github.com/real-logic/benchmarks/blob/master/benchmarks-api/src/main/java/uk/co/real_logic/benchmarks/remote/LoadTestRig.java)
+    class which is a benchmarking harness that is sending messages to the remote node(s) and timing the responses as
+    they are received. During a test run the `LoadTestRig` sends messages at the specified fixed rate with the specified
+    payload size and the burst size. In the end it produces a latency histogram for an entire test run.
 
-To run the Java benchmarks execute the Gradle script in the base directory.
+    The `LoadTestRig` relies on the implementation of the [`MessageTransceiver`](https://github.com/real-logic/benchmarks/blob/master/benchmarks-api/src/main/java/uk/co/real_logic/benchmarks/remote/MessageTransceiver.java)
+    abstract class which is responsible for sending and receiving messages to/from the remote node.
 
-    $ ./gradlew
-    
-    $ ./gradlew runJavaBenchmarks
+    *NB: These benchmarks are written in Java, but they can target systems in other languages provided there is a
+    Java client for it.*
 
-or just the Aeron benchmarks
 
-    $ ./gradlew runAeronJavaBenchmarks
+- [Other benchmarks](#other-benchmarks-single-machine).
 
-### C++ Benchmarks
+   A collection of the benchmarks that run on a single machine (e.g. Agrona ring buffer, Aeron IPC, Aeorn C++
+   benchmarks, JDK queues etc.).
 
-To generate the benchmarks, execute the `cppbuild` script from the base directory.
+## Systems under test
 
-    $ cppbuild/cppbuild
+This section lists the systems under test which implement the remote benchmarks and the corresponding test scenarios.
 
-To run the benchmarks, execute the individual benchmarks.
+### Aeron
 
-    $ cppbuild/Release/binaries/baseline
-    $ cppbuild/Release/binaries/aeronExclusiveIpcBenchmark
-    $ cppbuild/Release/binaries/aeronIpcBenchmark
-    $ cppbuild/Release/binaries/aeronExclusiveIpcNanomark
-    $ cppbuild/Release/binaries/aeronIpcNanomark
+For [Aeron](https://aeron.io/) the following test scenarios were implemented:
 
-**Note**: On MacOS, it will be necessary to set `DYLD_LIBRARY_PATH` for the Aeron
-driver shared library. For example:
+1. Echo benchmark.
 
-    $ env DYLD_LIBRARY_PATH=cppbuild/Release/aeron-prefix/src/aeron-build/lib cppbuild/Release/binaries/aeronIpcBenchmark
+   An Aeron Transport benchmark which consist of a client process that sends messages over UDP using an exclusive 
+   publication and zero-copy API (i.e. [`tryClaim`](https://github.com/real-logic/aeron/blob/3f6c5e15bd30a83d46978bf39eff8d927f30fe5a/aeron-client/src/main/java/io/aeron/Publication.java#L556)).
+   And the server process which echoes the received messages back using the same API.
 
-The binaries with __Benchmark__ in the name use Google Benchmark and only displays average times.
 
-While the binaries with __Nanomark__ in the name use Nanomark (included in the source) and displays full histograms.
+2. Live replay from a remote Archive.
 
-To pick a specific tag for Aeron, specify `--aeron-git-tag` parameter when invoking `cppbuild` script.
-For example:
-```bash
-cppbuild/cppbuild --aeron-git-tag="1.27.0"
-```
-will use Aeron `1.27.0` release.
+    The client publishes messages to the server using publication over UDP. The server pipes those messages into a local 
+    IPC publication which records them into an Archive. Finally, the client subscribes to the replay from that Archive
+    over UDP and receives persisted messages.
+
+
+3. Live recording to a local Archive.
+
+    The client publishes messages over UDP to the server. It also has a recording running on that publication using
+    local Archive. The server simply pipes message back. Finally, the client performs a controlled poll on the 
+    subscription from the server limited by the "recording progress" which it gets via the recording events.
+
+    The biggest difference between scenario 2 and this scenario is that there is no replay of recorded messages and
+    hence no reading from disc while still allowing consumption of only those messages that were successfully persisted.
+
+
+4. Cluster benchmark.
+
+   The client sends messages to the Aeron Cluster over UDP. The Cluster sequences the messages into a log, reaches the
+   consensus on the received messages, processes them and then replies to the client over UDP.
+
+Please the documentation in the ``scripts/aeron`` directory for more information.
+
+### gRPC
+
+For [gRPC](https://grpc.io/) there is only echo benchmark with a single implementation:
+- Streaming client - client uses streaming API to send and receive messages.
+
+Please read the documentation in the ``scripts/grpc`` directory for more information.
+
+### Kafka
+
+Unlike the gRPC that simply echoes messages the [Kafka](https://kafka.apache.org/) will persist them so the benchmark is
+similar to the Aeron's replay from a remote Archive.
+
+Please read the documentation in the `scripts/kafka` directory for more information.
 
 ## Remote benchmarks (multiple machines)
 
@@ -68,14 +97,14 @@ the SSH protocol. When the script finishes its execution it will download an arc
 The following steps are required to run the benchmarks:
 1. Build the tar file (see above).
 2. Copy tar file to the destination machines and unpack it, i.e. `tar xf benchmarks.tar -C <destination_dir>`.
-3. On the local machine create a wrapper script that sets all the configuration parameters for the target benchmark.
-See example below.
+3. On the local machine create a wrapper script that sets all the necessary configuration parameters for the target
+benchmark. See example below.
 4. Run the wrapper script from step 3.
-5. Once execution is finished an archive file with the results will be downloaded. By default, it will be placed under 
-the `scripts` directory in this project.
+5. Once the execution is finished an archive file with the results will be downloaded to the local machine. By default,
+it will be placed under the `scripts` directory in the project folder.
 
-For example here is how to run the Aeron echo benchmarks via a wrapper script.
-_NB: All the values in angle brackets (`<...>`) will have to be replaced with proper values._
+Here is an example of a wrapper script to the Aeron echo benchmarks.
+_NB: All the values in angle brackets (`<...>`) will have to be replaced with the actual values._
 ```bash
 # SSH connection properties
 export SSH_USER=<SSH user>
@@ -89,8 +118,8 @@ export CLIENT_JAVA_HOME=<path to JAVA_HOME (JDK 8+)>
 export CLIENT_DRIVER_CONDUCTOR_CPU_CORE=<CPU core to pin the 'conductor' thread>
 export CLIENT_DRIVER_SENDER_CPU_CORE=<CPU core to pin the 'sender' thread>
 export CLIENT_DRIVER_RECEIVER_CPU_CORE=<CPU core to pin the 'receiver' thread>
-export CLIENT_CPU_NODE=<CPU node (socket) to run the client processes on (both MD and the test rig)>
 export CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE=<CPU core to pin 'load-test-rig' thread>
+export CLIENT_CPU_NODE=<CPU node (socket) to run the client processes on (both MD and the test rig)>
 export SOURCE_IP=<IP address of the client machine>
 export CLIENT_INTERFACE=${SOURCE_IP}/24
 export CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS=${SOURCE_IP%.*}.1
@@ -99,8 +128,8 @@ export SERVER_JAVA_HOME=<path to JAVA_HOME (JDK 8+)>
 export SERVER_DRIVER_CONDUCTOR_CPU_CORE=<CPU core to pin the 'conductor' thread>
 export SERVER_DRIVER_SENDER_CPU_CORE=<CPU core to pin the 'sender' thread>
 export SERVER_DRIVER_RECEIVER_CPU_CORE=<CPU core to pin the 'receiver' thread>
-export SERVER_CPU_NODE=<CPU node (socket) to run the server processes on (both MD and the echo node)>
 export SERVER_ECHO_CPU_CORE=<CPU core to pin 'echo' thread>
+export SERVER_CPU_NODE=<CPU node (socket) to run the server processes on (both MD and the echo node)>
 export DESTINATION_IP=<IP address of the server machine>
 export SERVER_INTERFACE=${DESTINATION_IP}/24
 export SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS=${DESTINATION_IP%.*}.1
@@ -186,50 +215,48 @@ Running
 
 will produce plots in which the histograms are grouped by test scenario by default. It is possible to produce graphs with a different kind of aggregation and to apply filters on the histograms to plot within a directory. Run `./results-plotter.py` (without arguments) in order to get an overview of the capabilities of the plotting script.
 
-### Systems under test
+## Other benchmarks (single machine)
+Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures and messaging systems.
 
-This section lists the systems under test which implement remote benchmarks.
+### Java Benchmarks
 
-#### Aeron
+To run the Java benchmarks execute the Gradle script in the base directory.
 
-Aeron remote benchmarks implement the following test scenarios:
-1. Echo benchmark (aka ping-pong).
+    $ ./gradlew runJavaBenchmarks
 
-2. Live replay from remote archive.
+or just the Aeron benchmarks
 
-The client publishes messages to the server using publication over UDP. The server pipes those messages into a local IPC
-publication which records them into an archive. Finally, the client subscribes to the replay from that archive over UDP.
+    $ ./gradlew runAeronJavaBenchmarks
 
-3. Live recording, i.e. client runs records a publication into local archive.
+### C++ Benchmarks
 
-The client publishes messages over UDP to the server. It also has a recording running on that publication using local
-archive. The server simply pipes message back. Finally, the client performs a controlled poll on the subscription from
-the server limited by the "recording progress" which it gets via the recording events.
+To generate the benchmarks, execute the `cppbuild` script from the base directory.
 
-The biggest difference between scenario 2 and this scenario is that there is no replay of recorded message and hence no
-reading from the disc of the saved data but still allowing consumption of those messages that were successfully
-persisted.
+    $ cppbuild/cppbuild
 
-4. Cluster echo benchmark.
+To run the benchmarks, execute the individual benchmarks.
 
-The client sends messages to the Aeron Cluster over UDP. The Cluster sequences the message into a single log, reaches
-the consensus on the received messages, processes them and then replies to the client over UDP.
+    $ cppbuild/Release/binaries/baseline
+    $ cppbuild/Release/binaries/aeronExclusiveIpcBenchmark
+    $ cppbuild/Release/binaries/aeronIpcBenchmark
+    $ cppbuild/Release/binaries/aeronExclusiveIpcNanomark
+    $ cppbuild/Release/binaries/aeronIpcNanomark
 
-Please the documentation in the ``aeron`` directory for more information.
+**Note**: On MacOS, it will be necessary to set `DYLD_LIBRARY_PATH` for the Aeron
+driver shared library. For example:
 
-#### gRPC
+    $ env DYLD_LIBRARY_PATH=cppbuild/Release/aeron-prefix/src/aeron-build/lib cppbuild/Release/binaries/aeronIpcBenchmark
 
-For the gRPC there is only ping-pong test with a single implementation:
-- Streaming client - client uses streaming API to send/receive messages.
+The binaries with __Benchmark__ in the name use Google Benchmark and only displays average times.
 
-Please read the documentation in then ``grpc`` directory for more information.
+While the binaries with __Nanomark__ in the name use Nanomark (included in the source) and displays full histograms.
 
-#### Kafka
-
-Unlike the gRPC that simply echoes messages Kafka will persist them so the test is similar to the Aeron's replay from
-the remote archive.
-
-Please read the documentation in the `kafka` directory for more information.
+To pick a specific tag for Aeron, specify `--aeron-git-tag` parameter when invoking `cppbuild` script.
+For example:
+```bash
+cppbuild/cppbuild --aeron-git-tag="1.27.0"
+```
+will use Aeron `1.27.0` release.
 
 License (See LICENSE file for full license)
 -------------------------------------------
