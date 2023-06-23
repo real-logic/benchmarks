@@ -37,8 +37,8 @@ import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
 import static org.agrona.SystemUtil.getSizeAsLong;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.rethrowingErrorHandler;
-import static uk.co.real_logic.benchmarks.remote.Configuration.DEFAULT_SNAPSHOT_SIZE;
-import static uk.co.real_logic.benchmarks.remote.Configuration.SNAPSHOT_SIZE_PROP_NAME;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.DEFAULT_SNAPSHOT_SIZE;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.SNAPSHOT_SIZE_PROP_NAME;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 

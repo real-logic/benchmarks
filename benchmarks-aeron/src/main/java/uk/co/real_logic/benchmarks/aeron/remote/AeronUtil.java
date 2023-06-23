@@ -61,6 +61,8 @@ import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.laun
 
 final class AeronUtil
 {
+    static final String SNAPSHOT_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.cluster.snapshot.size";
+    static final long DEFAULT_SNAPSHOT_SIZE = 0;
     static final String DESTINATION_CHANNELS_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.destination.channel";
     static final String DESTINATION_STREAMS_PROP_NAME =

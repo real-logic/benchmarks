@@ -45,8 +45,7 @@ import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchArchivingMediaDriver;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 class ClusterTest
 {
@@ -144,7 +143,7 @@ class ClusterTest
             .clusterDirectoryName(clusterDirectoryName);
 
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
-            .clusteredService(new EchoClusteredService(configuration.snapshotSize()))
+            .clusteredService(new EchoClusteredService(DEFAULT_SNAPSHOT_SIZE))
             .errorHandler(AeronUtil.rethrowingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
