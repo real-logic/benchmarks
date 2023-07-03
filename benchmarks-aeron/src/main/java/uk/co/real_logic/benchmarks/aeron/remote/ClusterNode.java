@@ -29,6 +29,7 @@ import org.agrona.concurrent.SystemEpochClock;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONTAINER;
@@ -65,6 +66,10 @@ public final class ClusterNode
             .aeronDirectoryName(aeronDirectoryName)
             .epochClock(epochClock);
 
+        // In local tests we could be racing with the Media Driver to start.
+        // Await the driver dir to exist or creating the cluster mark file will fail.
+        awaitPathExists(aeronDirectoryName);
+
         consensusModuleContext.clusterMarkFile(new ClusterMarkFile(
             new File(aeronDirectoryName, ClusterMarkFile.FILENAME),
             CONSENSUS_MODULE,
@@ -96,5 +101,22 @@ public final class ClusterNode
         {
             new ShutdownSignalBarrier().await();
         }
+    }
+
+    private static void awaitPathExists(final String path)
+    {
+        final File file = new File(path);
+
+        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() - deadline < 0)
+        {
+            if (file.exists())
+            {
+                return;
+            }
+            Thread.yield();
+        }
+
+        throw new RuntimeException("Timed out waiting for " + path);
     }
 }
