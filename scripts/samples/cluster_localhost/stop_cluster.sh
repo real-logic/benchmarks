@@ -20,5 +20,6 @@ set -euxo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 AERON_SCRIPT_HOME=${DIR}/../../aeron
 
-pkill -f ".*ClusterNode.*"
-pkill -f ".*MediaDriver.*"
+pkill -f ".*ClusterNode.*" || true
+pkill -f ".*MediaDriver.*" || true
+rm -rf /dev/shm/node?-driver /dev/shm/client-driver
