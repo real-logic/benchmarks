@@ -36,14 +36,12 @@ import uk.co.real_logic.benchmarks.remote.SinglePersistedHistogram;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.CommonContext.AERON_DIR_PROP_NAME;
 import static io.aeron.driver.Configuration.DIR_DELETE_ON_SHUTDOWN_PROP_NAME;
 import static io.aeron.driver.Configuration.DIR_DELETE_ON_START_PROP_NAME;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
-import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
@@ -120,8 +118,6 @@ class ClusterTest
             .outputFileNamePrefix("aeron")
             .build();
 
-        final AtomicReference<Throwable> error = new AtomicReference<>();
-
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .lock(NoOpLock.INSTANCE)
             .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
@@ -168,11 +164,6 @@ class ClusterTest
                 (nc, vr) -> new ClusterMessageTransceiver(nc, vr, null, aeronClusterContext),
                 mock(PrintStream.class));
             loadTestRig.run();
-        }
-
-        if (null != error.get())
-        {
-            rethrowUnchecked(error.get());
         }
     }
 }
