@@ -27,7 +27,6 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.IdleStrategy;
@@ -368,13 +367,12 @@ final class AeronUtil
         }
     }
 
-    static ErrorHandler rethrowingErrorHandler(final String context)
+    static ErrorHandler printingErrorHandler(final String context)
     {
         return (Throwable throwable) ->
         {
             System.err.println(context);
             throwable.printStackTrace(System.err);
-            LangUtil.rethrowUnchecked(throwable);
         };
     }
 }

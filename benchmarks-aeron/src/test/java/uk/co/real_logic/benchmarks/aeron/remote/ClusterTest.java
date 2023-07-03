@@ -137,14 +137,14 @@ class ClusterTest
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel("aeron:udp?term-length=64k|control-mode=manual|control=localhost:20002")
             .replicationChannel("aeron:udp?endpoint=localhost:0")
-            .errorHandler(AeronUtil.rethrowingErrorHandler("consensus-module"))
+            .errorHandler(AeronUtil.printingErrorHandler("consensus-module"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
             .clusterDirectoryName(clusterDirectoryName);
 
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
             .clusteredService(new EchoClusteredService(DEFAULT_SNAPSHOT_SIZE))
-            .errorHandler(AeronUtil.rethrowingErrorHandler("service-container"))
+            .errorHandler(AeronUtil.printingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
             .clusterDirectoryName(clusterDirectoryName);
