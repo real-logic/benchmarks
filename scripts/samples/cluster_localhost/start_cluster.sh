@@ -23,7 +23,7 @@ AERON_SCRIPT_HOME=${DIR}/../../aeron
 function startNode() {
   node=$1
   JVM_OPTS="-Xms16M"
-# Usefult for logging...
+# Useful for logging...
 #  JVM_OPTS="${JVM_OPTS} -javaagent:${HOME}/.m2/repository/io/aeron/aeron-agent/1.38.1-SNAPSHOT/aeron-agent-1.38.1-SNAPSHOT.jar"
   JVM_OPTS="${JVM_OPTS} -Daeron.event.cluster.log=all -Daeron.event.cluster.log.disable=APPEND_POSITION,COMMIT_POSITION"
   JVM_OPTS="${JVM_OPTS} -Daeron.event.log.filename=log_${node}.log"
