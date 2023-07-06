@@ -19,6 +19,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -77,8 +78,21 @@ public final class ClusterNode
             epochClock,
             LIVENESS_TIMEOUT_MS));
 
+        final String clusteredServiceName = System.getProperty(CLUSTER_SERVICE_PROP_NAME);
+        final ClusteredService clusteredService;
+        ClusterFailoverManager failoverManager = null;
+        if ("failover".equals(clusteredServiceName))
+        {
+            failoverManager = new ClusterFailoverManager();
+            clusteredService = new FailoverClusteredService(failoverManager);
+        }
+        else
+        {
+            clusteredService = new EchoClusteredService(getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE));
+        }
+
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
-            .clusteredService(new EchoClusteredService(getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE)))
+            .clusteredService(clusteredService)
             .errorHandler(printingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
@@ -99,6 +113,12 @@ public final class ClusterNode
             ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
                 serviceContainerContext))
         {
+            if (failoverManager != null)
+            {
+                failoverManager.setConsensusModule(consensusModule);
+                failoverManager.setClusteredServiceContainer(clusteredServiceContainer);
+            }
+
             new ShutdownSignalBarrier().await();
         }
     }
