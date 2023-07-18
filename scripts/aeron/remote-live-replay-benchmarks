@@ -64,14 +64,13 @@ rcv_initial_window="${AERON_RCV_INITIAL_WINDOW_LENGTH:-2m}"
 max_messages_per_send="${AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND:-2}"
 
 context=""
-enable_c_driver=1
-no_c_driver=0
-enable_java_driver=1
-enable_ef_vi=1
-enable_dpdk=1
 file_sync_levels=(0 2)
 mtu_list=(1408 8192)
 onload="onload --profile=latency --force-profiles "
+client_drivers=()
+server_drivers=()
+declare -A drivers
+drivers=(['java']='' ['java-onload']='' ['c']='' ['c-onload']='' ['c-ef-vi']='' ['c-dpdk']='')
 
 while [[ $# -gt 0 ]]
 do
@@ -81,29 +80,9 @@ do
     shift
     shift
     ;;
-  --disable-c-driver)
-    enable_c_driver=0
-    shift
-    ;;
-  --no-c-driver)
-    no_c_driver=1
-    shift
-    ;;
-  --disable-java-driver)
-    enable_java_driver=0
-    shift
-    ;;
   --onload)
     onload="${2}"
     shift
-    shift
-    ;;
-  --no-ef_vi)
-    enable_ef_vi=0
-    shift
-    ;;
-  --no-dpdk)
-    enable_dpdk=0
     shift
     ;;
   --file-sync-level)
@@ -120,8 +99,23 @@ do
     shift
     shift
     ;;
+  --client-drivers)
+    IFS=',';
+    read -ra client_drivers <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
+  --server-drivers)
+    IFS=',';
+    read -ra server_drivers <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
   -h|--help)
-    echo "${0} [--context \"\$context\"] [--onload \"\$onload_command\"] [--no-ef_vi] [--no-dpdk] [--disable-c-driver] [--no-c-driver] [--disable-java-driver] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]"
+    echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" [--context \"\$context\"] [--onload \"\$onload_command\"] [--file-sync-level \"\${file-sync-level-csv}\"] [--mtu \"\$mtu-csv\"]\
+          the support media drivers are: ${!drivers[*]}"
     exit
     ;;
   *)
@@ -131,14 +125,6 @@ do
   esac
 done
 
-if [ "${enable_java_driver}" -ne 1 ] && [ "${enable_c_driver}" -ne 1 ]
-then
-  echo "At least C or Java driver must be enabled!"
-  exit 1
-fi
-
-commands=()
-scenarios=()
 scripts_path="benchmarks_path_var/scripts/aeron"
 
 driver_properties="echo -e \"\
@@ -155,70 +141,69 @@ aeron.receiver.io.vector.capacity=${max_messages_per_send}\n \
 aeron.sender.io.vector.capacity=${max_messages_per_send}\n \
 \" > ${scripts_path}/benchmark.properties"
 
-if [ "${enable_java_driver}" -eq 1 ]
-then
-  if [ -n "${onload}" ]
-  then
-    scenarios+=("java-onload")
-  else
-    scenarios+=("java")
-  fi
-  commands+=("${driver_properties}; \
-    export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
-    && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
-fi
+drivers['java']="${driver_properties}; \
+      $(start_media_driver "${scripts_path}/media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
-if [ "${enable_c_driver}" -eq 1 ]
-then
-  if [ "${no_c_driver}" -eq 0 ]
-  then
-    if [ -n "${onload}" ]
-    then
-      scenarios+=("c-onload")
-    else
-      scenarios+=("c")
-    fi
-    commands+=("${driver_properties}; \
+drivers['java-onload']="${driver_properties}; \
       export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
-      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
-  fi
+      && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
-  if [ "${enable_ef_vi}" -eq 1 ]
-  then
-    scenarios+=("c-efvi")
-    commands+=("${driver_properties}; \
+drivers['c']="${driver_properties}; \
+      $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-onload']="${driver_properties}; \
+      export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-ef-vi']="${driver_properties}; \
       export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
       AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
       AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
       AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
-      && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
-  fi
+      && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
-  if [ "${enable_dpdk}" -eq 1 ]
-  then
-    scenarios+=("c-dpdk")
-    commands+=("${driver_properties}; \
+drivers['c-dpdk']="${driver_properties}; \
       export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var \
       AERON_DPDK_LOCAL_IPV4_ADDRESS=driver_aeron_dpdk_local_ipv4_address_var \
-      && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")")
-  fi
+      && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+if [ "${#client_drivers[@]}" != "${#server_drivers[@]}" ]
+then
+  echo "Enabled media driver lists have different size: client_drivers=(${client_drivers[*]}) vs server_drivers=(${server_drivers[*]})"
+  exit 1
 fi
 
-test_type="aeron-live-replay"
-for index in "${!scenarios[@]}"
+for index in "${!client_drivers[@]}"
 do
-  scenario="${scenarios[index]}"
+  driver="${client_drivers[index]# }"
+  if [ -z "${drivers[$driver]+x}" ]
+  then
+    echo "Unknown client driver '${driver}': (${client_drivers[*]})"
+    exit 1
+  fi
 
+  driver="${server_drivers[index]# }"
+  if [ -z "${drivers[$driver]+x}" ]
+  then
+    echo "Unknown server driver '${driver}': (${server_drivers[*]})"
+    exit 1
+  fi
+done
+
+test_type="aeron-live-replay"
+for index in "${!client_drivers[@]}"
+do
+  client_md=${client_drivers[index]# }
+  server_md=${server_drivers[index]# }
   for fsync in "${file_sync_levels[@]}"
   do
     for mtu in "${mtu_list[@]}"
     do
-      test="${test_type}_${scenario}_${context}_fsync=${fsync}_mtu=${mtu}"
+      test="${test_type}_${client_md}-vs-${server_md}_${context}_fsync=${fsync}_mtu=${mtu}"
       echo -e "\n Testing scenario: '${test}'\n"
 
-      driver="${commands[index]//driver_mtu_var/${mtu}}"
-
-      client_driver="${driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
+      client_driver="${drivers[${client_md}]//driver_mtu_var/${mtu}}"
+      client_driver="${client_driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
       client_driver="${client_driver//driver_cpu_node_var/${CLIENT_CPU_NODE}}"
       client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
       client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
@@ -226,7 +211,8 @@ do
       client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
       client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
-      server_driver="${driver//benchmarks_path_var/${SERVER_BENCHMARKS_PATH}}"
+      server_driver="${drivers[${server_md}]//driver_mtu_var/${mtu}}"
+      server_driver="${server_driver//benchmarks_path_var/${SERVER_BENCHMARKS_PATH}}"
       server_driver="${server_driver//driver_cpu_node_var/${SERVER_CPU_NODE}}"
       server_driver="${server_driver//driver_conductor_cpu_core_var/${SERVER_DRIVER_CONDUCTOR_CPU_CORE}}"
       server_driver="${server_driver//driver_sender_cpu_core_var/${SERVER_DRIVER_SENDER_CPU_CORE}}"

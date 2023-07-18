@@ -103,7 +103,7 @@ benchmark. See example below.
 5. Once the execution is finished an archive file with the results will be downloaded to the local machine. By default,
 it will be placed under the `scripts` directory in the project folder.
 
-Here is an example of a wrapper script to the Aeron echo benchmarks.
+Here is an example of a wrapper script for the Aeron echo benchmarks.
 _NB: All the values in angle brackets (`<...>`) will have to be replaced with the actual values._
 ```bash
 # SSH connection properties
@@ -139,7 +139,7 @@ export MESSAGE_LENGTH="288" # defaults to "32,288,1344"
 export MESSAGE_RATE="100K"  # defaults to "1M,500K,100K"
 
 # Invoke the actual script and optionally configure specific parameters
-"aeron/remote-echo-benchmarks" --mtu 8192 --no-onload --no-dpdk --no-ef_vi --no-ats --context "my-test"
+"aeron/remote-echo-benchmarks" --client-drivers "java" --server-drivers "java" --mtu 8192 --context "my-test"
 ```
 
 ### Running benchmarks manually (single shot execution)
