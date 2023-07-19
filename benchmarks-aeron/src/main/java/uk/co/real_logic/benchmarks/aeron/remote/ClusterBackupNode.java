@@ -28,7 +28,7 @@ import static io.aeron.cluster.codecs.mark.ClusterComponentType.BACKUP;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.rethrowingErrorHandler;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.printingErrorHandler;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
@@ -44,7 +44,7 @@ public final class ClusterBackupNode
 
         final ClusterBackup.Context clusterBackupContext = new ClusterBackup.Context()
             .deleteDirOnStart(true)
-            .errorHandler(rethrowingErrorHandler("cluster-backup"))
+            .errorHandler(printingErrorHandler("cluster-backup"))
             .aeronDirectoryName(archiveContext.aeronDirectoryName())
             .epochClock(SystemEpochClock.INSTANCE);
 

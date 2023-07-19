@@ -19,6 +19,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.service.ClusterMarkFile;
+import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -29,6 +30,7 @@ import org.agrona.concurrent.SystemEpochClock;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONTAINER;
@@ -36,9 +38,7 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.L
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
 import static org.agrona.SystemUtil.getSizeAsLong;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.rethrowingErrorHandler;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.DEFAULT_SNAPSHOT_SIZE;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.SNAPSHOT_SIZE_PROP_NAME;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
@@ -62,10 +62,14 @@ public final class ClusterNode
 
         final EpochClock epochClock = SystemEpochClock.INSTANCE;
         final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
-            .errorHandler(rethrowingErrorHandler("consensus-module"))
+            .errorHandler(printingErrorHandler("consensus-module"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
             .epochClock(epochClock);
+
+        // In local tests we could be racing with the Media Driver to start.
+        // Await the driver dir to exist or creating the cluster mark file will fail.
+        awaitPathExists(aeronDirectoryName);
 
         consensusModuleContext.clusterMarkFile(new ClusterMarkFile(
             new File(aeronDirectoryName, ClusterMarkFile.FILENAME),
@@ -74,9 +78,22 @@ public final class ClusterNode
             epochClock,
             LIVENESS_TIMEOUT_MS));
 
+        final String clusteredServiceName = System.getProperty(CLUSTER_SERVICE_PROP_NAME);
+        final ClusteredService clusteredService;
+        ClusterFailoverManager failoverManager = null;
+        if ("failover".equals(clusteredServiceName))
+        {
+            failoverManager = new ClusterFailoverManager();
+            clusteredService = new FailoverClusteredService(failoverManager);
+        }
+        else
+        {
+            clusteredService = new EchoClusteredService(getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE));
+        }
+
         final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
-            .clusteredService(new EchoClusteredService(getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE)))
-            .errorHandler(rethrowingErrorHandler("service-container"))
+            .clusteredService(clusteredService)
+            .errorHandler(printingErrorHandler("service-container"))
             .archiveContext(aeronArchiveContext.clone())
             .aeronDirectoryName(aeronDirectoryName)
             .clusterDirectoryName(consensusModuleContext.clusterDirectoryName())
@@ -96,7 +113,30 @@ public final class ClusterNode
             ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
                 serviceContainerContext))
         {
+            if (failoverManager != null)
+            {
+                failoverManager.setConsensusModule(consensusModule);
+                failoverManager.setClusteredServiceContainer(clusteredServiceContainer);
+            }
+
             new ShutdownSignalBarrier().await();
         }
+    }
+
+    private static void awaitPathExists(final String path)
+    {
+        final File file = new File(path);
+
+        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() - deadline < 0)
+        {
+            if (file.exists())
+            {
+                return;
+            }
+            Thread.yield();
+        }
+
+        throw new RuntimeException("Timed out waiting for " + path);
     }
 }

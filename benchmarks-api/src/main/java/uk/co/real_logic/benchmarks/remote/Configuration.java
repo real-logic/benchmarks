@@ -49,7 +49,7 @@ import static org.agrona.Strings.isEmpty;
  * A {@code Configuration} instance can be created using the {@link Builder} class, e.g.:
  * <pre>
  *    final Configuration.Builder builder = new Configuration.Builder();
- *    build.messageRate(1000);
+ *    builder.messageRate(1000);
  *    ...
  *    final Configuration configuration = builder.build();
  * </pre>
@@ -63,7 +63,7 @@ public final class Configuration
     public static final int DEFAULT_WARMUP_ITERATIONS = 10;
 
     /**
-     * Default number of the messages to be sent duirng the warmup iterations.
+     * Default number of the messages to be sent during the warmup iterations.
      */
     public static final int DEFAULT_WARMUP_MESSAGE_RATE = 10_000;
 
