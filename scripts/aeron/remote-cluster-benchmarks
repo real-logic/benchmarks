@@ -300,6 +300,8 @@ function start_cluster_backup_node()
     && tail --pid=\$! -f /dev/null"
 }
 
+scripts_path="benchmarks_path_var/scripts/aeron"
+
 driver_properties="echo -e \"\
 aeron.conductor.cpu.affinity=driver_conductor_cpu_core_var\n \
 aeron.sender.cpu.affinity=driver_sender_cpu_core_var\n \
