@@ -27,7 +27,6 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.ErrorHandler;
-import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.IdleStrategy;
@@ -61,6 +60,7 @@ import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.laun
 
 final class AeronUtil
 {
+    static final String CLUSTER_SERVICE_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.cluster.service";
     static final String SNAPSHOT_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.cluster.snapshot.size";
     static final long DEFAULT_SNAPSHOT_SIZE = 0;
     static final String DESTINATION_CHANNELS_PROP_NAME =
@@ -368,13 +368,12 @@ final class AeronUtil
         }
     }
 
-    static ErrorHandler rethrowingErrorHandler(final String context)
+    static ErrorHandler printingErrorHandler(final String context)
     {
         return (Throwable throwable) ->
         {
             System.err.println(context);
             throwable.printStackTrace(System.err);
-            LangUtil.rethrowUnchecked(throwable);
         };
     }
 }

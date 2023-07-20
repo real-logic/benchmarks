@@ -101,6 +101,7 @@ client_drivers=()
 server_drivers=()
 declare -A drivers
 drivers=(['java']='' ['java-onload']='' ['c']='' ['c-onload']='' ['c-ef-vi']='' ['c-dpdk']='' ['c-ats']='' ['c-ats-onload']='' ['c-ats-ef-vi']='' ['c-ats-dpdk']='')
+cluster_service="${CLUSTER_SERVICE:-echo}"
 
 while [[ $# -gt 0 ]]
 do
@@ -198,6 +199,7 @@ function start_cluster_node()
   local cluster_node_class_name=${2}
   local server_driver=${3}
   local fsync=${4}
+  local cluster_service=${5}
   local benchmarks_path_var=NODE${node_id}_BENCHMARKS_PATH
   local java_home_var=NODE${node_id}_JAVA_HOME
   local cluster_dir_var=NODE${node_id}_CLUSTER_DIR
@@ -238,7 +240,8 @@ function start_cluster_node()
     -Daeron.archive.replication.channel=${!archive_replication_channel_var} \
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
-    -Daeron.archive.recording.events.enabled=false\" \
+    -Daeron.archive.recording.events.enabled=false \
+    -Duk.co.real_logic.benchmarks.aeron.remote.cluster.service=${cluster_service}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
@@ -425,7 +428,8 @@ do
       client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
       client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
-      client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
+      client_script="${CLIENT_SCRIPT:-cluster-client}"
+      client_class_name="${CLIENT_CLASS_NAME:-uk.co.real_logic.benchmarks.remote.LoadTestRig}"
       cluster_node_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterNode"
       cluster_backup_node_class_name="uk.co.real_logic.benchmarks.aeron.remote.ClusterBackupNode"
       client_ingress_endpoints=''
@@ -460,7 +464,7 @@ do
             && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\"\
             ; $(kill_java_process "${client_class_name}")\
             ; ${client_driver}\
-            && numactl --membind=${CLIENT_CPU_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/cluster-client & \
+            && numactl --membind=${CLIENT_CPU_NODE} ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/${client_script} & \
             $(await_java_process_start "${client_class_name}")\
             ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
             && tail --pid=\$! -f /dev/null; kill -9 \${media_driver_pid}; wait"
@@ -502,7 +506,7 @@ do
               server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
               server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
               server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
-              execute_remote_command "${!ssh_node}" "($(start_cluster_node "${n}" "${cluster_node_class_name}" "${server_driver}" "${fsync}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
+              execute_remote_command "${!ssh_node}" "($(start_cluster_node "${n}" "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${cluster_service}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
             done
 
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))

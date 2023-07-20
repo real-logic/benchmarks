@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramLogWriter;
+import org.HdrHistogram.SingleWriterRecorder;
 import org.HdrHistogram.ValueRecorder;
 
 import java.io.FileNotFoundException;
@@ -27,6 +28,7 @@ import java.util.stream.Stream;
 
 import static java.nio.file.Files.find;
 import static java.nio.file.Files.isRegularFile;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static org.agrona.AsciiEncoding.parseIntAscii;
 
 public interface PersistedHistogram extends AutoCloseable
@@ -249,4 +251,19 @@ public interface PersistedHistogram extends AutoCloseable
      * {@inheritDoc}
      */
     void close();
+
+    @SuppressWarnings("checkstyle:indentation")
+    static PersistedHistogram newPersistedHistogram(final Configuration configuration)
+    {
+        try
+        {
+            return configuration.trackHistory() ?
+                new LoggingPersistedHistogram(configuration.outputDirectory(), new SingleWriterRecorder(3)) :
+                new SinglePersistedHistogram(new Histogram(HOURS.toNanos(1), 3));
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
 }

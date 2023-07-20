@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
-import org.HdrHistogram.Histogram;
-import org.HdrHistogram.SingleWriterRecorder;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
@@ -24,7 +22,6 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 import java.util.function.BiFunction;
@@ -32,12 +29,14 @@ import java.util.function.BiFunction;
 import static java.lang.Math.min;
 import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.remote.MessageTransceiver.CHECKSUM;
 import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.FAIL;
 import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.OK;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.newPersistedHistogram;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
@@ -322,20 +321,5 @@ public final class LoadTestRig
         final Configuration configuration = Configuration.fromSystemProperties();
 
         new LoadTestRig(configuration).run();
-    }
-
-    @SuppressWarnings("checkstyle:indentation")
-    private static PersistedHistogram newPersistedHistogram(final Configuration configuration)
-    {
-        try
-        {
-            return configuration.trackHistory() ?
-                new LoggingPersistedHistogram(configuration.outputDirectory(), new SingleWriterRecorder(3)) :
-                new SinglePersistedHistogram(new Histogram(HOURS.toNanos(1), 3));
-        }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
     }
 }
