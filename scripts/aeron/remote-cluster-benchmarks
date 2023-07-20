@@ -472,24 +472,30 @@ do
             for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
               echo -e "\Stopping Cluster node ${n}..."
+              ssh_user=SSH_CLUSTER_USER${n}
+              ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_NODE${n}
               archive_dir_var=NODE${n}_ARCHIVE_DIR
               cluster_dir_var=NODE${n}_CLUSTER_DIR
-              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
             done
 
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
             do
               echo -e "\Stopping Cluster Backup node ${n}..."
+              ssh_user=SSH_CLUSTER_BACKUP_USER${n}
+              ssh_key_file=SSH_CLUSTER_BACKUP_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
               archive_dir_var=BACKUP_NODE${n}_ARCHIVE_DIR
               cluster_dir_var=BACKUP_NODE${n}_CLUSTER_DIR
-              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
             done
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
               echo -e "\nStarting Cluster node ${n}..."
+              ssh_user=SSH_CLUSTER_USER${n}
+              ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_NODE${n}
               server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
               server_cpu_node=NODE${n}_DRIVER_CPU_NODE
@@ -506,7 +512,7 @@ do
               server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
               server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
               server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
-              execute_remote_command "${!ssh_node}" "($(start_cluster_node "${n}" "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${cluster_service}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_cluster_node "${n}" "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${cluster_service}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
             done
 
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
@@ -528,17 +534,19 @@ do
               server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
               server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
               server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
-              execute_remote_command "${!ssh_node}" "($(start_cluster_backup_node "${n}" "${cluster_backup_node_class_name}" "${server_driver}") &) >  /tmp/benchmarks-cluster-backup-node-${n}.log 2>&1 && exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_cluster_backup_node "${n}" "${cluster_backup_node_class_name}" "${server_driver}") &) >  /tmp/benchmarks-cluster-backup-node-${n}.log 2>&1 && exit"
             done
 
             echo -e "\nRunning benchmark..."
-            execute_remote_command "${SSH_CLIENT_NODE}" "${start_client} && exit"
+            execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${start_client} && exit"
 
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
             do
               echo -e "\nStopping Cluster Backup node ${n}..."
+              ssh_user=SSH_CLUSTER_BACKUP_USER${n}
+              ssh_key_file=SSH_CLUSTER_BACKUP_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
-              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); true && exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); true && exit"
             done
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))

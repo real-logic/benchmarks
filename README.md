@@ -107,9 +107,11 @@ Here is an example of a wrapper script for the Aeron echo benchmarks.
 _NB: All the values in angle brackets (`<...>`) will have to be replaced with the actual values._
 ```bash
 # SSH connection properties
-export SSH_USER=<SSH user>
-export SSH_KEY_FILE=<private SSH key for connecting to client and server machines>
+export SSH_CLIENT_USER=<SSH client machine user>
+export SSH_CLIENT_KEY_FILE=<private SSH key to connect to the client machine>
 export SSH_CLIENT_NODE=<IP of the client machine>
+export SSH_SERVER_USER=<SSH server machine user>
+export SSH_SERVER_KEY_FILE=<private SSH key to connect to the server machine>
 export SSH_SERVER_NODE=<IP of the server machine>
 
 # Set of required configuration options
