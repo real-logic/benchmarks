@@ -23,7 +23,7 @@ public interface FailoverTransceiver extends AutoCloseable
 
     int receive();
 
-    boolean trySendEcho(int sequence, long timestamp, int flags);
+    boolean trySendEcho(int sequence, long timestamp);
 
     void sendSync(int expectedSequence);
 }

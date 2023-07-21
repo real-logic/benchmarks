@@ -19,6 +19,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -32,10 +33,14 @@ import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.DummyMessageTransceiver;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,6 +49,7 @@ import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.printingErrorHa
 class FailoverTestRigTest
 {
     private final Deque<AutoCloseable> closeables = new ArrayDeque<>();
+    private final List<InetSocketAddress> controlEndpoints = new ArrayList<>();
 
     @TempDir(cleanup = CleanupMode.ALWAYS)
     Path tempDir;
@@ -65,17 +71,21 @@ class FailoverTestRigTest
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(5)
             .warmupMessageRate(1000)
-            .iterations(15)
+            .iterations(20)
             .messageRate(1000)
-            .messageLength(20)
+            .messageLength(16)
             .messageTransceiverClass(DummyMessageTransceiver.class)
             .batchSize(1)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("failover")
             .build();
 
+        final FailoverConfiguration failoverConfiguration = new FailoverConfiguration.Builder()
+            .controlEndpoints(controlEndpoints)
+            .build();
+
         final FailoverTransceiver transceiver = new ClusterFailoverTransceiver(testClient.aeronClusterContext);
-        final FailoverTestRig rig = new FailoverTestRig(configuration, transceiver);
+        final FailoverTestRig rig = new FailoverTestRig(configuration, failoverConfiguration, transceiver);
         rig.run();
 
         assertEquals(1, findResultFileCount());
@@ -89,63 +99,85 @@ class FailoverTestRigTest
         }
     }
 
+    @SuppressWarnings("MethodLength")
     private void launchTestClusterNode(final int clusterMemberId)
     {
         final Path driverDir = tempDir.resolve("driver-" + clusterMemberId);
         final Path archiveDir = tempDir.resolve("archive-" + clusterMemberId);
         final Path clusterDir = tempDir.resolve("cluster-" + clusterMemberId);
 
+        final String aeronDirectoryName = driverDir.toString();
+        final String clusterDirectoryName = clusterDir.toString();
+
         final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
-            .aeronDirectoryName(driverDir.toString());
+            .aeronDirectoryName(aeronDirectoryName);
 
         final int archiveControlChannelPort = 8010 + clusterMemberId;
         final Archive.Context archiveCtx = new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .aeronDirectoryName(mediaDriverCtx.aeronDirectoryName())
+            .aeronDirectoryName(aeronDirectoryName)
             .archiveDirectoryName(archiveDir.toString())
             .controlChannel("aeron:udp?endpoint=localhost:" + archiveControlChannelPort)
             .replicationChannel("aeron:udp?endpoint=localhost:0");
 
-        final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
-            .aeronDirectoryName(mediaDriverCtx.aeronDirectoryName())
-            .clusterDirectoryName(clusterDir.toString())
-            .clusterMemberId(clusterMemberId)
-            .clusterMembers("0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:8010|" +
-            "1,localhost:20004,localhost:20005,localhost:20006,localhost:20007,localhost:8011|" +
-            "2,localhost:20008,localhost:20009,localhost:20010,localhost:20011,localhost:8012")
-            .ingressChannel("aeron:udp?term-length=64k")
-            .replicationChannel("aeron:udp?endpoint=localhost:0")
-            .errorHandler(printingErrorHandler("consensus-module"));
+        final Component<ConsensusModule> consensusModule = new Component<>(() ->
+        {
+            final ConsensusModule.Context ctx = new ConsensusModule.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .clusterDirectoryName(clusterDirectoryName)
+                .clusterMemberId(clusterMemberId)
+                .clusterMembers(
+                "0,localhost:20000,localhost:20001,localhost:20002,localhost:20003,localhost:8010|" +
+                "1,localhost:20004,localhost:20005,localhost:20006,localhost:20007,localhost:8011|" +
+                "2,localhost:20008,localhost:20009,localhost:20010,localhost:20011,localhost:8012")
+                .ingressChannel("aeron:udp?term-length=64k")
+                .replicationChannel("aeron:udp?endpoint=localhost:0")
+                .errorHandler(printingErrorHandler("consensus-module"));
 
-        final ClusterFailoverManager failoverManager = new ClusterFailoverManager();
+            return ConsensusModule.launch(ctx);
+        });
 
-        final ClusteredServiceContainer.Context clusteredServiceContainerCtx = new ClusteredServiceContainer.Context()
-            .aeronDirectoryName(mediaDriverCtx.aeronDirectoryName())
-            .clusterDirectoryName(consensusModuleCtx.clusterDirectoryName())
-            .clusteredService(new FailoverClusteredService(failoverManager))
-            .errorHandler(printingErrorHandler("service-container"));
+        final AtomicReference<Cluster.Role> roleRef = new AtomicReference<>();
+
+        final Component<ClusteredServiceContainer> clusteredServiceContainer = new Component<>(() ->
+        {
+            final ClusteredServiceContainer.Context ctx = new ClusteredServiceContainer.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .clusterDirectoryName(clusterDirectoryName)
+                .clusteredService(new FailoverClusteredService(roleRef))
+                .errorHandler(printingErrorHandler("service-container"));
+
+            return ClusteredServiceContainer.launch(ctx);
+        });
 
         MediaDriver mediaDriver = null;
         Archive archive = null;
-        ConsensusModule consensusModule = null;
-        ClusteredServiceContainer clusteredServiceContainer = null;
+        FailoverControlServer failoverControlServer = null;
 
         try
         {
             mediaDriver = MediaDriver.launch(mediaDriverCtx);
             archive = Archive.launch(archiveCtx);
-            consensusModule = ConsensusModule.launch(consensusModuleCtx);
-            clusteredServiceContainer = ClusteredServiceContainer.launch(clusteredServiceContainerCtx);
+            consensusModule.start();
+            clusteredServiceContainer.start();
 
-            failoverManager.setConsensusModule(consensusModule);
-            failoverManager.setClusteredServiceContainer(clusteredServiceContainer);
+            failoverControlServer = new FailoverControlServer(
+                "localhost",
+                0,
+                roleRef,
+                consensusModule,
+                clusteredServiceContainer,
+                printingErrorHandler("FailoverControlServer"));
+            controlEndpoints.add(failoverControlServer.getLocalAddress());
+            failoverControlServer.start();
 
             final TestClusterNode testClusterNode = new TestClusterNode(
                 mediaDriver,
                 archive,
                 consensusModule,
-                clusteredServiceContainer);
+                clusteredServiceContainer,
+                failoverControlServer);
 
             closeables.addFirst(testClusterNode);
         }
@@ -153,7 +185,12 @@ class FailoverTestRigTest
         {
             try
             {
-                CloseHelper.closeAll(clusteredServiceContainer, consensusModule, archive, mediaDriver);
+                CloseHelper.closeAll(
+                    failoverControlServer,
+                    clusteredServiceContainer,
+                    consensusModule,
+                    archive,
+                    mediaDriver);
             }
             catch (final Exception ce)
             {
@@ -199,24 +236,32 @@ class FailoverTestRigTest
     {
         private final MediaDriver mediaDriver;
         private final Archive archive;
-        private final ConsensusModule consensusModule;
-        private final ClusteredServiceContainer clusteredServiceContainer;
+        private final Component<ConsensusModule> consensusModule;
+        private final Component<ClusteredServiceContainer> clusteredServiceContainer;
+        private final FailoverControlServer failoverControlServer;
 
         TestClusterNode(
             final MediaDriver mediaDriver,
             final Archive archive,
-            final ConsensusModule consensusModule,
-            final ClusteredServiceContainer clusteredServiceContainer)
+            final Component<ConsensusModule> consensusModule,
+            final Component<ClusteredServiceContainer> clusteredServiceContainer,
+            final FailoverControlServer failoverControlServer)
         {
             this.mediaDriver = mediaDriver;
             this.archive = archive;
             this.consensusModule = consensusModule;
             this.clusteredServiceContainer = clusteredServiceContainer;
+            this.failoverControlServer = failoverControlServer;
         }
 
         public void close()
         {
-            CloseHelper.closeAll(clusteredServiceContainer, consensusModule, archive, mediaDriver);
+            CloseHelper.closeAll(
+                failoverControlServer,
+                clusteredServiceContainer,
+                consensusModule,
+                archive,
+                mediaDriver);
         }
     }
 

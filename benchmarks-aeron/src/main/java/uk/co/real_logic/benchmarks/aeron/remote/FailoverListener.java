@@ -19,7 +19,7 @@ public interface FailoverListener
 {
     void onConnected(long sessionId, int leaderMemberId);
 
-    void onEchoMessage(int sequence, long timestamp, int flags);
+    void onEchoMessage(int sequence, long timestamp);
 
     void onSyncMessage(int expectedSequence);
 

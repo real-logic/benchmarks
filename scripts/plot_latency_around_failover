@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+##
+## Copyright 2023 Adaptive Financial Consulting Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+# Usage: ./plot_latency_around_failover <csv file>...
+
+function insert_annotation
+{
+  local name="$1"
+  local lt="$2"
+  local x="$(awk -F, "/^#annotation:.*\"$name\"/ {print \$3}" "$csv_file")"
+  if [[ ! -z "$x" ]];
+  then
+    local annotation="set arrow from $x, graph 0 to $x, graph 1 nohead linetype $lt"
+    script="$(echo "$script" | sed "/# annotations placeholder/a $annotation")"
+  fi
+}
+
+for csv_file in "$@"
+do
+  script="$(cat latency_around_failover.p)"
+  insert_annotation "failover" 40
+  insert_annotation "restart" 41
+  gnuplot -p -e "filename='$csv_file'" <(echo "$script")
+done

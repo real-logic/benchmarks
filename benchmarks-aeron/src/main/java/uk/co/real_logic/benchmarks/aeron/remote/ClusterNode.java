@@ -18,6 +18,7 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
@@ -28,9 +29,9 @@ import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.SystemEpochClock;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONTAINER;
@@ -60,67 +61,117 @@ public final class ClusterNode
             .controlResponseChannel(archiveContext.localControlChannel())
             .aeronDirectoryName(aeronDirectoryName);
 
-        final EpochClock epochClock = SystemEpochClock.INSTANCE;
-        final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context()
-            .errorHandler(printingErrorHandler("consensus-module"))
-            .archiveContext(aeronArchiveContext.clone())
-            .aeronDirectoryName(aeronDirectoryName)
-            .epochClock(epochClock);
-
         // In local tests we could be racing with the Media Driver to start.
         // Await the driver dir to exist or creating the cluster mark file will fail.
         awaitPathExists(aeronDirectoryName);
 
-        consensusModuleContext.clusterMarkFile(new ClusterMarkFile(
-            new File(aeronDirectoryName, ClusterMarkFile.FILENAME),
-            CONSENSUS_MODULE,
-            consensusModuleContext.errorBufferLength(),
-            epochClock,
-            LIVENESS_TIMEOUT_MS));
+        final EpochClock epochClock = SystemEpochClock.INSTANCE;
+        final String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
 
-        final String clusteredServiceName = System.getProperty(CLUSTER_SERVICE_PROP_NAME);
-        final ClusteredService clusteredService;
-        ClusterFailoverManager failoverManager = null;
-        if ("failover".equals(clusteredServiceName))
+        final Component<ConsensusModule> consensusModule = new Component<>(() ->
         {
-            failoverManager = new ClusterFailoverManager();
-            clusteredService = new FailoverClusteredService(failoverManager);
-        }
-        else
+            final ConsensusModule.Context ctx = new ConsensusModule.Context()
+                .errorHandler(printingErrorHandler("consensus-module"))
+                .archiveContext(aeronArchiveContext.clone())
+                .aeronDirectoryName(aeronDirectoryName)
+                .clusterDirectoryName(clusterDirectoryName)
+                .epochClock(epochClock);
+
+            ctx.clusterMarkFile(new ClusterMarkFile(
+                new File(aeronDirectoryName, ClusterMarkFile.FILENAME),
+                CONSENSUS_MODULE,
+                ctx.errorBufferLength(),
+                epochClock,
+                LIVENESS_TIMEOUT_MS));
+
+            return ConsensusModule.launch(ctx);
+        });
+
+        final Type type = Type.fromSystemProperty();
+        final AtomicReference<Cluster.Role> roleRef = new AtomicReference<>();
+
+        final Component<ClusteredServiceContainer> clusteredServiceContainer = new Component<>(() ->
         {
-            clusteredService = new EchoClusteredService(getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE));
-        }
-
-        final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context()
-            .clusteredService(clusteredService)
-            .errorHandler(printingErrorHandler("service-container"))
-            .archiveContext(aeronArchiveContext.clone())
-            .aeronDirectoryName(aeronDirectoryName)
-            .clusterDirectoryName(consensusModuleContext.clusterDirectoryName())
-            .epochClock(epochClock);
-
-        serviceContainerContext.clusterMarkFile(new ClusterMarkFile(
-            new File(aeronDirectoryName, ClusterMarkFile.markFilenameForService(serviceContainerContext.serviceId())),
-            CONTAINER,
-            serviceContainerContext.errorBufferLength(),
-            epochClock,
-            LIVENESS_TIMEOUT_MS));
-
-        IoUtil.delete(Paths.get(consensusModuleContext.clusterDirectoryName()).toFile(), false);
-
-        try (Archive archive = Archive.launch(archiveContext);
-            ConsensusModule consensusModule = ConsensusModule.launch(consensusModuleContext);
-            ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer.launch(
-                serviceContainerContext))
-        {
-            if (failoverManager != null)
+            final ClusteredService clusteredService;
+            if (type == Type.FAILOVER)
             {
-                failoverManager.setConsensusModule(consensusModule);
-                failoverManager.setClusteredServiceContainer(clusteredServiceContainer);
+                clusteredService = new FailoverClusteredService(roleRef);
+            }
+            else
+            {
+                final long snapshotSize = getSizeAsLong(SNAPSHOT_SIZE_PROP_NAME, DEFAULT_SNAPSHOT_SIZE);
+                clusteredService = new EchoClusteredService(snapshotSize);
             }
 
+            final ClusteredServiceContainer.Context ctx = new ClusteredServiceContainer.Context()
+                .clusteredService(clusteredService)
+                .errorHandler(printingErrorHandler("service-container"))
+                .archiveContext(aeronArchiveContext.clone())
+                .aeronDirectoryName(aeronDirectoryName)
+                .clusterDirectoryName(clusterDirectoryName)
+                .epochClock(epochClock);
+
+            ctx.clusterMarkFile(new ClusterMarkFile(
+                new File(aeronDirectoryName, ClusterMarkFile.markFilenameForService(ctx.serviceId())),
+                CONTAINER,
+                ctx.errorBufferLength(),
+                epochClock,
+                LIVENESS_TIMEOUT_MS));
+
+            return ClusteredServiceContainer.launch(ctx);
+        });
+
+        IoUtil.delete(new File(clusterDirectoryName), false);
+
+        try (Archive archive = Archive.launch(archiveContext);
+            Component<ConsensusModule> cm = consensusModule.start();
+            Component<ClusteredServiceContainer> csc = clusteredServiceContainer.start();
+            FailoverControlServer failoverControlServer = createFailoverControlServer(
+                type,
+                consensusModule,
+                clusteredServiceContainer,
+                roleRef)
+            )
+        {
             new ShutdownSignalBarrier().await();
         }
+    }
+
+    private static FailoverControlServer createFailoverControlServer(
+        final Type type,
+        final Component<ConsensusModule> consensusModule,
+        final Component<ClusteredServiceContainer> clusteredServiceContainer,
+        final AtomicReference<Cluster.Role> roleRef)
+    {
+        if (type == Type.FAILOVER)
+        {
+            final String hostname = getRequiredProperty(FAILOVER_CONTROL_SERVER_HOSTNAME_PROP_NAME);
+            final int port = Integer.parseInt(getRequiredProperty(FAILOVER_CONTROL_SERVER_PORT_PROP_NAME));
+
+            final FailoverControlServer failoverControlServer = new FailoverControlServer(
+                hostname,
+                port,
+                roleRef,
+                consensusModule,
+                clusteredServiceContainer,
+                printingErrorHandler("FailoverControlServer"));
+
+            failoverControlServer.start();
+
+            return failoverControlServer;
+        }
+
+        return null;
+    }
+
+    private static String getRequiredProperty(final String propertyName)
+    {
+        final String value = System.getProperty(propertyName);
+        if (value == null)
+        {
+            throw new NullPointerException(propertyName + " must be set");
+        }
+        return value;
     }
 
     private static void awaitPathExists(final String path)
@@ -138,5 +189,17 @@ public final class ClusterNode
         }
 
         throw new RuntimeException("Timed out waiting for " + path);
+    }
+
+    private enum Type
+    {
+        ECHO,
+        FAILOVER;
+
+        public static Type fromSystemProperty()
+        {
+            final String clusteredServiceName = System.getProperty(CLUSTER_SERVICE_PROP_NAME);
+            return "failover".equals(clusteredServiceName) ? FAILOVER : ECHO;
+        }
     }
 }

@@ -36,9 +36,9 @@ import static java.util.Objects.requireNonNull;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
 import static uk.co.real_logic.benchmarks.aeron.remote.FailoverConstants.ECHO_MESSAGE_LENGTH;
-import static uk.co.real_logic.benchmarks.aeron.remote.FailoverConstants.LEADER_STEP_DOWN_FLAG;
-import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.*;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.FILE_EXTENSION;
 import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.Status.OK;
+import static uk.co.real_logic.benchmarks.remote.PersistedHistogram.newPersistedHistogram;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.loadPropertiesFiles;
 import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemProperties;
 
@@ -50,6 +50,7 @@ public final class FailoverTestRig implements FailoverListener
     private final NanoClock clock;
     private final PersistedHistogram persistedHistogram;
     private final ValueRecorder valueRecorder;
+    private final FailoverControlClient controlClient;
 
     private final long[] generationTimestamps;
     private final long[] ackTimestamps;
@@ -57,22 +58,35 @@ public final class FailoverTestRig implements FailoverListener
     private int sendPosition;
     private int ackPosition;
 
-    private final int failoverSequence;
+    private long failoverAt;
+    private long failoverRequestedAt;
     private boolean failoverRequested;
+    private long restartAt;
+    private long restartRequestedAt;
+    private boolean restartRequested;
     private boolean synced = true;
 
-    public FailoverTestRig(final Configuration configuration)
+    public FailoverTestRig(final Configuration configuration, final FailoverConfiguration failoverConfiguration)
     {
-        this(configuration, new ClusterFailoverTransceiver());
-    }
-
-    public FailoverTestRig(final Configuration configuration, final FailoverTransceiver transceiver)
-    {
-        this(configuration, transceiver, System.out, SystemNanoClock.INSTANCE, newPersistedHistogram(configuration));
+        this(configuration, failoverConfiguration, new ClusterFailoverTransceiver());
     }
 
     public FailoverTestRig(
         final Configuration configuration,
+        final FailoverConfiguration failoverConfiguration,
+        final FailoverTransceiver transceiver)
+    {
+        this(configuration,
+            failoverConfiguration,
+            transceiver,
+            System.out,
+            SystemNanoClock.INSTANCE,
+            newPersistedHistogram(configuration));
+    }
+
+    public FailoverTestRig(
+        final Configuration configuration,
+        final FailoverConfiguration failoverConfiguration,
         final FailoverTransceiver transceiver,
         final PrintStream out,
         final NanoClock clock,
@@ -90,8 +104,9 @@ public final class FailoverTestRig implements FailoverListener
         generationTimestamps = new long[totalMessages];
         ackTimestamps = new long[totalMessages];
 
-        failoverSequence = configuration.warmupIterations() * configuration.warmupMessageRate() +
-            configuration.messageRate(); // 1s after warmup
+        controlClient = new FailoverControlClient(failoverConfiguration.controlEndpoints());
+
+        failoverAt = restartAt = clock.nanoTime() + TimeUnit.DAYS.toNanos(1);
     }
 
     private Configuration validate(final Configuration configuration)
@@ -136,6 +151,7 @@ public final class FailoverTestRig implements FailoverListener
                 configuration.messageRate(),
                 configuration.messageLength(),
                 configuration.batchSize());
+            failoverAt = clock.nanoTime() + TimeUnit.SECONDS.toNanos(1);
             runTest(configuration.iterations(), configuration.messageRate());
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
@@ -161,7 +177,7 @@ public final class FailoverTestRig implements FailoverListener
         }
         finally
         {
-            CloseHelper.closeAll(transceiver, persistedHistogram);
+            CloseHelper.closeAll(transceiver, persistedHistogram, controlClient);
         }
     }
 
@@ -184,7 +200,18 @@ public final class FailoverTestRig implements FailoverListener
                 writer.write(generationTimestamp + "," + ackTimestamp);
                 writer.newLine();
             }
+
+            final long t0 = generationTimestamps[startIndex];
+            writeAnnotation("failover", failoverRequestedAt, t0, writer);
+            writeAnnotation("restart", restartRequestedAt, t0, writer);
         }
+    }
+
+    private void writeAnnotation(final String name, final long timestamp, final long t0, final BufferedWriter writer)
+        throws IOException
+    {
+        final double relativeTimeSeconds = (timestamp - t0) / 1e9;
+        writer.write(String.format("#annotation:%d,\"%s\",%f%n", timestamp, name, relativeTimeSeconds));
     }
 
     private void runTest(final int durationSeconds, final int messageRate)
@@ -236,6 +263,22 @@ public final class FailoverTestRig implements FailoverListener
                 throw new RuntimeException("Timed out");
             }
 
+            if (now - failoverAt >= 0 && !failoverRequested)
+            {
+                failoverRequestedAt = clock.nanoTime();
+                controlClient.sendStepDownCommand();
+                failoverRequested = true;
+                workCount++;
+            }
+
+            if (now - restartAt >= 0 && !restartRequested)
+            {
+                restartRequestedAt = clock.nanoTime();
+                controlClient.sendRestartCommand();
+                restartRequested = true;
+                workCount++;
+            }
+
             idleStrategy.idle(workCount);
         }
 
@@ -251,16 +294,10 @@ public final class FailoverTestRig implements FailoverListener
 
         final int sequence = sendPosition;
         final long timestamp = generationTimestamps[sendPosition];
-        final int flags = (sequence == failoverSequence && !failoverRequested) ? LEADER_STEP_DOWN_FLAG : 0;
 
-        if (transceiver.trySendEcho(sequence, timestamp, flags))
+        if (transceiver.trySendEcho(sequence, timestamp))
         {
             sendPosition++;
-
-            if (flags != 0)
-            {
-                failoverRequested = true;
-            }
 
             return 1;
         }
@@ -273,7 +310,7 @@ public final class FailoverTestRig implements FailoverListener
         out.println("Established session " + sessionId + " with leader node " + leaderMemberId);
     }
 
-    public void onEchoMessage(final int sequence, final long timestamp, final int flags)
+    public void onEchoMessage(final int sequence, final long timestamp)
     {
         final long now = clock.nanoTime();
 
@@ -298,6 +335,11 @@ public final class FailoverTestRig implements FailoverListener
         synced = true;
 
         out.println("Synced, will resume sending from " + expectedSequence + ", had to rewind " + diff);
+
+        if (failoverRequested && !restartRequested)
+        {
+            restartAt = clock.nanoTime() + TimeUnit.SECONDS.toNanos(6);
+        }
     }
 
     public void onNewLeader(final int leaderMemberId)
@@ -319,7 +361,8 @@ public final class FailoverTestRig implements FailoverListener
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
 
         final Configuration configuration = Configuration.fromSystemProperties();
+        final FailoverConfiguration failoverConfiguration = FailoverConfiguration.fromSystemProperties();
 
-        new FailoverTestRig(configuration).run();
+        new FailoverTestRig(configuration, failoverConfiguration).run();
     }
 }

@@ -23,16 +23,16 @@ public final class FailoverConstants
     public static final int MESSAGE_HEADER_LENGTH = SIZE_OF_INT;
 
     public static final int ECHO_MESSAGE_TYPE = 0;
-    public static final int ECHO_FLAGS_OFFSET = MESSAGE_HEADER_LENGTH;
-    public static final int ECHO_TIMESTAMP_OFFSET = ECHO_FLAGS_OFFSET + SIZE_OF_INT;
-    public static final int ECHO_SEQUENCE_OFFSET = ECHO_TIMESTAMP_OFFSET + SIZE_OF_LONG;
-    public static final int ECHO_MESSAGE_LENGTH = ECHO_SEQUENCE_OFFSET + SIZE_OF_INT;
+    public static final int ECHO_SEQUENCE_OFFSET = MESSAGE_HEADER_LENGTH;
+    public static final int ECHO_TIMESTAMP_OFFSET = ECHO_SEQUENCE_OFFSET + SIZE_OF_INT;
+    public static final int ECHO_MESSAGE_LENGTH = ECHO_TIMESTAMP_OFFSET + SIZE_OF_LONG;
 
     public static final int SYNC_MESSAGE_TYPE = 1;
     public static final int SYNC_SEQUENCE_OFFSET = MESSAGE_HEADER_LENGTH;
     public static final int SYNC_MESSAGE_LENGTH = SYNC_SEQUENCE_OFFSET + SIZE_OF_INT;
 
-    public static final int LEADER_STEP_DOWN_FLAG = 1;
+    public static final int LEADER_STEP_DOWN_COMMAND = 1;
+    public static final int RESTART_COMMAND = 2;
 
     private FailoverConstants()
     {
