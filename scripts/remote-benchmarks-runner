@@ -130,12 +130,12 @@ function collect_environment_info()
   local output_path="${2}"
   local java_home="${3}"
 
-  execute_remote_command "${SSH_CLIENT_NODE}" "${scripts_path}/collect-environment-info $output_path $java_home; true && exit"
+  execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${scripts_path}/collect-environment-info $output_path $java_home; true && exit"
 }
 
 function download_results()
 {
-  local archive="/home/${SSH_USER}/$(date '+%Y-%m-%d-%H-%M-%S')_${1}_${2}.tar.gz"
+  local archive="/home/${SSH_CLIENT_USER}/$(date '+%Y-%m-%d-%H-%M-%S')_${1}_${2}.tar.gz"
   local results_dir="${3}"
   local dest_dir="${4}"
 

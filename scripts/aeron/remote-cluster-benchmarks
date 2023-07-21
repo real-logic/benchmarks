@@ -552,8 +552,10 @@ do
             for (( n=0; n<CLUSTER_SIZE; n++ ))
             do
               echo -e "\nStopping Cluster node ${n}..."
+              ssh_user=SSH_CLUSTER_USER${n}
+              ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_NODE${n}
-              execute_remote_command "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); true && exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); true && exit"
             done
           done
         done
