@@ -216,6 +216,7 @@ function start_cluster_node()
   local archive_conductor_cpu_var=NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
   local consensus_module_cpu_var=NODE${node_id}_CONSENSUS_MODULE_CPU_CORE
   local clustered_service_cpu_var=NODE${node_id}_CLUSTERED_SERVICE_CPU_CORE
+  local extra_properties_var=NODE${node_id}_EXTRA_PROPERTIES
   echo "
     export JAVA_HOME=\"${!java_home_var}\" \
     ; $(kill_java_process "${cluster_node_class_name}") \
@@ -241,7 +242,8 @@ function start_cluster_node()
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false \
-    -Duk.co.real_logic.benchmarks.aeron.remote.cluster.service=${cluster_service}\" \
+    -Duk.co.real_logic.benchmarks.aeron.remote.cluster.service=${cluster_service} \
+    ${!extra_properties_var:-}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
@@ -460,7 +462,8 @@ do
             -Daeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}\
             ${client_ingress_endpoints}\
             -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
-            -Daeron.cluster.message.timeout=300000000000\"\
+            -Daeron.cluster.message.timeout=300000000000\
+            ${CLIENT_EXTRA_PROPERTIES:-}\"\
             && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\"\
             ; $(kill_java_process "${client_class_name}")\
             ; ${client_driver}\

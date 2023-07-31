@@ -77,6 +77,12 @@ final class AeronUtil
     static final String IDLE_STRATEGY_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.idle.strategy";
     static final String CONNECTION_TIMEOUT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.connection.timeout";
     static final int FRAGMENT_LIMIT = getInteger(FRAGMENT_LIMIT_PROP_NAME, 10);
+    static final String FAILOVER_CONTROL_SERVER_HOSTNAME_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.cluster.failover.control.server.hostname";
+    static final String FAILOVER_CONTROL_SERVER_PORT_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.cluster.failover.control.server.port";
+    static final String FAILOVER_CONTROL_ENDPOINTS_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.cluster.failover.control.endpoints";
 
     private AeronUtil()
     {

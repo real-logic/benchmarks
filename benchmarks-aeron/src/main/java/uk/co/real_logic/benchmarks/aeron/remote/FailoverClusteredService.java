@@ -28,6 +28,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2LongCounterMap;
 import org.agrona.concurrent.IdleStrategy;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.checkPublicationResult;
 import static uk.co.real_logic.benchmarks.aeron.remote.FailoverConstants.*;
@@ -36,12 +38,12 @@ public final class FailoverClusteredService implements ClusteredService
 {
     private final Long2LongCounterMap expectedSequenceBySessionId = new Long2LongCounterMap(-1);
     private final BufferClaim bufferClaim = new BufferClaim();
-    private final FailoverManager failoverManager;
+    private final AtomicReference<Cluster.Role> roleRef;
     private Cluster cluster;
 
-    public FailoverClusteredService(final FailoverManager failoverManager)
+    public FailoverClusteredService(final AtomicReference<Cluster.Role> roleRef)
     {
-        this.failoverManager = failoverManager;
+        this.roleRef = roleRef;
     }
 
     public void onStart(final Cluster cluster, final Image snapshotImage)
@@ -84,7 +86,6 @@ public final class FailoverClusteredService implements ClusteredService
         final int offset,
         final int length)
     {
-        final int flags = buffer.getInt(offset + ECHO_FLAGS_OFFSET);
         final int sequence = buffer.getInt(offset + ECHO_SEQUENCE_OFFSET);
 
         final long expected = expectedSequenceBySessionId.getAndIncrement(session.id());
@@ -92,11 +93,6 @@ public final class FailoverClusteredService implements ClusteredService
         {
             throw new IllegalStateException("expected sequence " + expected + ", but got " + sequence +
                 " from session " + session.id());
-        }
-
-        if (flags == LEADER_STEP_DOWN_FLAG && cluster.role() == Cluster.Role.LEADER)
-        {
-            failoverManager.stepDown();
         }
 
         final IdleStrategy idleStrategy = cluster.idleStrategy();
@@ -165,9 +161,11 @@ public final class FailoverClusteredService implements ClusteredService
 
     public void onRoleChange(final Cluster.Role newRole)
     {
+        roleRef.set(newRole);
     }
 
     public void onTerminate(final Cluster cluster)
     {
+        roleRef.set(null);
     }
 }

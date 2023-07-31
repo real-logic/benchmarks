@@ -84,7 +84,7 @@ public final class ClusterFailoverTransceiver implements FailoverTransceiver, Eg
         return aeronCluster.pollEgress();
     }
 
-    public boolean trySendEcho(final int sequence, final long timestamp, final int flags)
+    public boolean trySendEcho(final int sequence, final long timestamp)
     {
         final AeronCluster aeronCluster = this.aeronCluster;
         final BufferClaim bufferClaim = this.bufferClaim;
@@ -96,9 +96,8 @@ public final class ClusterFailoverTransceiver implements FailoverTransceiver, Eg
             final int offset = bufferClaim.offset() + SESSION_HEADER_LENGTH;
 
             buffer.putInt(offset, ECHO_MESSAGE_TYPE);
-            buffer.putInt(offset + ECHO_FLAGS_OFFSET, flags);
-            buffer.putLong(offset + ECHO_TIMESTAMP_OFFSET, timestamp);
             buffer.putInt(offset + ECHO_SEQUENCE_OFFSET, sequence);
+            buffer.putLong(offset + ECHO_TIMESTAMP_OFFSET, timestamp);
 
             bufferClaim.commit();
 
@@ -147,11 +146,10 @@ public final class ClusterFailoverTransceiver implements FailoverTransceiver, Eg
         final int messageType = buffer.getInt(offset);
         if (messageType == ECHO_MESSAGE_TYPE)
         {
-            final int flags = buffer.getInt(offset + ECHO_FLAGS_OFFSET);
-            final long timestamp = buffer.getLong(offset + ECHO_TIMESTAMP_OFFSET);
             final int sequence = buffer.getInt(offset + ECHO_SEQUENCE_OFFSET);
+            final long timestamp = buffer.getLong(offset + ECHO_TIMESTAMP_OFFSET);
 
-            listener.onEchoMessage(sequence, timestamp, flags);
+            listener.onEchoMessage(sequence, timestamp);
         }
         else if (messageType == SYNC_MESSAGE_TYPE)
         {
