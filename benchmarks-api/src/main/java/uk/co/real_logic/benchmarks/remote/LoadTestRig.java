@@ -192,7 +192,7 @@ public final class LoadTestRig
 
             if (totalNumberOfMessages == sentMessages)
             {
-                reportProgress(startTimeNs, nowNs, sentMessages);
+                reportProgress(startTimeNs, nowNs, sentMessages, iterations);
                 break;
             }
 
@@ -206,7 +206,7 @@ public final class LoadTestRig
                 {
                     if (nowNs >= nextReportTimeNs)
                     {
-                        reportProgress(startTimeNs, nowNs, sentMessages);
+                        reportProgress(startTimeNs, nowNs, sentMessages, iterations);
                         nextReportTimeNs += NANOS_PER_SECOND;
                     }
 
@@ -245,7 +245,7 @@ public final class LoadTestRig
 
             if (nowNs >= nextReportTimeNs)
             {
-                reportProgress(startTimeNs, nowNs, sentMessages);
+                reportProgress(startTimeNs, nowNs, sentMessages, iterations);
                 nextReportTimeNs += NANOS_PER_SECOND;
             }
         }
@@ -277,11 +277,12 @@ public final class LoadTestRig
         return sentMessages;
     }
 
-    private void reportProgress(final long startTimeNs, final long nowNs, final long sentMessages)
+    private void reportProgress(final long startTimeNs, final long nowNs, final long sentMessages, final int iterations)
     {
         final long elapsedSeconds = round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
-        final long sendRate = 0d == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
-        out.format("Send rate: %,d msgs/sec%n", sendRate);
+        final long sendRate = 0 == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
+        out.format(
+            "Send rate: %,d msgs/sec (%d of %d)%n", sendRate, 0 == elapsedSeconds ? 1 : elapsedSeconds, iterations);
     }
 
     private void warnIfTargetRateNotAchieved(final long sentMessages, final long expectedTotalNumberOfMessages)
