@@ -28,6 +28,7 @@ required_vars=(
   "CLIENT_DRIVER_SENDER_CPU_CORE"
   "CLIENT_DRIVER_RECEIVER_CPU_CORE"
   "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
+  "CLIENT_NON_ISOLATED_CPU_CORES"
   "CLIENT_CPU_NODE"
   "CLIENT_INGRESS_CHANNEL"
   "CLIENT_INGRESS_ENDPOINTS"
@@ -46,6 +47,7 @@ required_vars=(
   "_ARCHIVE_CONDUCTOR_CPU_CORE"
   "_CONSENSUS_MODULE_CPU_CORE"
   "_CLUSTERED_SERVICE_CPU_CORE"
+  "_NON_ISOLATED_CPU_CORES"
   "_CPU_NODE"
   "_CLUSTER_DIR"
   "_CLUSTER_CONSENSUS_CHANNEL"
@@ -211,6 +213,7 @@ function start_cluster_node()
   local archive_control_channel_var=NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
   local archive_replication_channel_var=NODE${node_id}_ARCHIVE_REPLICATION_CHANNEL
   local cpu_node_var=NODE${node_id}_CPU_NODE
+  local non_isolated_cpu_cores_var=NODE${node_id}_NON_ISOLATED_CPU_CORES
   local archive_recorder_cpu_var=NODE${node_id}_ARCHIVE_RECORDER_CPU_CORE
   local archive_replayer_cpu_var=NODE${node_id}_ARCHIVE_REPLAYER_CPU_CORE
   local archive_conductor_cpu_var=NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
@@ -244,7 +247,7 @@ function start_cluster_node()
     -Daeron.archive.recording.events.enabled=false \
     -Duk.co.real_logic.benchmarks.aeron.remote.cluster.service=${cluster_service} \
     ${!extra_properties_var:-}\" \
-    && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
+    && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
     ; $(pin_thread \${pid} "archive-replaye" "${!archive_replayer_cpu_var}") \
@@ -270,6 +273,7 @@ function start_cluster_backup_node()
   local archive_control_response_channel_var=BACKUP_NODE${node_id}_ARCHIVE_CONTROL_RESPONSE_CHANNEL
   local archive_replication_channel_var=BACKUP_NODE${node_id}_ARCHIVE_REPLICATION_CHANNEL
   local cpu_node_var=BACKUP_NODE${node_id}_CPU_NODE
+  local non_isolated_cpu_cores_var=BACKUP_NODE${node_id}_NON_ISOLATED_CPU_CORES
   local archive_recorder_cpu_var=BACKUP_NODE${node_id}_ARCHIVE_RECORDER_CPU_CORE
   local archive_replayer_cpu_var=BACKUP_NODE${node_id}_ARCHIVE_REPLAYER_CPU_CORE
   local archive_conductor_cpu_var=BACKUP_NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
@@ -296,7 +300,7 @@ function start_cluster_backup_node()
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false\" \
-    && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} ${!benchmarks_path_var}/scripts/aeron/cluster-backup-node & \
+    && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-backup-node & \
     $(await_java_process_start "${cluster_backup_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
     ; $(pin_thread \${pid} "archive-replaye" "${!archive_replayer_cpu_var}") \
@@ -322,31 +326,31 @@ aeron.sender.io.vector.capacity=${max_messages_per_send}\n \
 \" > ${scripts_path}/benchmark.properties"
 
 drivers['java']="${driver_properties}; \
-      $(start_media_driver "${scripts_path}/media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+      $(start_media_driver "${scripts_path}/media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['java-onload']="${driver_properties}; \
       export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
-      && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+      && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['c']="${driver_properties}; \
-      $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+      $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['c-onload']="${driver_properties}; \
       export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
-      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['c-ef-vi']="${driver_properties}; \
       export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
       AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
       AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
       AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
-      && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+      && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['c-dpdk']="${driver_properties}; \
       export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var \
       AERON_DPDK_LOCAL_IPV4_ADDRESS=driver_aeron_dpdk_local_ipv4_address_var \
       ${dpdk_config_overrides} \
-      && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+      && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['c-ats']="${driver_properties}; \
         export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
@@ -354,7 +358,7 @@ drivers['c-ats']="${driver_properties}; \
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['c-ats-onload']="${driver_properties}; \
         export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
@@ -363,7 +367,7 @@ drivers['c-ats-onload']="${driver_properties}; \
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+        && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['c-ats-ef-vi']="${driver_properties}; \
         export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
@@ -374,7 +378,7 @@ drivers['c-ats-ef-vi']="${driver_properties}; \
         AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
         AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
         AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
-        && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 drivers['c-ats-dpdk']="${driver_properties}; \
         export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var \
@@ -384,7 +388,7 @@ drivers['c-ats-dpdk']="${driver_properties}; \
         AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
         AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
         AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
-        && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_cpu_node_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+        && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
 
 if [ "${#client_drivers[@]}" != "${#server_drivers[@]}" ]
 then
@@ -424,6 +428,7 @@ do
       client_driver="${drivers[${client_md}]//driver_mtu_var/${mtu}}"
       client_driver="${client_driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
       client_driver="${client_driver//driver_cpu_node_var/${CLIENT_CPU_NODE}}"
+      client_driver="${client_driver//driver_non_isolated_cpu_cores_var/${CLIENT_NON_ISOLATED_CPU_CORES}}"
       client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
       client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
       client_driver="${client_driver//driver_receiver_cpu_core_var/${CLIENT_DRIVER_RECEIVER_CPU_CORE}}"
@@ -502,6 +507,7 @@ do
               ssh_node=SSH_CLUSTER_NODE${n}
               server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
               server_cpu_node=NODE${n}_DRIVER_CPU_NODE
+              server_non_isolated_cpu_cores=NODE${n}_NON_ISOLATED_CPU_CORES
               server_driver_conductor_cpu_core=NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
               server_driver_sender_cpu_core=NODE${n}_DRIVER_SENDER_CPU_CORE
               server_driver_receiver_cpu_core=NODE${n}_DRIVER_RECEIVER_CPU_CORE
@@ -510,6 +516,7 @@ do
               server_driver="${drivers[${server_md}]//driver_mtu_var/${mtu}}"
               server_driver="${server_driver//benchmarks_path_var/${!server_benchmarks_path}}"
               server_driver="${server_driver//driver_cpu_node_var/${!server_cpu_node}}"
+              server_driver="${server_driver//driver_non_isolated_cpu_cores_var/${!server_non_isolated_cpu_cores}}"
               server_driver="${server_driver//driver_conductor_cpu_core_var/${!server_driver_conductor_cpu_core}}"
               server_driver="${server_driver//driver_sender_cpu_core_var/${!server_driver_sender_cpu_core}}"
               server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
@@ -524,6 +531,7 @@ do
               ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
               server_benchmarks_path=BACKUP_NODE${n}_BENCHMARKS_PATH
               server_cpu_node=BACKUP_NODE${n}_DRIVER_CPU_NODE
+              server_non_isolated_cpu_cores=BACKUP_NODE${n}_NON_ISOLATED_CPU_CORES
               server_driver_conductor_cpu_core=BACKUP_NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
               server_driver_sender_cpu_core=BACKUP_NODE${n}_DRIVER_SENDER_CPU_CORE
               server_driver_receiver_cpu_core=BACKUP_NODE${n}_DRIVER_RECEIVER_CPU_CORE
@@ -532,6 +540,7 @@ do
               server_driver="${drivers[${server_md}]//driver_mtu_var/${mtu}}"
               server_driver="${server_driver//benchmarks_path_var/${!server_benchmarks_path}}"
               server_driver="${server_driver//driver_cpu_node_var/${!server_cpu_node}}"
+              server_driver="${server_driver//driver_non_isolated_cpu_cores_var/${!server_non_isolated_cpu_cores}}"
               server_driver="${server_driver//driver_conductor_cpu_core_var/${!server_driver_conductor_cpu_core}}"
               server_driver="${server_driver//driver_sender_cpu_core_var/${!server_driver_sender_cpu_core}}"
               server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"

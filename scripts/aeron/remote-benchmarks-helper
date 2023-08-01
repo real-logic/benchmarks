@@ -26,6 +26,7 @@ function start_media_driver()
   local executable=${1}
   local wrapper_script=${2}
   local cpu_node=${3}
+  local non_isolated_cpu_cores=${4}
   local resolve_media_driver_pid
   local driver_thread
   local manually_pin_driver_threads=0
@@ -47,14 +48,14 @@ function start_media_driver()
   local command=""
   command="$(stop_media_driver); \
   rm -rf /dev/shm/aeron; \
-  numactl --membind=${cpu_node} --cpunodebind=${cpu_node} ${wrapper_script} \"${executable}\" & ${resolve_media_driver_pid}"
+  numactl --membind=${cpu_node} --cpunodebind=${cpu_node} --physcpubind=\"${non_isolated_cpu_cores}\" ${wrapper_script} \"${executable}\" & ${resolve_media_driver_pid}"
   command+="; echo \"media_driver_pid='\${media_driver_pid}'\""
 
   if [[ "${manually_pin_driver_threads}" -eq 1 ]]
   then
-    command+="; $(pin_thread \${media_driver_pid} "receiver" "${6}")"
-    command+="; $(pin_thread \${media_driver_pid} "sender" "${5}")"
-    command+="; $(pin_thread \${media_driver_pid} "${driver_thread}" "${4}")"
+    command+="; $(pin_thread \${media_driver_pid} "${driver_thread}" "${5}")"
+    command+="; $(pin_thread \${media_driver_pid} "sender" "${6}")"
+    command+="; $(pin_thread \${media_driver_pid} "receiver" "${7}")"
   fi
 
   echo ${command}
