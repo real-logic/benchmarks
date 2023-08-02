@@ -173,7 +173,7 @@ class LoadTestRigTest
         loadTestRig.run();
 
         verify(out).printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
-            "total but managed to send only %,d messages!%n", 15L, 2L);
+            "total but managed to send only %,d messages (loss %.4f%%)!%n", 15L, 2L, 86.66666666666667d);
     }
 
     @Test

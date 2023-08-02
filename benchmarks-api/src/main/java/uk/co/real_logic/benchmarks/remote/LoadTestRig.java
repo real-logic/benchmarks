@@ -262,8 +262,13 @@ public final class LoadTestRig
                 idleStrategy.idle();
                 if (clock.nanoTime() >= deadline)
                 {
-                    out.printf("%n*** WARNING: Not all messages were received after %ds deadline!",
-                        NANOSECONDS.toSeconds(RECEIVE_DEADLINE_NS));
+                    out.printf(
+                        "%n*** WARNING: Not all messages were received after %ds deadline: expected %,d vs received " +
+                        "%,d (loss %.4f%%)!%n",
+                        NANOSECONDS.toSeconds(RECEIVE_DEADLINE_NS),
+                        sentMessages,
+                        receivedMessageCount,
+                        100.0 - (100.0 * receivedMessageCount / sentMessages));
                     break;
                 }
             }
@@ -289,9 +294,12 @@ public final class LoadTestRig
     {
         if (expectedTotalNumberOfMessages != sentMessages)
         {
-            out.printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
-                "total but managed to send only %,d messages!%n", expectedTotalNumberOfMessages,
-                sentMessages);
+            out.printf(
+                "%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
+                "total but managed to send only %,d messages (loss %.4f%%)!%n",
+                expectedTotalNumberOfMessages,
+                sentMessages,
+                100.0 - (100.0 * sentMessages / expectedTotalNumberOfMessages));
         }
     }
 
