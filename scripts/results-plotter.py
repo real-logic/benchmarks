@@ -35,6 +35,7 @@ def main():
     parser.add_argument('--exclude', help='comma-separated list of fields to filter for (exclude). for. multiple values should be repeated, Example: msgsize=1344,scenario=java')
     parser.add_argument('--percentiles-range-max', default='99.9999', help='maximum percentiles to display. Example: 99.999')
     parser.add_argument('--title', help='custom title for the graphs')
+    parser.add_argument('--recursive', help='recursively looks for aggregated results in child directories', action='store_true')
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
     group_by = args.group_by.strip().split(',')
@@ -46,17 +47,32 @@ def main():
         path = os.path.abspath(dir)
         if not os.path.exists(path):
             sys.exit('Directory ' + dir + ' does not exist.')
-        if not has_processable_files(path):
-            sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1_p2=v2_...]_sha=<sha1>-report.hgrm".format(path))
-        paths.append(path)
 
-    plot_graphs(paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
+        if args.recursive:
+            lookup_results_recursive(path, paths)
+        else:
+            if not has_processable_files(path):
+                sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1_p2=v2_...]_sha=<sha1>-report.hgrm".format(path))
+            paths.append(path)
+
+    output_path = args.directories[0]
+
+    plot_graphs(output_path, paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
 
 
-def plot_graphs(paths, percentiles_range_max, regex, group_by, filters, excludes, custom_title):
+def lookup_results_recursive(path, paths):
+    for dir in os.scandir(path):
+        if dir.is_dir():
+            new_path = os.path.abspath(dir)
+            if has_processable_files(new_path):
+                # stop here, keep the dir
+                paths.append(new_path)
+            else:
+                lookup_results_recursive(new_path, paths)
+
+def plot_graphs(output_path, paths, percentiles_range_max, regex, group_by, filters, excludes, custom_title):
     """Plots the graphs by invoking hdr-plot"""
 
-    output_path = paths[0]
     files = []
     for path in paths:
         files.extend(list((parse_file_name(file) for file in os.scandir(path) if re.match(regex, file.name))))
