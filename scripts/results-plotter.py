@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--percentiles-range-max', default='99.9999', help='maximum percentiles to display. Example: 99.999')
     parser.add_argument('--title', help='custom title for the graphs')
     parser.add_argument('--recursive', help='recursively looks for aggregated results in child directories', action='store_true')
+    parser.add_argument('--hide-field-name', help='hides the field names in labels')
     args = parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
     group_by = args.group_by.strip().split(',')
@@ -57,7 +58,7 @@ def main():
 
     output_path = args.directories[0]
 
-    plot_graphs(output_path, paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title)
+    plot_graphs(output_path, paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title, args.hide_field_name)
 
 
 def lookup_results_recursive(path, paths):
@@ -70,7 +71,8 @@ def lookup_results_recursive(path, paths):
             else:
                 lookup_results_recursive(new_path, paths)
 
-def plot_graphs(output_path, paths, percentiles_range_max, regex, group_by, filters, excludes, custom_title):
+
+def plot_graphs(output_path, paths, percentiles_range_max, regex, group_by, filters, excludes, custom_title, hide_field_name):
     """Plots the graphs by invoking hdr-plot"""
 
     files = []
@@ -93,8 +95,12 @@ def plot_graphs(output_path, paths, percentiles_range_max, regex, group_by, filt
                 field_values = []
                 for field in group_by:
                     # rename this for hdr-plot
+                    valid_field_name = field.replace('.', '-')
                     valid_field_value = f.fields[field].replace('.', '-')
-                    field_values.append(valid_field_value)
+                    if hide_field_name:
+                        field_values.append(valid_field_value)
+                    else:
+                        field_values.append(f'{valid_field_name}={valid_field_value}')
                 grouped_files.append('_'.join(field_values) + '.hgrm')
                 shutil.copyfile(f.file.path, os.path.join(tmpdir, '_'.join(field_values) + '.' + 'hgrm'))
 
