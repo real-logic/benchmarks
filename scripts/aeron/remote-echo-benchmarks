@@ -68,6 +68,7 @@ then
   dpdk_config_overrides="AERON_DPDK_MTU=${AERON_DPDK_MTU}"
 fi
 
+channel_parameters=""
 context=""
 mtu_list=(1408 8192)
 onload="onload --profile=latency --force-profiles "
@@ -110,8 +111,13 @@ do
     shift
     shift
     ;;
+  --channel-parameters)
+    channel_parameters="${2}"
+    shift
+    shift
+    ;;
   -h|--help)
-    echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" [--context \"\$context\"] [--onload \"\$onload_command\"] [--mtu \"\$mtu-csv\"]\
+    echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" [--context \"\$context\"] [--onload \"\$onload_command\"] [--mtu \"\$mtu-csv\"] [--channel-parameters \"extra channel parameters\"]\
           the support media drivers are: ${!drivers[*]}"
     exit
     ;;
@@ -256,8 +262,8 @@ do
     server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
     server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
-    destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:13000"
-    source_channel="aeron:udp?endpoint=${SOURCE_IP}:13100"
+    destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:13000${channel_parameters}"
+    source_channel="aeron:udp?endpoint=${SOURCE_IP}:13100${channel_parameters}"
 
     server_interface=''
     if [[ -n "${SERVER_INTERFACE}" ]]
