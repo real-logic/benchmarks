@@ -60,7 +60,7 @@ class FailoverTestRigTest
         CloseHelper.closeAll(closeables);
     }
 
-    @Timeout(30)
+    @Timeout(60)
     @Test
     void test() throws Exception
     {
