@@ -97,17 +97,6 @@ public final class FailoverControlServer implements AutoCloseable
 
     public void close()
     {
-        RuntimeException exception = null;
-
-        try
-        {
-            channel.close();
-        }
-        catch (final IOException e)
-        {
-            exception = new RuntimeException("failed to close channel", e);
-        }
-
         thread.interrupt();
         try
         {
@@ -118,9 +107,13 @@ public final class FailoverControlServer implements AutoCloseable
             Thread.currentThread().interrupt();
         }
 
-        if (exception != null)
+        try
         {
-            throw exception;
+            channel.close();
+        }
+        catch (final IOException e)
+        {
+            throw new UncheckedIOException("failed to close channel", e);
         }
     }
 
