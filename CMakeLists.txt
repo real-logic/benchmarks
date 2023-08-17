@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
-cmake_policy(VERSION 3.14)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
+cmake_policy(VERSION 3.16)
 
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory)"
