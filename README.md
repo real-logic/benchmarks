@@ -220,17 +220,17 @@ Running
 will produce plots in which the histograms are grouped by test scenario by default. It is possible to produce graphs with a different kind of aggregation and to apply filters on the histograms to plot within a directory. Run `./results-plotter.py` (without arguments) in order to get an overview of the capabilities of the plotting script.
 
 ## Other benchmarks (single machine)
-Set of latency benchmarks testing round trip time (RTT) between threads or processes via FIFO data structures and messaging systems.
+Set of latency benchmarks testing round trip time (RTT) between threads or processes (IPC) via FIFO data structures and messaging systems.
 
 ### Java Benchmarks
 
 To run the Java benchmarks execute the Gradle script in the base directory.
 
-    $ ./gradlew runJavaBenchmarks
+    $ ./gradlew runJavaIpcBenchmarks
 
 or just the Aeron benchmarks
 
-    $ ./gradlew runAeronJavaBenchmarks
+    $ ./gradlew runAeronJavaIpcBenchmarks
 
 ### C++ Benchmarks
 
@@ -258,9 +258,9 @@ While the binaries with __Nanomark__ in the name use Nanomark (included in the s
 To pick a specific tag for Aeron, specify `--aeron-git-tag` parameter when invoking `cppbuild` script.
 For example:
 ```bash
-cppbuild/cppbuild --aeron-git-tag="1.27.0"
+cppbuild/cppbuild --aeron-git-tag="1.42.0"
 ```
-will use Aeron `1.27.0` release.
+will use Aeron `1.42.0` release.
 
 License (See LICENSE file for full license)
 -------------------------------------------

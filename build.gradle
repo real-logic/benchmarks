@@ -240,7 +240,7 @@ static def benchmarkJvmArgs() {
     return args.toString()
 }
 
-tasks.register('runJavaBenchmarks', Exec) {
+tasks.register('runJavaIpcBenchmarks', Exec) {
     dependsOn ':benchmarks-all:shadowJar'
     commandLine toolchainLauncher.get().executablePath,
     '-jar', 'benchmarks-all/build/libs/benchmarks.jar',
@@ -248,7 +248,7 @@ tasks.register('runJavaBenchmarks', Exec) {
     '-wi', '3', '-w', '1s', '-i', '5', '-r', '1s', '-tu', 'ns', '-f', '5'
 }
 
-tasks.register('runAeronJavaBenchmarks', Exec) {
+tasks.register('runAeronJavaIpcBenchmarks', Exec) {
     dependsOn ':benchmarks-all:shadowJar'
     commandLine toolchainLauncher.get().executablePath,
     '-jar', 'benchmarks-all/build/libs/benchmarks.jar',
