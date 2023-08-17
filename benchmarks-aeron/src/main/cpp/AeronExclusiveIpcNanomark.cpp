@@ -211,10 +211,10 @@ public:
         }
 
         std::shared_ptr<Image> imageSharedPtr = subscription->imageByIndex(0);
-        Image& image = *imageSharedPtr;
+        Image &image = *imageSharedPtr;
         aeron_spsc_concurrent_array_queue_t *q = &responseQueues[0];
         auto handler =
-            [q](AtomicBuffer& buffer, util::index_t offset, util::index_t, Header&)
+            [q](AtomicBuffer &buffer, util::index_t offset, util::index_t, Header &)
             {
                 const std::int32_t value = buffer.getInt32(offset);
                 if (value >= 0)

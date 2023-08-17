@@ -174,7 +174,7 @@ static void BM_C_SpscQueueThroughput(benchmark::State &state)
     }
 
     state.SetItemsProcessed(totalMsgs);
-    state.SetBytesProcessed(totalMsgs * sizeof(int));
+    state.SetBytesProcessed(static_cast<std::int64_t>(totalMsgs * sizeof(int)));
 
     running.store(false);
 
