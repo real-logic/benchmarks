@@ -112,8 +112,8 @@ static void BM_C_SpscQueueLatency(benchmark::State &state)
         }
     }
 
-    state.SetItemsProcessed(state.iterations());
-    state.SetBytesProcessed(state.iterations() * sizeof(int));
+    state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
+    state.SetBytesProcessed(static_cast<std::int64_t>(state.iterations() * sizeof(int)));
 
     running.store(false);
 
