@@ -22,7 +22,6 @@
 #include <thread>
 #include <atomic>
 #include <array>
-#include <cinttypes>
 
 #include "NanoMark.h"
 
