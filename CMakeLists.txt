@@ -62,8 +62,8 @@ set(
 
 ExternalProject_Add(
     hdr_histogram
-    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.2.zip
-    URL_MD5 6050b8c88a2979545522e9fcb17da9bb
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-0.11.8.zip
+    URL_MD5 e993a4a08ad084ea0a895e7b2502de99
     CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};-DCMAKE_C_STANDARD=99;-DHDR_LOG_REQUIRED=OFF
     PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram"
     BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/hdr_histogram/src/hdr_histogram-build/src/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}"
@@ -189,7 +189,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 # google benchmark
 include_directories(${GOOGLE_BENCHMARK_SOURCE_DIR}/include)
 # Hdr Histogram
-include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
+include_directories(${HDRHISTOGRAM_SOURCE_DIR}/include/hdr)
 include_directories(${AERON_SOURCE_DIR}/aeron-client/src/main/cpp)
 include_directories(${AERON_SOURCE_DIR}/aeron-client/src/main/c)
 include_directories(${AERON_SOURCE_DIR}/aeron-driver/src/main/c)
