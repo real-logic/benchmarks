@@ -506,7 +506,7 @@ do
               ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_NODE${n}
               server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
-              server_cpu_node=NODE${n}_DRIVER_CPU_NODE
+              server_cpu_node=NODE${n}_CPU_NODE
               server_non_isolated_cpu_cores=NODE${n}_NON_ISOLATED_CPU_CORES
               server_driver_conductor_cpu_core=NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
               server_driver_sender_cpu_core=NODE${n}_DRIVER_SENDER_CPU_CORE
@@ -530,7 +530,7 @@ do
               echo -e "\nStarting Cluster Backup node ${n}..."
               ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
               server_benchmarks_path=BACKUP_NODE${n}_BENCHMARKS_PATH
-              server_cpu_node=BACKUP_NODE${n}_DRIVER_CPU_NODE
+              server_cpu_node=BACKUP_NODE${n}_CPU_NODE
               server_non_isolated_cpu_cores=BACKUP_NODE${n}_NON_ISOLATED_CPU_CORES
               server_driver_conductor_cpu_core=BACKUP_NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
               server_driver_sender_cpu_core=BACKUP_NODE${n}_DRIVER_SENDER_CPU_CORE
