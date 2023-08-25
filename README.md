@@ -126,6 +126,7 @@ export CLIENT_CPU_NODE=<CPU node (socket) to run the client processes on (both M
 export SOURCE_IP=<IP address of the client machine>
 export CLIENT_INTERFACE=${SOURCE_IP}/24
 export CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS=${SOURCE_IP%.*}.1
+export CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS=
 export SERVER_BENCHMARKS_PATH=<directory containing the unpacked benchmarks.tar>
 export SERVER_JAVA_HOME=<path to JAVA_HOME (JDK 8+)>
 export SERVER_DRIVER_CONDUCTOR_CPU_CORE=<CPU core to pin the 'conductor' thread>
@@ -137,6 +138,7 @@ export SERVER_CPU_NODE=<CPU node (socket) to run the server processes on (both M
 export DESTINATION_IP=<IP address of the server machine>
 export SERVER_INTERFACE=${DESTINATION_IP}/24
 export SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS=${DESTINATION_IP%.*}.1
+export SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS=
 
 # (Optional) Overrides for the runner configuration options 
 export MESSAGE_LENGTH="288" # defaults to "32,288,1344"
