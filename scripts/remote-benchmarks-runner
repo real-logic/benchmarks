@@ -135,7 +135,7 @@ function collect_environment_info()
 
 function download_results()
 {
-  local archive="/home/${SSH_CLIENT_USER}/$(date '+%Y-%m-%d-%H-%M-%S')_${1}_${2}.tar.gz"
+  local archive="/tmp/$(date '+%Y-%m-%d-%H-%M-%S')_${1}_${2}.tar.gz"
   local results_dir="${3}"
   local dest_dir="${4}"
 
