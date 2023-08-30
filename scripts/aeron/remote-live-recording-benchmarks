@@ -59,7 +59,7 @@ then
   exit 1
 fi
 
-ef_vi_rxq_size=${AERON_EF_VI_RXQ_SIZE:-1024} # ef_vi receive queue size
+ef_vi_rxq_size=${AERON_EF_VI_RXQ_SIZE:-2048} # ef_vi receive queue size
 ef_vi_txq_size=${AERON_EF_VI_TXQ_SIZE:-2048} # ef_vi send queue size
 so_sndbuf="${AERON_SOCKET_SO_SNDBUF:-2m}"
 so_rcvbuf="${AERON_SOCKET_SO_RCVBUF:-2m}"
