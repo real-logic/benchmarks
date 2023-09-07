@@ -30,7 +30,8 @@ required_vars=(
   "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
   "CLIENT_NON_ISOLATED_CPU_CORES"
   "CLIENT_CPU_NODE"
-  "CLIENT_INTERFACE"
+  "CLIENT_DESTINATION_CHANNEL"
+  "CLIENT_SOURCE_CHANNEL"
   "SERVER_JAVA_HOME"
   "SERVER_BENCHMARKS_PATH"
   "SERVER_DRIVER_CONDUCTOR_CPU_CORE"
@@ -39,9 +40,8 @@ required_vars=(
   "SERVER_ECHO_CPU_CORE"
   "SERVER_NON_ISOLATED_CPU_CORES"
   "SERVER_CPU_NODE"
-  "SERVER_INTERFACE"
-  "DESTINATION_IP"
-  "SOURCE_IP")
+  "SERVER_DESTINATION_CHANNEL"
+  "SERVER_SOURCE_CHANNEL")
 
 for var in "${required_vars[@]}"; do
   if [[ -z "${!var+''}" ]]
@@ -68,7 +68,8 @@ then
   dpdk_config_overrides="AERON_DPDK_MTU=${AERON_DPDK_MTU}"
 fi
 
-channel_parameters=""
+destination_stream_id="${DESTINATION_STREAM_ID:-1000000}"
+source_stream_id="${SOURCE_STREAM_ID:-2000000}"
 context=""
 mtu_list=(1408 8192)
 onload="onload --profile=latency --force-profiles "
@@ -111,13 +112,8 @@ do
     shift
     shift
     ;;
-  --channel-parameters)
-    channel_parameters="${2}"
-    shift
-    shift
-    ;;
   -h|--help)
-    echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" [--context \"\$context\"] [--onload \"\$onload_command\"] [--mtu \"\$mtu-csv\"] [--channel-parameters \"extra channel parameters\"]\
+    echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" [--context \"\$context\"] [--onload \"\$onload_command\"] [--mtu \"\$mtu-csv\"]\
           the support media drivers are: ${!drivers[*]}"
     exit
     ;;
@@ -262,24 +258,6 @@ do
     server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${SERVER_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
     server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${SERVER_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
-    destination_channel="aeron:udp?endpoint=${DESTINATION_IP}:13000${channel_parameters}"
-    source_channel="aeron:udp?endpoint=${SOURCE_IP}:13100${channel_parameters}"
-
-    server_interface=''
-    if [[ -n "${SERVER_INTERFACE}" ]]
-    then
-      server_interface="|interface=${SERVER_INTERFACE}"
-    fi
-
-    client_interface=''
-    if [[ -n "${CLIENT_INTERFACE}" ]]
-    then
-      client_interface="|interface=${CLIENT_INTERFACE}"
-    fi
-
-    destination_stream="1000000"
-    source_stream="2000000"
-
     client_class_name="uk.co.real_logic.benchmarks.remote.LoadTestRig"
     server_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
 
@@ -296,10 +274,10 @@ do
     export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
     && ${server_driver} \
     && export JVM_OPTS=\"\
-    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${destination_channel}${server_interface} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${source_channel}${server_interface} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream}\" \
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${SERVER_DESTINATION_CHANNEL} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${SERVER_SOURCE_CHANNEL} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}\" \
     && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${SERVER_NON_ISOLATED_CPU_CORES}\" ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
     $(await_java_process_start "${server_class_name}") \
     ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
@@ -314,10 +292,10 @@ do
       "${stop_server}" \
       "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
       "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-      "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=${destination_channel}${client_interface}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.source.channel=${source_channel}${client_interface}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream}"
+      "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=${CLIENT_DESTINATION_CHANNEL}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL}" \
+      "uk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}"
   done
 done
 
