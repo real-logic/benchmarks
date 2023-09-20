@@ -72,7 +72,7 @@ destination_stream_id="${DESTINATION_STREAM_ID:-1000000}"
 source_stream_id="${SOURCE_STREAM_ID:-2000000}"
 context=""
 mtu_list=(1408 8192)
-onload="onload --profile=latency --force-profiles "
+onload="onload --profile=latency "
 client_drivers=()
 server_drivers=()
 declare -A drivers

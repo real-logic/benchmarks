@@ -98,7 +98,7 @@ fi
 context=""
 file_sync_levels=(0)
 mtu_list=(1408 8192)
-onload="onload --profile=latency --force-profiles "
+onload="onload --profile=latency "
 client_drivers=()
 server_drivers=()
 declare -A drivers

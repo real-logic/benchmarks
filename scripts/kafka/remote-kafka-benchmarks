@@ -50,7 +50,7 @@ fi
 
 context=""
 security_protocols=("PLAINTEXT" "SSL")
-onload="onload --profile=latency --force-profiles"
+onload="onload --profile=latency"
 
 while [[ $# -gt 0 ]]
 do

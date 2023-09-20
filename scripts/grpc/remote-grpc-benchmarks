@@ -62,7 +62,7 @@ fi
 
 context=""
 tls_options=("false" "true")
-onload="onload --profile=latency --force-profiles"
+onload="onload --profile=latency"
 
 while [[ $# -gt 0 ]]
 do
