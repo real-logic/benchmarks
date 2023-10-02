@@ -165,7 +165,7 @@ iterations=${ITERATIONS:-60}
 warmupIterations=${WARMUP_ITERATIONS:-10}
 warmupMessageRate="${WARMUP_MESSAGE_RATE:-25K}"
 
-messageRates=("1001K" "501K" "101K")
+messageRates=("501K" "301K" "101K")
 if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
 then
   IFS=',';
