@@ -23,14 +23,14 @@ set JAVA_OPTIONS=^
   -XX:+UnlockExperimentalVMOptions ^
   -XX:+TrustFinalNonStaticFields ^
   -XX:+UnlockDiagnosticVMOptions ^
+  -XX:+DebugNonSafepoints ^
   -XX:GuaranteedSafepointInterval=300000 ^
   -XX:+UseParallelGC ^
   -Xms4G ^
   -Xmx4G ^
   -XX:+AlwaysPreTouch ^
   -XX:MaxMetaspaceSize=1G ^
-  -XX:ReservedCodeCacheSize=1G ^
-  -XX:+PerfDisableSharedMem
+  -XX:ReservedCodeCacheSize=1G
 
 FOR /F "tokens=3" %%J IN ('"%JAVA_HOME%\bin\java" -version 2^>^&1 ^| findstr version') DO (
   SET "java_version=%%J"
