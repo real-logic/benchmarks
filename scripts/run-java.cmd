@@ -24,7 +24,6 @@ set JAVA_OPTIONS=^
   -XX:+TrustFinalNonStaticFields ^
   -XX:+UnlockDiagnosticVMOptions ^
   -XX:+DebugNonSafepoints ^
-  -XX:GuaranteedSafepointInterval=300000 ^
   -XX:+UseParallelGC ^
   -Xms4G ^
   -Xmx4G ^
