@@ -141,8 +141,8 @@ export SERVER_SOURCE_CHANNEL="${CLIENT_SOURCE_CHANNEL}"
 export SERVER_DESTINATION_CHANNEL="${CLIENT_DESTINATION_CHANNEL}"
 
 # (Optional) Overrides for the runner configuration options 
-export MESSAGE_LENGTH="288" # defaults to "32,288,1344"
-export MESSAGE_RATE="100K"  # defaults to "1M,500K,100K"
+#export MESSAGE_LENGTH="288" # defaults to "32,288,1344"
+#export MESSAGE_RATE="100K"  # defaults to "1M,500K,100K"
 
 # Invoke the actual script and optionally configure specific parameters
 "aeron/remote-echo-benchmarks" --client-drivers "java" --server-drivers "java" --mtu 8K --context "my-test"
