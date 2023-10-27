@@ -27,7 +27,6 @@ import java.util.Properties;
 import java.util.function.BiFunction;
 
 import static java.lang.Math.min;
-import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -53,6 +52,7 @@ public final class LoadTestRig
     private final PrintStream out;
     private final NanoClock clock;
     private final PersistedHistogram persistedHistogram;
+    private final ProgressReporter progressReporter;
 
     public LoadTestRig(final Configuration configuration)
     {
@@ -85,7 +85,8 @@ public final class LoadTestRig
             transceiverFactory.apply(nanoClock, persistedHistogram.valueRecorder()),
             out,
             nanoClock,
-            persistedHistogram);
+            persistedHistogram,
+            new AsyncProgressReporter(out));
     }
 
     LoadTestRig(
@@ -93,13 +94,15 @@ public final class LoadTestRig
         final MessageTransceiver messageTransceiver,
         final PrintStream out,
         final NanoClock clock,
-        final PersistedHistogram persistedHistogram)
+        final PersistedHistogram persistedHistogram,
+        final ProgressReporter progressReporter)
     {
         this.configuration = requireNonNull(configuration);
         this.messageTransceiver = requireNonNull(messageTransceiver);
         this.out = requireNonNull(out);
         this.clock = requireNonNull(clock);
         this.persistedHistogram = requireNonNull(persistedHistogram);
+        this.progressReporter = progressReporter;
     }
 
     /**
@@ -192,7 +195,7 @@ public final class LoadTestRig
 
             if (totalNumberOfMessages == sentMessages)
             {
-                reportProgress(startTimeNs, nowNs, sentMessages, iterations);
+                progressReporter.reportProgress(startTimeNs, nowNs, sentMessages, iterations);
                 break;
             }
 
@@ -206,7 +209,7 @@ public final class LoadTestRig
                 {
                     if (nowNs >= nextReportTimeNs)
                     {
-                        reportProgress(startTimeNs, nowNs, sentMessages, iterations);
+                        progressReporter.reportProgress(startTimeNs, nowNs, sentMessages, iterations);
                         nextReportTimeNs += NANOS_PER_SECOND;
                     }
 
@@ -245,7 +248,7 @@ public final class LoadTestRig
 
             if (nowNs >= nextReportTimeNs)
             {
-                reportProgress(startTimeNs, nowNs, sentMessages, iterations);
+                progressReporter.reportProgress(startTimeNs, nowNs, sentMessages, iterations);
                 nextReportTimeNs += NANOS_PER_SECOND;
             }
         }
@@ -280,14 +283,6 @@ public final class LoadTestRig
         }
 
         return sentMessages;
-    }
-
-    private void reportProgress(final long startTimeNs, final long nowNs, final long sentMessages, final int iterations)
-    {
-        final long elapsedSeconds = round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
-        final long sendRate = 0 == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
-        out.format(
-            "Send rate: %,d msgs/sec (%d of %d)%n", sendRate, 0 == elapsedSeconds ? 1 : elapsedSeconds, iterations);
     }
 
     private void warnIfTargetRateNotAchieved(final long sentMessages, final long expectedTotalNumberOfMessages)
