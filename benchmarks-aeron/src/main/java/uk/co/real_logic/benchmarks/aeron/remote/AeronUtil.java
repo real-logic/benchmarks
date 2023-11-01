@@ -16,31 +16,51 @@
 package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
+import io.aeron.CncFileDescriptor;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
+import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
+import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableLong;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
+import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.status.CountersReader;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UncheckedIOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
+import static io.aeron.CncFileDescriptor.createCountersMetaDataBuffer;
+import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
 import static io.aeron.CommonContext.IPC_CHANNEL;
 import static io.aeron.Publication.*;
 import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
@@ -51,6 +71,8 @@ import static java.lang.Integer.getInteger;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.Strings.isEmpty;
 import static org.agrona.SystemUtil.parseDuration;
@@ -83,6 +105,7 @@ final class AeronUtil
         "uk.co.real_logic.benchmarks.aeron.remote.cluster.failover.control.server.port";
     static final String FAILOVER_CONTROL_ENDPOINTS_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.cluster.failover.control.endpoints";
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 
     private AeronUtil()
     {
@@ -381,5 +404,128 @@ final class AeronUtil
             System.err.println(context);
             throwable.printStackTrace(System.err);
         };
+    }
+
+    static void dumpAeronStats(final Path resultDir, final File cncFile)
+    {
+        try (PrintWriter statsWriter = newWriter(resultDir.resolve("media-driver-stats.txt"));
+            PrintWriter errorWriter = newWriter(resultDir.resolve("media-driver-errors.txt")))
+        {
+            if (cncFile.exists() && cncFile.length() >= CncFileDescriptor.META_DATA_LENGTH)
+            {
+                final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(
+                    cncFile, FileChannel.MapMode.READ_ONLY, "CnC file");
+                final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+                try
+                {
+                    final CountersReader countersReader = new CountersReader(
+                        createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer),
+                        createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+
+                    countersReader.forEach(
+                        (counterId, label) ->
+                        {
+                            final long value = countersReader.getCounterValue(counterId);
+                            statsWriter.format("%3d: %,20d - %s%n", counterId, value, label);
+                        });
+
+                    saveErrors(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), errorWriter);
+                }
+                finally
+                {
+                    IoUtil.unmap(cncByteBuffer);
+                }
+            }
+        }
+        catch (final IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    static void dumpArchiveErrors(final Path resultsDir, final File archiveDir)
+    {
+        try (PrintWriter writer = newWriter(resultsDir.resolve("archive-errors.txt")))
+        {
+            final File file = resolveMarkFile(archiveDir, ArchiveMarkFile.FILENAME, ArchiveMarkFile.LINK_FILENAME);
+            if (file.exists() && file.length() > 0)
+            {
+                try (ArchiveMarkFile markFile = new ArchiveMarkFile(
+                    file.getParentFile(), file.getName(), SystemEpochClock.INSTANCE, 0, (s) -> {}))
+                {
+                    saveErrors(markFile.errorBuffer(), writer);
+                }
+            }
+        }
+        catch (final IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    static void dumpClusterErrors(
+        final Path resultFile, final File clusterDir, final String markFileName, final String linkFileName)
+    {
+        try (PrintWriter writer = newWriter(resultFile))
+        {
+            final File file = resolveMarkFile(clusterDir, markFileName, linkFileName);
+            if (file.exists() && file.length() > 0)
+            {
+                try (ClusterMarkFile markFile = new ClusterMarkFile(
+                    file.getParentFile(), file.getName(), SystemEpochClock.INSTANCE, 0, (s) -> {}))
+                {
+                    saveErrors(markFile.errorBuffer(), writer);
+                }
+            }
+        }
+        catch (final IOException e)
+        {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    static File resolveMarkFile(final File parentDir, final String markFileName, final String linkFileName)
+    {
+        final File linkFile = new File(parentDir, linkFileName);
+        if (linkFile.exists() && linkFile.isFile())
+        {
+            try
+            {
+                final byte[] bytes = Files.readAllBytes(linkFile.toPath());
+                final String markFileDirPath = new String(bytes, US_ASCII).trim();
+                return new File(markFileDirPath, markFileName);
+            }
+            catch (final IOException ex)
+            {
+                throw new RuntimeException("failed to read link file=" + linkFile, ex);
+            }
+        }
+        else
+        {
+            return new File(parentDir, markFileName);
+        }
+    }
+
+    private static PrintWriter newWriter(final Path resultFile) throws IOException
+    {
+        return new PrintWriter(Files.newBufferedWriter(resultFile, US_ASCII, WRITE, CREATE, TRUNCATE_EXISTING));
+    }
+
+    private static void saveErrors(final AtomicBuffer errorBuffer, final PrintWriter writer)
+    {
+        int distinctErrorCount = 0;
+        if (ErrorLogReader.hasErrors(errorBuffer))
+        {
+            distinctErrorCount = ErrorLogReader.read(
+                errorBuffer,
+                (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+                    writer.format(
+                        "%n%d observations from %s to %s for:%n %s%n",
+                        observationCount,
+                        DATE_FORMAT.format(new Date(firstObservationTimestamp)),
+                        DATE_FORMAT.format(new Date(lastObservationTimestamp)),
+                        encodedException));
+        }
+        writer.format("%d distinct errors observed.%n", distinctErrorCount);
     }
 }
