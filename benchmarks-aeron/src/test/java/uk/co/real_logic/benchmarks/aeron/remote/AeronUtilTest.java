@@ -21,6 +21,7 @@ import io.aeron.archive.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.IoUtil;
 import org.agrona.MarkFile;
+import org.agrona.SemanticVersion;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
@@ -294,6 +295,8 @@ class AeronUtilTest
         final CachedEpochClock epochClock = new CachedEpochClock();
         final Exception error1 = new Exception(new RuntimeException("nested exception"));
         final AssertionError error2 = new AssertionError("error2");
+        final long startTimestampMs = 562378465238L;
+        final int cncVersion = SemanticVersion.compose(3, 4, 19);
         try
         {
             final UnsafeBuffer metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
@@ -305,8 +308,9 @@ class AeronUtilTest
                 4096,
                 SECONDS.toNanos(5),
                 512 * 1024,
-                562378465238L,
+                startTimestampMs,
                 212);
+            metaDataBuffer.putInt(CncFileDescriptor.CNC_VERSION_FIELD_OFFSET, cncVersion);
 
             final CountersManager countersManager = new CountersManager(
                 createCountersMetaDataBuffer(cncByteBuffer, metaDataBuffer),
@@ -340,6 +344,10 @@ class AeronUtilTest
         dumpAeronStats(cncFile.toFile(), statsFile, errorsFile);
 
         assertEquals(Arrays.asList(
+            "CnC version: " + SemanticVersion.toString(cncVersion),
+            "PID: 212",
+            "Start time: " + errorDateFormat.format(new Date(startTimestampMs)),
+            "================================================================",
             "  0:                   42 - test 1",
             "  1:                   15 - another one",
             "  2: -9,223,372,036,854,775,808 - last"),

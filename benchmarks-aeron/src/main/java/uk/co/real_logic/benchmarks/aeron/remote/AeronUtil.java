@@ -32,6 +32,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.SemanticVersion;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.IdleStrategy;
@@ -418,6 +419,15 @@ final class AeronUtil
                 final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 try
                 {
+                    statsWriter.format("CnC version: %s%n",
+                        SemanticVersion.toString(cncMetaDataBuffer.getInt(CncFileDescriptor.CNC_VERSION_FIELD_OFFSET)));
+                    statsWriter.format("PID: %d%n",
+                        cncMetaDataBuffer.getLong(CncFileDescriptor.PID_FIELD_OFFSET));
+                    statsWriter.format("Start time: %s%n",
+                        DATE_FORMAT.format(
+                            new Date(cncMetaDataBuffer.getLong(CncFileDescriptor.START_TIMESTAMP_FIELD_OFFSET))));
+                    statsWriter.println("================================================================");
+
                     final CountersReader countersReader = new CountersReader(
                         createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer),
                         createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
