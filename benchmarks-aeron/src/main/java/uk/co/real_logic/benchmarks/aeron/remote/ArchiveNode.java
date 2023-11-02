@@ -118,7 +118,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
                 outputDir.resolve(prefix + "archive-errors.txt"));
             AeronUtil.dumpAeronStats(
                 server.archivingMediaDriver.archive.context().aeron().context().cncFile(),
-                outputDir.resolve(prefix + "counters.txt"),
+                outputDir.resolve(prefix + "aeron-stat.txt"),
                 outputDir.resolve(prefix + "errors.txt")
             );
         }

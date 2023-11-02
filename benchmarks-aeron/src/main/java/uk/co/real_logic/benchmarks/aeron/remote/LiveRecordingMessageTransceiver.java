@@ -130,7 +130,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
             logsDir.resolve(prefix + "archive-errors.txt"));
         AeronUtil.dumpAeronStats(
             aeronArchive.context().aeron().context().cncFile(),
-            logsDir.resolve(prefix + "counters.txt"),
+            logsDir.resolve(prefix + "aeron-stat.txt"),
             logsDir.resolve(prefix + "errors.txt"));
 
         closeAll(publication, recordingEventsSubscription, subscription);

@@ -92,7 +92,7 @@ public final class EchoMessageTransceiver extends MessageTransceiver
         final String prefix = getClass().getSimpleName() + "-";
         AeronUtil.dumpAeronStats(
             aeron.context().cncFile(),
-            logsDir.resolve(prefix + "counters.txt"),
+            logsDir.resolve(prefix + "aeron-stat.txt"),
             logsDir.resolve(prefix + "errors.txt"));
         closeAll(subscription, publication);
 

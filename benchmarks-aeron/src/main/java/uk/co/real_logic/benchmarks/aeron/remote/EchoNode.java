@@ -147,7 +147,7 @@ public final class EchoNode implements AutoCloseable, Runnable
             final String prefix = server.getClass().getSimpleName() + "-";
             AeronUtil.dumpAeronStats(
                 server.aeron.context().cncFile(),
-                outputDir.resolve(prefix + "counters.txt"),
+                outputDir.resolve(prefix + "aeron-stat.txt"),
                 outputDir.resolve(prefix + "errors.txt"));
         }
     }

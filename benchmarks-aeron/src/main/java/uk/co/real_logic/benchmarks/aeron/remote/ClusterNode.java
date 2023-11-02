@@ -158,7 +158,7 @@ public final class ClusterNode
                 archive.context().archiveDir(), outputDir.resolve(prefix + "archive-errors.txt"));
             AeronUtil.dumpAeronStats(
                 archive.context().aeron().context().cncFile(),
-                outputDir.resolve(prefix + "counters.txt"),
+                outputDir.resolve(prefix + "aeron-stat.txt"),
                 outputDir.resolve(prefix + "errors.txt"));
         }
     }

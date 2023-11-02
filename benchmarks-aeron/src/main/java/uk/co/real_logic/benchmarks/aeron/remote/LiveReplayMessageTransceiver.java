@@ -108,7 +108,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         final String prefix = getClass().getSimpleName() + "-";
         AeronUtil.dumpAeronStats(
             aeronArchive.context().aeron().context().cncFile(),
-            logsDir.resolve(prefix + "counters.txt"),
+            logsDir.resolve(prefix + "aeron-stat.txt"),
             logsDir.resolve(prefix + "errors.txt"));
         closeAll(publication, subscription);
 
