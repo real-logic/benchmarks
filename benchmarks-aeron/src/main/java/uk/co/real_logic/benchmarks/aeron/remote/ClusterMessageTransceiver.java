@@ -31,6 +31,8 @@ import org.agrona.concurrent.NanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
+import java.nio.file.Path;
+
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
@@ -40,6 +42,7 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
     private final BufferClaim bufferClaim = new BufferClaim();
     private final MediaDriver mediaDriver;
     private final AeronCluster.Context aeronClusterContext;
+    private Path logsDir;
     private AeronCluster aeronCluster;
 
     public ClusterMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
@@ -60,6 +63,7 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
 
     public void init(final Configuration configuration) throws Exception
     {
+        logsDir = configuration.logsDir();
         aeronCluster = AeronCluster.connect(aeronClusterContext);
 
         while (true)
@@ -79,6 +83,11 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
 
     public void destroy()
     {
+        final String prefix = getClass().getSimpleName() + "-";
+        AeronUtil.dumpAeronStats(
+            aeronCluster.context().aeron().context().cncFile(),
+            logsDir.resolve(prefix + "counters.txt"),
+            logsDir.resolve(prefix + "errors.txt"));
         CloseHelper.closeAll(aeronCluster, mediaDriver);
     }
 

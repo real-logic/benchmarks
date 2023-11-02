@@ -27,6 +27,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 
+import java.nio.file.Path;
+
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static java.util.Objects.requireNonNull;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.yieldUninterruptedly;
@@ -39,6 +41,7 @@ public final class ClusterFailoverTransceiver implements FailoverTransceiver, Eg
     private AeronCluster aeronCluster;
     private IdleStrategy idleStrategy;
     private FailoverListener listener;
+    private Path logsDir;
 
     public ClusterFailoverTransceiver()
     {
@@ -52,6 +55,7 @@ public final class ClusterFailoverTransceiver implements FailoverTransceiver, Eg
 
     public void init(final Configuration configuration, final FailoverListener listener)
     {
+        logsDir = configuration.logsDir();
         if (aeronCluster != null)
         {
             throw new IllegalStateException("Already initialised");
@@ -186,6 +190,11 @@ public final class ClusterFailoverTransceiver implements FailoverTransceiver, Eg
     {
         if (aeronCluster != null)
         {
+            final String prefix = getClass().getSimpleName() + "-";
+            AeronUtil.dumpAeronStats(
+                aeronCluster.context().aeron().context().cncFile(),
+                logsDir.resolve(prefix + "counters.txt"),
+                logsDir.resolve(prefix + "errors.txt"));
             aeronCluster.close();
         }
     }

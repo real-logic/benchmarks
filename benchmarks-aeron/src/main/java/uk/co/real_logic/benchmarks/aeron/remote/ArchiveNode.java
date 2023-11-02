@@ -20,7 +20,9 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.concurrent.SystemNanoClock;
+import uk.co.real_logic.benchmarks.remote.Configuration;
 
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -101,6 +103,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
     public static void main(final String[] args)
     {
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
+        final Path outputDir = Configuration.resolveLogsDir();
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);
@@ -108,6 +111,16 @@ public final class ArchiveNode implements AutoCloseable, Runnable
         try (ArchiveNode server = new ArchiveNode(running))
         {
             server.run();
+
+            final String prefix = server.getClass().getSimpleName() + "-";
+            AeronUtil.dumpArchiveErrors(
+                server.archivingMediaDriver.archive.context().archiveDir(),
+                outputDir.resolve(prefix + "archive-errors.txt"));
+            AeronUtil.dumpAeronStats(
+                server.archivingMediaDriver.archive.context().aeron().context().cncFile(),
+                outputDir.resolve(prefix + "counters.txt"),
+                outputDir.resolve(prefix + "errors.txt")
+            );
         }
     }
 }

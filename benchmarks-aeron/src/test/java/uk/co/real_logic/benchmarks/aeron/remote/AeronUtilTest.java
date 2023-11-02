@@ -272,7 +272,7 @@ class AeronUtilTest
         assertFalse(Files.exists(errorsFile));
         assertFalse(Files.exists(cncFile));
 
-        dumpAeronStats(destDir, cncFile.toFile());
+        dumpAeronStats(cncFile.toFile(), statsFile, errorsFile);
 
         assertTrue(Files.exists(statsFile));
         assertEquals(0, Files.size(statsFile));
@@ -284,8 +284,8 @@ class AeronUtilTest
     void dumpAeronStatsShouldSaveCountersAndErrors(
         @TempDir final Path destDir, @TempDir final Path other) throws IOException
     {
-        final Path statsFile = destDir.resolve("media-driver-stats.txt");
-        final Path errorsFile = destDir.resolve("media-driver-errors.txt");
+        final Path statsFile = destDir.resolve("aeron-stat.txt");
+        final Path errorsFile = other.resolve("error-stat.txt");
         assertFalse(Files.exists(statsFile));
         assertFalse(Files.exists(errorsFile));
         final Path cncFile = other.resolve("cnc.dat");
@@ -337,7 +337,7 @@ class AeronUtilTest
             IoUtil.unmap(cncByteBuffer);
         }
 
-        dumpAeronStats(destDir, cncFile.toFile());
+        dumpAeronStats(cncFile.toFile(), statsFile, errorsFile);
 
         assertEquals(Arrays.asList(
             "  0:                   42 - test 1",
@@ -359,7 +359,7 @@ class AeronUtilTest
         final Path errorsFile = resultsDir.resolve("archive-errors.txt");
         assertFalse(Files.exists(errorsFile));
 
-        dumpArchiveErrors(resultsDir, archiveDir.toFile());
+        dumpArchiveErrors(archiveDir.toFile(), errorsFile);
 
         assertTrue(Files.exists(errorsFile));
         assertEquals(0, Files.size(errorsFile));
@@ -371,7 +371,7 @@ class AeronUtilTest
         @TempDir final Path archiveDir,
         @TempDir final Path markFileDir) throws IOException
     {
-        final Path errorsFile = resultsDir.resolve("archive-errors.txt");
+        final Path errorsFile = resultsDir.resolve("my.test");
         assertFalse(Files.exists(errorsFile));
         final Path markFile = markFileDir.resolve(ArchiveMarkFile.FILENAME);
         MarkFile.ensureMarkFileLink(archiveDir.toFile(), markFile.toFile(), ArchiveMarkFile.LINK_FILENAME);
@@ -408,7 +408,7 @@ class AeronUtilTest
         }
 
 
-        dumpArchiveErrors(resultsDir, archiveDir.toFile());
+        dumpArchiveErrors(archiveDir.toFile(), errorsFile);
 
         final String errors = new String(Files.readAllBytes(errorsFile), US_ASCII);
         assertTrue(errors.startsWith("\n4 observations from " + errorDateFormat.format(new Date(startTime))));

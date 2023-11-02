@@ -347,8 +347,11 @@ class LoadTestRigTest
             () -> "Too long: duration=" + durationNs + " vs maxDurationNs=" + maxDurationNs);
         final File[] files = tempDir.toFile().listFiles();
         assertNotNull(files);
-        assertEquals(1, files.length);
+        assertEquals(2, files.length);
         assertEquals(1, Stream.of(files).filter((f) -> f.getName().endsWith(FILE_EXTENSION)).count());
+        assertEquals(
+            tempDir.resolve("logs").toFile(),
+            Stream.of(files).filter(File::isDirectory).findFirst().orElse(null));
     }
 
     @Test
@@ -372,9 +375,12 @@ class LoadTestRigTest
 
         final File[] files = tempDir.toFile().listFiles();
         assertNotNull(files);
-        assertEquals(2, files.length);
+        assertEquals(3, files.length);
         assertEquals(1, Stream.of(files).filter((f) -> f.getName().endsWith(FILE_EXTENSION)).count());
         assertEquals(1, Stream.of(files).filter((f) -> f.getName().endsWith(HISTORY_FILE_EXTENSION)).count());
+        assertEquals(
+            tempDir.resolve("logs").toFile(),
+            Stream.of(files).filter(File::isDirectory).findFirst().orElse(null));
     }
 
     @Test

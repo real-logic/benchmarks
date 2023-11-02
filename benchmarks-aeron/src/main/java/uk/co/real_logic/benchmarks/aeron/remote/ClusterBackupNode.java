@@ -20,8 +20,10 @@ import io.aeron.cluster.ClusterBackup;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.SystemEpochClock;
+import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Properties;
 
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.BACKUP;
@@ -37,6 +39,7 @@ public final class ClusterBackupNode
     public static void main(final String[] args)
     {
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
+        final Path outputDir = Configuration.resolveLogsDir();
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)
@@ -59,6 +62,19 @@ public final class ClusterBackupNode
             ClusterBackup clusterBackup = ClusterBackup.launch(clusterBackupContext))
         {
             new ShutdownSignalBarrier().await();
+
+            final String prefix = ClusterBackupNode.class.getSimpleName() + "-";
+            AeronUtil.dumpClusterErrors(
+                outputDir.resolve(prefix + "backup-errors.txt"),
+                clusterBackup.context().clusterDir(),
+                ClusterMarkFile.FILENAME,
+                ClusterMarkFile.LINK_FILENAME);
+            AeronUtil.dumpArchiveErrors(
+                archive.context().archiveDir(), outputDir.resolve(prefix + "archive-errors.txt"));
+            AeronUtil.dumpAeronStats(
+                archive.context().aeron().context().cncFile(),
+                outputDir.resolve(prefix + "counters.txt"),
+                outputDir.resolve(prefix + "errors.txt"));
         }
     }
 }

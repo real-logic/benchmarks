@@ -27,8 +27,10 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.SystemEpochClock;
+import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,9 +47,11 @@ import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemPro
 
 public final class ClusterNode
 {
+    @SuppressWarnings("MethodLength")
     public static void main(final String[] args)
     {
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
+        final Path outputDir = Configuration.resolveLogsDir();
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)
@@ -66,7 +70,8 @@ public final class ClusterNode
         awaitPathExists(aeronDirectoryName);
 
         final EpochClock epochClock = SystemEpochClock.INSTANCE;
-        final String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
+        final File clusterDir = new File(ClusteredServiceContainer.Configuration.clusterDirName());
+        final int memberId = ConsensusModule.Configuration.clusterMemberId();
 
         final Component<ConsensusModule> consensusModule = new Component<>(() ->
         {
@@ -74,8 +79,9 @@ public final class ClusterNode
                 .errorHandler(printingErrorHandler("consensus-module"))
                 .archiveContext(aeronArchiveContext.clone())
                 .aeronDirectoryName(aeronDirectoryName)
-                .clusterDirectoryName(clusterDirectoryName)
-                .epochClock(epochClock);
+                .clusterDir(clusterDir)
+                .epochClock(epochClock)
+                .clusterMemberId(memberId);
 
             ctx.clusterMarkFile(new ClusterMarkFile(
                 new File(aeronDirectoryName, ClusterMarkFile.FILENAME),
@@ -89,6 +95,7 @@ public final class ClusterNode
 
         final Type type = Type.fromSystemProperty();
         final AtomicReference<Cluster.Role> roleRef = new AtomicReference<>();
+        final int serviceId = ClusteredServiceContainer.Configuration.serviceId();
 
         final Component<ClusteredServiceContainer> clusteredServiceContainer = new Component<>(() ->
         {
@@ -108,8 +115,9 @@ public final class ClusterNode
                 .errorHandler(printingErrorHandler("service-container"))
                 .archiveContext(aeronArchiveContext.clone())
                 .aeronDirectoryName(aeronDirectoryName)
-                .clusterDirectoryName(clusterDirectoryName)
-                .epochClock(epochClock);
+                .clusterDir(clusterDir)
+                .epochClock(epochClock)
+                .serviceId(serviceId);
 
             ctx.clusterMarkFile(new ClusterMarkFile(
                 new File(aeronDirectoryName, ClusterMarkFile.markFilenameForService(ctx.serviceId())),
@@ -121,7 +129,7 @@ public final class ClusterNode
             return ClusteredServiceContainer.launch(ctx);
         });
 
-        IoUtil.delete(new File(clusterDirectoryName), false);
+        IoUtil.delete(clusterDir, false);
 
         try (Archive archive = Archive.launch(archiveContext);
             Component<ConsensusModule> cm = consensusModule.start();
@@ -131,9 +139,27 @@ public final class ClusterNode
                 consensusModule,
                 clusteredServiceContainer,
                 roleRef)
-            )
+        )
         {
             new ShutdownSignalBarrier().await();
+
+            final String prefix = ClusterNode.class.getSimpleName() + "-node-" + memberId + "-";
+            AeronUtil.dumpClusterErrors(
+                outputDir.resolve(prefix + "clustered-service-errors.txt"),
+                clusterDir,
+                ClusterMarkFile.markFilenameForService(serviceId),
+                ClusterMarkFile.linkFilenameForService(serviceId));
+            AeronUtil.dumpClusterErrors(
+                outputDir.resolve(prefix + "consensus-module-errors.txt"),
+                clusterDir,
+                ClusterMarkFile.FILENAME,
+                ClusterMarkFile.LINK_FILENAME);
+            AeronUtil.dumpArchiveErrors(
+                archive.context().archiveDir(), outputDir.resolve(prefix + "archive-errors.txt"));
+            AeronUtil.dumpAeronStats(
+                archive.context().aeron().context().cncFile(),
+                outputDir.resolve(prefix + "counters.txt"),
+                outputDir.resolve(prefix + "errors.txt"));
         }
     }
 

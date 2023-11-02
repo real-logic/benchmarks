@@ -29,6 +29,8 @@ import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
+import java.nio.file.Path;
+
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -54,6 +56,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
             onMessageReceived(timestamp, checksum);
         });
+    private Path logsDir;
 
     public LiveReplayMessageTransceiver(
         final NanoClock nanoClock,
@@ -77,6 +80,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public void init(final Configuration configuration)
     {
+        logsDir = configuration.logsDir();
         final Aeron aeron = aeronArchive.context().aeron();
 
         publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
@@ -101,6 +105,11 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public void destroy()
     {
+        final String prefix = getClass().getSimpleName() + "-";
+        AeronUtil.dumpAeronStats(
+            aeronArchive.context().aeron().context().cncFile(),
+            logsDir.resolve(prefix + "counters.txt"),
+            logsDir.resolve(prefix + "errors.txt"));
         closeAll(publication, subscription);
 
         if (ownsArchiveClient)

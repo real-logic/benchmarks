@@ -15,7 +15,11 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ExclusivePublication;
+import io.aeron.Image;
+import io.aeron.ImageControlledFragmentAssembler;
+import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.client.RecordingEventsListener;
@@ -28,6 +32,8 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
+
+import java.nio.file.Path;
 
 import static io.aeron.ChannelUri.addSessionId;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -64,6 +70,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     private RecordingEventsAdapter recordingEventsAdapter;
     private Subscription subscription;
     private Image image;
+    private Path logsDir;
 
     public LiveRecordingMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
@@ -85,6 +92,8 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
 
     public void init(final Configuration configuration)
     {
+        logsDir = configuration.logsDir();
+
         final AeronArchive.Context context = aeronArchive.context();
         final Aeron aeron = context.aeron();
 
@@ -115,6 +124,15 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
 
     public void destroy()
     {
+        final String prefix = getClass().getSimpleName() + "-";
+        AeronUtil.dumpArchiveErrors(
+            archivingMediaDriver.archive.context().archiveDir(),
+            logsDir.resolve(prefix + "archive-errors.txt"));
+        AeronUtil.dumpAeronStats(
+            aeronArchive.context().aeron().context().cncFile(),
+            logsDir.resolve(prefix + "counters.txt"),
+            logsDir.resolve(prefix + "errors.txt"));
+
         closeAll(publication, recordingEventsSubscription, subscription);
 
         if (ownsArchiveClient)

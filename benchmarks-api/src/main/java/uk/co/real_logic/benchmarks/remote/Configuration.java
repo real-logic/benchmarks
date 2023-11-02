@@ -23,13 +23,16 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.TreeMap;
 
@@ -172,6 +175,7 @@ public final class Configuration
 
     private static final int MAX_K_VALUE = Integer.MAX_VALUE / 1000;
     private static final int MAX_M_VALUE = Integer.MAX_VALUE / 1_000_000;
+    private static final String LOGS_DIR = "logs";
     private static final MessageDigest SHA256;
 
     static
@@ -195,6 +199,7 @@ public final class Configuration
     private final Class<? extends MessageTransceiver> messageTransceiverClass;
     private final IdleStrategy idleStrategy;
     private final Path outputDirectory;
+    private final Path logsDir;
     private final String rate;
     private final String outputFileNamePrefix;
     private final boolean trackHistory;
@@ -213,6 +218,7 @@ public final class Configuration
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
         this.idleStrategy = requireNonNull(builder.idleStrategy, "'" + IDLE_STRATEGY_PROP_NAME + "' cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
+        logsDir = resolveLogsDir(outputDirectory);
         this.trackHistory = builder.trackHistory;
         rate = rateAsString();
         outputFileNamePrefix = computeFileNamePrefix(builder.outputFileNamePrefix, builder.systemProperties);
@@ -316,6 +322,16 @@ public final class Configuration
     public Path outputDirectory()
     {
         return outputDirectory;
+    }
+
+    /**
+     * Directory to store logs and diagnostics files.
+     *
+     * @return logs dir location.
+     */
+    public Path logsDir()
+    {
+        return logsDir;
     }
 
     /**
@@ -632,6 +648,30 @@ public final class Configuration
         throw new IllegalStateException("could not find 'certificates' directory under: " + userDir.toAbsolutePath());
     }
 
+    /**
+     * Resolve directory to store the log files in.
+     *
+     * @return directory to store the results and the other outputs.
+     */
+    public static Path resolveLogsDir()
+    {
+        final String path = getProperty(OUTPUT_DIRECTORY_PROP_NAME);
+        Objects.requireNonNull(path, OUTPUT_DIRECTORY_PROP_NAME);
+        final Path directory = Paths.get(path).resolve(LOGS_DIR);
+        if (!Files.exists(directory))
+        {
+            try
+            {
+                return Files.createDirectories(directory);
+            }
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return directory;
+    }
+
     private static int checkValueRange(final int value, final int minValue, final int maxValue, final String propName)
     {
         if (value < minValue)
@@ -811,6 +851,23 @@ public final class Configuration
         }
 
         return outputDirectory.toAbsolutePath();
+    }
+
+    private static Path resolveLogsDir(final Path outputDirectory)
+    {
+        final Path logsDir = outputDirectory.resolve(LOGS_DIR);
+        if (!Files.exists(logsDir))
+        {
+            try
+            {
+                return Files.createDirectory(logsDir);
+            }
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return logsDir;
     }
 
     static String computeSha256(final Properties properties)

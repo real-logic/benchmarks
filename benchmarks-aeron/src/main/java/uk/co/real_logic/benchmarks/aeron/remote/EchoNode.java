@@ -24,8 +24,10 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
+import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -133,6 +135,7 @@ public final class EchoNode implements AutoCloseable, Runnable
     {
         Thread.currentThread().setName("echo");
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
+        final Path outputDir = Configuration.resolveLogsDir();
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(running);
@@ -140,6 +143,12 @@ public final class EchoNode implements AutoCloseable, Runnable
         try (EchoNode server = new EchoNode(running))
         {
             server.run();
+
+            final String prefix = server.getClass().getSimpleName() + "-";
+            AeronUtil.dumpAeronStats(
+                server.aeron.context().cncFile(),
+                outputDir.resolve(prefix + "counters.txt"),
+                outputDir.resolve(prefix + "errors.txt"));
         }
     }
 }

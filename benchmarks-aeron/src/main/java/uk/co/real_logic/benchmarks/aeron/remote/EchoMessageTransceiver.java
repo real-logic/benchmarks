@@ -28,6 +28,8 @@ import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
+import java.nio.file.Path;
+
 import static io.aeron.Aeron.connect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -48,6 +50,7 @@ public final class EchoMessageTransceiver extends MessageTransceiver
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
+    private Path logsDir;
     ExclusivePublication publication;
     private Subscription subscription;
     private Image image;
@@ -72,6 +75,7 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public void init(final Configuration configuration)
     {
+        logsDir = configuration.logsDir();
         publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
         subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
 
@@ -85,6 +89,11 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public void destroy()
     {
+        final String prefix = getClass().getSimpleName() + "-";
+        AeronUtil.dumpAeronStats(
+            aeron.context().cncFile(),
+            logsDir.resolve(prefix + "counters.txt"),
+            logsDir.resolve(prefix + "errors.txt"));
         closeAll(subscription, publication);
 
         if (ownsAeronClient)

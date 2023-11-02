@@ -406,10 +406,10 @@ final class AeronUtil
         };
     }
 
-    static void dumpAeronStats(final Path resultDir, final File cncFile)
+    static void dumpAeronStats(final File cncFile, final Path statsFile, final Path errorsFile)
     {
-        try (PrintWriter statsWriter = newWriter(resultDir.resolve("media-driver-stats.txt"));
-            PrintWriter errorWriter = newWriter(resultDir.resolve("media-driver-errors.txt")))
+        try (PrintWriter statsWriter = newWriter(statsFile);
+            PrintWriter errorWriter = newWriter(errorsFile))
         {
             if (cncFile.exists() && cncFile.length() >= CncFileDescriptor.META_DATA_LENGTH)
             {
@@ -443,9 +443,9 @@ final class AeronUtil
         }
     }
 
-    static void dumpArchiveErrors(final Path resultsDir, final File archiveDir)
+    static void dumpArchiveErrors(final File archiveDir, final Path destFile)
     {
-        try (PrintWriter writer = newWriter(resultsDir.resolve("archive-errors.txt")))
+        try (PrintWriter writer = newWriter(destFile))
         {
             final File file = resolveMarkFile(archiveDir, ArchiveMarkFile.FILENAME, ArchiveMarkFile.LINK_FILENAME);
             if (file.exists() && file.length() > 0)
