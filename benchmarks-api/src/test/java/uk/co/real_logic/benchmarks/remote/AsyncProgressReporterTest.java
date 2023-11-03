@@ -15,19 +15,24 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.*;
 
 class AsyncProgressReporterTest
 {
     private final PrintStream out = mock(PrintStream.class);
-    private final AsyncProgressReporter reporter = new AsyncProgressReporter(out);
+    private final OneToOneConcurrentArrayQueue<Runnable> tasks = new OneToOneConcurrentArrayQueue<>(256);
+    private final AsyncProgressReporter reporter = new AsyncProgressReporter(out, tasks);
 
     @Test
     void shouldReportProgressWhenElapsedSecondsIsZero()
@@ -69,5 +74,50 @@ class AsyncProgressReporterTest
         }
         assertNotEquals(Thread.currentThread(), workerThread.get());
         verify(out).format("Send rate: %,d msgs/sec (%d of %d)%n", 8L, 4L, iterations);
+    }
+
+    @Test
+    void shouldCompleteAllTasks()
+    {
+        final AtomicInteger invocationCount = new AtomicInteger();
+        doAnswer(invocation ->
+        {
+            invocationCount.getAndIncrement();
+            return null;
+        }).when(out).format(anyString(), anyLong(), anyLong(), anyInt());
+
+        final int iterations = tasks.capacity();
+        for (int i = 0; i < iterations; i++)
+        {
+            reporter.reportProgress(TimeUnit.SECONDS.toNanos(i), TimeUnit.SECONDS.toNanos(i + 100), 4, 5);
+        }
+
+        while (invocationCount.get() != iterations)
+        {
+            Thread.yield();
+        }
+        verify(out, times(iterations)).format(anyString(), anyLong(), anyLong(), anyInt());
+    }
+
+    @Test
+    void resetWaitsForAllTasksToComplete()
+    {
+        final int samples = 10;
+        final AtomicInteger completedTasks = new AtomicInteger();
+        for (int i = 0; i < samples; i++)
+        {
+            tasks.offer(
+                () ->
+                {
+                    LockSupport.parkNanos(1_000_000);
+                    completedTasks.getAndIncrement();
+                });
+        }
+        assertEquals(samples, tasks.size());
+        assertNotEquals(samples, completedTasks.get());
+
+        reporter.reset();
+        assertEquals(samples, completedTasks.get());
+        assertEquals(0, tasks.size());
     }
 }

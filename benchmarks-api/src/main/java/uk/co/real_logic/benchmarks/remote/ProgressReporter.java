@@ -15,8 +15,9 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
-@FunctionalInterface
 interface ProgressReporter
 {
     void reportProgress(long startTimeNs, long nowNs, long sentMessages, int iterations);
+
+    void reset();
 }

@@ -20,6 +20,7 @@ import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.SystemNanoClock;
 
 import java.io.PrintStream;
@@ -86,7 +87,7 @@ public final class LoadTestRig
             out,
             nanoClock,
             persistedHistogram,
-            new AsyncProgressReporter(out));
+            new AsyncProgressReporter(out, new OneToOneConcurrentArrayQueue<>(16)));
     }
 
     LoadTestRig(
@@ -129,6 +130,7 @@ public final class LoadTestRig
 
                 messageTransceiver.reset();
                 persistedHistogram.reset();
+                progressReporter.reset();
             }
 
             out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload and a" +
@@ -138,6 +140,7 @@ public final class LoadTestRig
                 configuration.messageLength(),
                 configuration.batchSize());
             final long sentMessages = send(configuration.iterations(), configuration.messageRate());
+            progressReporter.reset();
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
             final PersistedHistogram histogram = persistedHistogram;

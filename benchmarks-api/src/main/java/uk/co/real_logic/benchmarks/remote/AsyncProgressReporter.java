@@ -15,8 +15,11 @@
  */
 package uk.co.real_logic.benchmarks.remote;
 
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+
 import java.io.PrintStream;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.Math.round;
@@ -27,12 +30,13 @@ class AsyncProgressReporter implements ProgressReporter
 {
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
     private static final long SLEEP_NANOS = MILLISECONDS.toNanos(1);
-    private final AtomicReference<Runnable> reportTask = new AtomicReference<>();
+    private final OneToOneConcurrentArrayQueue<Runnable> tasks;
     private final PrintStream out;
 
-    AsyncProgressReporter(final PrintStream out)
+    AsyncProgressReporter(final PrintStream out, final OneToOneConcurrentArrayQueue<Runnable> tasks)
     {
-        this.out = out;
+        this.out = Objects.requireNonNull(out);
+        this.tasks = Objects.requireNonNull(tasks);
         final Thread t = new Thread(this::runTask, "progress-reporter");
         t.setDaemon(true);
         t.start();
@@ -40,7 +44,7 @@ class AsyncProgressReporter implements ProgressReporter
 
     public void reportProgress(final long startTimeNs, final long nowNs, final long sentMessages, final int iterations)
     {
-        reportTask.set(() ->
+        tasks.offer(() ->
         {
             final long elapsedSeconds = round((double)(nowNs - startTimeNs) / NANOS_PER_SECOND);
             final long sendRate = 0 == elapsedSeconds ? sentMessages : sentMessages / elapsedSeconds;
@@ -49,14 +53,29 @@ class AsyncProgressReporter implements ProgressReporter
         });
     }
 
+    public void reset()
+    {
+        final AtomicBoolean completed = new AtomicBoolean();
+        final Runnable waitTask = () -> completed.set(true);
+
+        while (!tasks.offer(waitTask))
+        {
+            Thread.yield();
+        }
+
+        while (!completed.get())
+        {
+            LockSupport.parkNanos(SLEEP_NANOS);
+        }
+    }
+
     private void runTask()
     {
         while (true)
         {
-            final Runnable task = reportTask.get();
+            final Runnable task = tasks.poll();
             if (task != null)
             {
-                reportTask.compareAndSet(task, null);
                 task.run();
             }
             else
