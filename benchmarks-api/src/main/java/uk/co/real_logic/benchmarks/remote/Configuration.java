@@ -876,7 +876,7 @@ public final class Configuration
         for (final Map.Entry<Object, Object> entry : properties.entrySet())
         {
             final String key = (String)entry.getKey();
-            if (!OUTPUT_FILE_NAME_PROP_NAME.equals(key))
+            if (!OUTPUT_FILE_NAME_PROP_NAME.equals(key) && !OUTPUT_DIRECTORY_PROP_NAME.equals(key))
             {
                 sortedProperties.put(key, (String)entry.getValue());
             }

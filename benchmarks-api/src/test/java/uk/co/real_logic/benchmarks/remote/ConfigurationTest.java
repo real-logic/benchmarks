@@ -598,7 +598,8 @@ class ConfigurationTest
                 "X", "-100",
                 "y", "2.25",
                 "z", "0",
-                OUTPUT_FILE_NAME_PROP_NAME, "ignore me"),
+                OUTPUT_FILE_NAME_PROP_NAME, "ignore me",
+                OUTPUT_DIRECTORY_PROP_NAME, "and me too"),
                 "8bc055dc860587df8a9234d6721e6a482dd707e204f29895eee08aeeaaaf4432"));
     }
 
