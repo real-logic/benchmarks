@@ -523,19 +523,18 @@ final class AeronUtil
 
     private static void saveErrors(final AtomicBuffer errorBuffer, final PrintWriter writer)
     {
-        int distinctErrorCount = 0;
         if (ErrorLogReader.hasErrors(errorBuffer))
         {
-            distinctErrorCount = ErrorLogReader.read(
+            final int distinctErrorCount = ErrorLogReader.read(
                 errorBuffer,
                 (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                    writer.format(
-                        "%n%d observations from %s to %s for:%n %s%n",
-                        observationCount,
-                        DATE_FORMAT.format(new Date(firstObservationTimestamp)),
-                        DATE_FORMAT.format(new Date(lastObservationTimestamp)),
-                        encodedException));
+                writer.format(
+                "%n%d observations from %s to %s for:%n %s%n",
+                observationCount,
+                DATE_FORMAT.format(new Date(firstObservationTimestamp)),
+                DATE_FORMAT.format(new Date(lastObservationTimestamp)),
+                encodedException));
+            writer.format("%d distinct errors observed.%n", distinctErrorCount);
         }
-        writer.format("%d distinct errors observed.%n", distinctErrorCount);
     }
 }
