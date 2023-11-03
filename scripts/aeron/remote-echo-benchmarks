@@ -229,6 +229,8 @@ do
 done
 
 test_type="aeron-echo"
+test_dir="${test_type}-$(date '+%Y-%m-%d-%H-%M-%S')"
+output_dir="scripts/results/${test_dir}"
 for index in "${!client_drivers[@]}"
 do
   client_md=${client_drivers[index]# }
@@ -273,11 +275,6 @@ do
     start_server="\
     export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
     && ${server_driver} \
-    && export JVM_OPTS=\"\
-    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${SERVER_DESTINATION_CHANNEL} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${SERVER_SOURCE_CHANNEL} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}\" \
     && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${SERVER_NON_ISOLATED_CPU_CORES}\" ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
     $(await_java_process_start "${server_class_name}") \
     ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
@@ -290,15 +287,21 @@ do
       "${start_client}" \
       "$(kill_java_process "${server_class_name}"); ${start_server}" \
       "${stop_server}" \
-      "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
-      "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-      "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=${CLIENT_DESTINATION_CHANNEL}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL}" \
-      "uk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}"
+      "${CLIENT_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_mtu=${mtu}" \
+      "${SERVER_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_mtu=${mtu}" \
+      "-Duk.co.real_logic.benchmarks.remote.output.file=${test} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${CLIENT_DESTINATION_CHANNEL} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}" \
+      "-Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${SERVER_DESTINATION_CHANNEL} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${SERVER_SOURCE_CHANNEL} \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}"
   done
 done
 
-collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
-
-download_results "${test_type}" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+collect_environment_info "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${CLIENT_JAVA_HOME}"
+collect_environment_info "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/scripts" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${SERVER_JAVA_HOME}"
+download_results "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-client"
+download_results "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-server"

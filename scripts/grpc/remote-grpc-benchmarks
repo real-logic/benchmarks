@@ -97,6 +97,8 @@ do
 done
 
 test_type="grpc"
+test_dir="${test_type}-$(date '+%Y-%m-%d-%H-%M-%S')"
+output_dir="scripts/results/${test_dir}"
 for tls in "${tls_options[@]}"
 do
   scenario="streaming"
@@ -124,13 +126,6 @@ do
 
   # shellcheck disable=SC2153
   start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
-  && export JVM_OPTS=\"\
-  -Duk.co.real_logic.benchmarks.grpc.remote.client.host=${CLIENT_HOST} \
-  -Duk.co.real_logic.benchmarks.grpc.remote.client.port=${clientPort} \
-  -Duk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST} \
-  -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort} \
-  -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
-  -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}\" \
   && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} ${onload} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
 
   stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
@@ -140,16 +135,24 @@ do
     "${start_client}" \
     "${stop_server}; ${start_server}" \
     "${stop_server}" \
-    "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
-    "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-    "uk.co.real_logic.benchmarks.grpc.remote.client.host=${CLIENT_HOST}" \
-    "uk.co.real_logic.benchmarks.grpc.remote.client.port=${clientPort}" \
-    "uk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST}" \
-    "uk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort}" \
-    "uk.co.real_logic.benchmarks.grpc.remote.certificates=${CLIENT_BENCHMARKS_PATH}/certificates" \
-    "uk.co.real_logic.benchmarks.grpc.remote.tls=${tls}"
+    "${CLIENT_BENCHMARKS_PATH}/${output_dir}/${scenario}" \
+    "${SERVER_BENCHMARKS_PATH}/${output_dir}/${scenario}" \
+    "-Duk.co.real_logic.benchmarks.remote.output.file=${test} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.client.host=${CLIENT_HOST} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.client.port=${clientPort} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${CLIENT_BENCHMARKS_PATH}/certificates \
+    -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}" \
+    "-Duk.co.real_logic.benchmarks.grpc.remote.client.host=${CLIENT_HOST} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.client.port=${clientPort} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.server.host=${SERVER_HOST} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.server.port=${serverPort} \
+    -Duk.co.real_logic.benchmarks.grpc.remote.certificates=${SERVER_BENCHMARKS_PATH}/certificates \
+    -Duk.co.real_logic.benchmarks.grpc.remote.tls=${tls}"
 done
 
-collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
-
-download_results "${test_type}" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+collect_environment_info "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${CLIENT_JAVA_HOME}"
+collect_environment_info "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/scripts" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${SERVER_JAVA_HOME}"
+download_results "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-client"
+download_results "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-server"

@@ -200,6 +200,8 @@ do
 done
 
 test_type="aeron-live-recording"
+test_dir="${test_type}-$(date '+%Y-%m-%d-%H-%M-%S')"
+output_dir="scripts/results/${test_dir}"
 for index in "${!client_drivers[@]}"
 do
   client_md=${client_drivers[index]# }
@@ -262,10 +264,6 @@ do
       export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
       ; $(kill_java_process "${server_class_name}") \
       ; ${server_driver} \
-      && export JVM_OPTS=\"\
-      -Daeron.mtu.length=${mtu} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${DESTINATION_IP}:13000${server_interface} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${SOURCE_IP}:13100${server_interface}\" \
       && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${SERVER_NON_ISOLATED_CPU_CORES}\" ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
       $(await_java_process_start "${server_class_name}") \
       ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
@@ -277,20 +275,25 @@ do
         "${start_client}" \
         "${start_server}" \
         "${stop_server}" \
-        "aeron.mtu.length=${mtu}" \
-        "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
-        "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-        "uk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${DESTINATION_IP}:13000${client_interface}" \
-        "uk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${SOURCE_IP}:13100${client_interface}" \
-        "aeron.archive.dir=${ARCHIVE_DIR}" \
-        "aeron.archive.mark.file.dir=/dev/shm/aeron" \
-        "aeron.archive.file.sync.level=${fsync}" \
-        "aeron.archive.catalog.file.sync.level=${fsync}" \
-        "aeron.archive.recording.events.enabled=true"
+        "${CLIENT_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_fsync=${fsync}_mtu=${mtu}" \
+        "${SERVER_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_fsync=${fsync}_mtu=${mtu}" \
+        "-Daeron.mtu.length=${mtu} \
+        -Duk.co.real_logic.benchmarks.remote.output.file=${test} \
+        -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${DESTINATION_IP}:13000${client_interface} \
+        -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${SOURCE_IP}:13100${client_interface} \
+        -Daeron.archive.dir=${ARCHIVE_DIR} \
+        -Daeron.archive.mark.file.dir=/dev/shm/aeron \
+        -Daeron.archive.file.sync.level=${fsync} \
+        -Daeron.archive.catalog.file.sync.level=${fsync} \
+        -Daeron.archive.recording.events.enabled=true" \
+        "-Daeron.mtu.length=${mtu} \
+        -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${DESTINATION_IP}:13000${server_interface} \
+        -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${SOURCE_IP}:13100${server_interface}"
     done
   done
 done
 
-collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
-
-download_results "${test_type}" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+collect_environment_info "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${CLIENT_JAVA_HOME}"
+collect_environment_info "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/scripts" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${SERVER_JAVA_HOME}"
+download_results "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-client"
+download_results "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-server"

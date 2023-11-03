@@ -87,6 +87,8 @@ done
 plain_text_port=13592
 ssl_port=13593
 test_type="kafka"
+test_dir="${test_type}-$(date '+%Y-%m-%d-%H-%M-%S')"
+output_dir="scripts/results/${test_dir}"
 for protocol in "${security_protocols[@]}"
 do
   for flush in "" "1"
@@ -101,7 +103,7 @@ do
     flush_messages_prop=""
     if [ -n "${flush}" ]
     then
-        flush_messages_prop="flush.messages=${flush}"
+        flush_messages_prop="-Dflush.messages=${flush}"
         scenario+=("flush-${flush}")
     else
         scenario+=("no-flush")
@@ -145,16 +147,20 @@ do
       "${start_client}" \
       "${stop_server}; ${start_kafka}" \
       "${stop_server}" \
-      "uk.co.real_logic.benchmarks.remote.output.file=${test}" \
-      "uk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results" \
-      "bootstrap.servers=${SERVER_HOST}:${port}" \
-      "security.protocol=${protocol}" \
-      "ssl.truststore.location=${CLIENT_BENCHMARKS_PATH}/certificates/truststore.p12" \
-      "ssl.keystore.location=${CLIENT_BENCHMARKS_PATH}/certificates/client.keystore" \
-      "${flush_messages_prop}"
+      "${CLIENT_BENCHMARKS_PATH}/${output_dir}/${test:1}" \
+      "${SERVER_BENCHMARKS_PATH}/${output_dir}/${test:1}" \
+      "-Duk.co.real_logic.benchmarks.remote.output.file=${test} \
+      -Dbootstrap.servers=${SERVER_HOST}:${port} \
+      -Dsecurity.protocol=${protocol} \
+      -Dssl.truststore.location=${CLIENT_BENCHMARKS_PATH}/certificates/truststore.p12 \
+      -Dssl.keystore.location=${CLIENT_BENCHMARKS_PATH}/certificates/client.keystore \
+      ${flush_messages_prop}" \
+      ""
   done
 done
 
-collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
+collect_environment_info "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${CLIENT_JAVA_HOME}"
+collect_environment_info "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/scripts" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${SERVER_JAVA_HOME}"
+download_results "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-client"
+download_results "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-server"
 
-download_results "${test_type}" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
