@@ -19,9 +19,11 @@ set -euxo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
+export JVM_OPTS="${JVM_OPTS:-} \
+-Duk.co.real_logic.benchmarks.remote.message.transceiver=uk.co.real_logic.benchmarks.kafka.remote.KafkaMessageTransceiver \
+-Dlog4j.configuration=file:${DIR}/log4j.properties"
+
 exec "${DIR}/../run-java" \
-  -Duk.co.real_logic.benchmarks.remote.message.transceiver=uk.co.real_logic.benchmarks.kafka.remote.KafkaMessageTransceiver \
-  "-Dlog4j.configuration=file:${DIR}/log4j.properties" \
   uk.co.real_logic.benchmarks.remote.LoadTestRig \
   "${DIR}/client.properties" \
   "${DIR}/benchmark.properties" \

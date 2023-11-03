@@ -19,10 +19,12 @@ set -euxo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
+export JVM_OPTS="${JVM_OPTS:-} \
+-Duk.co.real_logic.benchmarks.remote.message.transceiver=uk.co.real_logic.benchmarks.aeron.remote.LiveRecordingMessageTransceiver \
+-Daeron.archive.recording.events.enabled=true \
+-Daeron.archive.recording.events.channel=aeron:ipc"
+
 exec "${DIR}/../run-java" \
-  -Duk.co.real_logic.benchmarks.remote.message.transceiver=uk.co.real_logic.benchmarks.aeron.remote.LiveRecordingMessageTransceiver \
-  -Daeron.archive.recording.events.enabled=true \
-  -Daeron.archive.recording.events.channel="aeron:ipc" \
   uk.co.real_logic.benchmarks.remote.LoadTestRig \
   "${DIR}/low-latency-driver.properties" \
   "${DIR}/low-latency-archive.properties" \
