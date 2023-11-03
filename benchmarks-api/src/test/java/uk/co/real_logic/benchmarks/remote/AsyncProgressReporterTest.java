@@ -51,7 +51,7 @@ class AsyncProgressReporterTest
     }
 
     @Test
-    void shouldCounterIterations()
+    void shouldCountIterations()
     {
         final AtomicReference<Thread> workerThread = new AtomicReference<>();
         doAnswer(invocation ->

@@ -26,7 +26,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 class AsyncProgressReporter implements ProgressReporter
 {
     private static final long NANOS_PER_SECOND = SECONDS.toNanos(1);
-    private static final long SLEEP_NANOS = MILLISECONDS.toNanos(100);
+    private static final long SLEEP_NANOS = MILLISECONDS.toNanos(1);
     private final AtomicReference<Runnable> reportTask = new AtomicReference<>();
     private final PrintStream out;
 
@@ -56,10 +56,13 @@ class AsyncProgressReporter implements ProgressReporter
             final Runnable task = reportTask.get();
             if (task != null)
             {
-                task.run();
                 reportTask.compareAndSet(task, null);
+                task.run();
             }
-            LockSupport.parkNanos(SLEEP_NANOS);
+            else
+            {
+                LockSupport.parkNanos(SLEEP_NANOS);
+            }
         }
     }
 }
