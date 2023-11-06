@@ -24,6 +24,8 @@ import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.SystemEpochClock;
@@ -34,6 +36,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONSENSUS_MODULE;
 import static io.aeron.cluster.codecs.mark.ClusterComponentType.CONTAINER;
@@ -73,6 +76,7 @@ public final class ClusterNode
         final File clusterDir = new File(ClusteredServiceContainer.Configuration.clusterDirName());
         final int memberId = ConsensusModule.Configuration.clusterMemberId();
 
+        final Supplier<IdleStrategy> idleStrategySupplier = () -> NoOpIdleStrategy.INSTANCE;
         final Component<ConsensusModule> consensusModule = new Component<>(() ->
         {
             final ConsensusModule.Context ctx = new ConsensusModule.Context()
@@ -81,7 +85,8 @@ public final class ClusterNode
                 .aeronDirectoryName(aeronDirectoryName)
                 .clusterDir(clusterDir)
                 .epochClock(epochClock)
-                .clusterMemberId(memberId);
+                .clusterMemberId(memberId)
+                .idleStrategySupplier(idleStrategySupplier);
 
             ctx.clusterMarkFile(new ClusterMarkFile(
                 new File(aeronDirectoryName, ClusterMarkFile.FILENAME),
@@ -117,7 +122,8 @@ public final class ClusterNode
                 .aeronDirectoryName(aeronDirectoryName)
                 .clusterDir(clusterDir)
                 .epochClock(epochClock)
-                .serviceId(serviceId);
+                .serviceId(serviceId)
+                .idleStrategySupplier(idleStrategySupplier);
 
             ctx.clusterMarkFile(new ClusterMarkFile(
                 new File(aeronDirectoryName, ClusterMarkFile.markFilenameForService(ctx.serviceId())),
