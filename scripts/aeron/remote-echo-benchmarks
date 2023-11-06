@@ -75,6 +75,10 @@ mtu_list=(1408)
 onload="onload --profile=latency "
 client_drivers=()
 server_drivers=()
+client_aeron_dir="/dev/shm/aeron"
+server_aeron_dir="/dev/shm/aeron"
+client_file_page_size=4096
+server_file_page_size=4096
 declare -A drivers
 drivers=(['java']='' ['java-onload']='' ['c']='' ['c-onload']='' ['c-ef-vi']='' ['c-dpdk']='' ['c-ats']='' ['c-ats-onload']='' ['c-ats-ef-vi']='' ['c-ats-dpdk']='')
 
@@ -112,8 +116,31 @@ do
     shift
     shift
     ;;
+  --client-aeron-dir)
+    client_aeron_dir="${2}"
+    shift
+    shift
+    ;;
+  --server-aeron-dir)
+    server_aeron_dir="${2}"
+    shift
+    shift
+    ;;
+  --client-file-page-size)
+    client_file_page_size=${2}
+    shift
+    shift
+    ;;
+  --server-file-page-size)
+    server_file_page_size=${2}
+    shift
+    shift
+    ;;
   -h|--help)
-    echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" [--context \"\$context\"] [--onload \"\$onload_command\"] [--mtu \"\$mtu-csv\"]\
+    echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" \
+    [--context \"\$context\"] [--onload \"\$onload_command\"] [--mtu \"\$mtu-csv\"] \
+    [--client-aeron-dir \"\$client-aeron.dir\"] [--server-aeron-dir \"\$server-aeron.dir\"]\
+    [--client-file-page-size \"\$client-aeron.file.page.size\"] [--server-file-page-size \"\$server-aeron.file.page.size\"]\
           the support media drivers are: ${!drivers[*]}"
     exit
     ;;
@@ -127,6 +154,8 @@ done
 scripts_path="benchmarks_path_var/scripts/aeron"
 
 driver_properties="echo -e \"\
+aeron.dir=aeron_dir_var
+aeron.file.page.size=file_page_size_var
 aeron.conductor.cpu.affinity=driver_conductor_cpu_core_var\n \
 aeron.sender.cpu.affinity=driver_sender_cpu_core_var\n \
 aeron.receiver.cpu.affinity=driver_receiver_cpu_core_var\n \
@@ -240,7 +269,9 @@ do
     test="${test_type}_${client_md}-vs-${server_md}_${context}_mtu=${mtu}"
     echo -e "\n Testing scenario: '${test}'\n"
 
-    client_driver="${drivers[${client_md}]//driver_mtu_var/${mtu}}"
+    client_driver="${drivers[${client_md}]//aeron_dir_var/${client_aeron_dir}}"
+    client_driver="${client_driver//file_page_size_var/${client_file_page_size}}"
+    client_driver="${client_driver//driver_mtu_var/${mtu}}"
     client_driver="${client_driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
     client_driver="${client_driver//driver_cpu_node_var/${CLIENT_CPU_NODE}}"
     client_driver="${client_driver//driver_non_isolated_cpu_cores_var/${CLIENT_NON_ISOLATED_CPU_CORES}}"
@@ -250,7 +281,9 @@ do
     client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
     client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
 
-    server_driver="${drivers[${server_md}]//driver_mtu_var/${mtu}}"
+    server_driver="${drivers[${server_md}]//aeron_dir_var/${server_aeron_dir}}"
+    server_driver="${server_driver//file_page_size_var/${server_file_page_size}}"
+    server_driver="${server_driver//driver_mtu_var/${mtu}}"
     server_driver="${server_driver//benchmarks_path_var/${SERVER_BENCHMARKS_PATH}}"
     server_driver="${server_driver//driver_cpu_node_var/${SERVER_CPU_NODE}}"
     server_driver="${server_driver//driver_non_isolated_cpu_cores_var/${SERVER_NON_ISOLATED_CPU_CORES}}"
