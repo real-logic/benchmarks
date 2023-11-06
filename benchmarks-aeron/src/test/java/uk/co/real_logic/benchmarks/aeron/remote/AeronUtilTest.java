@@ -353,11 +353,13 @@ class AeronUtilTest
             "  2: -9,223,372,036,854,775,808 - last"),
             Files.readAllLines(statsFile, US_ASCII));
         final String errors = new String(Files.readAllBytes(errorsFile), US_ASCII);
-        assertTrue(errors.startsWith("\n3 observations from " + errorDateFormat.format(new Date(timeMillis))));
+        assertTrue(errors.startsWith(
+            System.lineSeparator() + "3 observations from " + errorDateFormat.format(new Date(timeMillis))));
         assertTrue(errors.contains(error1.getMessage()));
         assertTrue(errors.contains("Caused by: " + error1.getCause().toString()));
         assertTrue(errors.contains("1 observations from " + errorDateFormat.format(new Date(epochClock.time()))));
         assertTrue(errors.contains(error2.getMessage()));
+        assertTrue(errors.endsWith("2 distinct errors observed." + System.lineSeparator()));
     }
 
     @Test
@@ -419,8 +421,10 @@ class AeronUtilTest
         dumpArchiveErrors(archiveDir.toFile(), errorsFile);
 
         final String errors = new String(Files.readAllBytes(errorsFile), US_ASCII);
-        assertTrue(errors.startsWith("\n4 observations from " + errorDateFormat.format(new Date(startTime))));
+        assertTrue(errors.startsWith(
+            System.lineSeparator() + "4 observations from " + errorDateFormat.format(new Date(startTime))));
         assertTrue(errors.contains("java.io.IOError: java.io.IOException: I/O err"));
+        assertTrue(errors.endsWith("1 distinct errors observed." + System.lineSeparator()));
     }
 
     @Test
@@ -483,8 +487,10 @@ class AeronUtilTest
             errorsFile, clusterDir.toFile(), markFile.getFileName().toString(), linkFile.getFileName().toString());
 
         final String errors = new String(Files.readAllBytes(errorsFile), US_ASCII);
-        assertTrue(errors.startsWith("\n2 observations from " + errorDateFormat.format(new Date(startTime))));
+        assertTrue(errors.startsWith(
+            System.lineSeparator() + "2 observations from " + errorDateFormat.format(new Date(startTime))));
         assertTrue(errors.contains("java.lang.IndexOutOfBoundsException: Division by zero"));
+        assertTrue(errors.endsWith("1 distinct errors observed." + System.lineSeparator()));
     }
 
     private static List<Arguments> connectionTimeouts()
