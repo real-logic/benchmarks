@@ -118,10 +118,10 @@ function run_benchmarks()
         jvm_opts+="-Duk.co.real_logic.benchmarks.remote.output.directory=${client_output_dir}/run-${run}\""
 
         echo -e "\nStarting client..."
-        execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${jvm_opts} && ${client_command} && cp /dev/shm/*-gc.log \"${client_output_dir}/run-${run}/logs\" && exit"
+        execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${jvm_opts} && ${client_command}; cp /dev/shm/*-gc.log \"${client_output_dir}/run-${run}/logs\"; true; exit"
 
         echo -e "\nStopping server..."
-        execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${server_stop_command}; true && cp /dev/shm/*-gc.log \"${server_output_dir}/run-${run}/logs\" && exit"
+        execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${server_stop_command}; cp /dev/shm/*-gc.log \"${server_output_dir}/run-${run}/logs\"; cp /tmp/benchmarks-server.log \"${server_output_dir}/run-${run}/logs\"; true; exit"
       done
     done
   done

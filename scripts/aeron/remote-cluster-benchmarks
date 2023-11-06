@@ -202,6 +202,7 @@ function start_cluster_node()
   local server_driver=${3}
   local fsync=${4}
   local cluster_service=${5}
+  local output_dir=${6}
   local benchmarks_path_var=NODE${node_id}_BENCHMARKS_PATH
   local java_home_var=NODE${node_id}_JAVA_HOME
   local cluster_dir_var=NODE${node_id}_CLUSTER_DIR
@@ -246,6 +247,7 @@ function start_cluster_node()
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false \
     -Duk.co.real_logic.benchmarks.aeron.remote.cluster.service=${cluster_service} \
+    -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir} \
     ${!extra_properties_var:-}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
@@ -262,6 +264,7 @@ function start_cluster_backup_node()
   local node_id=${1}
   local cluster_backup_node_class_name=${2}
   local server_driver=${3}
+  local output_dir=${4}
   local fsync=2
   local benchmarks_path_var=BACKUP_NODE${node_id}_BENCHMARKS_PATH
   local java_home_var=BACKUP_NODE${node_id}_JAVA_HOME
@@ -299,7 +302,8 @@ function start_cluster_backup_node()
     -Daeron.archive.replication.channel=${!archive_replication_channel_var} \
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
-    -Daeron.archive.recording.events.enabled=false\" \
+    -Daeron.archive.recording.events.enabled=false
+    -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-backup-node & \
     $(await_java_process_start "${cluster_backup_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
@@ -414,6 +418,8 @@ do
 done
 
 test_type="aeron-cluster"
+test_dir="${test_type}-$(date '+%Y-%m-%d-%H-%M-%S')"
+output_dir_prefix="scripts/results/${test_dir}"
 for index in "${!client_drivers[@]}"
 do
   client_md=${client_drivers[index]# }
@@ -452,7 +458,10 @@ do
         do
           for (( i=0; i<runs; i++ ))
           do
-            echo -e '\n### Benchmark run #'"$((i + 1))"' ...\n'
+            run=$((i + 1))
+            echo -e '\n### Benchmark run #'"${run}"' ...\n'
+
+            output_dir="${output_dir_prefix}/run-${run}"
 
             start_client="export JVM_OPTS=\"\
             -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout}\
@@ -463,7 +472,7 @@ do
             -Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }\
             -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# }\
             -Duk.co.real_logic.benchmarks.remote.output.file=${test}\
-            -Duk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/scripts/results\
+            -Duk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/${output_dir}\
             -Daeron.cluster.ingress.channel=${CLIENT_INGRESS_CHANNEL}\
             ${client_ingress_endpoints}\
             -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
@@ -522,7 +531,7 @@ do
               server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
               server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
               server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_cluster_node "${n}" "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${cluster_service}") &) >  /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_cluster_node "${n}" "${cluster_node_class_name}" "${server_driver}" "${fsync}" "${cluster_service}" "${!server_benchmarks_path}/${output_dir}") &) > /tmp/benchmarks-cluster-node-${n}.log 2>&1 && exit"
             done
 
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
@@ -546,11 +555,11 @@ do
               server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
               server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
               server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_cluster_backup_node "${n}" "${cluster_backup_node_class_name}" "${server_driver}") &) >  /tmp/benchmarks-cluster-backup-node-${n}.log 2>&1 && exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_cluster_backup_node "${n}" "${cluster_backup_node_class_name}" "${server_driver}" "${!server_benchmarks_path}/${output_dir}") &) > /tmp/benchmarks-cluster-backup-node-${n}.log 2>&1 && exit"
             done
 
             echo -e "\nRunning benchmark..."
-            execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${start_client} && exit"
+            execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${start_client}; cp /dev/shm/*-gc.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\" && exit"
 
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
             do
@@ -558,7 +567,8 @@ do
               ssh_user=SSH_CLUSTER_BACKUP_USER${n}
               ssh_key_file=SSH_CLUSTER_BACKUP_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); true && exit"
+              server_benchmarks_path=BACKUP_NODE${n}_BENCHMARKS_PATH
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!server_benchmarks_path}/${output_dir}/logs\"; cp /tmp/benchmarks-cluster-*.log \"${!server_benchmarks_path}/${output_dir}/logs\"; true; exit"
             done
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))
@@ -567,7 +577,8 @@ do
               ssh_user=SSH_CLUSTER_USER${n}
               ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_NODE${n}
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); true && exit"
+              server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!server_benchmarks_path}/${output_dir}/logs\"; cp /tmp/benchmarks-cluster-*.log \"${!server_benchmarks_path}/${output_dir}/logs\"; true; exit"
             done
           done
         done
@@ -576,6 +587,29 @@ do
   done
 done
 
-collect_environment_info "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${CLIENT_JAVA_HOME}"
+for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
+do
+  echo -e "\nDownloading results from backup node ${n}..."
+  ssh_user=SSH_CLUSTER_BACKUP_USER${n}
+  ssh_key_file=SSH_CLUSTER_BACKUP_KEY_FILE${n}
+  ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
+  server_benchmarks_path=BACKUP_NODE${n}_BENCHMARKS_PATH
+  server_java_home=BACKUP_NODE${n}_JAVA_HOME
+  collect_environment_info "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "${!server_benchmarks_path}/scripts" "${!server_benchmarks_path}/${output_dir_prefix}" "${!server_java_home}"
+  download_results "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}"  "${!server_benchmarks_path}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-backup-node-${n}"
+done
 
-download_results "${test_type}" "${context}" "${CLIENT_BENCHMARKS_PATH}/scripts/results" "${DIR}/.."
+for (( n=0; n<CLUSTER_SIZE; n++ ))
+do
+  echo -e "\nDownloading results from node ${n}..."
+  ssh_user=SSH_CLUSTER_USER${n}
+  ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
+  ssh_node=SSH_CLUSTER_NODE${n}
+  server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
+  server_java_home=NODE${n}_JAVA_HOME
+  collect_environment_info "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "${!server_benchmarks_path}/scripts" "${!server_benchmarks_path}/${output_dir_prefix}" "${!server_java_home}"
+  download_results "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}"  "${!server_benchmarks_path}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-node-${n}"
+done
+
+collect_environment_info "${SSH_CLIENT_USER}" "${!SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${!server_java_home}"
+download_results "${SSH_CLIENT_USER}" "${!SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}"  "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-client"
