@@ -263,8 +263,8 @@ class AeronUtilTest
     }
 
     @Test
-    void dumpAeronStatsShouldCreateEmptyFilesWhenCnCIsNotAvailable(
-        @TempDir final Path destDir, @TempDir final Path other) throws IOException
+    void dumpAeronStatsIsANoOpIfCncDoesNotExist(
+        @TempDir final Path destDir, @TempDir final Path other)
     {
         final Path statsFile = destDir.resolve("media-driver-stats.txt");
         final Path errorsFile = destDir.resolve("media-driver-errors.txt");
@@ -275,10 +275,8 @@ class AeronUtilTest
 
         dumpAeronStats(cncFile.toFile(), statsFile, errorsFile);
 
-        assertTrue(Files.exists(statsFile));
-        assertEquals(0, Files.size(statsFile));
-        assertTrue(Files.exists(errorsFile));
-        assertEquals(0, Files.size(errorsFile));
+        assertFalse(Files.exists(statsFile));
+        assertFalse(Files.exists(errorsFile));
     }
 
     @Test
@@ -363,7 +361,7 @@ class AeronUtilTest
     }
 
     @Test
-    void dumpArchiveErrorsCreatesEmptyFileIfMarkFileNotFound(
+    void dumpArchiveIsANoOpIfMarkFileNotFound(
         @TempDir final Path resultsDir, @TempDir final Path archiveDir) throws IOException
     {
         final Path errorsFile = resultsDir.resolve("archive-errors.txt");
@@ -371,8 +369,7 @@ class AeronUtilTest
 
         dumpArchiveErrors(archiveDir.toFile(), errorsFile);
 
-        assertTrue(Files.exists(errorsFile));
-        assertEquals(0, Files.size(errorsFile));
+        assertFalse(Files.exists(errorsFile));
     }
 
     @Test
@@ -428,16 +425,45 @@ class AeronUtilTest
     }
 
     @Test
-    void dumpClusterErrorsCreatesEmptyFileIfMarkFileNotFound(
-        @TempDir final Path resultsDir, @TempDir final Path clusterDir) throws IOException
+    void dumpClusterErrorsIsANoOpIfMarkFileNotFound(
+        @TempDir final Path resultsDir, @TempDir final Path clusterDir)
     {
         final Path errorsFile = resultsDir.resolve("my.result");
         assertFalse(Files.exists(errorsFile));
 
         dumpClusterErrors(errorsFile, clusterDir.toFile(), ClusterMarkFile.FILENAME, ClusterMarkFile.LINK_FILENAME);
 
-        assertTrue(Files.exists(errorsFile));
-        assertEquals(0, Files.size(errorsFile));
+        assertFalse(Files.exists(errorsFile));
+    }
+
+    @Test
+    void dumpClusterErrorsIsANoOpIfMarkFileHasNoErrors(
+        @TempDir final Path resultsDir, @TempDir final Path clusterDir)
+    {
+        final Path errorsFile = resultsDir.resolve("my.result");
+        assertFalse(Files.exists(errorsFile));
+        final Path markFile = clusterDir.resolve(ClusterMarkFile.FILENAME);
+        final MappedByteBuffer mappedByteBuffer = mapNewFile(
+            markFile.toFile(), ClusterMarkFile.HEADER_LENGTH + ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH);
+        try
+        {
+            final io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder headerEncoder =
+                new io.aeron.cluster.codecs.mark.MarkFileHeaderEncoder();
+            headerEncoder.wrap(new UnsafeBuffer(mappedByteBuffer), 0);
+            headerEncoder
+                .version(ClusterMarkFile.SEMANTIC_VERSION)
+                .activityTimestamp(System.currentTimeMillis())
+                .errorBufferLength(ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH)
+                .headerLength(ClusterMarkFile.HEADER_LENGTH);
+        }
+        finally
+        {
+            IoUtil.unmap(mappedByteBuffer);
+        }
+
+        dumpClusterErrors(errorsFile, clusterDir.toFile(), ClusterMarkFile.FILENAME, ClusterMarkFile.LINK_FILENAME);
+
+        assertFalse(Files.exists(errorsFile));
     }
 
     @Test
@@ -481,7 +507,6 @@ class AeronUtilTest
         {
             IoUtil.unmap(mappedByteBuffer);
         }
-
 
         dumpClusterErrors(
             errorsFile, clusterDir.toFile(), markFile.getFileName().toString(), linkFile.getFileName().toString());

@@ -407,90 +407,80 @@ final class AeronUtil
         };
     }
 
-    static void dumpAeronStats(final File cncFile, final Path statsFile, final Path errorsFile)
+    static void dumpAeronStats(final File cncFile, final Path statsFile, final Path errorFile)
     {
-        try (PrintWriter statsWriter = newWriter(statsFile);
-            PrintWriter errorWriter = newWriter(errorsFile))
+        if (cncFile.exists() && cncFile.length() >= CncFileDescriptor.META_DATA_LENGTH)
         {
-            if (cncFile.exists() && cncFile.length() >= CncFileDescriptor.META_DATA_LENGTH)
+            final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(
+                cncFile, FileChannel.MapMode.READ_ONLY, "CnC file");
+            final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+            try (PrintWriter statsWriter = newWriter(statsFile))
             {
-                final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(
-                    cncFile, FileChannel.MapMode.READ_ONLY, "CnC file");
-                final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-                try
-                {
-                    statsWriter.format("CnC version: %s%n",
-                        SemanticVersion.toString(cncMetaDataBuffer.getInt(CncFileDescriptor.CNC_VERSION_FIELD_OFFSET)));
-                    statsWriter.format("PID: %d%n",
-                        cncMetaDataBuffer.getLong(CncFileDescriptor.PID_FIELD_OFFSET));
-                    statsWriter.format("Start time: %s%n",
-                        DATE_FORMAT.format(
-                            new Date(cncMetaDataBuffer.getLong(CncFileDescriptor.START_TIMESTAMP_FIELD_OFFSET))));
-                    statsWriter.println("================================================================");
+                statsWriter.format("CnC version: %s%n",
+                    SemanticVersion.toString(cncMetaDataBuffer.getInt(CncFileDescriptor.CNC_VERSION_FIELD_OFFSET)));
+                statsWriter.format("PID: %d%n",
+                    cncMetaDataBuffer.getLong(CncFileDescriptor.PID_FIELD_OFFSET));
+                statsWriter.format("Start time: %s%n",
+                    DATE_FORMAT.format(
+                        new Date(cncMetaDataBuffer.getLong(CncFileDescriptor.START_TIMESTAMP_FIELD_OFFSET))));
+                statsWriter.println("================================================================");
 
-                    final CountersReader countersReader = new CountersReader(
-                        createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer),
-                        createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                final CountersReader countersReader = new CountersReader(
+                    createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer),
+                    createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
 
-                    countersReader.forEach(
-                        (counterId, label) ->
-                        {
-                            final long value = countersReader.getCounterValue(counterId);
-                            statsWriter.format("%3d: %,20d - %s%n", counterId, value, label);
-                        });
+                countersReader.forEach(
+                    (counterId, label) ->
+                    {
+                        final long value = countersReader.getCounterValue(counterId);
+                        statsWriter.format("%3d: %,20d - %s%n", counterId, value, label);
+                    });
 
-                    saveErrors(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), errorWriter);
-                }
-                finally
-                {
-                    IoUtil.unmap(cncByteBuffer);
-                }
+                saveErrors(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), errorFile);
             }
-        }
-        catch (final IOException e)
-        {
-            throw new UncheckedIOException(e);
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
+            finally
+            {
+                IoUtil.unmap(cncByteBuffer);
+            }
         }
     }
 
     static void dumpArchiveErrors(final File archiveDir, final Path destFile)
     {
-        try (PrintWriter writer = newWriter(destFile))
+        final File file = resolveMarkFile(archiveDir, ArchiveMarkFile.FILENAME, ArchiveMarkFile.LINK_FILENAME);
+        if (file.exists() && file.length() > 0)
         {
-            final File file = resolveMarkFile(archiveDir, ArchiveMarkFile.FILENAME, ArchiveMarkFile.LINK_FILENAME);
-            if (file.exists() && file.length() > 0)
+            try (ArchiveMarkFile markFile = new ArchiveMarkFile(
+                file.getParentFile(), file.getName(), SystemEpochClock.INSTANCE, 0, (s) -> {}))
             {
-                try (ArchiveMarkFile markFile = new ArchiveMarkFile(
-                    file.getParentFile(), file.getName(), SystemEpochClock.INSTANCE, 0, (s) -> {}))
-                {
-                    saveErrors(markFile.errorBuffer(), writer);
-                }
+                saveErrors(markFile.errorBuffer(), destFile);
             }
-        }
-        catch (final IOException e)
-        {
-            throw new UncheckedIOException(e);
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 
     static void dumpClusterErrors(
         final Path resultFile, final File clusterDir, final String markFileName, final String linkFileName)
     {
-        try (PrintWriter writer = newWriter(resultFile))
+        final File file = resolveMarkFile(clusterDir, markFileName, linkFileName);
+        if (file.exists() && file.length() > 0)
         {
-            final File file = resolveMarkFile(clusterDir, markFileName, linkFileName);
-            if (file.exists() && file.length() > 0)
+            try (ClusterMarkFile markFile = new ClusterMarkFile(
+                file.getParentFile(), file.getName(), SystemEpochClock.INSTANCE, 0, (s) -> {}))
             {
-                try (ClusterMarkFile markFile = new ClusterMarkFile(
-                    file.getParentFile(), file.getName(), SystemEpochClock.INSTANCE, 0, (s) -> {}))
-                {
-                    saveErrors(markFile.errorBuffer(), writer);
-                }
+                saveErrors(markFile.errorBuffer(), resultFile);
             }
-        }
-        catch (final IOException e)
-        {
-            throw new UncheckedIOException(e);
+            catch (final IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 
@@ -521,20 +511,23 @@ final class AeronUtil
         return new PrintWriter(Files.newBufferedWriter(resultFile, US_ASCII, WRITE, CREATE, TRUNCATE_EXISTING));
     }
 
-    private static void saveErrors(final AtomicBuffer errorBuffer, final PrintWriter writer)
+    private static void saveErrors(final AtomicBuffer errorBuffer, final Path errorFile) throws IOException
     {
         if (ErrorLogReader.hasErrors(errorBuffer))
         {
-            final int distinctErrorCount = ErrorLogReader.read(
-                errorBuffer,
-                (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
-                writer.format(
-                "%n%d observations from %s to %s for:%n %s%n",
-                observationCount,
-                DATE_FORMAT.format(new Date(firstObservationTimestamp)),
-                DATE_FORMAT.format(new Date(lastObservationTimestamp)),
-                encodedException));
-            writer.format("%d distinct errors observed.%n", distinctErrorCount);
+            try (PrintWriter writer = newWriter(errorFile))
+            {
+                final int distinctErrorCount = ErrorLogReader.read(
+                    errorBuffer,
+                    (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+                    writer.format(
+                    "%n%d observations from %s to %s for:%n %s%n",
+                    observationCount,
+                    DATE_FORMAT.format(new Date(firstObservationTimestamp)),
+                    DATE_FORMAT.format(new Date(lastObservationTimestamp)),
+                    encodedException));
+                writer.format("%d distinct errors observed.%n", distinctErrorCount);
+            }
         }
     }
 }
