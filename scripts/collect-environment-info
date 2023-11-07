@@ -31,7 +31,7 @@ done
 
 OUTPUT_PATH=${1:-.}
 JDK_HOME=${2:-$JAVA_HOME}
-HOST_NAME="$(hostname)"
+FILE_NAME="env-summary-$(hostname)"
 
 MANUFACTURER=$(cat /sys/class/dmi/id/chassis_vendor)
 PRODUCT_NAME=$(cat /sys/class/dmi/id/product_name)
@@ -118,7 +118,7 @@ $DISKS"
 fi
 
 JSON_SUMMARY=$(echo "$JSON_SUMMARY $MOUNTS_JSON $STORAGE_SUMMARY_JSON $TOPO_JSON $EC2_JSON $GCP_JSON" | jq -s add)
-echo "$JSON_SUMMARY" > "$OUTPUT_PATH/${HOST_NAME}.json"
+echo "$JSON_SUMMARY" > "$OUTPUT_PATH/${FILE_NAME}.json"
 
 CPU_INFO=$(lscpu)
 
@@ -151,14 +151,14 @@ Topology
 $TOPO
 "
 
-echo "$TXT_SUMMARY" > "$OUTPUT_PATH/${HOST_NAME}.txt"
+echo "$TXT_SUMMARY" > "$OUTPUT_PATH/${FILE_NAME}.txt"
 
 if [[ -n "$EC2_TXT" ]]; then
   EC2_SUMMARY="Amazon EC2
 ==========
 $EC2_TXT
 "
-  echo "$EC2_SUMMARY" >> "$OUTPUT_PATH/${HOST_NAME}.txt"
+  echo "$EC2_SUMMARY" >> "$OUTPUT_PATH/${FILE_NAME}.txt"
 fi
 
 if [[ -n "$GCP_TXT" ]]; then
@@ -166,5 +166,5 @@ if [[ -n "$GCP_TXT" ]]; then
 ====================
 $GCP_TXT
 "
-  echo "$GCP_SUMMARY" >> "$OUTPUT_PATH/${HOST_NAME}.txt"
+  echo "$GCP_SUMMARY" >> "$OUTPUT_PATH/${FILE_NAME}.txt"
 fi
