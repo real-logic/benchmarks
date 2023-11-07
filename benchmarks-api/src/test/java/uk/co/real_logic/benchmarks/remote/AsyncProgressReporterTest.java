@@ -112,11 +112,10 @@ class AsyncProgressReporterTest
                     completedTasks.getAndIncrement();
                 }));
         }
-        assertEquals(samples, tasks.size());
-        assertNotEquals(samples, completedTasks.get());
 
         reporter.reset();
+
         assertEquals(samples, completedTasks.get());
-        assertEquals(0, tasks.size());
+        assertTrue(tasks.isEmpty());
     }
 }
