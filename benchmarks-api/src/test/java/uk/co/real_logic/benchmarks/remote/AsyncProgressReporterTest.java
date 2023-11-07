@@ -24,8 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AsyncProgressReporterTest
@@ -106,12 +105,12 @@ class AsyncProgressReporterTest
         final AtomicInteger completedTasks = new AtomicInteger();
         for (int i = 0; i < samples; i++)
         {
-            tasks.offer(
+            assertTrue(tasks.offer(
                 () ->
                 {
                     LockSupport.parkNanos(1_000_000);
                     completedTasks.getAndIncrement();
-                });
+                }));
         }
         assertEquals(samples, tasks.size());
         assertNotEquals(samples, completedTasks.get());
