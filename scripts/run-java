@@ -20,7 +20,8 @@ set -exo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 class_name=${1##*.}
-gc_log_file="/dev/shm/${class_name}-gc.log"
+gc_log_file_name=${GC_LOG_FILE_NAME:-${class_name}-%p}
+gc_log_file="/dev/shm/${gc_log_file_name}-gc.log"
 
 java_options=(
   -Djava.net.preferIPv4Stack=true

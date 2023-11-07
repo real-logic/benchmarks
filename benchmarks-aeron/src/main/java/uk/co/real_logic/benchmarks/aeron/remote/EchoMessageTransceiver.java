@@ -89,7 +89,7 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public void destroy()
     {
-        final String prefix = getClass().getSimpleName() + "-";
+        final String prefix = "echo-client-";
         AeronUtil.dumpAeronStats(
             aeron.context().cncFile(),
             logsDir.resolve(prefix + "aeron-stat.txt"),

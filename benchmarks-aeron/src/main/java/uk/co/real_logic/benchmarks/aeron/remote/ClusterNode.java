@@ -149,7 +149,7 @@ public final class ClusterNode
         {
             new ShutdownSignalBarrier().await();
 
-            final String prefix = ClusterNode.class.getSimpleName() + "-node-" + memberId + "-";
+            final String prefix = "cluster-node-" + memberId + "-";
             AeronUtil.dumpClusterErrors(
                 outputDir.resolve(prefix + "clustered-service-errors.txt"),
                 clusterDir,

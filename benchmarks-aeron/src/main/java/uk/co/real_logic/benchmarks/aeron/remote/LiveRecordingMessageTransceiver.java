@@ -124,7 +124,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
 
     public void destroy()
     {
-        final String prefix = getClass().getSimpleName() + "-";
+        final String prefix = "live-recording-client-";
         AeronUtil.dumpArchiveErrors(
             archivingMediaDriver.archive.context().archiveDir(),
             logsDir.resolve(prefix + "archive-errors.txt"));

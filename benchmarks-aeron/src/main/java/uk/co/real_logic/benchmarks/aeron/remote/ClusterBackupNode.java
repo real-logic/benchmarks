@@ -63,7 +63,7 @@ public final class ClusterBackupNode
         {
             new ShutdownSignalBarrier().await();
 
-            final String prefix = ClusterBackupNode.class.getSimpleName() + "-";
+            final String prefix = "cluster-backup-node-";
             AeronUtil.dumpClusterErrors(
                 outputDir.resolve(prefix + "backup-errors.txt"),
                 clusterBackup.context().clusterDir(),

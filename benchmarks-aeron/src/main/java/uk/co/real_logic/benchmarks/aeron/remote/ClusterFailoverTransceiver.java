@@ -190,7 +190,7 @@ public final class ClusterFailoverTransceiver implements FailoverTransceiver, Eg
     {
         if (aeronCluster != null)
         {
-            final String prefix = getClass().getSimpleName() + "-";
+            final String prefix = "failover-cluster-client-";
             AeronUtil.dumpAeronStats(
                 aeronCluster.context().aeron().context().cncFile(),
                 logsDir.resolve(prefix + "aeron-stat.txt"),
