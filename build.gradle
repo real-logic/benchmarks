@@ -55,7 +55,7 @@ def toolchainCompiler = javaToolchains.compilerFor {
 }
 
 def agronaVersion = '1.20.0'
-def aeronVersion = '1.42.1'
+def aeronVersion = '1.43.0-SNAPSHOT'
 def byteBuddyVersion = '1.14.9'
 def jmhVersion = '1.37'
 def hdrHistogramVersion = '2.1.12'
@@ -134,6 +134,10 @@ subprojects {
 
         if (buildJavaVersion >= 9) {
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
+        }
+
+        if (buildJavaVersion >= 21) {
+            jvmArgs('-XX:+EnableDynamicAgentLoading')
         }
 
         testLogging {
