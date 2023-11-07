@@ -19,7 +19,8 @@ set -euxo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-export GC_LOG_FILE_NAME=${0##*./}
+GC_LOG_FILE_NAME="$(basename "${0}" .sh)"
+export GC_LOG_FILE_NAME
 export JVM_OPTS="${JVM_OPTS:-} \
 -Duk.co.real_logic.benchmarks.remote.message.transceiver=uk.co.real_logic.benchmarks.remote.DummyMessageTransceiver"
 
