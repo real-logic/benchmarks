@@ -98,11 +98,13 @@ function run_benchmarks()
       do
         local run=$((i + 1))
         local dir_suffix="_length=${messageLength}_rate=${messageRate}/run-${run}"
+        local client_results_dir="${client_output_dir}${dir_suffix}"
+        local server_results_dir="${server_output_dir}${dir_suffix}"
         echo -e '\n### Benchmark run #'${run}' ...\n'
 
         local jvm_opts="export JVM_OPTS=\""
         jvm_opts+="${server_jvm_opts} "
-        jvm_opts+="-Duk.co.real_logic.benchmarks.remote.output.directory=${server_output_dir}${dir_suffix}\""
+        jvm_opts+="-Duk.co.real_logic.benchmarks.remote.output.directory=${server_results_dir}\""
 
         echo -e "\nStarting server..."
         execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "(${jvm_opts} && ${server_start_command} &) > /tmp/benchmarks-server.log 2>&1; true; exit"
@@ -116,13 +118,13 @@ function run_benchmarks()
         jvm_opts+="-Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# } "
         jvm_opts+="-Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize# } "
         jvm_opts+="-Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# } "
-        jvm_opts+="-Duk.co.real_logic.benchmarks.remote.output.directory=${client_output_dir}${dir_suffix}\""
+        jvm_opts+="-Duk.co.real_logic.benchmarks.remote.output.directory=${client_results_dir}\""
 
         echo -e "\nStarting client..."
-        execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${jvm_opts} && ${client_command}; cp /dev/shm/*-gc.log \"${client_output_dir}${dir_suffix}/logs\"; rm /dev/shm/*-gc.log; true; exit"
+        execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${jvm_opts} && ${client_command}; cp /dev/shm/*-gc.log \"${client_results_dir}/logs\"; rm /dev/shm/*-gc.log; true; exit"
 
         echo -e "\nStopping server..."
-        execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${server_stop_command}; cp /dev/shm/*-gc.log \"${server_output_dir}${dir_suffix}/logs\"; rm /dev/shm/*-gc.log; cp /tmp/benchmarks-server.log \"${server_output_dir}/run-${run}/logs\"; true; exit"
+        execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${server_stop_command}; cp /dev/shm/*-gc.log \"${server_results_dir}/logs\"; rm /dev/shm/*-gc.log; cp /tmp/benchmarks-server.log \"${server_results_dir}/logs\"; true; exit"
       done
     done
   done
