@@ -62,10 +62,18 @@ so_sndbuf="${AERON_SOCKET_SO_SNDBUF:-2m}"
 so_rcvbuf="${AERON_SOCKET_SO_RCVBUF:-2m}"
 rcv_initial_window="${AERON_RCV_INITIAL_WINDOW_LENGTH:-2m}"
 max_messages_per_send="${AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND:-2}"
-dpdk_config_overrides=
+dpdk_config_overrides=""
 if [[ -v AERON_DPDK_MTU && -n ${AERON_DPDK_MTU} ]];
 then
   dpdk_config_overrides="AERON_DPDK_MTU=${AERON_DPDK_MTU}"
+fi
+if [[ -v AERON_DPDK_TX_QUEUE_SIZE && -n ${AERON_DPDK_TX_QUEUE_SIZE} ]];
+then
+  dpdk_config_overrides+=" AERON_DPDK_TX_QUEUE_SIZE=${AERON_DPDK_TX_QUEUE_SIZE}"
+fi
+if [[ -v AERON_DPDK_RX_QUEUE_SIZE && -n ${AERON_DPDK_RX_QUEUE_SIZE} ]];
+then
+  dpdk_config_overrides+=" AERON_DPDK_RX_QUEUE_SIZE=${AERON_DPDK_RX_QUEUE_SIZE}"
 fi
 
 destination_stream_id="${DESTINATION_STREAM_ID:-1000000}"
