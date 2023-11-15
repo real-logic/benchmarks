@@ -82,6 +82,8 @@ server_file_page_size=4096
 declare -A drivers
 drivers=(['java']='' ['java-onload']='' ['c']='' ['c-onload']='' ['c-ef-vi']='' ['c-dpdk']='' ['c-ats']='' ['c-ats-onload']='' ['c-ats-ef-vi']='' ['c-ats-dpdk']='')
 
+download_dir="${DIR}/.."
+
 while [[ $# -gt 0 ]]
 do
   case "${1}" in
@@ -136,11 +138,17 @@ do
     shift
     shift
     ;;
+  --download-dir)
+    download_dir="${2}"
+    shift
+    shift
+    ;;
   -h|--help)
     echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" \
     [--context \"\$context\"] [--onload \"\$onload_command\"] [--mtu \"\$mtu-csv\"] \
     [--client-aeron-dir \"\$client-aeron.dir\"] [--server-aeron-dir \"\$server-aeron.dir\"]\
     [--client-file-page-size \"\$client-aeron.file.page.size\"] [--server-file-page-size \"\$server-aeron.file.page.size\"]\
+    [--download-dir \"$download_dir\"]
           the support media drivers are: ${!drivers[*]}"
     exit
     ;;
@@ -336,5 +344,5 @@ done
 
 collect_environment_info "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${CLIENT_JAVA_HOME}"
 collect_environment_info "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/scripts" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${SERVER_JAVA_HOME}"
-download_results "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-client"
-download_results "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${DIR}/.." "${test_dir}-server"
+download_results "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/${output_dir}" "${download_dir}" "${test_dir}-client"
+download_results "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${SERVER_BENCHMARKS_PATH}/${output_dir}" "${download_dir}" "${test_dir}-server"
