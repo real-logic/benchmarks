@@ -153,6 +153,8 @@ function download_results()
 
   execute_remote_command "${sshUser}" "${sshKeyFile}" "${server}" "cd \"${results_dir}\" && tar -czf \"${archive}\" . && exit"
 
+  mkdir -p "${dest_dir}"
+
   scp -i "${sshKeyFile}" \
    -o ConnectionAttempts="${sshConnectionAttempts}" \
    -o ConnectTimeout="${sshConnectTimeout}" \
