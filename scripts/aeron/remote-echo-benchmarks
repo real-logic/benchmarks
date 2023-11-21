@@ -75,6 +75,10 @@ if [[ -v AERON_DPDK_RX_QUEUE_SIZE && -n ${AERON_DPDK_RX_QUEUE_SIZE} ]];
 then
   dpdk_config_overrides+=" AERON_DPDK_RX_QUEUE_SIZE=${AERON_DPDK_RX_QUEUE_SIZE}"
 fi
+if [[ -v AERON_DPDK_PORT_ID && -n ${AERON_DPDK_PORT_ID} ]];
+then
+  dpdk_config_overrides+=" AERON_DPDK_PORT_ID=${AERON_DPDK_PORT_ID}"
+fi
 
 destination_stream_id="${DESTINATION_STREAM_ID:-1000000}"
 source_stream_id="${SOURCE_STREAM_ID:-2000000}"
