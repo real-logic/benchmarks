@@ -285,8 +285,8 @@ do
         "${start_client}" \
         "${start_server}" \
         "${stop_server}" \
-        "${CLIENT_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_fsync=${fsync}_mtu=${mtu}" \
-        "${SERVER_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_fsync=${fsync}_mtu=${mtu}" \
+        "${CLIENT_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_${context}_fsync=${fsync}_mtu=${mtu}" \
+        "${SERVER_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_${context}_fsync=${fsync}_mtu=${mtu}" \
         "-Duk.co.real_logic.benchmarks.remote.output.file=${test} \
         -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${DESTINATION_IP}:13000${client_interface} \
         -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${SOURCE_IP}:13100${client_interface} \
