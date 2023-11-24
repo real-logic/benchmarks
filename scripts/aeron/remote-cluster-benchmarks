@@ -498,17 +498,6 @@ do
             ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
             && tail --pid=\$! -f /dev/null; kill -9 \${media_driver_pid}; wait"
 
-            for (( n=0; n<CLUSTER_SIZE; n++ ))
-            do
-              echo -e "\Stopping Cluster node ${n}..."
-              ssh_user=SSH_CLUSTER_USER${n}
-              ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
-              ssh_node=SSH_CLUSTER_NODE${n}
-              archive_dir_var=NODE${n}_ARCHIVE_DIR
-              cluster_dir_var=NODE${n}_CLUSTER_DIR
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
-            done
-
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
             do
               echo -e "\Stopping Cluster Backup node ${n}..."
@@ -518,6 +507,17 @@ do
               archive_dir_var=BACKUP_NODE${n}_ARCHIVE_DIR
               cluster_dir_var=BACKUP_NODE${n}_CLUSTER_DIR
               execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
+            done
+
+            for (( n=0; n<CLUSTER_SIZE; n++ ))
+            do
+              echo -e "\Stopping Cluster node ${n}..."
+              ssh_user=SSH_CLUSTER_USER${n}
+              ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
+              ssh_node=SSH_CLUSTER_NODE${n}
+              archive_dir_var=NODE${n}_ARCHIVE_DIR
+              cluster_dir_var=NODE${n}_CLUSTER_DIR
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
             done
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))
@@ -608,7 +608,7 @@ do
   server_benchmarks_path=BACKUP_NODE${n}_BENCHMARKS_PATH
   server_java_home=BACKUP_NODE${n}_JAVA_HOME
   collect_environment_info "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "${!server_benchmarks_path}/scripts" "${!server_benchmarks_path}/${output_dir_prefix}" "${!server_java_home}"
-  download_results "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}"  "${!server_benchmarks_path}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-backup-node-${n}"
+  download_results "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "${!server_benchmarks_path}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-backup-node-${n}"
 done
 
 for (( n=0; n<CLUSTER_SIZE; n++ ))
@@ -620,8 +620,8 @@ do
   server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
   server_java_home=NODE${n}_JAVA_HOME
   collect_environment_info "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "${!server_benchmarks_path}/scripts" "${!server_benchmarks_path}/${output_dir_prefix}" "${!server_java_home}"
-  download_results "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}"  "${!server_benchmarks_path}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-node-${n}"
+  download_results "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "${!server_benchmarks_path}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-node-${n}"
 done
 
-collect_environment_info "${SSH_CLIENT_USER}" "${!SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${CLIENT_JAVA_HOME}"
-download_results "${SSH_CLIENT_USER}" "${!SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}"  "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-client"
+collect_environment_info "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${CLIENT_JAVA_HOME}"
+download_results "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-client"
