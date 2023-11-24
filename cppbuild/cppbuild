@@ -81,4 +81,5 @@ fi
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}" || exit
 
-(cmake -G "Unix Makefiles" "${EXTRA_CMAKE_ARGS}" "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all)
+# shellcheck disable=SC2086
+(cmake -G "Unix Makefiles" ${EXTRA_CMAKE_ARGS} "${SOURCE_DIR}" && make clean && make -j "${ncpus}" all)
