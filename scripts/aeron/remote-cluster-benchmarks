@@ -461,7 +461,7 @@ do
             run=$((i + 1))
             echo -e '\n### Benchmark run #'"${run}"' ...\n'
 
-            output_dir="${output_dir_prefix}_${client_md}-vs-${server_md}_${context}_fsync=${fsync}_mtu=${mtu}_length=${messageLength}_rate=${messageRate}/run-${run}"
+            output_dir="${output_dir_prefix}/${client_md}-vs-${server_md}_${context}_fsync=${fsync}_mtu=${mtu}_length=${messageLength}_rate=${messageRate}/run-${run}"
 
             start_client="export JVM_OPTS=\"\
             -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout}\
@@ -611,5 +611,5 @@ do
   download_results "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}"  "${!server_benchmarks_path}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-node-${n}"
 done
 
-collect_environment_info "${SSH_CLIENT_USER}" "${!SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${!server_java_home}"
+collect_environment_info "${SSH_CLIENT_USER}" "${!SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${CLIENT_JAVA_HOME}"
 download_results "${SSH_CLIENT_USER}" "${!SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}"  "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${DIR}/.." "${test_dir}-client"
