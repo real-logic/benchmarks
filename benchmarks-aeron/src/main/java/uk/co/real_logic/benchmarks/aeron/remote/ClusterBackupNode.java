@@ -39,7 +39,7 @@ public final class ClusterBackupNode
     public static void main(final String[] args)
     {
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
-        final Path outputDir = Configuration.resolveLogsDir();
+        final Path logsDir = Configuration.resolveLogsDir();
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)
@@ -65,16 +65,16 @@ public final class ClusterBackupNode
 
             final String prefix = "cluster-backup-node-";
             AeronUtil.dumpClusterErrors(
-                outputDir.resolve(prefix + "backup-errors.txt"),
+                logsDir.resolve(prefix + "backup-errors.txt"),
                 clusterBackup.context().clusterDir(),
                 ClusterMarkFile.FILENAME,
                 ClusterMarkFile.LINK_FILENAME);
             AeronUtil.dumpArchiveErrors(
-                archive.context().archiveDir(), outputDir.resolve(prefix + "archive-errors.txt"));
+                archive.context().archiveDir(), logsDir.resolve(prefix + "archive-errors.txt"));
             AeronUtil.dumpAeronStats(
                 archive.context().aeron().context().cncFile(),
-                outputDir.resolve(prefix + "aeron-stat.txt"),
-                outputDir.resolve(prefix + "errors.txt"));
+                logsDir.resolve(prefix + "aeron-stat.txt"),
+                logsDir.resolve(prefix + "errors.txt"));
         }
     }
 }

@@ -54,7 +54,7 @@ public final class ClusterNode
     public static void main(final String[] args)
     {
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
-        final Path outputDir = Configuration.resolveLogsDir();
+        final Path logsDir = Configuration.resolveLogsDir();
 
         final Archive.Context archiveContext = new Archive.Context()
             .deleteArchiveOnStart(true)
@@ -154,21 +154,21 @@ public final class ClusterNode
 
             final String prefix = "cluster-node-" + memberId + "-";
             AeronUtil.dumpClusterErrors(
-                outputDir.resolve(prefix + "clustered-service-errors.txt"),
+                logsDir.resolve(prefix + "clustered-service-errors.txt"),
                 clusterDir,
                 ClusterMarkFile.markFilenameForService(serviceId),
                 ClusterMarkFile.linkFilenameForService(serviceId));
             AeronUtil.dumpClusterErrors(
-                outputDir.resolve(prefix + "consensus-module-errors.txt"),
+                logsDir.resolve(prefix + "consensus-module-errors.txt"),
                 clusterDir,
                 ClusterMarkFile.FILENAME,
                 ClusterMarkFile.LINK_FILENAME);
             AeronUtil.dumpArchiveErrors(
-                archive.context().archiveDir(), outputDir.resolve(prefix + "archive-errors.txt"));
+                archive.context().archiveDir(), logsDir.resolve(prefix + "archive-errors.txt"));
             AeronUtil.dumpAeronStats(
                 archive.context().aeron().context().cncFile(),
-                outputDir.resolve(prefix + "aeron-stat.txt"),
-                outputDir.resolve(prefix + "errors.txt"));
+                logsDir.resolve(prefix + "aeron-stat.txt"),
+                logsDir.resolve(prefix + "errors.txt"));
         }
     }
 
