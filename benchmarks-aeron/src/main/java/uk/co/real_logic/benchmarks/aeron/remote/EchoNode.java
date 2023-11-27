@@ -138,7 +138,7 @@ public final class EchoNode implements AutoCloseable, Runnable
         final Path outputDir = Configuration.resolveLogsDir();
 
         final AtomicBoolean running = new AtomicBoolean(true);
-        installSignalHandler(running);
+        installSignalHandler(() -> running.set(false));
 
         try (EchoNode server = new EchoNode(running))
         {

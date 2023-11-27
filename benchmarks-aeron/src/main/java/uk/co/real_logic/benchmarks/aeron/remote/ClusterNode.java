@@ -137,6 +137,9 @@ public final class ClusterNode
 
         IoUtil.delete(clusterDir, false);
 
+        final ShutdownSignalBarrier signalBarrier = new ShutdownSignalBarrier();
+        installSignalHandler(signalBarrier::signal);
+
         try (Archive archive = Archive.launch(archiveContext);
             Component<ConsensusModule> cm = consensusModule.start();
             Component<ClusteredServiceContainer> csc = clusteredServiceContainer.start();
@@ -147,7 +150,7 @@ public final class ClusterNode
                 roleRef)
         )
         {
-            new ShutdownSignalBarrier().await();
+            signalBarrier.await();
 
             final String prefix = "cluster-node-" + memberId + "-";
             AeronUtil.dumpClusterErrors(

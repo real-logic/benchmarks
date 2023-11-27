@@ -337,9 +337,9 @@ final class AeronUtil
         return count;
     }
 
-    static void installSignalHandler(final AtomicBoolean running)
+    static void installSignalHandler(final Runnable onSignal)
     {
-        final SignalHandler terminationHandler = signal -> running.set(false);
+        final SignalHandler terminationHandler = signal -> onSignal.run();
 
         for (final String signalName : ShutdownSignalBarrier.SIGNAL_NAMES)
         {

@@ -106,7 +106,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
         final Path outputDir = Configuration.resolveLogsDir();
 
         final AtomicBoolean running = new AtomicBoolean(true);
-        installSignalHandler(running);
+        installSignalHandler(() -> running.set(false));
 
         try (ArchiveNode server = new ArchiveNode(running))
         {
