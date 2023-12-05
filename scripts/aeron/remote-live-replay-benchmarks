@@ -279,7 +279,7 @@ do
       ; $(pin_thread \${pid} "archive-conduct" "${SERVER_ARCHIVE_CONDUCTOR_CPU_CORE}") \
       && tail --pid=\$! -f /dev/null"
 
-      stop_server="$(kill_java_process "${server_class_name}"); $(stop_media_driver)"
+      stop_server="$(stop_java_process "${server_class_name}"); $(stop_media_driver)"
 
       run_benchmarks \
         "${start_client}" \

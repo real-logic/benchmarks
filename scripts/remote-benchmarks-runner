@@ -197,6 +197,12 @@ function kill_java_process()
   echo "kill -9 $(find_java_process "${class_name}")"
 }
 
+function stop_java_process()
+{
+  local class_name=${1}
+  echo "kill $(find_java_process "${class_name}")"
+}
+
 function execute_remote_command()
 {
   local sshUser=${1}

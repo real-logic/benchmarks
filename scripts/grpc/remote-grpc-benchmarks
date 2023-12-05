@@ -128,7 +128,7 @@ do
   start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" \
   && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} ${onload} ${SERVER_BENCHMARKS_PATH}/scripts/grpc/server"
 
-  stop_server="$(kill_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
+  stop_server="$(stop_java_process "uk.co.real_logic.benchmarks.grpc.remote.EchoServer")"
 
   # shellcheck disable=SC2153
   run_benchmarks \
