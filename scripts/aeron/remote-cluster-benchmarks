@@ -234,7 +234,7 @@ function start_cluster_node()
   local clustered_service_cpu_var=NODE${node_id}_CLUSTERED_SERVICE_CPU_CORE
   local extra_properties_var=NODE${node_id}_EXTRA_PROPERTIES
   echo "
-    export JAVA_HOME=\"${!java_home_var}\" \
+    export JAVA_HOME=\"${!java_home_var}\" GC_LOG_FILE_NAME=\"cluster-node-${node_id}-media-driver\" \
     ; $(kill_java_process "${cluster_node_class_name}") \
     ; rm -rf \"${!cluster_dir_var}\" \
     ; rm -rf \"${!archive_dir_var}\" \
@@ -260,7 +260,7 @@ function start_cluster_node()
     -Daeron.archive.recording.events.enabled=false \
     -Duk.co.real_logic.benchmarks.aeron.remote.cluster.service=${cluster_service} \
     -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir} \
-    ${!extra_properties_var:-}\" \
+    ${!extra_properties_var:-}\" GC_LOG_FILE_NAME=\"cluster-node-${node_id}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
@@ -294,7 +294,7 @@ function start_cluster_backup_node()
   local archive_conductor_cpu_var=BACKUP_NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
   local cluster_backup_cpu_var=BACKUP_NODE${node_id}_CLUSTER_BACKUP_CPU_CORE
   echo "
-    export JAVA_HOME=\"${!java_home_var}\" \
+    export JAVA_HOME=\"${!java_home_var}\" GC_LOG_FILE_NAME=\"cluster-backup-node-${node_id}-media-driver\" \
     ; $(kill_java_process "${cluster_backup_node_class_name}") \
     ; rm -rf \"${!cluster_dir_var}\" \
     ; rm -rf \"${!archive_dir_var}\" \
@@ -315,7 +315,7 @@ function start_cluster_backup_node()
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false \
-    -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir}\" \
+    -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir}\" GC_LOG_FILE_NAME=\"cluster-backup-node-${node_id}\"\
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-backup-node & \
     $(await_java_process_start "${cluster_backup_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
@@ -490,7 +490,7 @@ do
             -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
             -Daeron.cluster.message.timeout=300000000000\
             ${CLIENT_EXTRA_PROPERTIES:-}\"\
-            && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\"\
+            && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" GC_LOG_FILE_NAME=\"cluster-client-media-driver\"\
             ; $(kill_java_process "${client_class_name}")\
             ; ${client_driver}\
             && numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} --physcpubind=\"${CLIENT_NON_ISOLATED_CPU_CORES}\" ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/${client_script} & \
