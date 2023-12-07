@@ -83,7 +83,7 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
 
     public void destroy()
     {
-        final String prefix = "custer-client-";
+        final String prefix = "cluster-client-";
         AeronUtil.dumpAeronStats(
             aeronCluster.context().aeron().context().cncFile(),
             logsDir.resolve(prefix + "aeron-stat.txt"),
