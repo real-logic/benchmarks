@@ -51,6 +51,8 @@ else
     java_options+=(-XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0)
   fi
 
+  java_options+=(-XX:+EnableDynamicAgentLoading)
+
   add_opens=(
   --add-opens
   java.base/sun.nio.ch=ALL-UNNAMED

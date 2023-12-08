@@ -47,6 +47,8 @@ if "!java_version:~0,3!" == "1.8" (
     set "JAVA_OPTIONS=!JAVA_OPTIONS! -XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0"
   )
 
+  set "JAVA_OPTIONS=!JAVA_OPTIONS! -XX:+EnableDynamicAgentLoading"
+
   set ADD_OPENS=^
   --add-opens java.base/sun.nio.ch=ALL-UNNAMED ^
   --add-opens java.base/java.util.zip=ALL-UNNAMED
