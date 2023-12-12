@@ -97,23 +97,21 @@ $(echo "$VOLUME_INFO" | jq -r '.Volumes[] | "- \(.VolumeId) size: \(.Size)GB typ
 elif [[ $MANUFACTURER == "Google" ]]; then
   if command -v gcloud &> /dev/null; then
     GCP_TXT=""
-    EXPERIMENT="$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/experiment" -H "Metadata-Flavor: Google")"
-    for link in $(gcloud beta compute instances list --filter metadata.experiment="$EXPERIMENT" --format="get(selfLink)")
-    do
-    INSTANCE=$(gcloud beta compute instances list --filter selfLink="$link" --format="table(name, zone, machine_type.basename())" | tail -1)
-    DISKS=$(gcloud beta compute disks list --filter users="$link")
+    INSTANCE_ID="$(curl -s "http://metadata/computeMetadata/v1/instance/id" -H "Metadata-Flavor: Google")"
+    INSTANCE_SELF_LINK="$(gcloud beta compute instances list --filter id="$INSTANCE_ID" --format="get(selfLink)")"
+    INSTANCE=$(gcloud beta compute instances list --filter selfLink="$INSTANCE_SELF_LINK" --format="table(name, zone, machine_type.basename())" | tail -1)
+    DISKS=$(gcloud beta compute disks list --filter users="$INSTANCE_SELF_LINK")
     GCP_TXT="$GCP_TXT
 
 $(echo "$INSTANCE")
-$(for ((i=0;i<=$(echo $INSTANCE | wc -c);i++)); do echo -n "="; done)
+$(for ((i=0;i<=${#INSTANCE};i++)); do echo -n "="; done)
 
 Volumes
 -------
 
 $DISKS"
-    done
 
-    GCP_JSON=$(gcloud beta compute instances list --filter metadata.experiment="$EXPERIMENT" --format="json" | jq -s '{ compute_instances: . }')
+    GCP_JSON=$(gcloud beta compute instances list --filter id="$INSTANCE_ID" --format="json")
   fi
 fi
 
