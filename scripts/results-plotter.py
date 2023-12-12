@@ -105,7 +105,7 @@ def plot_graphs(output_path, paths, percentiles_range_max, regex, group_by, filt
                 grouped_files.append('_'.join(field_values) + '.hgrm')
                 shutil.copyfile(f.file.path, os.path.join(tmpdir, '_'.join(field_values) + '.' + 'hgrm'))
 
-            histogram_files = ' '.join(sorted(grouped_files, reverse=True))
+            histogram_files = ' '.join(sorted(grouped_files, reverse=False))
 
             filename, title = get_plot_filename_and_title(key, custom_title)
             os.chdir(tmpdir)
