@@ -76,14 +76,11 @@ EC2_JSON=""
 EC2_TXT=""
 if [[ $MANUFACTURER == "Amazon EC2" ]]; then
   if command -v aws &> /dev/null; then
-    EC2_INFO=()
-    readarray -t instance_ids < <(aws ec2 describe-instances --filters Name=tag:Experiment,Values="$(curl -s http://169.254.169.254/latest/meta-data/tags/instance/Experiment)" | jq -r '.Reservations[] .Instances[] .InstanceId')
-    for id in "${instance_ids[@]}";
-    do
-      INSTANCE_INFO=$(aws ec2 describe-instances --instance-ids "$id" | jq '.Reservations[] .Instances[] | { instanceId: .InstanceId, name:(.Tags[] | select(.Key=="Name") .Value) }')
-      VOLUME_INFO=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$id")
-      EC2_INFO+=("$(echo "$INSTANCE_INFO $VOLUME_INFO" | jq -s add)")
-      EC2_TXT="$EC2_TXT
+    id="$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+    INSTANCE_INFO=$(aws ec2 describe-instances --instance-ids "$id" | jq '.Reservations[] .Instances[] | { instanceId: .InstanceId, name:(.Tags[] | select(.Key=="Name") .Value) }')
+    VOLUME_INFO=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$id")
+    EC2_JSON=("$(echo "$INSTANCE_INFO $VOLUME_INFO" | jq -s add)")
+    EC2_TXT="$EC2_TXT
 $(echo "$INSTANCE_INFO" | jq -r '.instanceId')
 ===================
 Name:    $(echo "$INSTANCE_INFO" | jq -r '.name')
@@ -91,8 +88,6 @@ Volumes:
 $(echo "$VOLUME_INFO" | jq -r '.Volumes[] | "- \(.VolumeId) size: \(.Size)GB type: \(.VolumeType) iops: \(.Iops) throughput: \(.Throughput)"')
 
 "
-    done
-    EC2_JSON=$(echo "${EC2_INFO[@]}" | jq -s '{ instances: . }')
   fi
 elif [[ $MANUFACTURER == "Google" ]]; then
   if command -v gcloud &> /dev/null; then
