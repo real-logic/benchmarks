@@ -106,7 +106,7 @@ Volumes
 
 $DISKS"
 
-    GCP_JSON=$(gcloud beta compute instances list --filter id="$INSTANCE_ID" --format="json")
+    GCP_JSON=$(gcloud beta compute instances list --filter id="$INSTANCE_ID" --format="json" | jq -s '{ compute_instances: . }')
   fi
 fi
 
