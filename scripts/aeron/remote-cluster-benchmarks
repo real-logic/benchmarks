@@ -283,6 +283,7 @@ function start_cluster_backup_node()
   local cluster_dir_var=BACKUP_NODE${node_id}_CLUSTER_DIR
   local cluster_consensus_channel_var=BACKUP_NODE${node_id}_CLUSTER_CONSENSUS_CHANNEL
   local cluster_backup_catchup_channel_var=BACKUP_NODE${node_id}_CLUSTER_BACKUP_CATCHUP_CHANNEL
+  local cluster_backup_catchup_endpoint_var=BACKUP_NODE${node_id}_CLUSTER_BACKUP_CATCHUP_ENDPOINT
   local archive_dir_var=BACKUP_NODE${node_id}_ARCHIVE_DIR
   local archive_control_channel_var=BACKUP_NODE${node_id}_ARCHIVE_CONTROL_CHANNEL
   local archive_control_response_channel_var=BACKUP_NODE${node_id}_ARCHIVE_CONTROL_RESPONSE_CHANNEL
@@ -306,6 +307,7 @@ function start_cluster_backup_node()
     -Daeron.cluster.consensus.channel=${!cluster_consensus_channel_var} \
     -Daeron.cluster.consensus.endpoints=${CLUSTER_CONSENSUS_ENDPOINTS} \
     -Daeron.cluster.backup.catchup.channel=${!cluster_backup_catchup_channel_var} \
+    -Daeron.cluster.backup.catchup.endpoint=${!cluster_backup_catchup_endpoint_var} \
     -Daeron.cluster.backup.source.type=FOLLOWER \
     -Daeron.cluster.backup.progress.timeout=30s \
     -Daeron.archive.dir=${!archive_dir_var} \
