@@ -49,7 +49,6 @@ public final class ClusterBackupNode
             .deleteDirOnStart(true)
             .errorHandler(printingErrorHandler("cluster-backup"))
             .aeronDirectoryName(archiveContext.aeronDirectoryName())
-            .sourceType(ClusterBackup.SourceType.FOLLOWER)
             .epochClock(SystemEpochClock.INSTANCE);
 
         clusterBackupContext.clusterMarkFile(new ClusterMarkFile(
