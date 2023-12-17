@@ -310,6 +310,7 @@ function start_cluster_backup_node()
     -Daeron.cluster.backup.catchup.endpoint=${!cluster_backup_catchup_endpoint_var} \
     -Daeron.cluster.backup.source.type=FOLLOWER \
     -Daeron.cluster.backup.progress.timeout=30s \
+    -Daeron.cluster.backup.cool.down.interval=1s \
     -Daeron.archive.dir=${!archive_dir_var} \
     -Daeron.archive.control.channel=${!archive_control_channel_var} \
     -Daeron.archive.control.response.channel=${!archive_control_response_channel_var} \
