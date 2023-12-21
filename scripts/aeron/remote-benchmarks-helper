@@ -45,7 +45,7 @@ function start_media_driver()
     driver_thread="aeronmd"
   fi
 
-  local command=""2011-12-03T10:15:30+01:00
+  local command=""
   command="echo \"Starting media driver: $(date --rfc-3339=seconds)\"; \
   $(stop_media_driver); \
   rm -rf /dev/shm/aeron; \
