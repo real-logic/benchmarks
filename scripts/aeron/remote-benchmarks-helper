@@ -45,8 +45,9 @@ function start_media_driver()
     driver_thread="aeronmd"
   fi
 
-  local command=""
-  command="$(stop_media_driver); \
+  local command=""2011-12-03T10:15:30+01:00
+  command="echo \"Starting media driver: $(date --rfc-3339=seconds)\"; \
+  $(stop_media_driver); \
   rm -rf /dev/shm/aeron; \
   numactl --membind=${cpu_node} --cpunodebind=${cpu_node} --physcpubind=\"${non_isolated_cpu_cores}\" ${wrapper_script} \"${executable}\" & ${resolve_media_driver_pid}"
   command+="; echo \"media_driver_pid='\${media_driver_pid}'\""
