@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ##
-## Copyright 2015-2023 Real Logic Limited.
+## Copyright 2015-2024 Real Logic Limited.
 ##
 ## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
@@ -252,6 +252,8 @@ function start_cluster_node()
     -Daeron.cluster.replication.channel=${!cluster_replication_channel_var} \
     -Daeron.cluster.service.name=echo-service \
     -Daeron.archive.dir=${!archive_dir_var} \
+    -Daeron.archive.control.term.buffer.sparse=${AERON_SPARSE} \
+    -Daeron.pre.touch.mapped.memory=${AERON_PRE_TOUCH} \
     -Daeron.archive.mark.file.dir=/dev/shm/aeron \
     -Daeron.archive.control.channel=${!archive_control_channel_var} \
     -Daeron.archive.replication.channel=${!archive_replication_channel_var} \
@@ -310,7 +312,9 @@ function start_cluster_backup_node()
     -Daeron.cluster.backup.catchup.endpoint=${!cluster_backup_catchup_endpoint_var} \
     -Daeron.cluster.backup.source.type=FOLLOWER \
     -Daeron.cluster.backup.progress.timeout=30s \
-    -Daeron.cluster.backup.cool.down.interval=1s \
+    -Daeron.cluster.backup.cool.down.interval=30s \
+    -Daeron.archive.control.term.buffer.sparse=${AERON_SPARSE} \
+    -Daeron.pre.touch.mapped.memory=${AERON_PRE_TOUCH} \
     -Daeron.archive.dir=${!archive_dir_var} \
     -Daeron.archive.control.channel=${!archive_control_channel_var} \
     -Daeron.archive.control.response.channel=${!archive_control_response_channel_var} \
@@ -331,6 +335,8 @@ function start_cluster_backup_node()
 scripts_path="benchmarks_path_var/scripts/aeron"
 
 driver_properties="echo -e \"\
+aeron.pre.touch.mapped.memory=${AERON_PRE_TOUCH}\n\
+aeron.term.buffer.sparse.file=${AERON_SPARSE}\n\
 aeron.conductor.cpu.affinity=driver_conductor_cpu_core_var\n \
 aeron.sender.cpu.affinity=driver_sender_cpu_core_var\n \
 aeron.receiver.cpu.affinity=driver_receiver_cpu_core_var\n \
