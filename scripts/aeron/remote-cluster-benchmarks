@@ -252,8 +252,6 @@ function start_cluster_node()
     -Daeron.cluster.replication.channel=${!cluster_replication_channel_var} \
     -Daeron.cluster.service.name=echo-service \
     -Daeron.archive.dir=${!archive_dir_var} \
-    -Daeron.archive.control.term.buffer.sparse=${AERON_SPARSE} \
-    -Daeron.pre.touch.mapped.memory=${AERON_PRE_TOUCH} \
     -Daeron.archive.mark.file.dir=/dev/shm/aeron \
     -Daeron.archive.control.channel=${!archive_control_channel_var} \
     -Daeron.archive.replication.channel=${!archive_replication_channel_var} \
