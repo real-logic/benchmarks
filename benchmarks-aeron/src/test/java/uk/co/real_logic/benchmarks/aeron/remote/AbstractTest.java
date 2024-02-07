@@ -40,7 +40,7 @@ import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.LangUtil.rethrowUnchecked;
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.EMBEDDED_MEDIA_DRIVER_PROP_NAME;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 abstract class AbstractTest<
     DRIVER extends AutoCloseable,
@@ -72,6 +72,8 @@ abstract class AbstractTest<
     @Test
     void messageLength32bytes(final @TempDir Path tempDir) throws Exception
     {
+        setProperty(SOURCE_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13334|mtu=2k|term-length=64k");
+        setProperty(DESTINATION_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13333|mtu=2k|term-length=64k");
         test(10_000, 32, 10, tempDir);
     }
 

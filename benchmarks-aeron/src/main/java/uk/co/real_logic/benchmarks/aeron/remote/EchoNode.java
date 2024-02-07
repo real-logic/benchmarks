@@ -20,10 +20,11 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.BlockHandler;
+import org.agrona.BufferUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.io.PrintStream;
@@ -32,6 +33,12 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.logbuffer.FrameDescriptor.frameLength;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BitUtil.align;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
@@ -44,8 +51,8 @@ import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemPro
  */
 public final class EchoNode implements AutoCloseable, Runnable
 {
-    private final BufferClaim bufferClaim = new BufferClaim();
-    private final FragmentHandler fragmentHandler;
+    private final UnsafeBuffer blockBuffer = new UnsafeBuffer();
+    private final BlockHandler blockHandler;
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
@@ -73,24 +80,49 @@ public final class EchoNode implements AutoCloseable, Runnable
         publication = aeron.addExclusivePublication(sourceChannel(), sourceStreamId());
         subscription = aeron.addSubscription(destinationChannel(), destinationStreamId());
 
-        fragmentHandler = (buffer, offset, length, header) ->
-        {
-            long result;
-            while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
-            {
-                checkPublicationResult(result);
-            }
-
-            bufferClaim
-                .flags(header.flags())
-                .putBytes(buffer, offset, length)
-                .commit();
-        };
-
         awaitConnected(
             () -> subscription.isConnected() && publication.isConnected(),
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
+
+        blockBuffer.wrap(BufferUtil.allocateDirectAligned(publication.termBufferLength() >> 1, CACHE_LINE_LENGTH));
+
+        blockHandler = (buffer, offset, length, subSessionId, subTermId) ->
+        {
+            // TODO: Can we avoid a copy here?
+            blockBuffer.putBytes(0, buffer, offset, length);
+
+            final int streamId = publication.streamId();
+            final int sessionId = publication.sessionId();
+            int termId = publication.termId();
+            int termOffset = publication.termOffset();
+            if (termOffset >= publication.termBufferLength())
+            {
+                termOffset = 0;
+                termId++;
+            }
+
+            int currentOffset = 0;
+            while (currentOffset < length)
+            {
+                final int frameLength = frameLength(blockBuffer, currentOffset);
+                final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+
+                blockBuffer.putInt(currentOffset + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+                blockBuffer.putInt(currentOffset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+                blockBuffer.putInt(currentOffset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+                blockBuffer.putInt(currentOffset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+
+                currentOffset += alignedFrameLength;
+                termOffset += alignedFrameLength;
+            }
+
+            long result;
+            while ((result = publication.offerBlock(blockBuffer, 0, length)) <= 0)
+            {
+                checkPublicationResult(result);
+            }
+        };
     }
 
     public void run()
@@ -102,21 +134,31 @@ public final class EchoNode implements AutoCloseable, Runnable
         final Image image = subscription.imageAtIndex(0);
         while (true)
         {
-            final int fragments = image.poll(fragmentHandler, FRAGMENT_LIMIT);
-            if (0 == fragments)
+            final int availableWindow = (int)publication.availableWindow();
+            if (availableWindow > 0)
             {
-                if (!running.get())
+                final int remainingTermLength = publication.termBufferLength() - publication.termOffset();
+                final int fragments = image.blockPoll(
+                    blockHandler,
+                    0 == remainingTermLength ? availableWindow : Math.min(availableWindow, remainingTermLength));
+                if (0 == fragments)
                 {
-                    return; // Abort execution
-                }
+                    if (!running.get())
+                    {
+                        return; // Abort execution
+                    }
 
-                if (image.isClosed())
-                {
-                    return;  // Abort execution
+                    if (image.isClosed())
+                    {
+                        return;  // Abort execution
+                    }
                 }
+                idleStrategy.idle(fragments);
             }
-
-            idleStrategy.idle(fragments);
+            else
+            {
+                idleStrategy.idle();
+            }
         }
     }
 
