@@ -85,11 +85,11 @@ class AeronUtilTest
     void defaultConfigurationValues()
     {
         assertEquals("aeron:udp?endpoint=localhost:13333|mtu=1408", destinationChannel());
-        assertEquals(1_000_000_000, destinationStreamId());
+        assertEquals(77777, destinationStreamId());
         assertEquals("aeron:udp?endpoint=localhost:13334|mtu=1408", sourceChannel());
-        assertEquals(1_000_000_001, sourceStreamId());
+        assertEquals(55555, sourceStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
-        assertEquals(1_000_100_000, archiveStream());
+        assertEquals(99999, archiveStream());
         assertFalse(embeddedMediaDriver());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
     }
@@ -107,11 +107,11 @@ class AeronUtilTest
         setProperty(IDLE_STRATEGY_PROP_NAME, "");
 
         assertEquals("aeron:udp?endpoint=localhost:13333|mtu=1408", destinationChannel());
-        assertEquals(1_000_000_000, destinationStreamId());
+        assertEquals(77777, destinationStreamId());
         assertEquals("aeron:udp?endpoint=localhost:13334|mtu=1408", sourceChannel());
-        assertEquals(1_000_000_001, sourceStreamId());
+        assertEquals(55555, sourceStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
-        assertEquals(1_000_100_000, archiveStream());
+        assertEquals(99999, archiveStream());
         assertFalse(embeddedMediaDriver());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
     }

@@ -139,7 +139,7 @@ final class AeronUtil
         final String property = getProperty(DESTINATION_STREAMS_PROP_NAME);
         if (isEmpty(property))
         {
-            return 1_000_000_000;
+            return 77777;
         }
 
         return Integer.parseInt(property);
@@ -161,7 +161,7 @@ final class AeronUtil
         final String property = getProperty(SOURCE_STREAMS_PROP_NAME);
         if (isEmpty(property))
         {
-            return 1_000_000_001;
+            return 55555;
         }
 
         return Integer.parseInt(property);
@@ -182,7 +182,7 @@ final class AeronUtil
         final String property = getProperty(ARCHIVE_STREAM_PROP_NAME);
         if (isEmpty(property))
         {
-            return 1_000_100_000;
+            return 99999;
         }
         return Integer.parseInt(property);
     }
