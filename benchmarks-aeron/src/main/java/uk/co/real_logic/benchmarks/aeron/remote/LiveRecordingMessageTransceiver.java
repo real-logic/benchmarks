@@ -97,11 +97,11 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
         final AeronArchive.Context context = aeronArchive.context();
         final Aeron aeron = context.aeron();
 
+        subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
+
         final String sendChannel = destinationChannel();
         final int sendStreamId = destinationStreamId();
         publication = aeron.addExclusivePublication(sendChannel, sendStreamId);
-
-        subscription = aeron.addSubscription(sourceChannel(), sendStreamId);
 
         recordingEventsSubscription = aeron.addSubscription(
             context.recordingEventsChannel(), context.recordingEventsStreamId());
