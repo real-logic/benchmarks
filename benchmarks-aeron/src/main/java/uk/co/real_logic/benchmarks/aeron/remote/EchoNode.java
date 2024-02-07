@@ -22,7 +22,6 @@ import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BlockHandler;
 import io.aeron.protocol.HeaderFlyweight;
-import org.agrona.BufferUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -37,7 +36,6 @@ import static io.aeron.Aeron.connect;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.align;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.PropertyAction.PRESERVE;
@@ -95,12 +93,10 @@ public final class EchoNode implements AutoCloseable, Runnable
                     image.termBufferLength() + " (expected=" + publication.termBufferLength() + ")");
         }
 
-        blockBuffer.wrap(BufferUtil.allocateDirectAligned(publication.termBufferLength() >> 1, CACHE_LINE_LENGTH));
-
         blockHandler = (buffer, offset, length, subSessionId, subTermId) ->
         {
-            // TODO: Can we avoid a copy here?
-            blockBuffer.putBytes(0, buffer, offset, length);
+            // wrap Subscription buffer to patch frame headers in place (i.e. without temporary copy)
+            blockBuffer.wrap(buffer, offset, length);
 
             final int streamId = publication.streamId();
             final int sessionId = publication.sessionId();
