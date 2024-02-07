@@ -20,13 +20,16 @@ import io.aeron.RethrowingErrorHandler;
 import io.aeron.driver.MediaDriver;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
-import static java.lang.System.clearProperty;
+import static java.lang.System.setProperty;
 import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
@@ -61,13 +64,12 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         return new EchoMessageTransceiver(nanoClock, valueRecorder, mediaDriver, aeron, false);
     }
 
-    @AfterEach
-    void after()
+    @Timeout(30)
+    @Test
+    void ipcChannels(final @TempDir Path tempDir) throws Exception
     {
-        super.after();
-        clearProperty(DESTINATION_CHANNELS_PROP_NAME);
-        clearProperty(DESTINATION_STREAMS_PROP_NAME);
-        clearProperty(SOURCE_CHANNELS_PROP_NAME);
-        clearProperty(SOURCE_STREAMS_PROP_NAME);
+        setProperty(SOURCE_CHANNELS_PROP_NAME, "aeron:ipc");
+        setProperty(DESTINATION_CHANNELS_PROP_NAME, "aeron:ipc");
+        test(1000, 333, 1, tempDir);
     }
 }
