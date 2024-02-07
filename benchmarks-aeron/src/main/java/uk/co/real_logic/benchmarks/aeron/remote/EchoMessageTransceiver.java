@@ -76,8 +76,9 @@ public final class EchoMessageTransceiver extends MessageTransceiver
     public void init(final Configuration configuration)
     {
         logsDir = configuration.logsDir();
-        publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
-        subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
+        final int streamId = destinationStreamId();
+        publication = aeron.addExclusivePublication(destinationChannel(), streamId);
+        subscription = aeron.addSubscription(sourceChannel(), streamId);
 
         awaitConnected(
             () -> subscription.isConnected() && publication.isConnected(),

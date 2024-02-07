@@ -66,6 +66,9 @@ abstract class AbstractTest<
         clearProperty(DIR_DELETE_ON_START_PROP_NAME);
         clearProperty(DIR_DELETE_ON_SHUTDOWN_PROP_NAME);
         clearProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME);
+        clearProperty(DESTINATION_CHANNELS_PROP_NAME);
+        clearProperty(DESTINATION_STREAMS_PROP_NAME);
+        clearProperty(SOURCE_CHANNELS_PROP_NAME);
     }
 
     @Timeout(30)

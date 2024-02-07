@@ -92,7 +92,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStream());
 
         final String replayChannel = sourceChannel();
-        final int replayStreamId = sourceStreamId();
+        final int replayStreamId = publication.streamId();
         final long replaySessionId = replayFullRecording(aeronArchive, recordingId, replayChannel, replayStreamId);
 
         final String channel = addSessionId(replayChannel, (int)replaySessionId);

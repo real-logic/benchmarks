@@ -91,7 +91,6 @@ final class AeronUtil
     static final String DESTINATION_STREAMS_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.destination.stream";
     static final String SOURCE_CHANNELS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channel";
-    static final String SOURCE_STREAMS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.stream";
     static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
     static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.stream";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
@@ -154,17 +153,6 @@ final class AeronUtil
         }
 
         return property;
-    }
-
-    static int sourceStreamId()
-    {
-        final String property = getProperty(SOURCE_STREAMS_PROP_NAME);
-        if (isEmpty(property))
-        {
-            return 55555;
-        }
-
-        return Integer.parseInt(property);
     }
 
     static String archiveChannel()

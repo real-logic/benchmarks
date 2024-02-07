@@ -74,7 +74,6 @@ class AeronUtilTest
         clearProperty(DESTINATION_CHANNELS_PROP_NAME);
         clearProperty(DESTINATION_STREAMS_PROP_NAME);
         clearProperty(SOURCE_CHANNELS_PROP_NAME);
-        clearProperty(SOURCE_STREAMS_PROP_NAME);
         clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
         clearProperty(ARCHIVE_STREAM_PROP_NAME);
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
@@ -87,7 +86,6 @@ class AeronUtilTest
         assertEquals("aeron:udp?endpoint=localhost:13333|mtu=1408", destinationChannel());
         assertEquals(77777, destinationStreamId());
         assertEquals("aeron:udp?endpoint=localhost:13334|mtu=1408", sourceChannel());
-        assertEquals(55555, sourceStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(99999, archiveStream());
         assertFalse(embeddedMediaDriver());
@@ -100,7 +98,6 @@ class AeronUtilTest
         setProperty(DESTINATION_CHANNELS_PROP_NAME, "");
         setProperty(DESTINATION_STREAMS_PROP_NAME, "");
         setProperty(SOURCE_CHANNELS_PROP_NAME, "");
-        setProperty(SOURCE_STREAMS_PROP_NAME, "");
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "");
@@ -109,7 +106,6 @@ class AeronUtilTest
         assertEquals("aeron:udp?endpoint=localhost:13333|mtu=1408", destinationChannel());
         assertEquals(77777, destinationStreamId());
         assertEquals("aeron:udp?endpoint=localhost:13334|mtu=1408", sourceChannel());
-        assertEquals(55555, sourceStreamId());
         assertEquals(IPC_CHANNEL, archiveChannel());
         assertEquals(99999, archiveStream());
         assertFalse(embeddedMediaDriver());
@@ -122,7 +118,6 @@ class AeronUtilTest
         setProperty(DESTINATION_CHANNELS_PROP_NAME, "ch1:5001,ch2:5002,ch3:5003");
         setProperty(DESTINATION_STREAMS_PROP_NAME, "100");
         setProperty(SOURCE_CHANNELS_PROP_NAME, "ch1:8001,ch2:8002,ch3:8003");
-        setProperty(SOURCE_STREAMS_PROP_NAME, "200");
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "localhost");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "777");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
@@ -131,7 +126,6 @@ class AeronUtilTest
         assertEquals("ch1:5001,ch2:5002,ch3:5003", destinationChannel());
         assertEquals(100, destinationStreamId());
         assertEquals("ch1:8001,ch2:8002,ch3:8003", sourceChannel());
-        assertEquals(200, sourceStreamId());
         assertEquals("localhost", archiveChannel());
         assertEquals(777, archiveStream());
         assertTrue(embeddedMediaDriver());

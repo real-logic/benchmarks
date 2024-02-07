@@ -20,15 +20,13 @@ import io.aeron.RethrowingErrorHandler;
 import io.aeron.driver.MediaDriver;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
-import org.junit.jupiter.api.AfterEach;
 
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
-import static java.lang.System.clearProperty;
 import static org.mockito.Mockito.mock;
-import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
+import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.launchEmbeddedMediaDriverIfConfigured;
 
 class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, EchoNode>
 {
@@ -59,15 +57,5 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         final Aeron aeron)
     {
         return new EchoMessageTransceiver(nanoClock, valueRecorder, mediaDriver, aeron, false);
-    }
-
-    @AfterEach
-    void after()
-    {
-        super.after();
-        clearProperty(DESTINATION_CHANNELS_PROP_NAME);
-        clearProperty(DESTINATION_STREAMS_PROP_NAME);
-        clearProperty(SOURCE_CHANNELS_PROP_NAME);
-        clearProperty(SOURCE_STREAMS_PROP_NAME);
     }
 }
