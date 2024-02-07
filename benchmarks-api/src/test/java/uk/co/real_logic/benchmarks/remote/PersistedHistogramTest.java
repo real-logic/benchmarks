@@ -233,7 +233,7 @@ class PersistedHistogramTest
         return Stream.of(arguments(new SingleHistogramFactory()), arguments(new LoggingHistogramFactory()));
     }
 
-    private static class SingleHistogramFactory implements Function<Path, PersistedHistogram>
+    private static final class SingleHistogramFactory implements Function<Path, PersistedHistogram>
     {
         public PersistedHistogram apply(final Path path)
         {
@@ -246,7 +246,7 @@ class PersistedHistogramTest
         }
     }
 
-    private static class LoggingHistogramFactory implements Function<Path, PersistedHistogram>
+    private static final class LoggingHistogramFactory implements Function<Path, PersistedHistogram>
     {
         public PersistedHistogram apply(final Path path)
         {
