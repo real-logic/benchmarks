@@ -21,6 +21,7 @@ import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BlockHandler;
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.BufferUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
@@ -33,8 +34,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static io.aeron.logbuffer.FrameDescriptor.frameLength;
+import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
@@ -85,6 +85,16 @@ public final class EchoNode implements AutoCloseable, Runnable
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
 
+        final Image image = subscription.imageAtIndex(0);
+        if (image.mtuLength() != (publication.maxPayloadLength() + HEADER_LENGTH) ||
+            image.termBufferLength() != publication.termBufferLength())
+        {
+            throw new IllegalStateException(
+                "Subscription mtu/term-length must match with the Publication: mtu=" + image.mtuLength() +
+                    " (expected=" + (publication.maxPayloadLength() + HEADER_LENGTH) + "), term-length=" +
+                    image.termBufferLength() + " (expected=" + publication.termBufferLength() + ")");
+        }
+
         blockBuffer.wrap(BufferUtil.allocateDirectAligned(publication.termBufferLength() >> 1, CACHE_LINE_LENGTH));
 
         blockHandler = (buffer, offset, length, subSessionId, subTermId) ->
@@ -102,25 +112,45 @@ public final class EchoNode implements AutoCloseable, Runnable
                 termId++;
             }
 
-            int currentOffset = 0;
+            int currentOffset = 0, paddingFrameLength = 0;
             while (currentOffset < length)
             {
                 final int frameLength = frameLength(blockBuffer, currentOffset);
-                final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+                final int frameType = frameType(blockBuffer, currentOffset);
+                if (HeaderFlyweight.HDR_TYPE_DATA == frameType)
+                {
+                    final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
 
-                blockBuffer.putInt(currentOffset + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
-                blockBuffer.putInt(currentOffset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
-                blockBuffer.putInt(currentOffset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
-                blockBuffer.putInt(currentOffset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+                    blockBuffer.putInt(currentOffset + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+                    blockBuffer.putInt(currentOffset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+                    blockBuffer.putInt(currentOffset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+                    blockBuffer.putInt(currentOffset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
-                currentOffset += alignedFrameLength;
-                termOffset += alignedFrameLength;
+                    currentOffset += alignedFrameLength;
+                    termOffset += alignedFrameLength;
+                }
+                else if (HeaderFlyweight.HDR_TYPE_PAD == frameType)
+                {
+                    paddingFrameLength = frameLength;
+                    break;
+                }
             }
 
-            long result;
-            while ((result = publication.offerBlock(blockBuffer, 0, length)) <= 0)
+            if (0 == paddingFrameLength)
             {
-                checkPublicationResult(result);
+                long result;
+                while ((result = publication.offerBlock(blockBuffer, 0, length)) <= 0)
+                {
+                    checkPublicationResult(result);
+                }
+            }
+            else
+            {
+                long result;
+                while ((result = publication.appendPadding(paddingFrameLength - HEADER_LENGTH)) <= 0)
+                {
+                    checkPublicationResult(result);
+                }
             }
         };
     }
