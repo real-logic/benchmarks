@@ -16,6 +16,7 @@
 package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
+import io.aeron.RethrowingErrorHandler;
 import io.aeron.driver.MediaDriver;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
@@ -43,7 +44,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
 
     protected Aeron connectToDriver()
     {
-        return connect();
+        return connect(new Aeron.Context().errorHandler(new RethrowingErrorHandler()));
     }
 
     protected Class<EchoMessageTransceiver> messageTransceiverClass()

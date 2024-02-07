@@ -70,23 +70,23 @@ abstract class AbstractTest<
 
     @Timeout(30)
     @Test
-    void messageLength32bytes(final @TempDir Path tempDir) throws Exception
+    void smallMessage(final @TempDir Path tempDir) throws Exception
     {
         setProperty(SOURCE_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13334|mtu=2k|term-length=64k");
         setProperty(DESTINATION_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13333|mtu=2k|term-length=64k");
-        test(10_000, 32, 10, tempDir);
+        test(10_000, 111, 10, tempDir);
     }
 
     @Timeout(30)
     @Test
-    void messageLength288bytes(final @TempDir Path tempDir) throws Exception
+    void mediumMessage(final @TempDir Path tempDir) throws Exception
     {
         test(1000, 288, 5, tempDir);
     }
 
     @Timeout(30)
     @Test
-    void messageLength1344bytes(final @TempDir Path tempDir) throws Exception
+    void largeMessage(final @TempDir Path tempDir) throws Exception
     {
         test(100, 1344, 1, tempDir);
     }

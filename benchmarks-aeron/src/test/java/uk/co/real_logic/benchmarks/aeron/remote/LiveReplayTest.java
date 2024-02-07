@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.benchmarks.aeron.remote;
 
+import io.aeron.RethrowingErrorHandler;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import org.HdrHistogram.ValueRecorder;
@@ -71,7 +72,7 @@ class LiveReplayTest extends
 
     protected AeronArchive connectToDriver()
     {
-        return connect();
+        return connect(new AeronArchive.Context().errorHandler(new RethrowingErrorHandler()));
     }
 
     protected Class<LiveReplayMessageTransceiver> messageTransceiverClass()
