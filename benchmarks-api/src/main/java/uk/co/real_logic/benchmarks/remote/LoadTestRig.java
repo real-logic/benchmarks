@@ -27,7 +27,6 @@ import java.io.PrintStream;
 import java.util.Properties;
 import java.util.function.BiFunction;
 
-import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -120,12 +119,10 @@ public final class LoadTestRig
             messageTransceiver.init(configuration);
             if (configuration.warmupIterations() > 0)
             {
-                out.printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload and a" +
-                    " burst size of %,d...%n",
+                out.printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload...%n",
                     configuration.warmupIterations(),
                     configuration.warmupMessageRate(),
-                    configuration.messageLength(),
-                    configuration.batchSize());
+                    configuration.messageLength());
                 send(configuration.warmupIterations(), configuration.warmupMessageRate());
 
                 messageTransceiver.reset();
@@ -133,12 +130,10 @@ public final class LoadTestRig
                 progressReporter.reset();
             }
 
-            out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload and a" +
-                " burst size of %,d...%n",
+            out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload...%n",
                 configuration.iterations(),
                 configuration.messageRate(),
-                configuration.messageLength(),
-                configuration.batchSize());
+                configuration.messageLength());
             final long sentMessages = send(configuration.iterations(), configuration.messageRate());
             progressReporter.reset();
 
@@ -175,13 +170,13 @@ public final class LoadTestRig
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final NanoClock clock = this.clock;
-        final int burstSize = configuration.batchSize();
         final int messageSize = configuration.messageLength();
         final IdleStrategy idleStrategy = configuration.idleStrategy();
         // The `sendIntervalNs` might be off if the division is not exact in which case more messages will be sent per
         // second than specified via `numberOfMessages`. However, this guarantees that the duration of the send
         // operation is bound by the number of iterations.
-        final long sendIntervalNs = NANOS_PER_SECOND * burstSize / numberOfMessages;
+        final long sendIntervalNs = Math.max(NANOS_PER_SECOND / numberOfMessages, configuration.messageSendDelayNs());
+        final int burstSize = (int)Math.ceil((double)numberOfMessages / (int)(NANOS_PER_SECOND / sendIntervalNs));
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
         final long startTimeNs = clock.nanoTime();
         final long stopTimeNs = startTimeNs + (iterations * NANOS_PER_SECOND);
@@ -190,13 +185,13 @@ public final class LoadTestRig
         long nowNs = startTimeNs, timestampNs = startTimeNs;
         long nextReportTimeNs = startTimeNs + NANOS_PER_SECOND;
 
-        int batchSize = (int)min(totalNumberOfMessages, burstSize);
+        int batchSize = burstSize;
         while (sentMessages < totalNumberOfMessages)
         {
             final int sent = messageTransceiver.send(batchSize, messageSize, timestampNs, CHECKSUM);
             sentMessages += sent;
 
-            if (totalNumberOfMessages == sentMessages)
+            if (sentMessages >= totalNumberOfMessages)
             {
                 progressReporter.reportProgress(startTimeNs, nowNs, sentMessages, iterations);
                 break;
@@ -205,7 +200,7 @@ public final class LoadTestRig
             nowNs = clock.nanoTime();
             if (sent == batchSize)
             {
-                batchSize = (int)min(totalNumberOfMessages - sentMessages, burstSize);
+                batchSize = burstSize;
                 timestampNs += sendIntervalNs;
                 long receivedMessageCount = 0;
                 while (nowNs < timestampNs && nowNs < stopTimeNs)

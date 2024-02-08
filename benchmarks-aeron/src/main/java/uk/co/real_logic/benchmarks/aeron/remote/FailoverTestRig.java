@@ -111,10 +111,6 @@ public final class FailoverTestRig implements FailoverListener
 
     private Configuration validate(final Configuration configuration)
     {
-        if (configuration.batchSize() != 1)
-        {
-            throw new IllegalArgumentException("batchSize must be 1, but was " + configuration.batchSize());
-        }
         if (configuration.messageLength() != ECHO_MESSAGE_LENGTH)
         {
             throw new IllegalArgumentException("messageLength must be " + ECHO_MESSAGE_LENGTH + ", but was " +
@@ -134,23 +130,19 @@ public final class FailoverTestRig implements FailoverListener
 
             if (configuration.warmupIterations() > 0)
             {
-                out.printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload and a" +
-                    " burst size of %,d...%n",
+                out.printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload...%n",
                     configuration.warmupIterations(),
                     configuration.warmupMessageRate(),
-                    configuration.messageLength(),
-                    configuration.batchSize());
+                    configuration.messageLength());
                 runTest(configuration.warmupIterations(), configuration.warmupMessageRate());
 
                 persistedHistogram.reset();
             }
 
-            out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload and a" +
-                " burst size of %,d...%n",
+            out.printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload...%n",
                 configuration.iterations(),
                 configuration.messageRate(),
-                configuration.messageLength(),
-                configuration.batchSize());
+                configuration.messageLength());
             failoverAt = clock.nanoTime() + TimeUnit.SECONDS.toNanos(1);
             runTest(configuration.iterations(), configuration.messageRate());
 

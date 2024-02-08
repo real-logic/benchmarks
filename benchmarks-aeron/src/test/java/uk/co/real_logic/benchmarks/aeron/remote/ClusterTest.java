@@ -75,28 +75,27 @@ class ClusterTest
     @Test
     void messageLength32bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(10_000, 32, 10, tempDir);
+        test(10_000, 32, tempDir);
     }
 
     @Timeout(30)
     @Test
     void messageLength192bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(1000, 192, 5, tempDir);
+        test(1000, 192, tempDir);
     }
 
     @Timeout(30)
     @Test
     void messageLength1344bytes(final @TempDir Path tempDir) throws Exception
     {
-        test(100, 1344, 1, tempDir);
+        test(100, 1344, tempDir);
     }
 
     @SuppressWarnings("MethodLength")
     protected final void test(
         final int messages,
         final int messageLength,
-        final int burstSize,
         final Path tempDir) throws Exception
     {
         final String aeronDirectoryName = tempDir.resolve("driver").toString();
@@ -113,7 +112,6 @@ class ClusterTest
             .messageRate(messages)
             .messageLength(messageLength)
             .messageTransceiverClass(ClusterMessageTransceiver.class)
-            .batchSize(burstSize)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("aeron")
             .build();

@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -123,23 +125,21 @@ class LoadTestRigTest
         inOrder.verify(out)
             .printf("%nStarting latency benchmark using the following configuration:%n%s%n", configuration);
         inOrder.verify(messageTransceiver).init(configuration);
-        inOrder.verify(out).printf("%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload" +
-            " and a burst size of %,d...%n",
+        inOrder.verify(out).printf(
+            "%nRunning warmup for %,d iterations of %,d messages each, with %,d bytes payload...%n",
             configuration.warmupIterations(),
             configuration.warmupMessageRate(),
-            configuration.messageLength(),
-            configuration.batchSize());
+            configuration.messageLength());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);
         inOrder.verify(progressReporter).reportProgress(nanoTime, nanoTime, 1, 1);
         inOrder.verify(messageTransceiver).reset();
         inOrder.verify(persistedHistogram).reset();
         inOrder.verify(progressReporter).reset();
-        inOrder.verify(out).printf("%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes" +
-            " payload and a burst size of %,d...%n",
+        inOrder.verify(out).printf(
+            "%nRunning measurement for %,d iterations of %,d messages each, with %,d bytes payload...%n",
             configuration.iterations(),
             configuration.messageRate(),
-            configuration.messageLength(),
-            configuration.batchSize());
+            configuration.messageLength());
         inOrder.verify(messageTransceiver).send(1, configuration.messageLength(), nanoTime, CHECKSUM);
         inOrder.verify(progressReporter).reportProgress(nanoTime, nanoTime, 1, 1);
         inOrder.verify(progressReporter).reset();
@@ -163,7 +163,7 @@ class LoadTestRigTest
             .warmupIterations(0)
             .iterations(3)
             .messageRate(5)
-            .batchSize(2)
+            .messageSendDelayNs(MILLISECONDS.toNanos(500))
             .messageTransceiverClass(configuration.messageTransceiverClass())
             .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
@@ -181,7 +181,7 @@ class LoadTestRigTest
         loadTestRig.run();
 
         verify(out).printf("%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
-            "total but managed to send only %,d messages (loss %.4f%%)!%n", 15L, 2L, 86.66666666666667d);
+            "total but managed to send only %,d messages (loss %.4f%%)!%n", 15L, 3L, 80.0d);
     }
 
     @Test
@@ -191,7 +191,7 @@ class LoadTestRigTest
             .warmupIterations(0)
             .iterations(1)
             .messageRate(3)
-            .batchSize(200)
+            .messageSendDelayNs(SECONDS.toNanos(1))
             .messageTransceiverClass(configuration.messageTransceiverClass())
             .idleStrategy(idleStrategy)
             .outputDirectory(configuration.outputDirectory())
@@ -201,7 +201,8 @@ class LoadTestRigTest
         final LoadTestRig loadTestRig = new LoadTestRig(
             configuration,
             messageTransceiver,
-            out, clock,
+            out,
+            clock,
             persistedHistogram,
             progressReporter);
 
@@ -227,7 +228,7 @@ class LoadTestRigTest
         final Configuration configuration = new Configuration.Builder()
             .messageRate(1)
             .idleStrategy(idleStrategy)
-            .batchSize(4)
+            .messageSendDelayNs(MILLISECONDS.toNanos(490))
             .messageLength(24)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
@@ -253,26 +254,36 @@ class LoadTestRigTest
 
         final long messages = loadTestRig.send(2, 9);
 
-        assertEquals(18, messages);
-        verify(clock, times(24)).nanoTime();
-        verify(idleStrategy, times(10)).reset();
-        verify(messageTransceiver).send(4, 24, 1000000000L, CHECKSUM);
-        verify(messageTransceiver).send(4, 24, 1444444444L, CHECKSUM);
-        verify(messageTransceiver).send(4, 24, 1888888888L, CHECKSUM);
-        verify(messageTransceiver).send(4, 24, 2333333332L, CHECKSUM);
-        verify(messageTransceiver).send(2, 24, 2777777776L, CHECKSUM);
-        verify(messageTransceiver, times(9)).receive();
-        verify(messageTransceiver, times(10)).receivedMessages();
-        verify(messageTransceiver, times(18)).onMessageReceived(anyLong(), anyLong());
-        verify(progressReporter).reportProgress(1000000000L, 2400000000L, 8, 2);
-        verify(progressReporter).reportProgress(1000000000L, 2950000000L, 18, 2);
+        assertEquals(20, messages);
+        verify(clock, times(25)).nanoTime();
+        verify(idleStrategy, times(11)).reset();
+        verify(messageTransceiver).send(5, 24, 1000000000L, CHECKSUM);
+        verify(messageTransceiver).send(5, 24, 1490000000L, CHECKSUM);
+        verify(messageTransceiver).send(5, 24, 1980000000L, CHECKSUM);
+        verify(messageTransceiver).send(5, 24, 2470000000L, CHECKSUM);
+        verify(messageTransceiver, times(10)).receive();
+        verify(messageTransceiver, times(11)).receivedMessages();
+        verify(messageTransceiver, times(20)).onMessageReceived(anyLong(), anyLong());
+        verify(progressReporter).reportProgress(1000000000L, 2400000000L, 10, 2);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
     @Test
     void sendStopsIfTimeElapsesBeforeTargetNumberOfMessagesIsReached(final @TempDir Path tempDir)
     {
-        when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenReturn(15, 10, 5, 30);
+        when(messageTransceiver.send(anyInt(), anyInt(), anyLong(), anyLong())).thenAnswer(
+            new Answer<Integer>()
+            {
+                private int callCount;
+                private final float[] scales = new float[]{ 0.75f, 0.25f };
+
+                public Integer answer(final InvocationOnMock invocationOnMock) throws Throwable
+                {
+                    final int batchSize = invocationOnMock.getArgument(0);
+                    final int index = callCount++;
+                    return index < scales.length ? (int)(batchSize * scales[index]) : batchSize;
+                }
+            });
         when(clock.nanoTime()).thenReturn(
             MILLISECONDS.toNanos(500),
             MILLISECONDS.toNanos(501),
@@ -289,7 +300,7 @@ class LoadTestRigTest
         final Configuration configuration = new Configuration.Builder()
             .messageRate(1)
             .idleStrategy(idleStrategy)
-            .batchSize(30)
+            .messageSendDelayNs(MILLISECONDS.toNanos(313))
             .messageLength(100)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
@@ -305,21 +316,21 @@ class LoadTestRigTest
 
         final long messages = loadTestRig.send(10, 100);
 
-        assertEquals(120, messages);
-        verify(clock, times(128)).nanoTime();
-        verify(idleStrategy, times(119)).reset();
-        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500), CHECKSUM);
-        verify(messageTransceiver).send(15, 100, MILLISECONDS.toNanos(500), CHECKSUM);
-        verify(messageTransceiver).send(5, 100, MILLISECONDS.toNanos(500), CHECKSUM);
-        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(800), CHECKSUM);
-        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(1100), CHECKSUM);
-        verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(1400), CHECKSUM);
-        verify(messageTransceiver, times(120)).receive();
-        verify(messageTransceiver, times(119)).receivedMessages();
-        verify(messageTransceiver, times(120)).onMessageReceived(anyLong(), anyLong());
-        verify(progressReporter).reportProgress(500000000L, 6751000000L, 30, 10);
-        verify(progressReporter).reportProgress(500000000L, 9200000000L, 60, 10);
-        verify(progressReporter).reportProgress(500000000L, 9201000000L, 90, 10);
+        assertEquals(136, messages);
+        verify(clock, times(144)).nanoTime();
+        verify(idleStrategy, times(135)).reset();
+        verify(messageTransceiver).send(34, 100, MILLISECONDS.toNanos(500), CHECKSUM);
+        verify(messageTransceiver).send(9, 100, MILLISECONDS.toNanos(500), CHECKSUM);
+        verify(messageTransceiver).send(7, 100, MILLISECONDS.toNanos(500), CHECKSUM);
+        verify(messageTransceiver).send(34, 100, MILLISECONDS.toNanos(813), CHECKSUM);
+        verify(messageTransceiver).send(34, 100, MILLISECONDS.toNanos(1126), CHECKSUM);
+        verify(messageTransceiver).send(34, 100, MILLISECONDS.toNanos(1439), CHECKSUM);
+        verify(messageTransceiver, times(136)).receive();
+        verify(messageTransceiver, times(135)).receivedMessages();
+        verify(messageTransceiver, times(136)).onMessageReceived(anyLong(), anyLong());
+        verify(progressReporter).reportProgress(500000000L, 6751000000L, 34, 10);
+        verify(progressReporter).reportProgress(500000000L, 9200000000L, 68, 10);
+        verify(progressReporter).reportProgress(500000000L, 9201000000L, 102, 10);
         verifyNoMoreInteractions(out, clock, idleStrategy, messageTransceiver);
     }
 
@@ -332,7 +343,6 @@ class LoadTestRigTest
             .iterations(5)
             .messageRate(777)
             .messageLength(32)
-            .batchSize(9)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("test")
@@ -368,7 +378,7 @@ class LoadTestRigTest
             .iterations(3)
             .messageRate(3040)
             .messageLength(32)
-            .batchSize(13)
+            .messageSendDelayNs(MILLISECONDS.toNanos(1))
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("test")

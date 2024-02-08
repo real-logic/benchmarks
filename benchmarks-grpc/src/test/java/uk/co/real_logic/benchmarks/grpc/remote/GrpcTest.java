@@ -56,27 +56,26 @@ class GrpcTest
     @Timeout(30)
     void messageLength32bytes() throws Exception
     {
-        test(10_000, 32, 10, false);
+        test(10_000, 32, false);
     }
 
     @Test
     @Timeout(30)
     void messageLength1344bytes() throws Exception
     {
-        test(100, 1344, 1, true);
+        test(100, 1344, true);
     }
 
     @Test
     @Timeout(30)
     void messageLength288bytes() throws Exception
     {
-        test(777, 288, 3, false);
+        test(777, 288, false);
     }
 
     private void test(
         final int numberOfMessages,
         final int messageLength,
-        final int burstSize,
         final boolean useTls) throws Exception
     {
         setProperty(TLS_PROP_NAME, Boolean.toString(useTls));
@@ -91,7 +90,6 @@ class GrpcTest
                 .warmupIterations(0)
                 .iterations(1)
                 .messageRate(numberOfMessages)
-                .batchSize(burstSize)
                 .messageLength(messageLength)
                 .messageTransceiverClass(StreamingMessageTransceiver.class)
                 .outputFileNamePrefix("grpc")
