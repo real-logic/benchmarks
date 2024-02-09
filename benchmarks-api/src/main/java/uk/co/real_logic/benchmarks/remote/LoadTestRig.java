@@ -175,20 +175,8 @@ public final class LoadTestRig
         // The `sendIntervalNs` might be off if the division is not exact in which case more messages will be sent per
         // second than specified via `numberOfMessages`. However, this guarantees that the duration of the send
         // operation is bound by the number of iterations.
-        long sendIntervalNs = Math.max(NANOS_PER_SECOND / numberOfMessages, configuration.messageSendDelayNs());
-        int burstSize = numberOfMessages / (int)(NANOS_PER_SECOND / sendIntervalNs);
-        while (burstSize * (int)(NANOS_PER_SECOND / sendIntervalNs) < numberOfMessages)
-        {
-            sendIntervalNs *= 10;
-            if (sendIntervalNs > NANOS_PER_SECOND)
-            {
-                sendIntervalNs /= 10;
-                burstSize++;
-                break;
-            }
-            burstSize = numberOfMessages / (int)(NANOS_PER_SECOND / sendIntervalNs);
-        }
-
+        final long sendIntervalNs = Math.max(NANOS_PER_SECOND / numberOfMessages, configuration.messageSendDelayNs());
+        final int burstSize = (int)Math.ceil((double)numberOfMessages / (int)(NANOS_PER_SECOND / sendIntervalNs));
         final long totalNumberOfMessages = (long)iterations * numberOfMessages;
         final long startTimeNs = clock.nanoTime();
         final long stopTimeNs = startTimeNs + (iterations * NANOS_PER_SECOND);
