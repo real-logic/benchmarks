@@ -47,7 +47,7 @@ runs=${RUNS:-3}
 iterations=${ITERATIONS:-60}
 warmupIterations=${WARMUP_ITERATIONS:-30}
 warmupMessageRate="${WARMUP_MESSAGE_RATE:-25K}"
-messageSendDelay="${MESSAGE_SEND_DELAY:1us}"
+messageSendDelay="${MESSAGE_SEND_DELAY:-1us}"
 
 messageRates=("501K" "301K" "101K")
 if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
