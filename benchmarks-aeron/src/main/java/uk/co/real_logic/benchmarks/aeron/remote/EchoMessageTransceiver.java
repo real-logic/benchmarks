@@ -21,16 +21,21 @@ import io.aeron.FragmentAssembler;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.BufferClaim;
+import io.aeron.protocol.HeaderFlyweight;
 import org.HdrHistogram.ValueRecorder;
+import org.agrona.BitUtil;
+import org.agrona.BufferUtil;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 import uk.co.real_logic.benchmarks.remote.MessageTransceiver;
 
 import java.nio.file.Path;
 
 import static io.aeron.Aeron.connect;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.CloseHelper.closeAll;
@@ -38,7 +43,9 @@ import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 public final class EchoMessageTransceiver extends MessageTransceiver
 {
-    private final BufferClaim bufferClaim = new BufferClaim();
+    private static final int MESSAGE_BUFFER_SIZE = 4 * 1024 * 1024;
+    private final UnsafeBuffer msgBuffer = new UnsafeBuffer(
+        BufferUtil.allocateDirectAligned(MESSAGE_BUFFER_SIZE, FRAME_ALIGNMENT));
     private final FragmentAssembler dataHandler = new FragmentAssembler(
         (buffer, offset, length, header) ->
         {
@@ -104,7 +111,67 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
+        final int frameLength = messageLength + HEADER_LENGTH;
+        final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
+        final long availableWindow = publication.availableWindow();
+        if (availableWindow < alignedFrameLength)
+        {
+            return 0;
+        }
+
+        final int termBufferLength = publication.termBufferLength();
+        int termOffset = publication.termOffset();
+        int remainingSpace = termBufferLength - termOffset;
+        int termId = publication.termId();
+        if (remainingSpace < alignedFrameLength)
+        {
+            termId++;
+            termOffset = 0;
+            if (remainingSpace >= HEADER_LENGTH)
+            {
+                final long result = publication.appendPadding(remainingSpace - HEADER_LENGTH);
+                if (result < 0)
+                {
+                    checkPublicationResult(result);
+                    return 0;
+                }
+            }
+            remainingSpace = termBufferLength;
+        }
+
+        final int limit = Math.min((int)availableWindow, Math.min(remainingSpace, MESSAGE_BUFFER_SIZE));
+        int i = 0, offset = 0;
+        for (; i < numberOfMessages && offset < limit; i++)
+        {
+            // header
+            msgBuffer.putInt(offset, frameLength, LITTLE_ENDIAN);
+            msgBuffer.putByte(offset + VERSION_FIELD_OFFSET, HeaderFlyweight.CURRENT_VERSION);
+            msgBuffer.putByte(offset + FLAGS_FIELD_OFFSET, (byte)BEGIN_AND_END_FLAGS);
+            msgBuffer.putShort(offset + TYPE_FIELD_OFFSET, (short)HeaderFlyweight.HDR_TYPE_DATA, LITTLE_ENDIAN);
+            msgBuffer.putInt(offset + TERM_OFFSET_FIELD_OFFSET, termOffset + offset, LITTLE_ENDIAN);
+            msgBuffer.putInt(offset + SESSION_ID_FIELD_OFFSET, publication.sessionId(), LITTLE_ENDIAN);
+            msgBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, publication.streamId(), LITTLE_ENDIAN);
+            msgBuffer.putInt(offset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+            msgBuffer.putLong(offset + RESERVED_VALUE_OFFSET, DEFAULT_RESERVE_VALUE, LITTLE_ENDIAN);
+
+            // body
+            msgBuffer.putLong(offset + HEADER_LENGTH, timestamp, LITTLE_ENDIAN);
+            msgBuffer.putLong(offset + HEADER_LENGTH + messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
+
+            offset += alignedFrameLength;
+        }
+
+        if (i > 0)
+        {
+            final long result = publication.offerBlock(msgBuffer, 0, offset);
+            if (result < 0)
+            {
+                checkPublicationResult(result);
+                return 0;
+            }
+        }
+
+        return i;
     }
 
     public void receive()
