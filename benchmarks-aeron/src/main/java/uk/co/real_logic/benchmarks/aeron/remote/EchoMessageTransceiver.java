@@ -141,7 +141,7 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
         final int limit = Math.min((int)availableWindow, Math.min(remainingSpace, MESSAGE_BUFFER_SIZE));
         int i = 0, offset = 0;
-        for (; i < numberOfMessages && offset < limit; i++)
+        for (; i < numberOfMessages && offset + alignedFrameLength <= limit; i++)
         {
             // header
             msgBuffer.putInt(offset, frameLength, LITTLE_ENDIAN);
