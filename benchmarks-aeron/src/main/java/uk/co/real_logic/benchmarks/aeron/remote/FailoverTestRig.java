@@ -146,7 +146,7 @@ public final class FailoverTestRig implements FailoverListener
             failoverAt = clock.nanoTime() + TimeUnit.SECONDS.toNanos(1);
             runTest(configuration.iterations(), configuration.messageRate());
 
-            out.printf("%nHistogram of RTT latencies in microseconds.%n");
+            out.printf("%nHistogram of RTT latencies in nanoseconds.%n");
             final PersistedHistogram histogram = persistedHistogram;
             histogram.outputPercentileDistribution(out, 1000.0);
 

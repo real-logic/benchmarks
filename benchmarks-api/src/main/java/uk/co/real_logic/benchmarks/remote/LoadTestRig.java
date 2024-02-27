@@ -137,7 +137,7 @@ public final class LoadTestRig
             final long sentMessages = send(configuration.iterations(), configuration.messageRate());
             progressReporter.reset();
 
-            out.printf("%nHistogram of RTT latencies in microseconds.%n");
+            out.printf("%nHistogram of RTT latencies in nanoseconds.%n");
             final PersistedHistogram histogram = persistedHistogram;
             histogram.outputPercentileDistribution(out, 1000.0);
 
