@@ -232,6 +232,46 @@ Running
 
 will produce plots in which the histograms are grouped by test scenario by default. It is possible to produce graphs with a different kind of aggregation and to apply filters on the histograms to plot within a directory. Run `./results-plotter.py` (without arguments) in order to get an overview of the capabilities of the plotting script.
 
+## Running on Kubernetes
+
+You will need the following Docker containers built & injected into a repository that you can use.
+
+### Containers
+
+**Benchmarks:**
+
+This wraps the code in *this* repository.
+
+eg.
+```
+docker build -t <your_repo>:aeron-benchmarks .
+docker push <your_repo>:aeron-benchmarks
+```
+
+**Aeron DPDK Media driver:**
+
+Premium feature.
+
+If required/activated in your test configuration - see https://github.com/real-logic/premium-extensions/ or ask your support contact at [Adaptive](https://weareadaptive.com/)
+
+This is expected to reside in a container called in an accessible repository.
+
+**Aeron C Media driver:**
+
+Support coming soon
+
+### Settings
+
+1. Update `scripts/k8s/settings.yml` with configuration from your test environment.
+
+2. Make sure your test environment is the active `kubecontext`
+
+3. If you are attempting to run DPDK tests, make sure you have a DPDK enabled Pod/Host. Setting this up is outside the scope of this documentation, please see https://github.com/AdaptiveConsulting/k8s-dpdk-mgr for an example of how to do this.
+
+4. Ensure you are permissioned to write to a K8s namespace, by default the tooling will use the `default` namespace.
+
+5. Run `./scripts/k8s-remote-testing.sh ( -n my_namespace )`
+
 ## Other benchmarks (single machine)
 Set of latency benchmarks testing round trip time (RTT) between threads or processes (IPC) via FIFO data structures and messaging systems.
 

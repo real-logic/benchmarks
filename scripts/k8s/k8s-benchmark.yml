@@ -1,0 +1,256 @@
+---
+# This service is deliberately empty, and updated via an EndpointSlice
+# https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/
+apiVersion: v1
+kind: Service
+metadata:
+  name: aeron-benchmark-md
+  labels:
+    app: aeron-benchmark
+spec:
+  ports:
+    - port: 10000
+      name: aeron
+  clusterIP: None
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aeron-benchmark
+data:
+  low-latency-driver.properties: |
+    aeron.dir.delete.on.start=true
+    aeron.dir.delete.on.shutdown=true
+    aeron.print.configuration=true
+    aeron.term.buffer.sparse.file=true
+    aeron.pre.touch.mapped.memory=false
+    aeron.perform.storage.checks=false
+    aeron.socket.so_sndbuf=2m
+    aeron.socket.so_rcvbuf=2m
+    aeron.rcv.initial.window.length=2m
+    aeron.threading.mode=DEDICATED
+    aeron.conductor.idle.strategy=noop
+    aeron.sender.idle.strategy=noop
+    aeron.receiver.idle.strategy=noop
+    aeron.spies.simulate.connection=true
+    aeron.use.windows.high.res.timer=true
+    agrona.disable.bounds.checks=true
+    aeron.driver.timeout=30000
+    aeron.dir=/dev/shm/aeron
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aeron-benchmark-envs
+data:
+  TEST_OUTPUT_PATH: /dev/shm/results
+  NODE0_ADDRESS: aeron-benchmark-0.aeron-benchmark-md
+  NODE1_ADDRESS: aeron-benchmark-1.aeron-benchmark-md
+  JVM_OPTS: >-
+    -Duk.co.real_logic.benchmarks.remote.output.directory=/dev/shm/results
+    -Duk.co.real_logic.benchmarks.aeron.remote.embedded.media.driver=false
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=aeron-benchmark-1.aeron-benchmark-md:13000
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=aeron-benchmark-0.aeron-benchmark-md:13001
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aeron-benchmark-envs-dpdk
+data:
+  AERON_DPDK_THREADS_FROM_CGROUP: "TRUE"
+  AERON_DPDK_TX_MEMPOOL_PER_QUEUE: "true"
+  AERON_DPDK_TX_MEMPOOL_OPS: "ring_mp_mc"
+  AERON_DPDK_TX_MEMPOOL_CACHE_SIZE: "512"
+  AERON_DPDK_RX_MEMPOOL_OPS: "ring_mp_mc"
+  AERON_DPDK_RX_MEMPOOL_CACHE_SIZE: "512"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: aeron-benchmark-0
+spec:
+  # The benchmark code runs exactly once and isn't restarted
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 5
+  volumes:
+    - name: hugepage-2mi
+      emptyDir:
+        medium: HugePages-2Mi
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 2Gi
+    # Common properties files
+    - name: config-volume
+      configMap:
+        name: aeron-benchmark
+        items:
+          - key: low-latency-driver.properties
+            path: low-latency-driver.properties
+
+  # hostNetwork: true
+  # dnsPolicy: ClusterFirstWithHostNet
+  containers:
+    - name: benchmark
+      # make this a variable
+      args: ["aeron/echo-server"]
+      envFrom:
+        - configMapRef:
+            name: aeron-benchmark-envs
+      volumeMounts:
+        - mountPath: /hugepages-2Mi
+          name: hugepage-2mi
+        - mountPath: /dev/shm
+          name: shm
+        - name: config-volume
+          mountPath: /opt/aeron-config
+      resources:
+        limits:
+          cpu: "8"
+          memory: 10G
+          hugepages-2Mi: 1Gi
+
+    - name: aeronmd-dpdk
+      args:
+        - "--no-telemetry"
+        - "/opt/aeron-config/low-latency-driver.properties"
+      securityContext:
+        capabilities:
+          # Required for DPDK
+          add:
+            - IPC_LOCK
+            - SYS_RAWIO
+            - SYS_ADMIN
+      envFrom:
+        - configMapRef:
+            name: aeron-benchmark-envs-dpdk
+      volumeMounts:
+        - name: hugepage-2mi
+          mountPath: /hugepages-2Mi
+        - name: shm
+          mountPath: /dev/shm
+        - name: config-volume
+          mountPath: /opt/aeron-config
+      resources:
+        limits:
+          cpu: "8"
+          memory: 8G
+          hugepages-2Mi: 1Gi
+
+    # This is to give a persistant endpoint to retrieve the results from once the benchmark has finished and exited
+    - name: results
+      command:
+        - "sleep"
+        - "infinity"
+      envFrom:
+        - configMapRef:
+            name: aeron-benchmark-envs
+      volumeMounts:
+        - name: shm
+          mountPath: /dev/shm
+      resources:
+        # Must set limits, as whole Pod must have requests = limits to get into Guarenteed QoS class
+        limits:
+          cpu: "1"
+          memory: 512Mi
+
+###################################################################################################
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: aeron-benchmark-1
+spec:
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 5
+  volumes:
+    - name: hugepage-2mi
+      emptyDir:
+        medium: HugePages-2Mi
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 2Gi
+    # Common properties files
+    - name: config-volume
+      configMap:
+        name: aeron-benchmark
+        items:
+          - key: low-latency-driver.properties
+            path: low-latency-driver.properties
+  # hostNetwork: true
+  # dnsPolicy: ClusterFirstWithHostNet
+  containers:
+    - name: benchmark
+      image: 453667550218.dkr.ecr.eu-west-1.amazonaws.com/aeron-benchmarks
+      # make this a variable
+      args:
+        - "./benchmark-runner"
+        - "--output-file"
+        - "aeron-echo-test"
+        - "--message-rate"
+        - "100K"
+        - "--burst-size"
+        - "1"
+        - "--message-length"
+        - "288"
+        - "--iterations"
+        - "30"
+        - "aeron/echo-client"
+      envFrom:
+        - configMapRef:
+            name: aeron-benchmark-envs
+      volumeMounts:
+        - mountPath: /hugepages-2Mi
+          name: hugepage-2mi
+        - mountPath: /dev/shm
+          name: shm
+        - name: config-volume
+          mountPath: /opt/aeron-config
+      resources:
+        limits:
+          cpu: "8"
+          memory: 10G
+          hugepages-2Mi: 1Gi
+
+    - name: aeronmd-dpdk
+      args:
+        - "--no-telemetry"
+        - "/opt/aeron-config/low-latency-driver.properties"
+      securityContext:
+        capabilities:
+          # Required for DPDK
+          add:
+            - IPC_LOCK
+            - SYS_RAWIO
+            - SYS_ADMIN
+      envFrom:
+        - configMapRef:
+            name: aeron-benchmark-envs-dpdk
+      volumeMounts:
+        - name: hugepage-2mi
+          mountPath: /hugepages-2Mi
+        - name: shm
+          mountPath: /dev/shm
+        - name: config-volume
+          mountPath: /opt/aeron-config
+      resources:
+        limits:
+          cpu: "8"
+          memory: 8G
+          hugepages-2Mi: 1Gi
+
+    # This is to give a persistant endpoint to retrieve the results from once the benchmark has finished and exited
+    - name: results
+      image: busybox
+      command:
+        - "sleep"
+        - "infinity"
+      volumeMounts:
+        - name: shm
+          mountPath: /dev/shm
+      resources:
+        # Must set limits, as whole Pod must have requests = limits to get into Guarenteed QoS class
+        limits:
+          cpu: "1"
+          memory: 512Mi

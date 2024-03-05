@@ -1,0 +1,28 @@
+---
+# Update tolerations and nodeselectors
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+spec:
+  tolerations:
+    # Select our special benchmark nodes
+    - key: "dpdk"
+      operator: "Exists"
+  # Select our special benchmark nodes
+  nodeSelector:
+    purpose: "dpdk"
+
+  containers:
+    - name: benchmark
+      image: 453667550218.dkr.ecr.eu-west-1.amazonaws.com/aeron-benchmarks
+
+    - name: aeronmd-dpdk
+      image: 453667550218.dkr.ecr.eu-west-1.amazonaws.com/aeronmd-dpdk
+      resources:
+        limits:
+          # Give us a DPDK NIC through https://github.com/AdaptiveConsulting/k8s-dpdk-mgr
+          intel.com/aws_dpdk: "1"
+
+    - name: results
+      image: busybox
