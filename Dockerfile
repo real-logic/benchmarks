@@ -9,7 +9,7 @@ COPY --from=builder /tmp/benchmark-build/build/distributions/benchmarks.tar /roo
 
 ENV BENCHMARKS_PATH /opt/aeron-benchmarks
 
-RUN dnf install -y tar iproute which bind-utils &&\
+RUN dnf install -y tar gzip iproute which bind-utils &&\
   mkdir -p ${BENCHMARKS_PATH} &&\
   tar -C ${BENCHMARKS_PATH} -xf /root/benchmarks.tar &&\
   rm -f /root/benchmarks.tar

@@ -136,18 +136,26 @@ kubectl -n "${K8S_NAMESPACE}" wait --for=condition=Ready=false --timeout=360s po
 
 echo "******************************************************************"
 echo "** Benchmarks finished, showing logs **"
+
 # Show the raw output
 kubectl -n "${K8S_NAMESPACE}" logs -c benchmark aeron-benchmark-1
 
 echo "******************************************************************"
 echo "** Collecting data **"
 mkdir -p "results/${TIMESTAMP}"
+
 # Copy the tarball of results over
 kubectl -n "${K8S_NAMESPACE}" cp -c results aeron-benchmark-0:/dev/shm/results.tar.gz "results/${TIMESTAMP}/results-0.tar.gz"
 kubectl -n "${K8S_NAMESPACE}" cp -c results aeron-benchmark-1:/dev/shm/results.tar.gz "results/${TIMESTAMP}/results-1.tar.gz"
-# Extract the hdr files - if present
-tar -C "results/${TIMESTAMP}" --strip-components=1 --wildcards -xvf "results/${TIMESTAMP}/results-0.tar.gz" '*.hdr' || true
-tar -C "results/${TIMESTAMP}" --strip-components=1 --wildcards -xvf "results/${TIMESTAMP}/results-1.tar.gz" '*.hdr' || true
+
+# Extract the hdr files - if present in the tarball
+for tarfile in results-0.tar.gz results-1.tar.gz
+do
+  if tar -tf "results/${TIMESTAMP}/${tarfile}" | grep -q ".hdr"
+  then
+    tar -C "results/${TIMESTAMP}" --strip-components=1 --wildcards -xvf "results/${TIMESTAMP}/${tarfile}" '*.hdr'
+  fi
+done
 
 # Create an aggregate result & plot it
 "${SCRIPT_DIR}/aggregate-results" "results/${TIMESTAMP}"
