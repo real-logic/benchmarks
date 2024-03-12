@@ -57,7 +57,7 @@ def main():
                 sys.exit("No files in the correct format found in {}, expected files with names like <type>_<scenario>_[p1=v1_p2=v2_...]_sha=<sha1>-report.hgrm".format(path))
             paths.append(path)
 
-    output_path = args.directories[0]
+    output_path = os.path.abspath(args.directories[0])
 
     plot_graphs(output_path, paths, args.percentiles_range_max, regex_common, group_by, filters, excludes, args.title, args.hide_field_name, args.hide_summaries)
 
@@ -113,7 +113,6 @@ def plot_graphs(output_path, paths, percentiles_range_max, regex, group_by, filt
             if hide_summaries:
                 nosummary = ' --nosummary '
             os.system(f'hdr-plot --noversion --units us --summary-fields=min,median,p90,p99,p999,p9999,max --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {nosummary} {histogram_files}')
-
             shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(output_path, filename))
 
 

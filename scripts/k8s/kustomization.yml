@@ -1,0 +1,6 @@
+resources:
+  - k8s-benchmark.yml
+patches:
+  - path: settings.yml
+    target:
+      kind: Pod
