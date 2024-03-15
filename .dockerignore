@@ -1,6 +1,4 @@
 .github
 .gradle
-Dockerfile
 .git*
-.dockerignore
-**/k8s*.yml
+scripts/k8s/*.yml

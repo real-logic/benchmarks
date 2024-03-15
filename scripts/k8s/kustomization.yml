@@ -4,3 +4,8 @@ patches:
   - path: settings.yml
     target:
       kind: Pod
+  # This file is written dynamically by the load-testing script to inject the test config
+  - path: k8s-test-customisation.yml
+    target:
+      kind: Pod
+      name: aeron-benchmark-1

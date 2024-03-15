@@ -15,10 +15,10 @@ spec:
 
   containers:
     - name: benchmark
-      image: 453667550218.dkr.ecr.eu-west-1.amazonaws.com/aeron-benchmarks
+      image: <add_your_benchmark_repo_here>
 
     - name: aeronmd-dpdk
-      image: 453667550218.dkr.ecr.eu-west-1.amazonaws.com/aeronmd-dpdk
+      image: <add_your_dpdk_repo_here>
       resources:
         limits:
           # Give us a DPDK NIC through https://github.com/AdaptiveConsulting/k8s-dpdk-mgr

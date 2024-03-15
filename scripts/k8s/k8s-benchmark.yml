@@ -182,21 +182,6 @@ spec:
   # dnsPolicy: ClusterFirstWithHostNet
   containers:
     - name: benchmark
-      image: 453667550218.dkr.ecr.eu-west-1.amazonaws.com/aeron-benchmarks
-      # make this a variable
-      args:
-        - "./benchmark-runner"
-        - "--output-file"
-        - "aeron-echo-test"
-        - "--message-rate"
-        - "100K"
-        - "--burst-size"
-        - "1"
-        - "--message-length"
-        - "288"
-        - "--iterations"
-        - "30"
-        - "aeron/echo-client"
       envFrom:
         - configMapRef:
             name: aeron-benchmark-envs
