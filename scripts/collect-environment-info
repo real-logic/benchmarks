@@ -41,7 +41,12 @@ KERNEL=$(uname -r)
 ARCHITECTURE=$(arch)
 CPU_NAME=$(awk -F':' '/^model name/ {print $2}' /proc/cpuinfo | uniq | sed -e 's/^[ \t]*//')
 CMDLINE=$(cat /proc/cmdline)
-TUNED_PROFILE=$(tuned-adm profile | grep "Current active profile:" | cut -d':' -f2 | sed 's/^ *//g')
+if which tuned-adm > /dev/null
+then
+  TUNED_PROFILE=$(tuned-adm profile | grep "Current active profile:" | cut -d':' -f2 | sed 's/^ *//g')
+else
+  TUNED_PROFILE="container"
+fi
 if [[ -z $JDK_HOME ]]; then
   JAVA_VERSION="Java not available"
 else

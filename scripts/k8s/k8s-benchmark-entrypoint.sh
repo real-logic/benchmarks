@@ -6,6 +6,13 @@ echo '***********************************'
 echo "*** Running $* on ${HOSTNAME} ***"
 echo '***********************************'
 
+# Create the results dir
+mkdir -p "${TEST_OUTPUT_PATH:? Please set TEST_OUTPUT_PATH}"
+cd "${BENCHMARKS_PATH:? Please set BENCHMARKS_PATH}/scripts"
+
+# Collecting environment info
+./collect-environment-info "${TEST_OUTPUT_PATH}"
+
 # Verify we can get DNS records for the pods
 until host "${NODE0_ADDRESS:? Please set NODE0_ADDRESS}"
 do
@@ -18,10 +25,6 @@ do
   sleep 5
 done
 
-# Create the results dir
-mkdir -p "${TEST_OUTPUT_PATH:? Please set TEST_OUTPUT_PATH}"
-
-cd "${BENCHMARKS_PATH:? Please set BENCHMARKS_PATH}/scripts"
 echo '*******************************'
 echo "JVM_OPTS:"
 echo "${JVM_OPTS:? Please set JVM_OPTS}" | sed "s/ /\n/g"
@@ -35,6 +38,8 @@ if [ -z "$(ls -A ${TEST_OUTPUT_PATH})" ]; then
 else
    parent_dir="$(dirname "${TEST_OUTPUT_PATH}")"
    results_dir="$(basename "${TEST_OUTPUT_PATH}")"
+   echo "Generating summary"
+   "${BENCHMARKS_PATH}/scripts/aggregate-results" "${TEST_OUTPUT_PATH}"
    echo "Creating results tarball: ${parent_dir}/results.tar.gz"
    tar -C "${parent_dir}" -czf "${parent_dir}/results.tar.gz" "${results_dir}"
 fi

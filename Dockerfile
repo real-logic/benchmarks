@@ -1,15 +1,27 @@
 FROM gradle:8-jdk17-focal as builder
 COPY . /tmp/benchmark-build
+WORKDIR /tmp/benchmark-build
 
-RUN cd /tmp/benchmark-build &&\
-  ./gradlew clean deployTar
+RUN --mount=type=cache,target=/root/.gradle \
+  --mount=type=cache,target=/home/gradle/.gradle \
+  --mount=type=cache,target=/tmp/benchmark-build/.gradle \
+  ./gradlew --no-daemon -i clean deployTar
 
-FROM amazoncorretto:17.0.10-al2023-headless as runner
+FROM azul/zulu-openjdk:17-latest as runner
 COPY --from=builder /tmp/benchmark-build/build/distributions/benchmarks.tar /root/benchmarks.tar
 
 ENV BENCHMARKS_PATH /opt/aeron-benchmarks
 
-RUN dnf install -y tar gzip iproute which bind-utils &&\
+RUN apt-get update &&\
+  apt-get install -y \
+  tar \
+  gzip \
+  iproute2 \
+  bind9-utils \
+  bind9-host \
+  jq \
+  lsb-release \
+  hwloc &&\
   mkdir -p ${BENCHMARKS_PATH} &&\
   tar -C ${BENCHMARKS_PATH} -xf /root/benchmarks.tar &&\
   rm -f /root/benchmarks.tar

@@ -1,0 +1,23 @@
+---
+# This file is dynamically updated by the benchmarking script
+# Any modifications will be lost
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+spec:
+  containers:
+    - name: benchmark
+      args:
+        - "./benchmark-runner"
+        - "--output-file"
+        - "aeron-echo_c-dpdk-k8s"
+        - "--message-rate"
+        - "100K"
+        - "--burst-size"
+        - "1"
+        - "--message-length"
+        - "288"
+        - "--iterations"
+        - "30"
+        - "aeron/echo-client"
