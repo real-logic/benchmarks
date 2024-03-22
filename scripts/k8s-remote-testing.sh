@@ -174,7 +174,6 @@ f_log "Benchmarks finished, showing logs"
 # Show the raw output
 kubectl -n "${K8S_NAMESPACE}" logs -c benchmark aeron-benchmark-1
 
-echo "******************************************************************"
 f_log "Collecting data"
 mkdir -p "results/${TIMESTAMP}"
 
@@ -182,17 +181,12 @@ mkdir -p "results/${TIMESTAMP}"
 kubectl -n "${K8S_NAMESPACE}" cp -c results aeron-benchmark-0:/dev/shm/results.tar.gz "results/${TIMESTAMP}/results-0.tar.gz"
 kubectl -n "${K8S_NAMESPACE}" cp -c results aeron-benchmark-1:/dev/shm/results.tar.gz "results/${TIMESTAMP}/results-1.tar.gz"
 
-# Extract the hgrm files - if present in the tarball
-for tarfile in results-0.tar.gz results-1.tar.gz
+# Extract the useful files
+for tarfile in results-1.tar.gz
 do
-  if tar -tf "results/${TIMESTAMP}/${tarfile}" | grep -q ".hgrm"
-  then
-    tar -C "results/${TIMESTAMP}" --strip-components=1 --wildcards -xvf "results/${TIMESTAMP}/${tarfile}" '*.hgrm'
-  fi
+    tar -C "results/${TIMESTAMP}" --strip-components=1 --wildcards -xf "results/${TIMESTAMP}/${tarfile}" '*.png'
+    tar -C "results/${TIMESTAMP}" --strip-components=1 --wildcards -xf "results/${TIMESTAMP}/${tarfile}" '*.hgrm'
 done
-
-# Plot the results
-"${SCRIPT_DIR}/results-plotter.py" "results/${TIMESTAMP}"
 
 f_log "Results collected in: ${SCRIPT_DIR}/results/${TIMESTAMP}"
 

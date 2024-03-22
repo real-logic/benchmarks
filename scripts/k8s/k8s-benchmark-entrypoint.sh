@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This runs on the K8s node to perform the benchmarking
+
 set -eo pipefail
 
 echo '***********************************'
@@ -32,14 +34,21 @@ echo '*******************************'
 # Run our command args
 "$@"
 
-# Tar results if we've got them
 if [ -z "$(ls -A ${TEST_OUTPUT_PATH})" ]; then
-   echo "No results found"
+   echo "No test output found"
 else
-   parent_dir="$(dirname "${TEST_OUTPUT_PATH}")"
-   results_dir="$(basename "${TEST_OUTPUT_PATH}")"
-   echo "Generating summary"
-   "${BENCHMARKS_PATH}/scripts/aggregate-results" "${TEST_OUTPUT_PATH}"
-   echo "Creating results tarball: ${parent_dir}/results.tar.gz"
-   tar -C "${parent_dir}" -czf "${parent_dir}/results.tar.gz" "${results_dir}"
+  parent_dir="$(dirname "${TEST_OUTPUT_PATH}")"
+  results_dir="$(basename "${TEST_OUTPUT_PATH}")"
+
+  # Check if we've got plottable results
+  if ls "${TEST_OUTPUT_PATH}" | grep -Eq '.hdr$'
+  then
+    echo "Generating summary"
+    "${BENCHMARKS_PATH}/scripts/aggregate-results" "${TEST_OUTPUT_PATH}"
+    echo "Generating graph"
+    "${BENCHMARKS_PATH}/scripts/results-plotter.py" "${TEST_OUTPUT_PATH}"
+  fi
+
+  echo "Creating results tarball: ${parent_dir}/results.tar.gz"
+  tar -C "${parent_dir}" -czf "${parent_dir}/results.tar.gz" "${results_dir}"
 fi

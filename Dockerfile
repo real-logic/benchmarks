@@ -8,9 +8,6 @@ RUN --mount=type=cache,target=/root/.gradle \
   ./gradlew --no-daemon -i clean deployTar
 
 FROM azul/zulu-openjdk:17-latest as runner
-COPY --from=builder /tmp/benchmark-build/build/distributions/benchmarks.tar /root/benchmarks.tar
-
-ENV BENCHMARKS_PATH /opt/aeron-benchmarks
 
 RUN apt-get update &&\
   apt-get install -y \
@@ -21,8 +18,15 @@ RUN apt-get update &&\
   bind9-host \
   jq \
   lsb-release \
+  python3-pip \
   hwloc &&\
-  mkdir -p ${BENCHMARKS_PATH} &&\
+  pip3 install --upgrade --user hdr-plot
+
+ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin
+
+COPY --from=builder /tmp/benchmark-build/build/distributions/benchmarks.tar /root/benchmarks.tar
+ENV BENCHMARKS_PATH /opt/aeron-benchmarks
+RUN mkdir -p ${BENCHMARKS_PATH} &&\
   tar -C ${BENCHMARKS_PATH} -xf /root/benchmarks.tar &&\
   rm -f /root/benchmarks.tar
 
