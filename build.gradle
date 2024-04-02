@@ -67,10 +67,10 @@ def grpcVersion = '1.62.2'
 def protobufVersion = '3.25.3'
 def errorproneVersion = '2.20.0'
 def checkerVersion = '3.33.0'
-def kafkaVersion = '3.6.1'
+def kafkaVersion = '3.7.0'
 def slf4jVersion = '1.7.36'
 def scalaVersion = '2.13.11'
-def jacksonVersion = '2.13.5'
+def jacksonVersion = '2.16.0'
 def annotationsApiVersion = '6.0.53'
 
 allprojects {
@@ -216,6 +216,7 @@ project(':benchmarks-kafka') {
         runtimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
         testImplementation "org.apache.kafka:kafka_2.13:${kafkaVersion}"
         testImplementation "org.apache.kafka:kafka-server-common:${kafkaVersion}"
+        testImplementation "org.apache.kafka:kafka-metadata:${kafkaVersion}"
         testRuntimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
     }
 }
