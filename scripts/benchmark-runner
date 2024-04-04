@@ -18,7 +18,7 @@
 ##
 # Example: Invoking `benchmark-runner` from the `scripts` directory.
 #
-# $ ./benchmark-runner --output-file "echo-test" --message-rate 100K --burst-size 1 --message-length 288 "aeron/echo-client"
+# $ ./benchmark-runner --output-file "echo-test" --message-rate 100K --message-length 288 "aeron/echo-client"
 ##
 
 set -euxo pipefail

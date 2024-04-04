@@ -19,7 +19,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 rem
 rem Example: Invoking `benchmark-runner` from the `scripts` directory.
 rem
-rem $ benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --burst-size "1,10" --message-length "32,288,1344" "aeron\echo-client"
+rem $ benchmark-runner --output-file "echo-test" --message-rate "1000,5000" --message-length "32,288,1344" "aeron\echo-client"
 rem
 
 set ITERATIONS=30

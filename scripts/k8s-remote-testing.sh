@@ -95,8 +95,6 @@ spec:
         - 'aeron-echo_c-dpdk-k8s'
         - '--message-rate'
         - '100K'
-        - '--burst-size'
-        - '1'
         - '--message-length'
         - '288'
         - '--iterations'
