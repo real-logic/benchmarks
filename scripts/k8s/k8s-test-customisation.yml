@@ -17,5 +17,5 @@ spec:
         - "--message-length"
         - "288"
         - "--iterations"
-        - "30"
+        - "60"
         - "aeron/echo-client"
