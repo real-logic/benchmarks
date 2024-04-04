@@ -139,6 +139,7 @@ spec:
 
     # This is to give a persistant endpoint to retrieve the results from once the benchmark has finished and exited
     - name: results
+      image: busybox
       command:
         - "sleep"
         - "infinity"
