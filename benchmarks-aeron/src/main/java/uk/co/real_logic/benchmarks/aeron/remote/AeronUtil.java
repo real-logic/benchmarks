@@ -227,13 +227,13 @@ final class AeronUtil
         return embeddedMediaDriver() ? launchArchiveWithEmbeddedDriver() : launchArchiveWithStandaloneDriver();
     }
 
-    static long awaitRecordingStart(final Aeron aeron, final int publicationSessionId)
+    static long awaitRecordingStart(final Aeron aeron, final int publicationSessionId, final long archiveId)
     {
         final CountersReader counters = aeron.countersReader();
         int counterId;
         do
         {
-            counterId = findCounterIdBySession(counters, publicationSessionId);
+            counterId = findCounterIdBySession(counters, publicationSessionId, archiveId);
         }
         while (NULL_COUNTER_ID == counterId);
 

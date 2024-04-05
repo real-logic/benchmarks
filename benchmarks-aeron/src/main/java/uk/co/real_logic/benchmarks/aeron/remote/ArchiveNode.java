@@ -82,7 +82,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
 
-        awaitRecordingStart(aeron, publicationSessionId);
+        awaitRecordingStart(aeron, publicationSessionId, aeronArchive.archiveId());
     }
 
     public void run()

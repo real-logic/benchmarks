@@ -117,7 +117,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
         final int publicationSessionId = publication.sessionId();
         final String channel = addSessionId(sendChannel, publicationSessionId);
         aeronArchive.startRecording(channel, sendStreamId, LOCAL, true);
-        recordingId = awaitRecordingStart(aeron, publicationSessionId);
+        recordingId = awaitRecordingStart(aeron, publicationSessionId, aeronArchive.archiveId());
 
         image = subscription.imageAtIndex(0);
     }
