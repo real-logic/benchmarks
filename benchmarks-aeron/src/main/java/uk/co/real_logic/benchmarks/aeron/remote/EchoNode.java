@@ -16,28 +16,21 @@
 package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.Aeron;
-import io.aeron.ChannelUriStringBuilder;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.BlockHandler;
-import io.aeron.protocol.HeaderFlyweight;
+import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 
-import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
-import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.*;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.align;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
@@ -50,7 +43,8 @@ import static uk.co.real_logic.benchmarks.util.PropertiesUtil.mergeWithSystemPro
  */
 public final class EchoNode implements AutoCloseable, Runnable
 {
-    private final BlockHandler blockHandler;
+    private final BufferClaim bufferClaim = new BufferClaim();
+    private final FragmentHandler fragmentHandler;
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
@@ -60,79 +54,41 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     EchoNode(final AtomicBoolean running)
     {
-        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true, System.out);
+        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true);
     }
 
     EchoNode(
         final AtomicBoolean running,
         final MediaDriver mediaDriver,
         final Aeron aeron,
-        final boolean ownsAeronClient,
-        final PrintStream out)
+        final boolean ownsAeronClient)
     {
         this.running = running;
         this.mediaDriver = mediaDriver;
         this.aeron = aeron;
         this.ownsAeronClient = ownsAeronClient;
 
+        publication = aeron.addExclusivePublication(sourceChannel(), sourceStreamId());
         subscription = aeron.addSubscription(destinationChannel(), destinationStreamId());
-        awaitConnected(subscription::isConnected, connectionTimeoutNs(), SystemNanoClock.INSTANCE);
 
-        // create a response channel that matches exactly the position of the request channel
-        final Image image = subscription.imageAtIndex(0);
-        final ChannelUriStringBuilder sourceChannel = new ChannelUriStringBuilder(sourceChannel())
-            .initialPosition(image.position(), image.initialTermId(), image.termBufferLength())
-            .mtu(image.mtuLength());
-
-        publication = aeron.addExclusivePublication(sourceChannel.build(), sourceStreamId());
-        awaitConnected(publication::isConnected, connectionTimeoutNs(), SystemNanoClock.INSTANCE);
-
-        blockHandler = (buffer, offset, length, subSessionId, subTermId) ->
+        fragmentHandler = (buffer, offset, length, header) ->
         {
-            final UnsafeBuffer srcTermBuffer = (UnsafeBuffer)buffer;
-
-            final int streamId = publication.streamId();
-            final int sessionId = publication.sessionId();
-
-            int currentOffset = offset, paddingFrameLength = 0;
-            final int endOffset = offset + length;
-            while (currentOffset < endOffset)
+            long result;
+            while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
             {
-                final int frameLength = frameLength(srcTermBuffer, currentOffset);
-                final int frameType = frameType(srcTermBuffer, currentOffset);
-                if (HeaderFlyweight.HDR_TYPE_DATA == frameType)
-                {
-                    final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
-
-                    srcTermBuffer.putInt(currentOffset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
-                    srcTermBuffer.putInt(currentOffset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
-
-                    currentOffset += alignedFrameLength;
-                }
-                else if (HeaderFlyweight.HDR_TYPE_PAD == frameType)
-                {
-                    paddingFrameLength = frameLength;
-                    break;
-                }
+                checkPublicationResult(result);
             }
 
-            if (0 == paddingFrameLength)
-            {
-                long result;
-                while ((result = publication.offerBlock(srcTermBuffer, offset, length)) <= 0)
-                {
-                    checkPublicationResult(result);
-                }
-            }
-            else
-            {
-                long result;
-                while ((result = publication.appendPadding(paddingFrameLength - HEADER_LENGTH)) <= 0)
-                {
-                    checkPublicationResult(result);
-                }
-            }
+            bufferClaim
+                .flags(header.flags())
+                .putBytes(buffer, offset, length)
+                .commit();
         };
+
+        awaitConnected(
+            () -> subscription.isConnected() && publication.isConnected(),
+            connectionTimeoutNs(),
+            SystemNanoClock.INSTANCE);
     }
 
     public void run()
@@ -144,31 +100,21 @@ public final class EchoNode implements AutoCloseable, Runnable
         final Image image = subscription.imageAtIndex(0);
         while (true)
         {
-            final int availableWindow = (int)publication.availableWindow();
-            if (availableWindow > 0)
+            final int fragments = image.poll(fragmentHandler, FRAGMENT_LIMIT);
+            if (0 == fragments)
             {
-                final int remainingTermLength = publication.termBufferLength() - publication.termOffset();
-                final int fragments = image.blockPoll(
-                    blockHandler,
-                    0 == remainingTermLength ? availableWindow : Math.min(availableWindow, remainingTermLength));
-                if (0 == fragments)
+                if (!running.get())
                 {
-                    if (!running.get())
-                    {
-                        return; // Abort execution
-                    }
-
-                    if (image.isClosed())
-                    {
-                        return;  // Abort execution
-                    }
+                    return; // Abort execution
                 }
-                idleStrategy.idle(fragments);
+
+                if (image.isClosed())
+                {
+                    return;  // Abort execution
+                }
             }
-            else
-            {
-                idleStrategy.idle();
-            }
+
+            idleStrategy.idle(fragments);
         }
     }
 

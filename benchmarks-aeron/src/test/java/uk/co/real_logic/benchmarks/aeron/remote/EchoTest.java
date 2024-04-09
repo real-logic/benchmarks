@@ -24,20 +24,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
 import static java.lang.System.setProperty;
-import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, EchoNode>
 {
     protected EchoNode createNode(final AtomicBoolean running, final MediaDriver mediaDriver, final Aeron aeron)
     {
-        return new EchoNode(running, mediaDriver, aeron, false, mock(PrintStream.class));
+        return new EchoNode(running, mediaDriver, aeron, false);
     }
 
     protected MediaDriver createDriver()

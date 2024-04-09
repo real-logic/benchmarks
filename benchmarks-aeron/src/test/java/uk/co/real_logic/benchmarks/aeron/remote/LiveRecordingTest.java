@@ -25,7 +25,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.io.File;
-import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.CommonContext.IPC_CHANNEL;
@@ -34,7 +33,6 @@ import static io.aeron.archive.client.AeronArchive.Configuration.RECORDING_EVENT
 import static io.aeron.archive.client.AeronArchive.connect;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
-import static org.mockito.Mockito.mock;
 import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.launchArchiveWithEmbeddedDriver;
 
 class LiveRecordingTest extends
@@ -68,7 +66,7 @@ class LiveRecordingTest extends
     protected EchoNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {
-        return new EchoNode(running, null, aeronArchive.context().aeron(), false, mock(PrintStream.class));
+        return new EchoNode(running, null, aeronArchive.context().aeron(), false);
     }
 
     protected ArchivingMediaDriver createDriver()
