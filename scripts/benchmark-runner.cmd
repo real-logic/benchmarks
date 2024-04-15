@@ -24,7 +24,7 @@ rem
 
 set ITERATIONS=30
 set MESSAGE_RATE=501K
-set MESSAGE_SEND_DELAY=1us
+set BURST_SIZE=1
 set MESSAGE_LENGTH="288
 
 :loop
@@ -44,10 +44,10 @@ if not "%1"=="" (
   )
 
   set "FLAG="
-  if "%1"=="--send-delay" set FLAG=1
-  if "%1"=="-d" set FLAG=1
+  if "%1"=="--burst-size" set FLAG=1
+  if "%1"=="-b" set FLAG=1
   if defined FLAG (
-      set "MESSAGE_SEND_DELAY=%2";
+      set "BURST_SIZE=%2";
   )
 
   set "FLAG="
@@ -68,7 +68,7 @@ if not "%1"=="" (
   if "%1"=="--help" set FLAG=1
   if "%1"=="-h" set FLAG=1
   if defined FLAG (
-      echo "%0 (-o|--output-file) ^"\${output-file-name-prefix}\" [(-m|--message-rate) ^"\${message-rate}\"] [(-d|--send-delay) ^"\${send-delay-ns}\"] [(-l|--message-length) ^"\${message-length}\"] [(-i|--iterations) ^${iterations}] ^"\${command} ^${cmdArg1} ...\""
+      echo "%0 (-o|--output-file) ^"\${output-file-name-prefix}\" [(-m|--message-rate) ^"\${message-rate}\"] [(-b|--burst-size) ^"\${burst-size}\"] [(-l|--message-length) ^"\${message-length}\"] [(-i|--iterations) ^${iterations}] ^"\${command} ^${cmdArg1} ...\""
       exit /b
   )
 
@@ -86,7 +86,7 @@ set JVM_OPTS=%JVM_OPTS% ^
 -Duk.co.real_logic.benchmarks.remote.output.file=%OUTPUT_FILE_NAME% ^
 -Duk.co.real_logic.benchmarks.remote.iterations=%ITERATIONS% ^
 -Duk.co.real_logic.benchmarks.remote.message.rate=%MESSAGE_RATE% ^
--Duk.co.real_logic.benchmarks.remote.message.send.delay=%MESSAGE_SEND_DELAY% ^
+-Duk.co.real_logic.benchmarks.remote.batch.size=%BURST_SIZE% ^
 -Duk.co.real_logic.benchmarks.remote.message.length=%MESSAGE_LENGTH%
 
  %COMMAND%

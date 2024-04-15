@@ -25,8 +25,8 @@ set -euxo pipefail
 
 iterations=30
 messageRate=501K
+burstSize=1
 messageLength=288
-messageSendDelay=1us
 
 while [[ $# -gt 0 ]]
 do
@@ -42,8 +42,8 @@ do
       shift
       shift
       ;;
-    -d|--send-delay)
-      messageSendDelay="${2}"
+    -b|--burst-size)
+      burstSize="${2}"
       shift
       shift
       ;;
@@ -58,7 +58,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "${0} (-o|--output-file) \"\${output-file-name-prefix}\" [(-m|--message-rate) \"\${message-rate}\"] [(-d|--send-delay) \"\${send-delay-ns}\"] [(-l|--message-length) \"\${message-length}\"] [(-i|--iterations) \${iterations}] \"\${command} \${cmdArg1} ...\""
+      echo "${0} (-o|--output-file) \"\${output-file-name-prefix}\" [(-m|--message-rate) \"\${message-rate}\"] [(-b|--burst-size) \"\${burst-size-csv}\"] [(-l|--message-length) \"\${message-length}\"] [(-i|--iterations) \${iterations}] \"\${command} \${cmdArg1} ...\""
       exit
       ;;
     *)
@@ -78,6 +78,6 @@ JVM_OPTS="${JVM_OPTS:-""} \
 -Duk.co.real_logic.benchmarks.remote.output.file=${outputFileName} \
 -Duk.co.real_logic.benchmarks.remote.iterations=${iterations} \
 -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate} \
--Duk.co.real_logic.benchmarks.remote.message.send.delay=${messageSendDelay} \
+-Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize} \
 -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength}" \
  ${command}
