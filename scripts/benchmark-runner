@@ -23,7 +23,7 @@
 
 set -euxo pipefail
 
-iterations=30
+iterations=60
 messageRate=501K
 burstSize=1
 messageLength=288

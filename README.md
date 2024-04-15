@@ -179,7 +179,7 @@ client:~/benchmarks/scripts$ JVM_OPTS="\
 -Duk.co.real_logic.benchmarks.aeron.remote.embedded.media.driver=true \
 -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=192.168.0.10:13000 \
 -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=192.168.0.20:13001" \
-./benchmark-runner --output-file "aeron-echo-test" --messages "100K" --message-length "288" --iterations 30 "aeron/echo-client"
+./benchmark-runner --output-file "aeron-echo-test" --messages "100K" --message-length "288" --iterations 60 "aeron/echo-client"
 ```
 _**Note**: At the end of a single run the server-side process (e.g. `aeron/echo-server`) will exit, i.e. in order to do
 another manual run (with different parameters etc.) one has to start the server process again. Alternative is to run the
