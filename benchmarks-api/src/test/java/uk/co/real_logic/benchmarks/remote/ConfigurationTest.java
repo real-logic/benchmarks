@@ -156,6 +156,19 @@ class ConfigurationTest
     }
 
     @ParameterizedTest
+    @ValueSource(ints = { Integer.MIN_VALUE, 0 })
+    void throwsIllegalArgumentExceptionIfBatchSizeIsInvalid(final int size)
+    {
+        final Builder builder = new Builder()
+            .messageRate(1000)
+            .batchSize(size);
+
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
+
+        assertEquals("'" + BATCH_SIZE_PROP_NAME + "' cannot be less than 1, got: " + size, ex.getMessage());
+    }
+
+    @ParameterizedTest
     @MethodSource("messageSizes")
     void throwsIllegalArgumentExceptionIfMessageLengthIsLessThanMinimumSize(final int length)
     {
@@ -297,42 +310,12 @@ class ConfigurationTest
         assertEquals("Output file name prefix cannot be empty!", ex.getMessage());
     }
 
-    @ParameterizedTest
-    @ValueSource(longs = { -1, 0 })
-    void throwsIllegalArgumentExceptionIfMessageSendDelayIsBelowValidValue(final long messageSendDelayNs)
-    {
-        final Builder builder = new Builder()
-            .messageRate(1)
-            .messageSendDelayNs(messageSendDelayNs);
-
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
-
-        assertEquals(
-            "'" + MESSAGE_SEND_DELAY_PROP_NAME + "' cannot be less than 1, got: " + messageSendDelayNs,
-            ex.getMessage());
-    }
-
-    @ParameterizedTest
-    @ValueSource(longs = { 1_000_000_001, Long.MAX_VALUE })
-    void throwsIllegalArgumentExceptionIfMessageSendDelayIsAboveValidValue(final long messageSendDelayNs)
-    {
-        final Builder builder = new Builder()
-            .messageRate(1)
-            .messageSendDelayNs(messageSendDelayNs);
-
-        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, builder::build);
-
-        assertEquals(
-            "'" + MESSAGE_SEND_DELAY_PROP_NAME + "' cannot be greater than 1000000000, got: " + messageSendDelayNs,
-            ex.getMessage());
-    }
-
     @Test
     void outputFileNamePrefixAddsHashValueComputedFromSystemProperties(final @TempDir Path tempDir)
     {
         final Configuration configuration = new Builder()
             .messageRate(12)
-            .messageSendDelayNs(55)
+            .batchSize(3)
             .messageLength(75)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
@@ -341,7 +324,7 @@ class ConfigurationTest
             .build();
 
         assertEquals(
-            "the-prefix_rate=12_length=75" +
+            "the-prefix_rate=12_batch=3_length=75" +
             "_sha=a2bea3034417edbbe21e66dd9b68d43fe53e287e04a1f6b119741ab9e0729f60",
             configuration.outputFileNamePrefix());
     }
@@ -362,6 +345,7 @@ class ConfigurationTest
     {
         final Configuration configuration = new Builder()
             .messageRate(Integer.parseInt(rate))
+            .batchSize(3)
             .messageLength(75)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .outputDirectory(tempDir)
@@ -389,12 +373,12 @@ class ConfigurationTest
         assertEquals(DEFAULT_WARMUP_ITERATIONS, configuration.warmupIterations());
         assertEquals(DEFAULT_WARMUP_MESSAGE_RATE, configuration.warmupMessageRate());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
-        assertEquals(DEFAULT_MESSAGE_DELAY_NS, configuration.messageSendDelayNs());
+        assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.idleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
-        assertEquals("defaults_rate=123_length=" + MIN_MESSAGE_LENGTH +
+        assertEquals("defaults_rate=123_batch=" + DEFAULT_BATCH_SIZE + "_length=" + MIN_MESSAGE_LENGTH +
             "_sha=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             configuration.outputFileNamePrefix());
     }
@@ -408,7 +392,7 @@ class ConfigurationTest
             .warmupMessageRate(444)
             .iterations(11)
             .messageRate(666)
-            .messageSendDelayNs(4)
+            .batchSize(4)
             .messageLength(119)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .idleStrategy(YieldingIdleStrategy.INSTANCE)
@@ -420,7 +404,7 @@ class ConfigurationTest
         assertEquals(444, configuration.warmupMessageRate());
         assertEquals(11, configuration.iterations());
         assertEquals(666, configuration.messageRate());
-        assertEquals(4, configuration.messageSendDelayNs());
+        assertEquals(4, configuration.batchSize());
         assertEquals(119, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(YieldingIdleStrategy.INSTANCE, configuration.idleStrategy());
@@ -436,7 +420,7 @@ class ConfigurationTest
             .warmupMessageRate(999)
             .iterations(10)
             .messageRate(777000)
-            .messageSendDelayNs(42)
+            .batchSize(2)
             .messageLength(64)
             .messageTransceiverClass(InMemoryMessageTransceiver.class)
             .idleStrategy(NoOpIdleStrategy.INSTANCE)
@@ -449,12 +433,12 @@ class ConfigurationTest
             "\n    warmupMessageRate=999" +
             "\n    iterations=10" +
             "\n    messageRate=777K" +
+            "\n    batchSize=2" +
             "\n    messageLength=64" +
-            "\n    messageSendDelayNs=42" +
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
             "\n    idleStrategy=NoOpIdleStrategy{alias=noop}" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
-            "\n    outputFileNamePrefix=my-file_rate=777K_length=64" +
+            "\n    outputFileNamePrefix=my-file_rate=777K_batch=2_length=64" +
             "_sha=73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
             "\n}",
             configuration.toString());
@@ -552,7 +536,7 @@ class ConfigurationTest
         assertEquals(DEFAULT_WARMUP_ITERATIONS, configuration.warmupIterations());
         assertEquals(DEFAULT_WARMUP_MESSAGE_RATE, configuration.warmupMessageRate());
         assertEquals(DEFAULT_ITERATIONS, configuration.iterations());
-        assertEquals(DEFAULT_MESSAGE_DELAY_NS, configuration.messageSendDelayNs());
+        assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
         assertSame(NoOpIdleStrategy.INSTANCE, configuration.idleStrategy());
@@ -566,7 +550,7 @@ class ConfigurationTest
         setProperty(WARMUP_MESSAGE_RATE_PROP_NAME, "78K");
         setProperty(ITERATIONS_PROP_NAME, "4");
         setProperty(MESSAGE_RATE_PROP_NAME, "1000M");
-        setProperty(MESSAGE_SEND_DELAY_PROP_NAME, "154us");
+        setProperty(BATCH_SIZE_PROP_NAME, "3");
         setProperty(MESSAGE_LENGTH_PROP_NAME, "24");
         setProperty(MESSAGE_TRANSCEIVER_PROP_NAME, InMemoryMessageTransceiver.class.getName());
         setProperty(IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
@@ -580,10 +564,10 @@ class ConfigurationTest
         assertEquals(78_000, configuration.warmupMessageRate());
         assertEquals(4, configuration.iterations());
         assertEquals(MAX_MESSAGE_RATE, configuration.messageRate());
-        assertEquals(154_000, configuration.messageSendDelayNs());
+        assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertInstanceOf(YieldingIdleStrategy.class, configuration.idleStrategy());
+        assertTrue(configuration.idleStrategy() instanceof YieldingIdleStrategy);
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
         assertTrue(configuration.outputFileNamePrefix().startsWith("my-out-file"));
     }
@@ -637,7 +621,7 @@ class ConfigurationTest
             WARMUP_MESSAGE_RATE_PROP_NAME,
             ITERATIONS_PROP_NAME,
             MESSAGE_RATE_PROP_NAME,
-            MESSAGE_SEND_DELAY_PROP_NAME,
+            BATCH_SIZE_PROP_NAME,
             MESSAGE_LENGTH_PROP_NAME,
             MESSAGE_TRANSCEIVER_PROP_NAME,
             IDLE_STRATEGY_PROP_NAME,

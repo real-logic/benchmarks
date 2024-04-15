@@ -18,7 +18,6 @@ package uk.co.real_logic.benchmarks.remote;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.AsciiEncoding;
 import org.agrona.AsciiNumberFormatException;
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
@@ -43,8 +42,6 @@ import static java.lang.reflect.Modifier.isPublic;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.*;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.toHex;
 import static org.agrona.Strings.isEmpty;
@@ -79,9 +76,9 @@ public final class Configuration
     public static final int DEFAULT_ITERATIONS = 10;
 
     /**
-     * Default message delay in nanoseconds.
+     * Default number of messages in a single batch.
      */
-    public static final long DEFAULT_MESSAGE_DELAY_NS = MICROSECONDS.toNanos(1);
+    public static final int DEFAULT_BATCH_SIZE = 1;
 
     /**
      * Default tracking of latency history
@@ -127,19 +124,19 @@ public final class Configuration
     public static final String WARMUP_MESSAGE_RATE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.warmup.message.rate";
 
     /**
+     * Name of the system property to configure the batch size, i.e. number of messages to be sent in a single burst.
+     * Default value is {@link #DEFAULT_BATCH_SIZE}.
+     *
+     * @see #batchSize()
+     */
+    public static final String BATCH_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.remote.batch.size";
+
+    /**
      * Name of the system property to configure the message size in bytes. Default value is {@link #MIN_MESSAGE_LENGTH}.
      *
      * @see #messageLength()
      */
     public static final String MESSAGE_LENGTH_PROP_NAME = "uk.co.real_logic.benchmarks.remote.message.length";
-
-    /**
-     * Name of the system property to configure the minimal guaranteed message sending delay. Default value is
-     * {@link #DEFAULT_MESSAGE_DELAY_NS}. The actual send delay is calculated based on the message rate.
-     *
-     * @see #messageSendDelayNs()
-     */
-    public static final String MESSAGE_SEND_DELAY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.message.send.delay";
 
     /**
      * Name of the system property to configure the {@link IdleStrategy} to use when sending and receiving messages.
@@ -197,6 +194,7 @@ public final class Configuration
     private final int iterations;
     private final int warmupMessageRate;
     private final int messageRate;
+    private final int batchSize;
     private final int messageLength;
     private final Class<? extends MessageTransceiver> messageTransceiverClass;
     private final IdleStrategy idleStrategy;
@@ -205,20 +203,18 @@ public final class Configuration
     private final String rate;
     private final String outputFileNamePrefix;
     private final boolean trackHistory;
-    private final long messageSendDelayNs;
 
     private Configuration(final Builder builder)
     {
-        this.warmupIterations = (int)checkValueRange(
+        this.warmupIterations = checkValueRange(
             builder.warmupIterations, 0, Integer.MAX_VALUE, WARMUP_ITERATIONS_PROP_NAME);
-        this.iterations = (int)checkValueRange(builder.iterations, 1, Integer.MAX_VALUE, ITERATIONS_PROP_NAME);
-        this.warmupMessageRate = (int)checkValueRange(
+        this.iterations = checkValueRange(builder.iterations, 1, Integer.MAX_VALUE, ITERATIONS_PROP_NAME);
+        this.warmupMessageRate = checkValueRange(
             builder.warmupMessageRate, 0, MAX_MESSAGE_RATE, WARMUP_MESSAGE_RATE_PROP_NAME);
-        this.messageRate = (int)checkValueRange(builder.messageRate, 1, MAX_MESSAGE_RATE, MESSAGE_RATE_PROP_NAME);
-        this.messageLength = (int)checkValueRange(
-            builder.messageLength, MIN_MESSAGE_LENGTH, Integer.MAX_VALUE, MESSAGE_LENGTH_PROP_NAME);
-        messageSendDelayNs = checkValueRange(
-            builder.messageSendDelayNs, 1, SECONDS.toNanos(1), MESSAGE_SEND_DELAY_PROP_NAME);
+        this.messageRate = checkValueRange(builder.messageRate, 1, MAX_MESSAGE_RATE, MESSAGE_RATE_PROP_NAME);
+        this.batchSize = checkValueRange(builder.batchSize, 1, Integer.MAX_VALUE, BATCH_SIZE_PROP_NAME);
+        this.messageLength =
+            checkValueRange(builder.messageLength, MIN_MESSAGE_LENGTH, Integer.MAX_VALUE, MESSAGE_LENGTH_PROP_NAME);
         this.messageTransceiverClass = validateMessageTransceiverClass(builder.messageTransceiverClass);
         this.idleStrategy = requireNonNull(builder.idleStrategy, "'" + IDLE_STRATEGY_PROP_NAME + "' cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
@@ -274,6 +270,21 @@ public final class Configuration
     }
 
     /**
+     * Size of the batch, i.e. number of messages to be sent in a single burst.
+     * <p>
+     * For example if the number of messages is {@code 1000} and the batch size is {code 1} then a single message will
+     * be sent every millisecond. However if the batch size is {@code 5} then a batch of five messages will be sent
+     * every five milliseconds.
+     * </p>
+     *
+     * @return number of messages to be sent in a single burst, defaults to {@link #DEFAULT_BATCH_SIZE}.
+     */
+    public int batchSize()
+    {
+        return batchSize;
+    }
+
+    /**
      * Length in bytes of a single message.
      *
      * @return length in bytes of a single message, defaults to {@link #MIN_MESSAGE_LENGTH}.
@@ -281,16 +292,6 @@ public final class Configuration
     public int messageLength()
     {
         return messageLength;
-    }
-
-    /**
-     * Minimal delay in nanoseconds before sending the next message.
-     *
-     * @return delay in nanoseconds.
-     */
-    public long messageSendDelayNs()
-    {
-        return messageSendDelayNs;
     }
 
     /**
@@ -360,8 +361,8 @@ public final class Configuration
             "\n    warmupMessageRate=" + warmupMessageRate +
             "\n    iterations=" + iterations +
             "\n    messageRate=" + rate +
+            "\n    batchSize=" + batchSize +
             "\n    messageLength=" + messageLength +
-            "\n    messageSendDelayNs=" + messageSendDelayNs +
             "\n    messageTransceiverClass=" + messageTransceiverClass.getName() +
             "\n    idleStrategy=" + idleStrategy +
             "\n    outputDirectory=" + outputDirectory +
@@ -395,6 +396,7 @@ public final class Configuration
 
         return prefix +
             "_rate=" + rate +
+            "_batch=" + batchSize +
             "_length=" + messageLength +
             "_sha=" + computeSha256(systemProperties);
     }
@@ -408,6 +410,7 @@ public final class Configuration
         private int iterations = DEFAULT_ITERATIONS;
         private int warmupMessageRate = DEFAULT_WARMUP_MESSAGE_RATE;
         private int messageRate;
+        private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
         private Class<? extends MessageTransceiver> messageTransceiverClass;
         private IdleStrategy idleStrategy = NoOpIdleStrategy.INSTANCE;
@@ -415,7 +418,6 @@ public final class Configuration
         private Properties systemProperties = System.getProperties();
         private String outputFileNamePrefix;
         private boolean trackHistory = DEFAULT_TRACK_HISTORY;
-        private long messageSendDelayNs = DEFAULT_MESSAGE_DELAY_NS;
 
         /**
          * Set the number of warmup iterations.
@@ -462,6 +464,18 @@ public final class Configuration
         public Builder messageRate(final int messageRate)
         {
             this.messageRate = messageRate;
+            return this;
+        }
+
+        /**
+         * Set the batch size, i.e. number of messages to be sent at once in a single burst.
+         *
+         * @param size of a single batch of messages.
+         * @return this for a fluent API.
+         */
+        public Builder batchSize(final int size)
+        {
+            this.batchSize = size;
             return this;
         }
 
@@ -539,18 +553,6 @@ public final class Configuration
         }
 
         /**
-         * Set the minimal message sending delay to control send batching.
-         *
-         * @param messageSendDelayNs delay in nanos.
-         * @return this for a fluent API.
-         */
-        public Builder messageSendDelayNs(final long messageSendDelayNs)
-        {
-            this.messageSendDelayNs = messageSendDelayNs;
-            return this;
-        }
-
-        /**
          * Create a new instance of the {@link Configuration} class from this builder.
          *
          * @return a {@link Configuration} instance
@@ -590,15 +592,14 @@ public final class Configuration
             builder.iterations(intProperty(ITERATIONS_PROP_NAME));
         }
 
+        if (isPropertyProvided(BATCH_SIZE_PROP_NAME))
+        {
+            builder.batchSize(intProperty(BATCH_SIZE_PROP_NAME));
+        }
+
         if (isPropertyProvided(MESSAGE_LENGTH_PROP_NAME))
         {
             builder.messageLength(intProperty(MESSAGE_LENGTH_PROP_NAME));
-        }
-
-        if (isPropertyProvided(MESSAGE_SEND_DELAY_PROP_NAME))
-        {
-            builder.messageSendDelayNs(SystemUtil.parseDuration(
-                MESSAGE_SEND_DELAY_PROP_NAME, System.getProperty(MESSAGE_SEND_DELAY_PROP_NAME)));
         }
 
         if (isPropertyProvided(IDLE_STRATEGY_PROP_NAME))
@@ -671,8 +672,7 @@ public final class Configuration
         return directory;
     }
 
-    private static long checkValueRange(
-        final long value, final long minValue, final long maxValue, final String propName)
+    private static int checkValueRange(final int value, final int minValue, final int maxValue, final String propName)
     {
         if (value < minValue)
         {

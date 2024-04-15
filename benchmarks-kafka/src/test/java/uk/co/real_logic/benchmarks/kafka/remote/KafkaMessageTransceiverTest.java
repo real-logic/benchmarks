@@ -68,7 +68,7 @@ class KafkaMessageTransceiverTest
         setProperty(PARTITION_SELECTION_PROP_NAME, partitionSelection.name());
         try
         {
-            test(500, 32);
+            test(500, 32, 10);
         }
         finally
         {
@@ -95,7 +95,7 @@ class KafkaMessageTransceiverTest
 
         try
         {
-            test(50, 1344);
+            test(50, 1344, 1);
         }
         finally
         {
@@ -108,12 +108,13 @@ class KafkaMessageTransceiverTest
         }
     }
 
-    private void test(final int numberOfMessages, final int messageLength) throws Exception
+    private void test(final int numberOfMessages, final int messageLength, final int burstSize) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(0)
             .iterations(1)
             .messageRate(numberOfMessages)
+            .batchSize(burstSize)
             .messageLength(messageLength)
             .messageTransceiverClass(InMemoryMessageTransceiver.class) // Not required, created directly
             .outputFileNamePrefix("kafka")

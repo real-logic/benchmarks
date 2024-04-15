@@ -74,14 +74,14 @@ abstract class AbstractTest<
     {
         setProperty(SOURCE_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13334|mtu=2k|term-length=64k");
         setProperty(DESTINATION_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13333|mtu=2k|term-length=64k");
-        test(10_000, 111, 5555, tempDir);
+        test(10_000, 111, 10, tempDir);
     }
 
     @Timeout(30)
     @Test
     void mediumMessage(final @TempDir Path tempDir) throws Exception
     {
-        test(1000, 288, 1234, tempDir);
+        test(1000, 288, 5, tempDir);
     }
 
     @Timeout(30)
@@ -95,7 +95,7 @@ abstract class AbstractTest<
     protected final void test(
         final int messageRate,
         final int messageLength,
-        final long messageDelayNs,
+        final int burstSize,
         final Path tempDir) throws Exception
     {
         final Configuration configuration = new Configuration.Builder()
@@ -104,7 +104,7 @@ abstract class AbstractTest<
             .messageRate(messageRate)
             .messageLength(messageLength)
             .messageTransceiverClass(messageTransceiverClass())
-            .messageSendDelayNs(messageDelayNs)
+            .batchSize(burstSize)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("aeron")
             .build();

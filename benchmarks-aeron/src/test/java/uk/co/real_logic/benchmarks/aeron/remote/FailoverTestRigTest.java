@@ -75,6 +75,7 @@ class FailoverTestRigTest
             .messageRate(1000)
             .messageLength(16)
             .messageTransceiverClass(DummyMessageTransceiver.class)
+            .batchSize(1)
             .outputDirectory(tempDir)
             .outputFileNamePrefix("failover")
             .build();
