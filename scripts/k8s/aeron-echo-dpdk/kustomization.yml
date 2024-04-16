@@ -1,0 +1,13 @@
+# This file contains the overrides for aeron-echo-dpdk test
+
+resources:
+  - ../base
+patches:
+  - path: echo-server.yml
+    target:
+      kind: Pod
+      name: aeron-benchmark-0
+  - path: echo-client.yml
+    target:
+      kind: Pod
+      name: aeron-benchmark-1

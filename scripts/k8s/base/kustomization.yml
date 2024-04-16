@@ -1,0 +1,8 @@
+# Base deployment - do not apply this, use the specific deployments in the other subdirectories
+
+resources:
+  - k8s-benchmark.yml
+patches:
+  - path: settings.yml
+    target:
+      kind: Pod

@@ -9,7 +9,7 @@ function f_log() {
 
 function f_show_help() {
   f_log "Supported arguments are:"
-  echo "${0} (-n|--namespace) '<namespace>' (-t|--test) 'aeron-echo' (-m|--media-driver) 'dpdk'"
+  echo "${0} (-n|--namespace) '<namespace>' (-t|--test) 'aeron-echo-dpdk'"
 }
 
 while [[ $# -gt 0 ]]
@@ -23,19 +23,9 @@ do
       ;;
     -t|--test)
       TEST_TO_RUN="${2}"
-      if [[ "${TEST_TO_RUN}" != "aeron-echo" ]]
+      if [[ "${TEST_TO_RUN}" != "aeron-echo-dpdk" ]]
       then
-        f_log "Error: only supported test is 'aeron-echo' at the moment"
-        exit 1
-      fi
-      shift
-      shift
-      ;;
-    -m|--media-driver)
-      MEDIA_DRIVER="${2}"
-      if [[ "${MEDIA_DRIVER}" != "dpdk" ]]
-      then
-        f_log "Error: only supported media driver is 'dpdk' at the moment"
+        f_log "Error: only supported test is 'aeron-echo-dpdk' at the moment"
         exit 1
       fi
       shift
@@ -55,8 +45,7 @@ done
 
 # Standard vars
 K8S_NAMESPACE="${K8S_NAMESPACE:-default}"
-TEST_TO_RUN="${TEST_TO_RUN:-aeron-echo}"
-MEDIA_DRIVER="${MEDIA_DRIVER:-dpdk}"
+TEST_TO_RUN="${TEST_TO_RUN:-aeron-echo-dpdk}"
 
 TIMESTAMP="$(date +"%Y-%m-%d-%H-%M-%S")"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
@@ -64,7 +53,7 @@ cd "${SCRIPT_DIR}"
 
 function f_cleanup_k8s() {
   f_log "Deleting old benchmark setup"
-  kubectl -n "${K8S_NAMESPACE}" delete --wait=true -k k8s/ || true
+  kubectl -n "${K8S_NAMESPACE}" delete --wait=true -k "k8s/${TEST_TO_RUN}/" || true
   kubectl -n "${K8S_NAMESPACE}" delete --wait=true endpointslices.discovery.k8s.io/aeron-benchmark-md1 || true
   kubectl -n "${K8S_NAMESPACE}" wait --for=delete endpointslices.discovery.k8s.io/aeron-benchmark-md1 --timeout=60s || true
   kubectl -n "${K8S_NAMESPACE}" wait --for=delete pod/aeron-benchmark-0 --timeout=60s || true
@@ -76,55 +65,23 @@ f_cleanup_k8s
 
 # Generate new test pods
 f_log "Generating new benchmark setup for: ${TEST_TO_RUN}"
-case ${TEST_TO_RUN} in
-  aeron-echo)
-    TEST_CUSTOMISATION="
----
-# This file is dynamically updated by the benchmarking script
-# Any modifications will be lost
-apiVersion: v1
-kind: Pod
-metadata:
-  name: all
-spec:
-  containers:
-    - name: benchmark
-      args:
-        - './benchmark-runner'
-        - '--output-file'
-        - 'aeron-echo_c-dpdk-k8s'
-        - '--message-rate'
-        - '100K'
-        - '--message-length'
-        - '288'
-        - '--iterations'
-        - '30'
-        - 'aeron/echo-client'
-"
-    echo "${TEST_CUSTOMISATION}" > "${SCRIPT_DIR}/k8s/k8s-test-customisation.yml"
-    ;;
-  *)
-    f_log "Unknown test case: ${TEST_TO_RUN}"
-    ;;
-esac
 
-
-kubectl -n "${K8S_NAMESPACE}" apply --wait=true -k k8s/
+kubectl -n "${K8S_NAMESPACE}" apply --wait=true -k "k8s/${TEST_TO_RUN}/"
 kubectl -n "${K8S_NAMESPACE}" wait --for=condition=Ready pod/aeron-benchmark-0
 kubectl -n "${K8S_NAMESPACE}" wait --for=condition=Ready pod/aeron-benchmark-1
 
 # DPDK Media Driver
-if [[ "${MEDIA_DRIVER}" == "dpdk" ]]
+if [[ "${TEST_TO_RUN}" =~ .*-dpdk$ ]]
 then
   AB0_MD_IP="$(kubectl -n "${K8S_NAMESPACE}" exec -it aeron-benchmark-0 -c aeronmd-dpdk -- bash -c 'echo ${PCIDEVICE_INTEL_COM_AWS_DPDK_INFO}' | jq -r '.. | ."IPV4_ADDRESS"? | select(. != null)')"
   AB1_MD_IP="$(kubectl -n "${K8S_NAMESPACE}" exec -it aeron-benchmark-1 -c aeronmd-dpdk -- bash -c 'echo ${PCIDEVICE_INTEL_COM_AWS_DPDK_INFO}' | jq -r '.. | ."IPV4_ADDRESS"? | select(. != null)')"
 # Java Media Driver
-elif [[ "${MEDIA_DRIVER}" == "java" ]]
+elif [[ "${TEST_TO_RUN}" =~ .*-java$ ]]
   then
   AB0_MD_IP="$(kubectl -n "${K8S_NAMESPACE}" get po  aeron-benchmark-0  -o json | jq -r ".status.podIP")"
   AB1_MD_IP="$(kubectl -n "${K8S_NAMESPACE}" get po  aeron-benchmark-1  -o json | jq -r ".status.podIP")"
 else
-  f_log "No available media-driver config"
+  f_log "Media driver config not found"
   exit 1
 fi
 
