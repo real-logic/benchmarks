@@ -262,7 +262,7 @@ Support coming soon
 
 ### Settings
 
-1. Update `scripts/k8s/settings.yml` with configuration from your test environment.
+1. Update `scripts/k8s/base/settings.yml` with configuration from your test environment.
 
 2. Make sure your test environment is the active `kubecontext`
 

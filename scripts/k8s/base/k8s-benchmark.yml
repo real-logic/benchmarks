@@ -92,8 +92,7 @@ spec:
   # dnsPolicy: ClusterFirstWithHostNet
   containers:
     - name: benchmark
-      # make this a variable
-      args: ["aeron/echo-server"]
+      imagePullPolicy: Always
       envFrom:
         - configMapRef:
             name: aeron-benchmark-envs
@@ -111,6 +110,7 @@ spec:
           hugepages-2Mi: 1Gi
 
     - name: aeronmd-dpdk
+      imagePullPolicy: Always
       args:
         - "--no-telemetry"
         - "/opt/aeron-config/low-latency-driver.properties"
@@ -183,6 +183,7 @@ spec:
   # dnsPolicy: ClusterFirstWithHostNet
   containers:
     - name: benchmark
+      imagePullPolicy: Always
       envFrom:
         - configMapRef:
             name: aeron-benchmark-envs
@@ -200,6 +201,7 @@ spec:
           hugepages-2Mi: 1Gi
 
     - name: aeronmd-dpdk
+      imagePullPolicy: Always
       args:
         - "--no-telemetry"
         - "/opt/aeron-config/low-latency-driver.properties"

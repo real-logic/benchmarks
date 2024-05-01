@@ -1,6 +1,4 @@
 ---
-# This file is dynamically updated by the benchmarking script
-# Any modifications will be lost
 apiVersion: v1
 kind: Pod
 metadata:

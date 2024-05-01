@@ -15,14 +15,13 @@ spec:
 
   containers:
     - name: benchmark
-      image: <add_your_benchmark_repo_here>
+      image: <insert_benchmark_image_repo_here>
+      imagePullPolicy: Always
 
     - name: aeronmd-dpdk
-      image: <add_your_dpdk_repo_here>
+      image: <insert_aeronmd_dpdk_image_repo_here>
+      imagePullPolicy: Always
       resources:
         limits:
           # Give us a DPDK NIC through https://github.com/AdaptiveConsulting/k8s-dpdk-mgr
           intel.com/aws_dpdk: "1"
-
-    - name: results
-      image: busybox
