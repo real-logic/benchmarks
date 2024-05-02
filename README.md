@@ -236,19 +236,16 @@ will produce plots in which the histograms are grouped by test scenario by defau
 
 You will need the following Docker containers built & injected into a repository that you can use.
 
-### Containers
+The tests currently support Aeron Echo testing with either Java or C-DPDK media drivers.
+
+### Components & Containers
 
 **Benchmarks:**
 
-This wraps the code in *this* repository.
+This is the code in *this* repository. It must be built as a Docker container.
 
-eg.
-```
-docker build -t <your_repo>:aeron-benchmarks .
-docker push <your_repo>:aeron-benchmarks
-```
 
-**Aeron DPDK Media driver:**
+**Optional: Aeron DPDK Media driver**
 
 Premium feature.
 
@@ -256,21 +253,33 @@ If required/activated in your test configuration - see https://github.com/real-l
 
 This is expected to reside in a container called in an accessible repository.
 
-**Aeron C Media driver:**
+**Optional: Aeron C Media driver:**
 
 Support coming soon
 
-### Settings
+### Running the tests
 
-1. Update `scripts/k8s/base/settings.yml` with configuration from your test environment.
 
-2. Make sure your test environment is the active `kubecontext`
+1. Build the benchmarks container and push it to a repo that your K8s nodes can pull from:
+    ```
+    docker build -t <your_repo>:aeron-benchmarks .
+    docker push <your_repo>:aeron-benchmarks
+    ```
+2. Update the following files with configuration from your test environment - you can skip scenario config you don't plan to test
+   * `scripts/k8s/base/settings.yml`
+   * `scripts/k8s/base/aeron-echo-dpdk/settings.yml`
+   * `scripts/k8s/base/aeron-echo-java/settings.yml`
 
-3. If you are attempting to run DPDK tests, make sure you have a DPDK enabled Pod/Host. Setting this up is outside the scope of this documentation, please see https://github.com/AdaptiveConsulting/k8s-dpdk-mgr for an example of how to do this.
+3. Make sure your test environment is the active `kubecontext`
 
-4. Ensure you are permissioned to write to a K8s namespace, by default the tooling will use the `default` namespace.
+4. If you are attempting to run DPDK tests, make sure you have a DPDK enabled Pod/Host. Setting this up is outside the scope of this documentation, please see https://github.com/AdaptiveConsulting/k8s-dpdk-mgr for an example of how to do this.
 
-5. Run `./scripts/k8s-remote-testing.sh ( -n my_namespace )`
+5. Ensure you are permissioned to write to a K8s namespace, by default the tooling will use the `default` namespace.
+
+6. Run:
+   ```
+   ./scripts/k8s-remote-testing.sh (-t aeron-echo-java | aeron-echo-dpdk ) ( -n my_namespace )
+   ```
 
 ## Other benchmarks (single machine)
 Set of latency benchmarks testing round trip time (RTT) between threads or processes (IPC) via FIFO data structures and messaging systems.

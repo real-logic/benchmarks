@@ -1,0 +1,36 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+  labels:
+    aeronmd: dpdk
+spec:
+  containers:
+    - name: aeronmd-dpdk
+      imagePullPolicy: Always
+      args:
+        - "--no-telemetry"
+        - "/opt/aeron-config/low-latency-driver.properties"
+      securityContext:
+        capabilities:
+          # Required for DPDK
+          add:
+            - IPC_LOCK
+            - SYS_RAWIO
+            - SYS_ADMIN
+      envFrom:
+        - configMapRef:
+            name: aeron-benchmark-envs-dpdk
+      volumeMounts:
+        - name: hugepage-2mi
+          mountPath: /hugepages-2Mi
+        - name: shm
+          mountPath: /dev/shm
+        - name: config-volume
+          mountPath: /opt/aeron-config
+      resources:
+        limits:
+          cpu: "8"
+          memory: 8G
+          hugepages-2Mi: 1Gi

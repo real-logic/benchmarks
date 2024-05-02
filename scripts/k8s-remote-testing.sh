@@ -9,7 +9,7 @@ function f_log() {
 
 function f_show_help() {
   f_log "Supported arguments are:"
-  echo "${0} (-n|--namespace) '<namespace>' (-t|--test) 'aeron-echo-dpdk'"
+  echo "${0} (-n|--namespace) '<namespace>' (-t|--test) 'aeron-echo-dpdk|aeron-echo-java'"
 }
 
 while [[ $# -gt 0 ]]
@@ -23,9 +23,10 @@ do
       ;;
     -t|--test)
       TEST_TO_RUN="${2}"
-      if [[ "${TEST_TO_RUN}" != "aeron-echo-dpdk" ]]
-      then
-        f_log "Error: only supported test is 'aeron-echo-dpdk' at the moment"
+      if [[ "${TEST_TO_RUN}" == "aeron-echo-dpdk" || "${TEST_TO_RUN}" == "aeron-echo-java"  ]]
+      then true
+      else
+        f_log "Error: only supported tests are 'aeron-echo-dpdk' or 'aeron-echo-java' at the moment"
         exit 1
       fi
       shift
@@ -33,7 +34,7 @@ do
       ;;
     -h|--help)
       f_show_help
-      EXIT
+      exit 1
       ;;
     *)
       echo "Error, unknown argument: ${option}"
@@ -45,7 +46,7 @@ done
 
 # Standard vars
 K8S_NAMESPACE="${K8S_NAMESPACE:-default}"
-TEST_TO_RUN="${TEST_TO_RUN:-aeron-echo-dpdk}"
+TEST_TO_RUN="${TEST_TO_RUN:-aeron-echo-java}"
 
 TIMESTAMP="$(date +"%Y-%m-%d-%H-%M-%S")"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
@@ -67,8 +68,8 @@ f_cleanup_k8s
 f_log "Generating new benchmark setup for: ${TEST_TO_RUN}"
 
 kubectl -n "${K8S_NAMESPACE}" apply --wait=true -k "k8s/${TEST_TO_RUN}/"
-kubectl -n "${K8S_NAMESPACE}" wait --for=condition=Ready pod/aeron-benchmark-0
-kubectl -n "${K8S_NAMESPACE}" wait --for=condition=Ready pod/aeron-benchmark-1
+kubectl -n "${K8S_NAMESPACE}" wait --timeout=90s --for=condition=Ready pod/aeron-benchmark-0
+kubectl -n "${K8S_NAMESPACE}" wait --timeout=90s --for=condition=Ready pod/aeron-benchmark-1
 
 # DPDK Media Driver
 if [[ "${TEST_TO_RUN}" =~ .*-dpdk$ ]]

@@ -1,0 +1,62 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+  labels:
+    app.kubernetes.io/name: aeron-benchmark
+spec:
+  # The benchmark code runs exactly once and isn't restarted
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 5
+  volumes:
+    - name: hugepage-2mi
+      emptyDir:
+        medium: HugePages-2Mi
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 2Gi
+    # Common properties files
+    - name: config-volume
+      configMap:
+        name: aeron-benchmark
+        items:
+          - key: low-latency-driver.properties
+            path: low-latency-driver.properties
+  containers:
+    # Media driver containers come from the Kustomization files in the scenarios
+    - name: benchmark
+      imagePullPolicy: Always
+      envFrom:
+        - configMapRef:
+            name: aeron-benchmark-envs
+      volumeMounts:
+        - mountPath: /hugepages-2Mi
+          name: hugepage-2mi
+        - mountPath: /dev/shm
+          name: shm
+        - name: config-volume
+          mountPath: /opt/aeron-config
+      resources:
+        limits:
+          cpu: "8"
+          memory: 10G
+          hugepages-2Mi: 1Gi
+
+    - name: results
+      image: busybox
+      command:
+        - "sleep"
+        - "infinity"
+      envFrom:
+        - configMapRef:
+            name: aeron-benchmark-envs
+      volumeMounts:
+        - name: shm
+          mountPath: /dev/shm
+      resources:
+        # Must set limits, as whole Pod must have requests = limits to get into Guarenteed QoS class
+        limits:
+          cpu: "1"
+          memory: 512Mi

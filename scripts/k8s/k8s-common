@@ -1,0 +1,133 @@
+#!/bin/bash
+
+# common functions for K8s benchmarking
+
+#####################################################################################
+# Pins a given thread to a given cpu
+function f_pin_thread() {
+  thread_name="$1"
+  cpu_core="$2"
+
+  if mypid="$(ps --no-headers -eL -o tid,comm | grep " ${thread_name}" | awk '{print $1}')"
+  then true
+  else
+    echo "** No such thread: ${thread_name}"
+    exit 1
+  fi
+
+  echo "** Setting thread ${thread_name} affinity to cpu ${cpu_core} **"
+  taskset -pc "${cpu_core}" "${mypid}"
+}
+
+#####################################################################################
+# Wait for a process to start
+function f_wait_for_process() {
+  my_process="${1:? Please supply the process name to wait for}"
+  until pgrep -l -f "${my_process}"
+  do
+    echo "** Waiting for process start: ${my_process} **"
+    sleep 2
+  done
+  sleep 2
+}
+
+#####################################################################################
+# Waits for all the DNS names to be resolvable
+function f_wait_for_dns() {
+
+  # Verify we can get DNS records for the pods
+  until host "${NODE0_ADDRESS:? Please set NODE0_ADDRESS}"
+  do
+    echo "waiting for DNS for ${NODE0_ADDRESS:? Please set NODE0_ADDRESS}"
+    sleep 5
+  done
+  until host "${NODE1_ADDRESS:? Please set NODE1_ADDRESS}"
+  do
+    echo "waiting for DNS for ${NODE1_ADDRESS:? Please set NODE1_ADDRESS}"
+    sleep 5
+  done
+
+}
+
+#####################################################################################
+# Things to run *before* a benchmark client runs
+function f_benchmark_pre(){
+
+echo '***********************************'
+echo "*** Running $* on ${HOSTNAME} ***"
+echo '***********************************'
+
+# Sets our own bash script affinity to the first core
+taskset -cp "${CGROUP_CPUSETS[0]}" $$
+
+# Create the results dir
+mkdir -p "${TEST_OUTPUT_PATH:? Please set TEST_OUTPUT_PATH}"
+cd "${BENCHMARKS_PATH:? Please set BENCHMARKS_PATH}/scripts"
+
+# Collecting environment info
+./collect-environment-info "${TEST_OUTPUT_PATH}"
+
+# Verify we can get DNS records for the pods
+f_wait_for_dns
+
+echo '*******************************'
+echo "JVM_OPTS:"
+echo "${JVM_OPTS:? Please set JVM_OPTS}" | sed "s/ /\n/g"
+echo '*******************************'
+
+}
+
+
+#####################################################################################
+# Things to run *after* a benchmark client runs
+function f_benchmark_post(){
+
+  if [ -z "$(ls -A "${TEST_OUTPUT_PATH:? Needs to be set}")" ]; then
+    echo "No test output found"
+  else
+    parent_dir="$(dirname "${TEST_OUTPUT_PATH}")"
+    results_dir="$(basename "${TEST_OUTPUT_PATH}")"
+
+    # Check if we've got plottable results
+    if ls "${TEST_OUTPUT_PATH}" | grep -Eq '.hdr$'
+    then
+      echo "Generating summary"
+      "${BENCHMARKS_PATH}/scripts/aggregate-results" "${TEST_OUTPUT_PATH}"
+      echo "Generating graph"
+      "${BENCHMARKS_PATH}/scripts/results-plotter.py" "${TEST_OUTPUT_PATH}"
+    fi
+
+    echo "Creating results tarball: ${parent_dir}/results.tar.gz"
+    tar -C "${parent_dir}" -czf "${parent_dir}/results.tar.gz" "${results_dir}"
+  fi
+
+
+}
+
+#####################################################################################
+# CPUsets vars - this allways runs
+if test -e "/sys/fs/cgroup/cpuset/cpuset.cpus"
+then
+  echo "** Cgroup cpuset v1 found **"
+  export CPUSET_FILE="/sys/fs/cgroup/cpuset/cpuset.cpus"
+elif test -e "/sys/fs/cgroup/cpuset.cpus.effective"
+then
+  echo "** Cgroup cpuset v2 found **"
+  export CPUSET_FILE="/sys/fs/cgroup/cpuset.cpus.effective"
+else
+  echo "** WARNING: Cgroup cpuset lookup requested, but no v1 or v2 cpuset found **"
+fi
+
+# List of CPUs in our Cgroup cpuset
+CGROUP_CPUSETS_STRING="$(awk '/-/{for (i=$1; i<=$2; i++)printf "%s%s",i,ORS;next} 1' ORS=' ' RS=, FS=- ${CPUSET_FILE})"
+# Convert to an array
+CGROUP_CPUSETS=(${CGROUP_CPUSETS_STRING})
+# Check we've got at least 4 cpus
+if [[ "${#CGROUP_CPUSETS[@]}" -lt 4 ]]
+then
+  echo "** FATAL: Cgroup cpuset only contains ${#CGROUP_CPUSETS[@]} cpus, need a minimum of 4 **"
+  return 1
+fi
+
+echo "** Container CPUset: ${CGROUP_CPUSETS_STRING} **"
+echo "***********************************"

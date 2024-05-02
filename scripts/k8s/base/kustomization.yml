@@ -3,6 +3,17 @@
 resources:
   - k8s-benchmark.yml
 patches:
+  # Standard config for both the pods
+  - path: base-containers.yml
+    target:
+      kind: Pod
+
+  # Aeron echo specific config
+  - path: echo-server.yml
+    target:
+      kind: Pod
+      name: aeron-benchmark-0
+
   - path: settings.yml
     target:
       kind: Pod

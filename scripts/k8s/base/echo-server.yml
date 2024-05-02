@@ -6,4 +6,4 @@ metadata:
 spec:
   containers:
     - name: benchmark
-      args: ["aeron/echo-server"]
+      command: ["k8s/k8s-echo-server.sh"]
