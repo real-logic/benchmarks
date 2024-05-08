@@ -139,7 +139,7 @@ public final class LoadTestRig
                 configuration.messageRate(),
                 configuration.messageLength(),
                 configuration.batchSize());
-            final long sentMessages = send(configuration.iterations(), configuration.messageRate());
+            final SendResult result = send(configuration.iterations(), configuration.messageRate());
             progressReporter.reset();
 
             out.printf("%nHistogram of RTT latencies in microseconds.%n");
@@ -147,9 +147,9 @@ public final class LoadTestRig
             histogram.outputPercentileDistribution(out, 1000.0);
 
             final long expectedTotalNumberOfMessages = configuration.iterations() * (long)configuration.messageRate();
-            warnIfTargetRateNotAchieved(sentMessages, expectedTotalNumberOfMessages);
+            warnIfTargetRateNotAchieved(result, expectedTotalNumberOfMessages);
 
-            final PersistedHistogram.Status status = expectedTotalNumberOfMessages == sentMessages ? OK : FAIL;
+            final PersistedHistogram.Status status = result.status(expectedTotalNumberOfMessages);
             histogram.saveToFile(
                 configuration.outputDirectory(),
                 configuration.outputFileNamePrefix(),
@@ -171,7 +171,7 @@ public final class LoadTestRig
     }
 
     @SuppressWarnings("MethodLength")
-    long send(final int iterations, final int numberOfMessages)
+    SendResult send(final int iterations, final int numberOfMessages)
     {
         final MessageTransceiver messageTransceiver = this.messageTransceiver;
         final NanoClock clock = this.clock;
@@ -268,13 +268,6 @@ public final class LoadTestRig
                 idleStrategy.idle();
                 if (clock.nanoTime() >= deadline)
                 {
-                    out.printf(
-                        "%n*** WARNING: Not all messages were received after %ds deadline: expected %,d vs received " +
-                        "%,d (loss %.4f%%)!%n",
-                        NANOSECONDS.toSeconds(RECEIVE_DEADLINE_NS),
-                        sentMessages,
-                        receivedMessageCount,
-                        100.0 - (100.0 * receivedMessageCount / sentMessages));
                     break;
                 }
             }
@@ -285,19 +278,30 @@ public final class LoadTestRig
             }
         }
 
-        return sentMessages;
+        return new SendResult(sentMessages, receivedMessageCount);
     }
 
-    private void warnIfTargetRateNotAchieved(final long sentMessages, final long expectedTotalNumberOfMessages)
+    private void warnIfTargetRateNotAchieved(final SendResult result, final long expectedTotalNumberOfMessages)
     {
-        if (expectedTotalNumberOfMessages != sentMessages)
+        if (expectedTotalNumberOfMessages != result.sentMessages)
         {
             out.printf(
                 "%n*** WARNING: Target message rate not achieved: expected to send %,d messages in " +
                 "total but managed to send only %,d messages (loss %.4f%%)!%n",
                 expectedTotalNumberOfMessages,
-                sentMessages,
-                100.0 - (100.0 * sentMessages / expectedTotalNumberOfMessages));
+                result.sentMessages,
+                100.0 - (100.0 * result.sentMessages / expectedTotalNumberOfMessages));
+        }
+
+        if (result.sentMessages != result.receivedMessages)
+        {
+            out.printf(
+                "%n*** WARNING: Not all messages were received after %ds deadline: expected %,d vs received " +
+                "%,d (loss %.4f%%)!%n",
+                NANOSECONDS.toSeconds(RECEIVE_DEADLINE_NS),
+                result.sentMessages,
+                result.receivedMessages,
+                100.0 - (100.0 * result.receivedMessages / result.sentMessages));
         }
     }
 
@@ -328,5 +332,22 @@ public final class LoadTestRig
         final Configuration configuration = Configuration.fromSystemProperties();
 
         new LoadTestRig(configuration).run();
+    }
+
+    static final class SendResult
+    {
+        final long sentMessages;
+        final long receivedMessages;
+
+        SendResult(final long sentMessages, final long receivedMessages)
+        {
+            this.sentMessages = sentMessages;
+            this.receivedMessages = receivedMessages;
+        }
+
+        PersistedHistogram.Status status(final long expectedNumberOfMessages)
+        {
+            return expectedNumberOfMessages == sentMessages && expectedNumberOfMessages == receivedMessages ? OK : FAIL;
+        }
     }
 }

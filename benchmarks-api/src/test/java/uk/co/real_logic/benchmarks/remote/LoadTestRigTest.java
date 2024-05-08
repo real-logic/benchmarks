@@ -251,9 +251,10 @@ class LoadTestRigTest
             persistedHistogram,
             progressReporter);
 
-        final long messages = loadTestRig.send(2, 9);
+        final LoadTestRig.SendResult result = loadTestRig.send(2, 9);
 
-        assertEquals(18, messages);
+        assertEquals(18, result.sentMessages);
+        assertEquals(18, result.receivedMessages);
         verify(clock, times(24)).nanoTime();
         verify(idleStrategy, times(10)).reset();
         verify(messageTransceiver).send(4, 24, 1000000000L, CHECKSUM);
@@ -303,9 +304,10 @@ class LoadTestRigTest
             persistedHistogram,
             progressReporter);
 
-        final long messages = loadTestRig.send(10, 100);
+        final LoadTestRig.SendResult result = loadTestRig.send(10, 100);
 
-        assertEquals(120, messages);
+        assertEquals(120, result.sentMessages);
+        assertEquals(120, result.receivedMessages);
         verify(clock, times(128)).nanoTime();
         verify(idleStrategy, times(119)).reset();
         verify(messageTransceiver).send(30, 100, MILLISECONDS.toNanos(500), CHECKSUM);
