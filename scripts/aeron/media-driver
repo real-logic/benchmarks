@@ -19,8 +19,8 @@ set -euxo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-GC_LOG_FILE_NAME="${GC_LOG_FILE_NAME:-$(basename "${0}" .sh)-%p}"
-export GC_LOG_FILE_NAME
+PROCESS_FILE_NAME="${PROCESS_FILE_NAME:-$(basename "${0}" .sh)-%p}"
+export PROCESS_FILE_NAME
 
 exec "${DIR}/../run-java" \
   io.aeron.driver.MediaDriver \

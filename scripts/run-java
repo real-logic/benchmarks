@@ -20,8 +20,9 @@ set -exo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 class_name=${1##*.}
-gc_log_file_name=${GC_LOG_FILE_NAME:-${class_name}-%p}
-gc_log_file="/dev/shm/${gc_log_file_name}-gc.log"
+log_file_name=${PROCESS_FILE_NAME:-${class_name}-%p}
+gc_log_file="/dev/shm/${log_file_name}-gc.log"
+error_log_file="/dev/shm/${log_file_name}-crash.log"
 
 java_options=(
   -Djava.net.preferIPv4Stack=true
@@ -30,6 +31,7 @@ java_options=(
   -XX:+UnlockDiagnosticVMOptions
   -XX:+DebugNonSafepoints
   -XX:+UseParallelGC
+  -XX:ErrorFile="${error_log_file}"
   -Xms4G
   -Xmx4G
   -XX:+AlwaysPreTouch

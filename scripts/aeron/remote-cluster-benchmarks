@@ -234,7 +234,7 @@ function start_cluster_node()
   local clustered_service_cpu_var=NODE${node_id}_CLUSTERED_SERVICE_CPU_CORE
   local extra_properties_var=NODE${node_id}_EXTRA_PROPERTIES
   echo "
-    export JAVA_HOME=\"${!java_home_var}\" GC_LOG_FILE_NAME=\"cluster-node-${node_id}-media-driver\" \
+    export JAVA_HOME=\"${!java_home_var}\" PROCESS_FILE_NAME=\"cluster-node-${node_id}-media-driver\" \
     ; $(kill_java_process "${cluster_node_class_name}") \
     ; rm -rf \"${!cluster_dir_var}\" \
     ; rm -rf \"${!archive_dir_var}\" \
@@ -260,7 +260,7 @@ function start_cluster_node()
     -Daeron.archive.recording.events.enabled=false \
     -Duk.co.real_logic.benchmarks.aeron.remote.cluster.service=${cluster_service} \
     -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir} \
-    ${!extra_properties_var:-}\" GC_LOG_FILE_NAME=\"cluster-node-${node_id}\" \
+    ${!extra_properties_var:-}\" PROCESS_FILE_NAME=\"cluster-node-${node_id}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
@@ -295,7 +295,7 @@ function start_cluster_backup_node()
   local archive_conductor_cpu_var=BACKUP_NODE${node_id}_ARCHIVE_CONDUCTOR_CPU_CORE
   local cluster_backup_cpu_var=BACKUP_NODE${node_id}_CLUSTER_BACKUP_CPU_CORE
   echo "
-    export JAVA_HOME=\"${!java_home_var}\" GC_LOG_FILE_NAME=\"cluster-backup-node-${node_id}-media-driver\" \
+    export JAVA_HOME=\"${!java_home_var}\" PROCESS_FILE_NAME=\"cluster-backup-node-${node_id}-media-driver\" \
     ; $(kill_java_process "${cluster_backup_node_class_name}") \
     ; rm -rf \"${!cluster_dir_var}\" \
     ; rm -rf \"${!archive_dir_var}\" \
@@ -318,7 +318,7 @@ function start_cluster_backup_node()
     -Daeron.archive.file.sync.level=${fsync} \
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false \
-    -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir}\" GC_LOG_FILE_NAME=\"cluster-backup-node-${node_id}\"\
+    -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir}\" PROCESS_FILE_NAME=\"cluster-backup-node-${node_id}\"\
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-backup-node & \
     $(await_java_process_start "${cluster_backup_node_class_name}") \
     ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
@@ -493,7 +493,7 @@ do
             -Daeron.cluster.egress.channel=${CLIENT_EGRESS_CHANNEL}\
             -Daeron.cluster.message.timeout=300000000000\
             ${CLIENT_EXTRA_PROPERTIES:-}\"\
-            && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" GC_LOG_FILE_NAME=\"cluster-client-media-driver\"\
+            && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" PROCESS_FILE_NAME=\"cluster-client-media-driver\"\
             ; $(kill_java_process "${client_class_name}")\
             ; ${client_driver}\
             && numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} --physcpubind=\"${CLIENT_NON_ISOLATED_CPU_CORES}\" ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/${client_script} & \
@@ -574,7 +574,7 @@ do
             done
 
             echo -e "\nRunning benchmark..."
-            execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${start_client}; cp /dev/shm/*-gc.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; true; exit"
+            execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${start_client}; cp /dev/shm/*-gc.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; true; exit"
 
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))
             do
@@ -583,7 +583,7 @@ do
               ssh_key_file=SSH_CLUSTER_BACKUP_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
               server_benchmarks_path=BACKUP_NODE${n}_BENCHMARKS_PATH
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(stop_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!server_benchmarks_path}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; cp /tmp/benchmarks-cluster-*.log \"${!server_benchmarks_path}/${output_dir}/logs\"; true; exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(stop_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!server_benchmarks_path}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${!server_benchmarks_path}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; cp /tmp/benchmarks-cluster-*.log \"${!server_benchmarks_path}/${output_dir}/logs\"; true; exit"
             done
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))
@@ -593,7 +593,7 @@ do
               ssh_key_file=SSH_CLUSTER_KEY_FILE${n}
               ssh_node=SSH_CLUSTER_NODE${n}
               server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(stop_java_process "${cluster_node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!server_benchmarks_path}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; cp /tmp/benchmarks-cluster-*.log \"${!server_benchmarks_path}/${output_dir}/logs\"; true; exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(stop_java_process "${cluster_node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!server_benchmarks_path}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${!server_benchmarks_path}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; cp /tmp/benchmarks-cluster-*.log \"${!server_benchmarks_path}/${output_dir}/logs\"; true; exit"
             done
           done
         done
