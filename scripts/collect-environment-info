@@ -84,8 +84,9 @@ if [[ $MANUFACTURER == "Amazon EC2" ]]; then
     TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
     ID="$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)"
     INSTANCE_INFO=$(aws ec2 describe-instances --instance-ids "$ID" | jq '.Reservations[] .Instances[] | { instanceId: .InstanceId, name:(.Tags[] | select(.Key=="Name") .Value) }')
+    FILE_NAME="env-summary-$(echo "$INSTANCE_INFO" | jq -r '.name')"
     VOLUME_INFO=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$ID")
-    EC2_JSON=("$(echo "$INSTANCE_INFO $VOLUME_INFO" | jq -s add)")
+    EC2_JSON="$(echo "$INSTANCE_INFO $VOLUME_INFO" | jq -s add)"
     EC2_TXT="$EC2_TXT
 $(echo "$INSTANCE_INFO" | jq -r '.instanceId')
 ===================
@@ -101,6 +102,7 @@ elif [[ $MANUFACTURER == "Google" ]]; then
     INSTANCE_ID="$(curl -s "http://metadata/computeMetadata/v1/instance/id" -H "Metadata-Flavor: Google")"
     INSTANCE_SELF_LINK="$(gcloud beta compute instances list --filter id="$INSTANCE_ID" --format="get(selfLink)")"
     INSTANCE=$(gcloud beta compute instances list --filter selfLink="$INSTANCE_SELF_LINK" --format="table(name, zone, machine_type.basename())" | tail -1)
+    FILE_NAME="env-summary-$(echo "$INSTANCE" | cut -d' ' -f1)"
     DISKS=$(gcloud beta compute disks list --filter users="$INSTANCE_SELF_LINK")
     GCP_TXT="$GCP_TXT
 
