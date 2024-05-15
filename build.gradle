@@ -56,7 +56,7 @@ def toolchainCompiler = javaToolchains.compilerFor {
 
 def agronaVersion = '1.21.1'
 def aeronVersion = '1.44.1'
-def byteBuddyVersion = '1.14.14'
+def byteBuddyVersion = '1.14.15'
 def jmhVersion = '1.37'
 def hdrHistogramVersion = '2.2.1'
 def disruptorVersion = '3.4.4'
