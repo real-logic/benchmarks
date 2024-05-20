@@ -4,7 +4,7 @@ resources:
   - ../base
 patches:
   # Media driver specific config
-  - path: aeronmd-dpdk.yml
+  - path: aeronmd-java.yml
     target:
       kind: Pod
   # Settings for the benchmark
@@ -12,7 +12,7 @@ patches:
     target:
       kind: Pod
       name: aeron-benchmark-1
-  #  Local environment specific overrides
+  # Local environment specific settings
   - target:
       kind: Pod
     path: settings.yml

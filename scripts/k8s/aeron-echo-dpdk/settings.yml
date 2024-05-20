@@ -1,0 +1,17 @@
+---
+# Set test specific config
+# eg:
+# * image refs
+# * DPDK interface specifics
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+spec:
+  containers:
+    - name: aeronmd-dpdk
+      image: "< Ref to Aeron DPDK media driver container >"
+      resources:
+        limits:
+          # Give us a DPDK NIC through https://github.com/AdaptiveConsulting/k8s-dpdk-mgr
+          intel.com/aws_dpdk: "1"

@@ -15,13 +15,5 @@ spec:
 
   containers:
     - name: benchmark
-      image: <insert_benchmark_image_repo_here>
+      image: "< Ref to benchmark container >"
       imagePullPolicy: Always
-
-    - name: aeronmd-dpdk
-      image: <insert_aeronmd_dpdk_image_repo_here>
-      imagePullPolicy: Always
-      resources:
-        limits:
-          # Give us a DPDK NIC through https://github.com/AdaptiveConsulting/k8s-dpdk-mgr
-          intel.com/aws_dpdk: "1"

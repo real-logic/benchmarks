@@ -19,6 +19,7 @@ RUN apt-get update &&\
   jq \
   lsb-release \
   python3-pip \
+  numactl \
   hwloc &&\
   pip3 install --upgrade --user hdr-plot
 
@@ -30,5 +31,4 @@ RUN mkdir -p ${BENCHMARKS_PATH} &&\
   tar -C ${BENCHMARKS_PATH} -xf /root/benchmarks.tar &&\
   rm -f /root/benchmarks.tar
 
-ENTRYPOINT [ "/opt/aeron-benchmarks/scripts/k8s/k8s-benchmark-entrypoint.sh" ]
 WORKDIR ${BENCHMARKS_PATH}/scripts

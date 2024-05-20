@@ -1,0 +1,15 @@
+---
+# Set test specific config
+# The image ref must be set
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+spec:
+  # Uncomment me to do host network testing
+  # dnsPolicy: ClusterFirstWithHostNet
+  # hostNetwork: true
+  containers:
+    - name: aeronmd-java
+      # This is the benchmarks container with an alternate entrypoint
+      image: "< Ref to benchmark container >"

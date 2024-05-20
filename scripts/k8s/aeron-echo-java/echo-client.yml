@@ -10,7 +10,7 @@ spec:
       # These are options passed to the benchmark-runner script
       args:
         - "--output-file"
-        - "aeron-echo_c-dpdk-k8s"
+        - "aeron-echo_java-k8s"
         - "--message-rate"
         - "101K"
         - "--message-length"
