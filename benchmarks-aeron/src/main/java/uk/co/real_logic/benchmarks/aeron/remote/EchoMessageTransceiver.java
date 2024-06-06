@@ -18,11 +18,11 @@ package uk.co.real_logic.benchmarks.aeron.remote;
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.FragmentAssembler;
-import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import org.HdrHistogram.ValueRecorder;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
@@ -50,10 +50,11 @@ public final class EchoMessageTransceiver extends MessageTransceiver
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
+    private final MutableInteger replierIndex = new MutableInteger();
     private Path logsDir;
     ExclusivePublication publication;
     private Subscription subscription;
-    private Image image;
+    private int numDestinations;
 
     public EchoMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
@@ -76,15 +77,15 @@ public final class EchoMessageTransceiver extends MessageTransceiver
     public void init(final Configuration configuration)
     {
         logsDir = configuration.logsDir();
+        numDestinations = numberOfDestinations();
+        validateMessageLength(configuration.messageLength());
         publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
         subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
 
         awaitConnected(
-            () -> subscription.isConnected() && publication.isConnected(),
+            () -> subscription.isConnected() && publication.isConnected() && publication.availableWindow() > 0,
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
-
-        image = subscription.imageAtIndex(0);
     }
 
     public void destroy()
@@ -104,11 +105,19 @@ public final class EchoMessageTransceiver extends MessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
+        return sendMessages(
+            publication,
+            bufferClaim,
+            numberOfMessages,
+            messageLength,
+            timestamp,
+            checksum,
+            replierIndex,
+            numDestinations);
     }
 
     public void receive()
     {
-        image.poll(dataHandler, FRAGMENT_LIMIT);
+        subscription.poll(dataHandler, FRAGMENT_LIMIT);
     }
 }

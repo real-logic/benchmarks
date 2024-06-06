@@ -66,7 +66,7 @@ class LiveRecordingTest extends
     protected EchoNode createNode(
         final AtomicBoolean running, final ArchivingMediaDriver archivingMediaDriver, final AeronArchive aeronArchive)
     {
-        return new EchoNode(running, null, aeronArchive.context().aeron(), false);
+        return new EchoNode(running, null, aeronArchive.context().aeron(), false, 0);
     }
 
     protected ArchivingMediaDriver createDriver()

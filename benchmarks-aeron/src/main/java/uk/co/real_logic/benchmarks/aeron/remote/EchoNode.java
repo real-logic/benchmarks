@@ -31,6 +31,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.aeron.Aeron.connect;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.CloseHelper.closeAll;
 import static org.agrona.PropertyAction.PRESERVE;
 import static org.agrona.PropertyAction.REPLACE;
@@ -54,14 +55,15 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     EchoNode(final AtomicBoolean running)
     {
-        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true);
+        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true, replierIndex());
     }
 
     EchoNode(
         final AtomicBoolean running,
         final MediaDriver mediaDriver,
         final Aeron aeron,
-        final boolean ownsAeronClient)
+        final boolean ownsAeronClient,
+        final int replierIndex)
     {
         this.running = running;
         this.mediaDriver = mediaDriver;
@@ -73,16 +75,19 @@ public final class EchoNode implements AutoCloseable, Runnable
 
         fragmentHandler = (buffer, offset, length, header) ->
         {
-            long result;
-            while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
+            if (buffer.getInt(offset + REPLIER_INDEX_OFFSET, LITTLE_ENDIAN) == replierIndex)
             {
-                checkPublicationResult(result);
-            }
+                long result;
+                while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
+                {
+                    checkPublicationResult(result);
+                }
 
-            bufferClaim
-                .flags(header.flags())
-                .putBytes(buffer, offset, length)
-                .commit();
+                bufferClaim
+                    .flags(header.flags())
+                    .putBytes(buffer, offset, length)
+                    .commit();
+            }
         };
 
         awaitConnected(

@@ -24,6 +24,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.BufferClaim;
 import org.HdrHistogram.ValueRecorder;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
@@ -56,6 +57,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
             onMessageReceived(timestamp, checksum);
         });
+    private final MutableInteger replierIndex = new MutableInteger();
     private Path logsDir;
 
     public LiveReplayMessageTransceiver(
@@ -120,7 +122,8 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
+        return sendMessages(
+            publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum, replierIndex, 1);
     }
 
     public void receive()

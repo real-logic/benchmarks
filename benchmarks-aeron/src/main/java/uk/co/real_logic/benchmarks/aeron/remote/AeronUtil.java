@@ -29,10 +29,12 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.BitUtil;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.SemanticVersion;
+import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.IdleStrategy;
@@ -83,15 +85,22 @@ import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.laun
 
 final class AeronUtil
 {
+    static final int TIMESTAMP_OFFSET = 0;
+    static final int REPLIER_INDEX_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    static final int MIN_MESSAGE_LENGTH = REPLIER_INDEX_OFFSET + SIZE_OF_LONG + SIZE_OF_LONG;
+
+    static final String REPLIER_INDEX_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.replier.index";
+    static final String NUMBER_OF_DESTINATIONS_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.number.destinations";
     static final String CLUSTER_SERVICE_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.cluster.service";
     static final String SNAPSHOT_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.cluster.snapshot.size";
     static final long DEFAULT_SNAPSHOT_SIZE = 0;
-    static final String DESTINATION_CHANNELS_PROP_NAME =
+    static final String DESTINATION_CHANNEL_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.destination.channel";
-    static final String DESTINATION_STREAMS_PROP_NAME =
+    static final String DESTINATION_STREAM_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.destination.stream";
-    static final String SOURCE_CHANNELS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channel";
-    static final String SOURCE_STREAMS_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.stream";
+    static final String SOURCE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channel";
+    static final String SOURCE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.stream";
     static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
     static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.stream";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
@@ -107,9 +116,28 @@ final class AeronUtil
     static final String FAILOVER_CONTROL_ENDPOINTS_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.cluster.failover.control.endpoints";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+    private static final int SEND_ATTEMPTS = 3;
 
     private AeronUtil()
     {
+    }
+
+    static int numberOfDestinations()
+    {
+        return Integer.getInteger(NUMBER_OF_DESTINATIONS_PROP_NAME, 1);
+    }
+
+    static int replierIndex()
+    {
+        return Integer.getInteger(REPLIER_INDEX_PROP_NAME, 0);
+    }
+
+    static void validateMessageLength(final int messageLength)
+    {
+        if (messageLength < MIN_MESSAGE_LENGTH)
+        {
+            throw new IllegalArgumentException("Message length must be at least " + MIN_MESSAGE_LENGTH);
+        }
     }
 
     static long connectionTimeoutNs()
@@ -125,7 +153,7 @@ final class AeronUtil
 
     static String destinationChannel()
     {
-        final String property = getProperty(DESTINATION_CHANNELS_PROP_NAME);
+        final String property = getProperty(DESTINATION_CHANNEL_PROP_NAME);
         if (isEmpty(property))
         {
             return "aeron:udp?endpoint=localhost:13333|mtu=1408";
@@ -136,7 +164,7 @@ final class AeronUtil
 
     static int destinationStreamId()
     {
-        final String property = getProperty(DESTINATION_STREAMS_PROP_NAME);
+        final String property = getProperty(DESTINATION_STREAM_PROP_NAME);
         if (isEmpty(property))
         {
             return 77777;
@@ -147,7 +175,7 @@ final class AeronUtil
 
     static String sourceChannel()
     {
-        final String property = getProperty(SOURCE_CHANNELS_PROP_NAME);
+        final String property = getProperty(SOURCE_CHANNEL_PROP_NAME);
         if (isEmpty(property))
         {
             return "aeron:udp?endpoint=localhost:13334|mtu=1408";
@@ -158,7 +186,7 @@ final class AeronUtil
 
     static int sourceStreamId()
     {
-        final String property = getProperty(SOURCE_STREAMS_PROP_NAME);
+        final String property = getProperty(SOURCE_STREAM_PROP_NAME);
         if (isEmpty(property))
         {
             return 55555;
@@ -315,20 +343,31 @@ final class AeronUtil
         final int numberOfMessages,
         final int messageLength,
         final long timestamp,
-        final long checksum)
+        final long checksum,
+        final MutableInteger replierIndex,
+        final int numDestinations)
     {
         int count = 0;
         for (int i = 0; i < numberOfMessages; i++)
         {
-            final long result = publication.tryClaim(messageLength, bufferClaim);
-            if (result < 0)
+            int retryCount = SEND_ATTEMPTS;
+            long result;
+            while ((result = publication.tryClaim(messageLength, bufferClaim)) < 0)
             {
                 checkPublicationResult(result);
-                break;
+                if (0 == --retryCount)
+                {
+                    return count;
+                }
             }
             final MutableDirectBuffer buffer = bufferClaim.buffer();
             final int offset = bufferClaim.offset();
-            buffer.putLong(offset, timestamp, LITTLE_ENDIAN);
+            buffer.putLong(offset + TIMESTAMP_OFFSET, timestamp, LITTLE_ENDIAN);
+
+            // set replierIndex to ensure only one reply will be received
+            buffer.putInt(offset + REPLIER_INDEX_OFFSET, replierIndex.get(), LITTLE_ENDIAN);
+            replierIndex.set(BitUtil.next(replierIndex.get(), numDestinations));
+
             buffer.putLong(offset + messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
             bufferClaim.commit();
             count++;
@@ -409,6 +448,7 @@ final class AeronUtil
 
     static void dumpAeronStats(final File cncFile, final Path statsFile, final Path errorFile)
     {
+        Thread.interrupted(); // clear interrupt
         if (cncFile.exists() && cncFile.length() >= CncFileDescriptor.META_DATA_LENGTH)
         {
             final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(
@@ -451,6 +491,7 @@ final class AeronUtil
 
     static void dumpArchiveErrors(final File archiveDir, final Path destFile)
     {
+        Thread.interrupted(); // clear interrupt
         final File file = resolveMarkFile(archiveDir, ArchiveMarkFile.FILENAME, ArchiveMarkFile.LINK_FILENAME);
         if (file.exists() && file.length() > 0)
         {
@@ -469,6 +510,7 @@ final class AeronUtil
     static void dumpClusterErrors(
         final Path resultFile, final File clusterDir, final String markFileName, final String linkFileName)
     {
+        Thread.interrupted(); // clear interrupt
         final File file = resolveMarkFile(clusterDir, markFileName, linkFileName);
         if (file.exists() && file.length() > 0)
         {

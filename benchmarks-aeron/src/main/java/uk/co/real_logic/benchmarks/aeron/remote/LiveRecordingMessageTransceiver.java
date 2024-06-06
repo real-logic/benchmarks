@@ -28,6 +28,7 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.SystemNanoClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
@@ -62,6 +63,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     private final ImageControlledFragmentAssembler messageHandler = new ImageControlledFragmentAssembler(this);
     private final ArchivingMediaDriver archivingMediaDriver;
     private final AeronArchive aeronArchive;
+    private final MutableInteger replierIndex = new MutableInteger();
 
     private ExclusivePublication publication;
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -143,7 +145,8 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
 
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
-        return sendMessages(publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum);
+        return sendMessages(
+            publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum, replierIndex, 1);
     }
 
     public void receive()

@@ -71,10 +71,10 @@ class AeronUtilTest
     @AfterEach
     void after()
     {
-        clearProperty(DESTINATION_CHANNELS_PROP_NAME);
-        clearProperty(DESTINATION_STREAMS_PROP_NAME);
-        clearProperty(SOURCE_CHANNELS_PROP_NAME);
-        clearProperty(SOURCE_STREAMS_PROP_NAME);
+        clearProperty(DESTINATION_CHANNEL_PROP_NAME);
+        clearProperty(DESTINATION_STREAM_PROP_NAME);
+        clearProperty(SOURCE_CHANNEL_PROP_NAME);
+        clearProperty(SOURCE_STREAM_PROP_NAME);
         clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
         clearProperty(ARCHIVE_STREAM_PROP_NAME);
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
@@ -97,10 +97,10 @@ class AeronUtilTest
     @Test
     void defaultConfigurationValuesShouldBeUsedIfEmptyValuesAreSet()
     {
-        setProperty(DESTINATION_CHANNELS_PROP_NAME, "");
-        setProperty(DESTINATION_STREAMS_PROP_NAME, "");
-        setProperty(SOURCE_CHANNELS_PROP_NAME, "");
-        setProperty(SOURCE_STREAMS_PROP_NAME, "");
+        setProperty(DESTINATION_CHANNEL_PROP_NAME, "");
+        setProperty(DESTINATION_STREAM_PROP_NAME, "");
+        setProperty(SOURCE_CHANNEL_PROP_NAME, "");
+        setProperty(SOURCE_STREAM_PROP_NAME, "");
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "");
@@ -119,10 +119,10 @@ class AeronUtilTest
     @Test
     void explicitConfigurationValues()
     {
-        setProperty(DESTINATION_CHANNELS_PROP_NAME, "ch1:5001,ch2:5002,ch3:5003");
-        setProperty(DESTINATION_STREAMS_PROP_NAME, "100");
-        setProperty(SOURCE_CHANNELS_PROP_NAME, "ch1:8001,ch2:8002,ch3:8003");
-        setProperty(SOURCE_STREAMS_PROP_NAME, "200");
+        setProperty(DESTINATION_CHANNEL_PROP_NAME, "ch1:5001,ch2:5002,ch3:5003");
+        setProperty(DESTINATION_STREAM_PROP_NAME, "100");
+        setProperty(SOURCE_CHANNEL_PROP_NAME, "ch1:8001,ch2:8002,ch3:8003");
+        setProperty(SOURCE_STREAM_PROP_NAME, "200");
         setProperty(ARCHIVE_CHANNEL_PROP_NAME, "localhost");
         setProperty(ARCHIVE_STREAM_PROP_NAME, "777");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");

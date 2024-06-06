@@ -26,7 +26,9 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.real_logic.benchmarks.remote.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,7 +41,7 @@ import static io.aeron.driver.Configuration.DIR_DELETE_ON_START_PROP_NAME;
 import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.agrona.LangUtil.rethrowUnchecked;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.*;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 abstract class AbstractTest<
@@ -66,14 +68,18 @@ abstract class AbstractTest<
         clearProperty(DIR_DELETE_ON_START_PROP_NAME);
         clearProperty(DIR_DELETE_ON_SHUTDOWN_PROP_NAME);
         clearProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME);
+        clearProperty(SOURCE_CHANNEL_PROP_NAME);
+        clearProperty(DESTINATION_CHANNEL_PROP_NAME);
+        clearProperty(REPLIER_INDEX_PROP_NAME);
+        clearProperty(NUMBER_OF_DESTINATIONS_PROP_NAME);
     }
 
     @Timeout(30)
     @Test
     void smallMessage(final @TempDir Path tempDir) throws Exception
     {
-        setProperty(SOURCE_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13334|mtu=2k|term-length=64k");
-        setProperty(DESTINATION_CHANNELS_PROP_NAME, "aeron:udp?endpoint=localhost:13333|mtu=2k|term-length=64k");
+        setProperty(SOURCE_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13334|mtu=2k|term-length=64k");
+        setProperty(DESTINATION_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:13333|mtu=2k|term-length=64k");
         test(10_000, 111, 10, tempDir);
     }
 
@@ -138,25 +144,28 @@ abstract class AbstractTest<
                 final NanoClock nanoClock = SystemNanoClock.INSTANCE;
                 final PersistedHistogram persistedHistogram = new SinglePersistedHistogram(new Histogram(3));
 
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
+                final PrintStream out = new PrintStream(baos, false, StandardCharsets.US_ASCII.name());
+
                 final LoadTestRig loadTestRig = new LoadTestRig(
                     configuration,
                     nanoClock,
                     persistedHistogram,
                     (nc, ph) -> createMessageTransceiver(nc, ph, driver, client),
-                    mock(PrintStream.class));
+                    out);
 
                 remoteNodeStarted.await();
                 loadTestRig.run();
+
+                final String ouptput = baos.toString();
+                final int warningIndex = ouptput.indexOf("WARNING:");
+                assertEquals(-1, warningIndex, () -> ouptput.substring(warningIndex));
             }
             finally
             {
                 running.set(false);
-                final boolean wasInterrupted = Thread.interrupted();
+                Thread.interrupted(); // clear interrupt
                 remoteNode.join();
-                if (wasInterrupted)
-                {
-                    Thread.currentThread().interrupt();
-                }
             }
         }
 
