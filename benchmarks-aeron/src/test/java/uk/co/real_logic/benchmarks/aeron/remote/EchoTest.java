@@ -120,7 +120,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(1)
             .iterations(1)
-            .messageRate(100)
+            .messageRate(50)
             .messageLength(288)
             .messageTransceiverClass(messageTransceiverClass())
             .batchSize(1)
@@ -132,8 +132,8 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
 
         try (MediaDriver driver = launchDriver(new MediaDriver.Context()
             .aeronDirectoryName(CommonContext.generateRandomDirName())
-            .threadingMode(ThreadingMode.SHARED_NETWORK)
-            .sharedNetworkIdleStrategy(NoOpIdleStrategy.INSTANCE));
+            .threadingMode(ThreadingMode.SHARED)
+            .sharedIdleStrategy(NoOpIdleStrategy.INSTANCE));
             Aeron client = connectToDriver(driver.aeronDirectoryName()))
         {
             final AtomicBoolean running = new AtomicBoolean(true);
@@ -147,8 +147,8 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
 
                         try (MediaDriver nodeDriver = launchDriver(new MediaDriver.Context()
                             .aeronDirectoryName(CommonContext.generateRandomDirName())
-                            .threadingMode(ThreadingMode.SHARED_NETWORK)
-                            .sharedNetworkIdleStrategy(NoOpIdleStrategy.INSTANCE));
+                            .threadingMode(ThreadingMode.SHARED)
+                            .sharedIdleStrategy(NoOpIdleStrategy.INSTANCE));
                             Aeron nodeClient = connectToDriver(nodeDriver.aeronDirectoryName());
                             EchoNode node = new EchoNode(running, nodeDriver, nodeClient, false, i))
                         {
