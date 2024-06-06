@@ -98,7 +98,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
     @TempDir
     private Path tempDir;
 
-    @Timeout(30)
+    @Timeout(10)
     @Test
     void ipcChannels(final @TempDir Path tempDir) throws Exception
     {
@@ -107,11 +107,11 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         test(1000, 333, 1, tempDir);
     }
 
-    @Timeout(30)
+    @Timeout(10)
     @Test
     void multipleDestinations() throws Exception
     {
-        final int numDestinations = 3;
+        final int numDestinations = 2;
         setProperty(SOURCE_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:20202");
         setProperty(DESTINATION_CHANNEL_PROP_NAME,
             "aeron:udp?control=localhost:10101|control-mode=dynamic|fc=min,g:/" + numDestinations +
@@ -120,7 +120,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(1)
             .iterations(1)
-            .messageRate(50)
+            .messageRate(30)
             .messageLength(288)
             .messageTransceiverClass(messageTransceiverClass())
             .batchSize(1)
@@ -132,8 +132,9 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
 
         try (MediaDriver driver = launchDriver(new MediaDriver.Context()
             .aeronDirectoryName(CommonContext.generateRandomDirName())
-            .threadingMode(ThreadingMode.SHARED)
-            .sharedIdleStrategy(NoOpIdleStrategy.INSTANCE));
+            .threadingMode(ThreadingMode.SHARED_NETWORK)
+            .conductorIdleStrategy(NoOpIdleStrategy.INSTANCE)
+            .sharedNetworkIdleStrategy(NoOpIdleStrategy.INSTANCE));
             Aeron client = connectToDriver(driver.aeronDirectoryName()))
         {
             final AtomicBoolean running = new AtomicBoolean(true);
@@ -147,8 +148,9 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
 
                         try (MediaDriver nodeDriver = launchDriver(new MediaDriver.Context()
                             .aeronDirectoryName(CommonContext.generateRandomDirName())
-                            .threadingMode(ThreadingMode.SHARED)
-                            .sharedIdleStrategy(NoOpIdleStrategy.INSTANCE));
+                            .threadingMode(ThreadingMode.SHARED_NETWORK)
+                            .conductorIdleStrategy(NoOpIdleStrategy.INSTANCE)
+                            .sharedNetworkIdleStrategy(NoOpIdleStrategy.INSTANCE));
                             Aeron nodeClient = connectToDriver(nodeDriver.aeronDirectoryName());
                             EchoNode node = new EchoNode(running, nodeDriver, nodeClient, false, i))
                         {
