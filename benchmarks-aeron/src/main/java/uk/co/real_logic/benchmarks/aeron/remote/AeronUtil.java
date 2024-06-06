@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
+import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.ArchiveMarkFile;
 import io.aeron.archive.client.AeronArchive;
@@ -433,7 +434,7 @@ final class AeronUtil
             result == NOT_CONNECTED ||
             result == MAX_POSITION_EXCEEDED)
         {
-            throw new AeronException("Publication error: " + result);
+            throw new AeronException("Publication error: " + Publication.errorString(result));
         }
     }
 
