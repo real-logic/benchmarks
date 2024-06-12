@@ -81,11 +81,12 @@ EC2_JSON=""
 EC2_TXT=""
 if [[ $MANUFACTURER == "Amazon EC2" ]]; then
   if command -v aws &> /dev/null; then
-    TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
-    ID="$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)"
-    INSTANCE_INFO=$(aws ec2 describe-instances --instance-ids "$ID" | jq '.Reservations[] .Instances[] | { instanceId: .InstanceId, name:(.Tags[] | select(.Key=="Name") .Value) }')
+    TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+    ID="$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)"
+    AWS_REGION="$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/region)"
+    INSTANCE_INFO=$(aws --region "${AWS_REGION}" ec2 describe-instances --instance-ids "$ID" | jq '.Reservations[] .Instances[] | { instanceId: .InstanceId, name:(.Tags[] | select(.Key=="Name") .Value), placement: .Placement }')
     FILE_NAME="env-summary-$(echo "$INSTANCE_INFO" | jq -r '.name')"
-    VOLUME_INFO=$(aws ec2 describe-volumes --filters Name=attachment.instance-id,Values="$ID")
+    VOLUME_INFO=$(aws --region "${AWS_REGION}" ec2 describe-volumes --filters Name=attachment.instance-id,Values="$ID")
     EC2_JSON="$(echo "$INSTANCE_INFO $VOLUME_INFO" | jq -s add)"
     EC2_TXT="$EC2_TXT
 $(echo "$INSTANCE_INFO" | jq -r '.instanceId')
