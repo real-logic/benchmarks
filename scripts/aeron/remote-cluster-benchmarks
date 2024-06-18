@@ -238,6 +238,7 @@ function start_cluster_node()
     ; $(kill_java_process "${cluster_node_class_name}") \
     ; rm -rf \"${!cluster_dir_var}\" \
     ; rm -rf \"${!archive_dir_var}\" \
+    ; sync; echo 3 | sudo tee /proc/sys/vm/drop_caches; fstrim --all \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
     -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout} \
@@ -299,6 +300,7 @@ function start_cluster_backup_node()
     ; $(kill_java_process "${cluster_backup_node_class_name}") \
     ; rm -rf \"${!cluster_dir_var}\" \
     ; rm -rf \"${!archive_dir_var}\" \
+    ; sync; echo 3 | sudo tee /proc/sys/vm/drop_caches; fstrim --all \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
     -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout} \
