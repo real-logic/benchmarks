@@ -511,7 +511,7 @@ do
               ssh_node=SSH_CLUSTER_BACKUP_NODE${n}
               archive_dir_var=BACKUP_NODE${n}_ARCHIVE_DIR
               cluster_dir_var=BACKUP_NODE${n}_CLUSTER_DIR
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_backup_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; true; exit"
             done
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))
@@ -522,7 +522,7 @@ do
               ssh_node=SSH_CLUSTER_NODE${n}
               archive_dir_var=NODE${n}_ARCHIVE_DIR
               cluster_dir_var=NODE${n}_CLUSTER_DIR
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${cluster_node_class_name}"); $(stop_media_driver); rm -rf \"${!cluster_dir_var}\"; rm -rf \"${!archive_dir_var}\"; true; exit"
             done
 
             for (( n=0; n<CLUSTER_SIZE; n++ ))
