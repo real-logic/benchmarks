@@ -1,0 +1,462 @@
+#!/usr/bin/env bash
+##
+## Copyright 2015-2024 Real Logic Limited.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+## https://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+
+set -euxo pipefail
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+source "${DIR}/remote-benchmarks-helper"
+
+required_vars=(
+  "CLIENT_BENCHMARKS_PATH"
+  "CLIENT_JAVA_HOME"
+  "CLIENT_DRIVER_CONDUCTOR_CPU_CORE"
+  "CLIENT_DRIVER_SENDER_CPU_CORE"
+  "CLIENT_DRIVER_RECEIVER_CPU_CORE"
+  "CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE"
+  "CLIENT_NON_ISOLATED_CPU_CORES"
+  "CLIENT_CPU_NODE"
+  "CLIENT_SOURCE_CHANNEL"
+  "CLIENT_DESTINATION_CHANNEL"
+  "DESTINATION_COUNT"
+  "_BENCHMARKS_PATH"
+  "_JAVA_HOME"
+  "_DRIVER_CONDUCTOR_CPU_CORE"
+  "_DRIVER_SENDER_CPU_CORE"
+  "_DRIVER_RECEIVER_CPU_CORE"
+  "_ECHO_CPU_CORE"
+  "_NON_ISOLATED_CPU_CORES"
+  "_CPU_NODE"
+  "_SOURCE_CHANNEL"
+  "_DESTINATION_CHANNEL")
+
+for var in "${required_vars[@]}"; do
+  if [[ ${var} == _* ]]
+  then
+    for ((n = 0; n < DESTINATION_COUNT; n++))
+    do
+      node_var="NODE${n}${var}"
+      if [[ -z "${!node_var+''}" ]]; then
+        echo "env var '${node_var}' must be set"
+        required_var_missing=true
+      fi
+    done
+  else
+    if [[ -z "${!var+''}" ]]
+    then
+      echo "env var '${var}' must be set"
+      required_var_missing=true
+    fi
+  fi
+done
+
+if [[ -v required_var_missing && -n "${required_var_missing}" ]]
+then
+  exit 1
+fi
+
+ef_vi_rxq_size=${AERON_EF_VI_RXQ_SIZE:-2048} # ef_vi receive queue size
+ef_vi_txq_size=${AERON_EF_VI_TXQ_SIZE:-2048} # ef_vi send queue size
+so_sndbuf="${AERON_SOCKET_SO_SNDBUF:-2m}"
+so_rcvbuf="${AERON_SOCKET_SO_RCVBUF:-2m}"
+rcv_initial_window="${AERON_RCV_INITIAL_WINDOW_LENGTH:-2m}"
+max_messages_per_send="${AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND:-2}"
+dpdk_config_overrides=""
+if [[ -v AERON_DPDK_MTU && -n ${AERON_DPDK_MTU} ]];
+then
+  dpdk_config_overrides="AERON_DPDK_MTU=${AERON_DPDK_MTU}"
+fi
+if [[ -v AERON_DPDK_TX_QUEUE_SIZE && -n ${AERON_DPDK_TX_QUEUE_SIZE} ]];
+then
+  dpdk_config_overrides+=" AERON_DPDK_TX_QUEUE_SIZE=${AERON_DPDK_TX_QUEUE_SIZE}"
+fi
+if [[ -v AERON_DPDK_RX_QUEUE_SIZE && -n ${AERON_DPDK_RX_QUEUE_SIZE} ]];
+then
+  dpdk_config_overrides+=" AERON_DPDK_RX_QUEUE_SIZE=${AERON_DPDK_RX_QUEUE_SIZE}"
+fi
+if [[ -v AERON_DPDK_PORT_ID && -n ${AERON_DPDK_PORT_ID} ]];
+then
+  dpdk_config_overrides+=" AERON_DPDK_PORT_ID=${AERON_DPDK_PORT_ID}"
+fi
+
+destination_stream_id="${DESTINATION_STREAM_ID:-1000000}"
+source_stream_id="${SOURCE_STREAM_ID:-2000000}"
+context=""
+mtu_list=(1408)
+onload="onload --profile=latency "
+client_drivers=()
+server_drivers=()
+declare -A drivers
+drivers=(['java']='' ['java-onload']='' ['c']='' ['c-onload']='' ['c-ef-vi']='' ['c-dpdk']='' ['c-ats']='' ['c-ats-onload']='' ['c-ats-ef-vi']='' ['c-ats-dpdk']='')
+
+download_dir="${DIR}/.."
+
+while [[ $# -gt 0 ]]
+do
+  case "${1}" in
+  --context)
+    context="${2}"
+    shift
+    shift
+    ;;
+  --onload)
+    onload="${2}"
+    shift
+    shift
+    ;;
+  --mtu)
+    IFS=',';
+    read -ra mtu_list <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
+  --client-drivers)
+    IFS=',';
+    read -ra client_drivers <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
+  --server-drivers)
+    IFS=',';
+    read -ra server_drivers <<< "${2}"
+    unset IFS;
+    shift
+    shift
+    ;;
+  --download-dir)
+    download_dir="${2}"
+    shift
+    shift
+    ;;
+  -h|--help)
+    echo "${0} --client-drivers \"client-media-drivers-list-csv\" --server-drivers \"server-media-drivers-list-csv\" \
+    [--context \"\$context\"] [--onload \"\$onload_command\"] [--mtu \"\$mtu-csv\"] \
+    [--download-dir \"$download_dir\"]
+          the support media drivers are: ${!drivers[*]}"
+    exit
+    ;;
+  *)
+    echo "Invalid parameter '${1}'. Use --help to get a list of supported parameters."
+    exit 1
+    ;;
+  esac
+done
+
+connectionTimeout="${CONNECTION_TIMEOUT:-60s}"
+
+runs=${RUNS:-3}
+iterations=${ITERATIONS:-60}
+warmupIterations=${WARMUP_ITERATIONS:-30}
+warmupMessageRate="${WARMUP_MESSAGE_RATE:-25K}"
+
+messageRates=("501K" "301K" "101K")
+if [[ -v MESSAGE_RATE && -n ${MESSAGE_RATE} ]];
+then
+  IFS=',';
+  read -ra messageRates <<< "${MESSAGE_RATE}"
+  unset IFS;
+fi
+
+messageLengths=(32 288 1344)
+if [[ -v MESSAGE_LENGTH && -n ${MESSAGE_LENGTH} ]];
+then
+  IFS=',';
+  read -ra messageLengths <<< "${MESSAGE_LENGTH}"
+  unset IFS;
+fi
+
+if [[ "${#messageRates[@]}" != "${#messageLengths[@]}" ]];
+then
+  echo "MESSAGE_RATE and MESSAGE_LENGTH number of elements do not match: ${#messageRates[@]} vs ${#messageLengths[@]}"
+  exit 1
+fi
+
+burstSizes=(1)
+if [[ -v BURST_SIZE && -n ${BURST_SIZE} ]];
+then
+  IFS=',';
+  read -ra burstSizes <<< "${BURST_SIZE}"
+  unset IFS;
+fi
+
+function start_node()
+{
+  local node_id=${1}
+  local node_class_name=${2}
+  local server_driver=${3}
+  local output_dir=${4}
+  local benchmarks_path_var=NODE${node_id}_BENCHMARKS_PATH
+  local java_home_var=NODE${node_id}_JAVA_HOME
+  local cpu_node_var=NODE${node_id}_CPU_NODE
+  local non_isolated_cpu_cores_var=NODE${node_id}_NON_ISOLATED_CPU_CORES
+  local echo_cpu_var=NODE${node_id}_ECHO_CPU_CORE
+  local extra_properties_var=NODE${node_id}_EXTRA_PROPERTIES
+  local destination_channel_var=NODE${node_id}_DESTINATION_CHANNEL
+  local source_channel_var=NODE${node_id}_SOURCE_CHANNEL
+  echo "
+    export JAVA_HOME=\"${!java_home_var}\" PROCESS_FILE_NAME=\"node-${node_id}-media-driver\" \
+    ; $(kill_java_process "${node_class_name}") \
+    ; ${server_driver} \
+    && export JVM_OPTS=\"\
+    -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout} \
+    -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${!destination_channel_var} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${!source_channel_var} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.replier.index=${node_id} \
+    ${!extra_properties_var:-}\" PROCESS_FILE_NAME=\"node-${node_id}\" \
+    && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/echo-server & \
+    $(await_java_process_start "${node_class_name}") \
+    ; $(pin_thread \${pid} "echo" "${!echo_cpu_var}") \
+    && tail --pid=\$! -f /dev/null"
+}
+
+scripts_path="benchmarks_path_var/scripts/aeron"
+
+driver_properties="echo -e \"\
+aeron.conductor.cpu.affinity=driver_conductor_cpu_core_var\n \
+aeron.sender.cpu.affinity=driver_sender_cpu_core_var\n \
+aeron.receiver.cpu.affinity=driver_receiver_cpu_core_var\n \
+aeron.mtu.length=driver_mtu_var\n \
+aeron.ipc.mtu.length=driver_mtu_var\n \
+aeron.socket.so_sndbuf=${so_sndbuf}\n \
+aeron.socket.so_rcvbuf=${so_rcvbuf}\n \
+aeron.rcv.initial.window.length=${rcv_initial_window}\n \
+aeron.network.publication.max.messages.per.send=${max_messages_per_send}\n \
+aeron.receiver.io.vector.capacity=${max_messages_per_send}\n \
+aeron.sender.io.vector.capacity=${max_messages_per_send}\n \
+\" > ${scripts_path}/benchmark.properties"
+
+drivers['java']="${driver_properties}; \
+      $(start_media_driver "${scripts_path}/media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['java-onload']="${driver_properties}; \
+      export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+      && $(start_media_driver "${scripts_path}/media-driver" "${onload}" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c']="${driver_properties}; \
+      $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-onload']="${driver_properties}; \
+      export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-ef-vi']="${driver_properties}; \
+      export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
+      AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_ef_vi.so\" \
+      AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+      AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
+      && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-dpdk']="${driver_properties}; \
+      export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var \
+      AERON_DPDK_LOCAL_IPV4_ADDRESS=driver_aeron_dpdk_local_ipv4_address_var \
+      ${dpdk_config_overrides} \
+      && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-ats']="${driver_properties}; \
+        export AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-ats-onload']="${driver_properties}; \
+        export EF_NO_FAIL=0 EF_RXQ_SIZE=${ef_vi_rxq_size} EF_TXQ_SIZE=${ef_vi_txq_size} \
+        AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\" \
+        && $(start_media_driver "${scripts_path}/c-media-driver" "${onload}" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-ats-ef-vi']="${driver_properties}; \
+        export EF_VI_RXQ_SIZE=${ef_vi_rxq_size} EF_VI_TXQ_SIZE=${ef_vi_txq_size} \
+        AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_DRIVER_DYNAMIC_LIBRARIES=\"${scripts_path}/libaeron_transport_security.so\",\"${scripts_path}/libaeron_ef_vi.so\" \
+        AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA=\"aeron_udp_channel_transport_ef_vi_bindings\" \
+        AERON_EF_VI_CONF_FILE=\"${scripts_path}/ef_vi.conf\" \
+        && $(start_media_driver "${scripts_path}/c-media-driver" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+drivers['c-ats-dpdk']="${driver_properties}; \
+        export AERON_DPDK_GATEWAY_IPV4_ADDRESS=driver_aeron_dpdk_gateway_ipv4_address_var \
+        AERON_DPDK_LOCAL_IPV4_ADDRESS=driver_aeron_dpdk_local_ipv4_address_var \
+        ${dpdk_config_overrides} \
+        AERON_TRANSPORT_SECURITY_CONF_DIR=\"${scripts_path}\" \
+        AERON_TRANSPORT_SECURITY_CONF_FILE=ats.conf \
+        AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS=\"aeron_transport_security_channel_interceptor_load\" \
+        && $(start_media_driver "${scripts_path}/c-aeronmd-dpdk" "" "driver_cpu_node_var" "driver_non_isolated_cpu_cores_var" "driver_conductor_cpu_core_var" "driver_sender_cpu_core_var" "driver_receiver_cpu_core_var")"
+
+if [ "${#client_drivers[@]}" != "${#server_drivers[@]}" ]
+then
+  echo "Enabled media driver lists have different size: client_drivers=(${client_drivers[*]}) vs server_drivers=(${server_drivers[*]})"
+  exit 1
+fi
+
+for index in "${!client_drivers[@]}"
+do
+  driver="${client_drivers[index]# }"
+  if [ -z "${drivers[$driver]+x}" ]
+  then
+    echo "Unknown client driver '${driver}': (${client_drivers[*]})"
+    exit 1
+  fi
+
+  driver="${server_drivers[index]# }"
+  if [ -z "${drivers[$driver]+x}" ]
+  then
+    echo "Unknown server driver '${driver}': (${server_drivers[*]})"
+    exit 1
+  fi
+done
+
+test_type="aeron-echo-mdc"
+test_dir="${test_type}-$(date '+%Y-%m-%d-%H-%M-%S')"
+output_dir_prefix="scripts/results/${test_dir}"
+for index in "${!client_drivers[@]}"
+do
+  client_md=${client_drivers[index]# }
+  server_md=${server_drivers[index]# }
+  for mtu in "${mtu_list[@]}"
+  do
+    test="${test_type}_${client_md}-vs-${server_md}_${context}_receivers=${DESTINATION_COUNT}_mtu=${mtu}"
+    echo -e "\n Testing scenario: '${test}'\n"
+
+    client_driver="${drivers[${client_md}]//driver_mtu_var/${mtu}}"
+    client_driver="${client_driver//benchmarks_path_var/${CLIENT_BENCHMARKS_PATH}}"
+    client_driver="${client_driver//driver_cpu_node_var/${CLIENT_CPU_NODE}}"
+    client_driver="${client_driver//driver_non_isolated_cpu_cores_var/${CLIENT_NON_ISOLATED_CPU_CORES}}"
+    client_driver="${client_driver//driver_conductor_cpu_core_var/${CLIENT_DRIVER_CONDUCTOR_CPU_CORE}}"
+    client_driver="${client_driver//driver_sender_cpu_core_var/${CLIENT_DRIVER_SENDER_CPU_CORE}}"
+    client_driver="${client_driver//driver_receiver_cpu_core_var/${CLIENT_DRIVER_RECEIVER_CPU_CORE}}"
+    client_driver="${client_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${CLIENT_AERON_DPDK_GATEWAY_IPV4_ADDRESS}}"
+    client_driver="${client_driver//driver_aeron_dpdk_local_ipv4_address_var/${CLIENT_AERON_DPDK_LOCAL_IPV4_ADDRESS}}"
+
+    client_class_name="${CLIENT_CLASS_NAME:-uk.co.real_logic.benchmarks.remote.LoadTestRig}"
+    node_class_name="uk.co.real_logic.benchmarks.aeron.remote.EchoNode"
+
+    for rateIndex in "${!messageRates[@]}"
+    do
+      messageRate=${messageRates[rateIndex]}
+      messageLength=${messageLengths[rateIndex]}
+      for burstSize in "${burstSizes[@]}"
+      do
+        for (( i=0; i<runs; i++ ))
+        do
+          run=$((i + 1))
+          echo -e '\n### Benchmark run #'"${run}"' ...\n'
+
+          output_dir="${output_dir_prefix}/${client_md}-vs-${server_md}_${context}_mtu=${mtu}_length=${messageLength}_rate=${messageRate}/run-${run}"
+
+          start_client="export JVM_OPTS=\"\
+          -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout}\
+          -Duk.co.real_logic.benchmarks.remote.warmup.iterations=${warmupIterations}\
+          -Duk.co.real_logic.benchmarks.remote.warmup.message.rate=${warmupMessageRate}\
+          -Duk.co.real_logic.benchmarks.remote.iterations=${iterations}\
+          -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate# }\
+          -Duk.co.real_logic.benchmarks.remote.batch.size=${burstSize# }\
+          -Duk.co.real_logic.benchmarks.remote.message.length=${messageLength# }\
+          -Duk.co.real_logic.benchmarks.remote.output.file=${test}\
+          -Duk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/${output_dir}\
+          -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${CLIENT_DESTINATION_CHANNEL}\
+          -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id}\
+          -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL}\
+          -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}\
+          ${CLIENT_EXTRA_PROPERTIES:-}\"\
+          && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" PROCESS_FILE_NAME=\"client-media-driver\"\
+          ; $(kill_java_process "${client_class_name}")\
+          ; ${client_driver}\
+          && numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} --physcpubind=\"${CLIENT_NON_ISOLATED_CPU_CORES}\" ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
+          $(await_java_process_start "${client_class_name}")\
+          ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
+          && tail --pid=\$! -f /dev/null; kill -9 \${media_driver_pid}; wait"
+
+          for (( n=0; n<DESTINATION_COUNT; n++ ))
+          do
+            echo -e "\Stopping remote node ${n}..."
+            ssh_user=SSH_USER${n}
+            ssh_key_file=SSH_KEY_FILE${n}
+            ssh_node=SSH_NODE${n}
+            execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${node_class_name}"); $(stop_media_driver); true; exit"
+          done
+
+          for (( n=0; n<DESTINATION_COUNT; n++ ))
+          do
+            echo -e "\nStarting remote node ${n}..."
+            ssh_user=SSH_USER${n}
+            ssh_key_file=SSH_KEY_FILE${n}
+            ssh_node=SSH_NODE${n}
+            server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
+            server_cpu_node=NODE${n}_CPU_NODE
+            server_non_isolated_cpu_cores=NODE${n}_NON_ISOLATED_CPU_CORES
+            server_driver_conductor_cpu_core=NODE${n}_DRIVER_CONDUCTOR_CPU_CORE
+            server_driver_sender_cpu_core=NODE${n}_DRIVER_SENDER_CPU_CORE
+            server_driver_receiver_cpu_core=NODE${n}_DRIVER_RECEIVER_CPU_CORE
+            server_driver_aeron_dpdk_gateway_ipv4_address=NODE${n}_AERON_DPDK_GATEWAY_IPV4_ADDRESS
+            server_driver_aeron_dpdk_local_ipv4_address=NODE${n}_AERON_DPDK_LOCAL_IPV4_ADDRESS
+            server_driver="${drivers[${server_md}]//driver_mtu_var/${mtu}}"
+            server_driver="${server_driver//benchmarks_path_var/${!server_benchmarks_path}}"
+            server_driver="${server_driver//driver_cpu_node_var/${!server_cpu_node}}"
+            server_driver="${server_driver//driver_non_isolated_cpu_cores_var/${!server_non_isolated_cpu_cores}}"
+            server_driver="${server_driver//driver_conductor_cpu_core_var/${!server_driver_conductor_cpu_core}}"
+            server_driver="${server_driver//driver_sender_cpu_core_var/${!server_driver_sender_cpu_core}}"
+            server_driver="${server_driver//driver_receiver_cpu_core_var/${!server_driver_receiver_cpu_core}}"
+            server_driver="${server_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!server_driver_aeron_dpdk_gateway_ipv4_address}}"
+            server_driver="${server_driver//driver_aeron_dpdk_local_ipv4_address_var/${!server_driver_aeron_dpdk_local_ipv4_address}}"
+            execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_node "${n}" "${node_class_name}" "${server_driver}" "${!server_benchmarks_path}/${output_dir}") &) > /tmp/benchmarks-node-${n}.log 2>&1 && exit"
+          done
+
+          echo -e "\nRunning benchmark..."
+          execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${start_client}; cp /dev/shm/*-gc.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; true; exit"
+
+          for (( n=0; n<DESTINATION_COUNT; n++ ))
+          do
+            echo -e "\nStopping remote node ${n}..."
+            ssh_user=SSH_USER${n}
+            ssh_key_file=SSH_KEY_FILE${n}
+            ssh_node=SSH_NODE${n}
+            server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
+            execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(stop_java_process "${node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!server_benchmarks_path}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${!server_benchmarks_path}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; cp /tmp/benchmarks-node-*.log \"${!server_benchmarks_path}/${output_dir}/logs\"; true; exit"
+          done
+        done
+      done
+    done
+  done
+done
+
+for (( n=0; n<DESTINATION_COUNT; n++ ))
+do
+  echo -e "\nDownloading results from remote node ${n}..."
+  ssh_user=SSH_USER${n}
+  ssh_key_file=SSH_KEY_FILE${n}
+  ssh_node=SSH_NODE${n}
+  server_benchmarks_path=NODE${n}_BENCHMARKS_PATH
+  server_java_home=NODE${n}_JAVA_HOME
+  collect_environment_info "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "${!server_benchmarks_path}/scripts" "${!server_benchmarks_path}/${output_dir_prefix}" "${!server_java_home}"
+  download_results "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "${!server_benchmarks_path}/${output_dir_prefix}" "${download_dir}" "${test_dir}-node-${n}"
+done
+
+collect_environment_info "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/scripts" "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${CLIENT_JAVA_HOME}"
+download_results "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${CLIENT_BENCHMARKS_PATH}/${output_dir_prefix}" "${download_dir}" "${test_dir}-client"
