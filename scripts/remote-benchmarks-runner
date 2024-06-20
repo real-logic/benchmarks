@@ -210,6 +210,7 @@ function execute_remote_command()
   local server=${3}
   local command=${4}
   ssh -i "${sshKeyFile}" \
+   -o StrictHostKeyChecking=no \
    -o ConnectionAttempts="${sshConnectionAttempts}" \
    -o ConnectTimeout="${sshConnectTimeout}" \
    -o ServerAliveInterval="${sshServerAliveInterval}" \
