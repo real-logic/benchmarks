@@ -1,5 +1,6 @@
 .idea/
 .run/
+.venv/
 *.iml
 .gradle/
 build/
