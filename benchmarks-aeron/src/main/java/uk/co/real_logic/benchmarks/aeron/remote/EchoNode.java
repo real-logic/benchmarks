@@ -46,6 +46,7 @@ public final class EchoNode implements AutoCloseable, Runnable
 {
     private final BufferClaim bufferClaim = new BufferClaim();
     private final FragmentHandler fragmentHandler;
+    private final int replierIndex;
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
@@ -89,6 +90,7 @@ public final class EchoNode implements AutoCloseable, Runnable
                     .commit();
             }
         };
+        this.replierIndex = replierIndex;
 
         awaitConnected(
             () -> subscription.isConnected() && publication.isConnected(),
@@ -147,7 +149,7 @@ public final class EchoNode implements AutoCloseable, Runnable
         {
             server.run();
 
-            final String prefix = "echo-server-";
+            final String prefix = "echo-server-" + server.replierIndex + "-";
             AeronUtil.dumpAeronStats(
                 server.aeron.context().cncFile(),
                 outputDir.resolve(prefix + "aeron-stat.txt"),
