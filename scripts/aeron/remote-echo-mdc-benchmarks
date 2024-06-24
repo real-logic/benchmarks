@@ -368,7 +368,7 @@ do
           run=$((i + 1))
           echo -e '\n### Benchmark run #'"${run}"' ...\n'
 
-          output_dir="${output_dir_prefix}/${client_md}-vs-${server_md}_${context}_mtu=${mtu}_length=${messageLength}_rate=${messageRate}/run-${run}"
+          output_dir="${output_dir_prefix}/${test}_length=${messageLength}_rate=${messageRate}/run-${run}"
 
           start_client="export JVM_OPTS=\"\
           -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout}\
