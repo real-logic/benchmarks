@@ -384,6 +384,7 @@ do
           -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id}\
           -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL}\
           -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}\
+          -Duk.co.real_logic.benchmarks.aeron.remote.number.destinations=${DESTINATION_COUNT}\
           ${CLIENT_EXTRA_PROPERTIES:-}\"\
           && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" PROCESS_FILE_NAME=\"client-media-driver\"\
           ; $(kill_java_process "${client_class_name}")\
