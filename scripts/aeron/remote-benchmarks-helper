@@ -49,7 +49,7 @@ function start_media_driver()
   command="echo \"Starting media driver: $(date --rfc-3339=seconds)\"; \
   $(stop_media_driver); \
   rm -rf /dev/shm/aeron; \
-  numactl --membind=${cpu_node} --cpunodebind=${cpu_node} --physcpubind=\"${non_isolated_cpu_cores}\" ${wrapper_script} \"${executable}\" & ${resolve_media_driver_pid}"
+  sudo --preserve-env numactl --membind=${cpu_node} --cpunodebind=${cpu_node} --physcpubind=\"${non_isolated_cpu_cores}\" ${wrapper_script} \"${executable}\" & ${resolve_media_driver_pid}"
   command+="; echo \"media_driver_pid='\${media_driver_pid}'\""
 
   if [[ "${manually_pin_driver_threads}" -eq 1 ]]
