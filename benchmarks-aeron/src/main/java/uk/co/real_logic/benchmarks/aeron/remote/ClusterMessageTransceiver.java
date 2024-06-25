@@ -83,11 +83,14 @@ public class ClusterMessageTransceiver extends MessageTransceiver implements Egr
 
     public void destroy()
     {
-        final String prefix = "cluster-client-";
-        AeronUtil.dumpAeronStats(
-            aeronCluster.context().aeron().context().cncFile(),
-            logsDir.resolve(prefix + "aeron-stat.txt"),
-            logsDir.resolve(prefix + "errors.txt"));
+        if (null != aeronCluster)
+        {
+            final String prefix = "cluster-client-";
+            AeronUtil.dumpAeronStats(
+                aeronCluster.context().aeron().context().cncFile(),
+                logsDir.resolve(prefix + "aeron-stat.txt"),
+                logsDir.resolve(prefix + "errors.txt"));
+        }
         CloseHelper.closeAll(aeronCluster, mediaDriver);
     }
 
