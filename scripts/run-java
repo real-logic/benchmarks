@@ -26,6 +26,7 @@ error_log_file="/dev/shm/${log_file_name}-crash.log"
 
 java_options=(
   -Djava.net.preferIPv4Stack=true
+  -Djava.net.preferIPv6Addresses=false
   -XX:+UnlockExperimentalVMOptions
   -XX:+TrustFinalNonStaticFields
   -XX:+UnlockDiagnosticVMOptions
