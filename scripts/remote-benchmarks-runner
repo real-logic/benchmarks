@@ -188,19 +188,19 @@ function pin_thread()
   local thread_name=${2}
   local core=${3}
   local tid="\$(ps Ho tid,comm -p ${pid} | awk '/${thread_name}/{print \$1}' | head -1)"
-  echo "tid=${tid}; while [ -z \"\${tid}\" ]; do sleep 0.1; tid=${tid}; done; echo \"tid_${thread_name}='\${tid}'\"; sudo taskset -p -c ${core} \${tid}"
+  echo "tid=${tid}; while [ -z \"\${tid}\" ]; do sleep 0.1; tid=${tid}; done; echo \"tid_${thread_name}='\${tid}'\"; taskset -p -c ${core} \${tid}"
 }
 
 function kill_java_process()
 {
   local class_name=${1}
-  echo "sudo kill -9 $(find_java_process "${class_name}")"
+  echo "kill -9 $(find_java_process "${class_name}")"
 }
 
 function stop_java_process()
 {
   local class_name=${1}
-  echo "sudo kill $(find_java_process "${class_name}")"
+  echo "kill $(find_java_process "${class_name}")"
 }
 
 function execute_remote_command()

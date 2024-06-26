@@ -222,7 +222,7 @@ function start_node()
     -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id} \
     -Duk.co.real_logic.benchmarks.aeron.remote.replier.index=${node_id} \
     ${!extra_properties_var:-}\" PROCESS_FILE_NAME=\"echo-server-${node_id}\" \
-    && sudo --preserve-env numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/echo-server & \
+    && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/echo-server & \
     $(await_java_process_start "${node_class_name}") \
     ; $(pin_thread \${pid} "echo" "${!echo_cpu_var}") \
     && tail --pid=\$! -f /dev/null"
@@ -389,10 +389,10 @@ do
           && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" PROCESS_FILE_NAME=\"client-media-driver\"\
           ; $(kill_java_process "${client_class_name}")\
           ; ${client_driver}\
-          && sudo --preserve-env numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} --physcpubind=\"${CLIENT_NON_ISOLATED_CPU_CORES}\" ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
+          && numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} --physcpubind=\"${CLIENT_NON_ISOLATED_CPU_CORES}\" ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
           $(await_java_process_start "${client_class_name}")\
           ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
-          && tail --pid=\$! -f /dev/null; sudo kill -9 \${media_driver_pid}; wait"
+          && tail --pid=\$! -f /dev/null; kill -9 \${media_driver_pid}; wait"
 
           for (( n=0; n<DESTINATION_COUNT; n++ ))
           do
