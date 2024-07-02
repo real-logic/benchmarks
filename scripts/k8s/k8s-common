@@ -48,6 +48,61 @@ function f_wait_for_dns() {
   done
 
 }
+#####################################################################################
+# Construct JVM_OPTS with dynamic interface lookup
+function f_set_jvm_opts() {
+
+
+  # If this is not a DPDK test...
+  if [[ "${BENCHMARK_TYPE}" =~ dpdk$ ]]
+    then
+      # Don't select an interface
+      SELECT_INTERFACE=""
+    else
+      # Look up the interface we're supposed to use.
+      case ${POD_NAME} in
+        aeron-benchmark-0)
+          LOCAL_IP="$( host "${NODE0_ADDRESS}" | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' )"
+          ;;
+        aeron-benchmark-1)
+          LOCAL_IP="$( host "${NODE1_ADDRESS}" | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}' )"
+          ;;
+        *)
+          echo "Error: Could not resolve IP for POD ${POD_NAME}"
+          exit 1
+          ;;
+      esac
+      # Specifically select the interface to use.
+      SELECT_INTERFACE="|interface=${LOCAL_IP}/32"
+
+  fi
+
+  export JVM_OPTS="-Duk.co.real_logic.benchmarks.remote.output.directory=/dev/shm/results \
+-Duk.co.real_logic.benchmarks.aeron.remote.embedded.media.driver=false \
+-Duk.co.real_logic.benchmarks.aeron.remote.source.channel=aeron:udp?endpoint=${NODE1_ADDRESS:? Could not find NODE1_ADDRESS}:13000${SELECT_INTERFACE} \
+-Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=aeron:udp?endpoint=${NODE0_ADDRESS:? Could not find NODE0_ADDRESS}:13001${SELECT_INTERFACE}"
+}
+
+#####################################################################################
+# generate the expected properties file for the benchmark run - needed for C and Java media drivers
+function f_generate_benchmark_properties() {
+
+# generate the media driver benchmark.properties in the aeron dir
+echo "Writing Aeron benchmark.properties"
+cat <<EOF >> "${BENCHMARKS_PATH:? Please set BENCHMARKS_PATH}/scripts/aeron/benchmark.properties"
+aeron.file.page.size=4096
+aeron.conductor.cpu.affinity=${CGROUP_CPUSETS[1]}
+aeron.sender.cpu.affinity=${CGROUP_CPUSETS[2]}
+aeron.receiver.cpu.affinity=${CGROUP_CPUSETS[3]}
+aeron.mtu.length=1408
+aeron.ipc.mtu.length=1408
+aeron.rcv.initial.window.length=2m
+aeron.network.publication.max.messages.per.send=2
+aeron.receiver.io.vector.capacity=2
+aeron.sender.io.vector.capacity=2
+EOF
+
+}
 
 #####################################################################################
 # Things to run *before* a benchmark client runs
@@ -69,6 +124,8 @@ cd "${BENCHMARKS_PATH:? Please set BENCHMARKS_PATH}/scripts"
 
 # Verify we can get DNS records for the pods
 f_wait_for_dns
+# Set up our test variables
+f_set_jvm_opts
 
 echo '*******************************'
 echo "JVM_OPTS:"

@@ -28,6 +28,11 @@ spec:
     # Media driver containers come from the Kustomization files in the scenarios
     - name: benchmark
       imagePullPolicy: Always
+      env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
       envFrom:
         - configMapRef:
             name: aeron-benchmark-envs

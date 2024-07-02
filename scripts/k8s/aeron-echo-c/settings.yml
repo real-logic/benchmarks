@@ -1,0 +1,15 @@
+---
+# Update tolerations and nodeselectors
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+spec:
+  # Use Host networking
+  # dnsPolicy: ClusterFirstWithHostNet
+  # hostNetwork: true
+  containers:
+    - name: aeronmd-c
+      # This is the benchmarks container with an alternate entrypoint
+      image: "< Ref to benchmark container >"
+      imagePullPolicy: Always

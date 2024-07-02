@@ -3,7 +3,7 @@
 resources:
   - k8s-benchmark.yml
 patches:
-  # Standard config for both the pods
+  # Standard config for all the pods
   - path: base-containers.yml
     target:
       kind: Pod

@@ -2,3 +2,5 @@
 .gradle
 .git*
 scripts/k8s/*.yml
+cppbuild/Release
+cppbuild/Debug
