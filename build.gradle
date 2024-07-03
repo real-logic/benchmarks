@@ -70,7 +70,7 @@ def checkerVersion = '3.33.0'
 def kafkaVersion = '3.7.1'
 def slf4jVersion = '1.7.36'
 def scalaVersion = '2.13.11'
-def jacksonVersion = '2.16.0'
+def jacksonVersion = '2.16.2'
 def annotationsApiVersion = '6.0.53'
 
 allprojects {
