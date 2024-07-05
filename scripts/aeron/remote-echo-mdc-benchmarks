@@ -210,7 +210,7 @@ function start_node()
   local destination_channel_var=NODE${node_id}_DESTINATION_CHANNEL
   local source_channel_var=NODE${node_id}_SOURCE_CHANNEL
   echo "
-    export JAVA_HOME=\"${!java_home_var}\" PROCESS_FILE_NAME=\"node-${node_id}-media-driver\" \
+    export JAVA_HOME=\"${!java_home_var}\" PROCESS_FILE_NAME=\"echo-node-media-driver-${node_id}\" \
     ; $(kill_java_process "${node_class_name}") \
     ; ${server_driver} \
     && export JVM_OPTS=\"\
@@ -221,10 +221,10 @@ function start_node()
     -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${!source_channel_var} \
     -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id} \
     -Duk.co.real_logic.benchmarks.aeron.remote.receiver.index=${node_id} \
-    ${!extra_properties_var:-}\" PROCESS_FILE_NAME=\"echo-server-${node_id}\" \
+    ${!extra_properties_var:-}\" PROCESS_FILE_NAME=\"echo-node-${node_id}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/echo-server & \
     $(await_java_process_start "${node_class_name}") \
-    ; $(pin_thread \${pid} "echo" "${!echo_cpu_var}") \
+    ; $(pin_thread \${pid} "echo-${node_id}" "${!echo_cpu_var}") \
     && tail --pid=\$! -f /dev/null"
 }
 

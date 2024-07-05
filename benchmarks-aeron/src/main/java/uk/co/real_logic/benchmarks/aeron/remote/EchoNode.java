@@ -46,7 +46,6 @@ public final class EchoNode implements AutoCloseable, Runnable
 {
     private final BufferClaim bufferClaim = new BufferClaim();
     private final FragmentHandler fragmentHandler;
-    private final int receiverIndex;
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
@@ -70,7 +69,6 @@ public final class EchoNode implements AutoCloseable, Runnable
         this.mediaDriver = mediaDriver;
         this.aeron = aeron;
         this.ownsAeronClient = ownsAeronClient;
-        this.receiverIndex = receiverIndex;
 
         publication = aeron.addExclusivePublication(sourceChannel(), sourceStreamId());
         subscription = aeron.addSubscription(destinationChannel(), destinationStreamId());
@@ -138,9 +136,10 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     public static void main(final String[] args)
     {
-        Thread.currentThread().setName("echo");
         mergeWithSystemProperties(PRESERVE, loadPropertiesFiles(new Properties(), REPLACE, args));
         final Path outputDir = Configuration.resolveLogsDir();
+        final int receiverIndex = AeronUtil.receiverIndex();
+        Thread.currentThread().setName("echo-" + receiverIndex);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         installSignalHandler(() -> running.set(false));
@@ -149,7 +148,7 @@ public final class EchoNode implements AutoCloseable, Runnable
         {
             server.run();
 
-            final String prefix = "echo-server-" + server.receiverIndex + "-";
+            final String prefix = "echo-node-" + receiverIndex + "-";
             AeronUtil.dumpAeronStats(
                 server.aeron.context().cncFile(),
                 outputDir.resolve(prefix + "aeron-stat.txt"),

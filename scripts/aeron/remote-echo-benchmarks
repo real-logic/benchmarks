@@ -330,7 +330,7 @@ do
     && ${server_driver} \
     && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${SERVER_NON_ISOLATED_CPU_CORES}\" ${SERVER_BENCHMARKS_PATH}/scripts/aeron/echo-server & \
     $(await_java_process_start "${server_class_name}") \
-    ; $(pin_thread \${pid} "echo" "${SERVER_ECHO_CPU_CORE}") \
+    ; $(pin_thread \${pid} "echo-0" "${SERVER_ECHO_CPU_CORE}") \
     && tail --pid=\$! -f /dev/null"
 
     stop_server="$(stop_java_process "${server_class_name}"); \
