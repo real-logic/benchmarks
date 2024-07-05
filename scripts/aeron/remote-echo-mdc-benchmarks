@@ -220,7 +220,7 @@ function start_node()
     -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id} \
     -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${!source_channel_var} \
     -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id} \
-    -Duk.co.real_logic.benchmarks.aeron.remote.replier.index=${node_id} \
+    -Duk.co.real_logic.benchmarks.aeron.remote.receiver.index=${node_id} \
     ${!extra_properties_var:-}\" PROCESS_FILE_NAME=\"echo-server-${node_id}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/echo-server & \
     $(await_java_process_start "${node_class_name}") \
@@ -384,7 +384,7 @@ do
           -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id}\
           -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL}\
           -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}\
-          -Duk.co.real_logic.benchmarks.aeron.remote.number.destinations=${DESTINATION_COUNT}\
+          -Duk.co.real_logic.benchmarks.aeron.remote.receiver.count=${DESTINATION_COUNT}\
           ${CLIENT_EXTRA_PROPERTIES:-}\"\
           && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" PROCESS_FILE_NAME=\"client-media-driver\"\
           ; $(kill_java_process "${client_class_name}")\

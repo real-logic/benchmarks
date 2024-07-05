@@ -116,7 +116,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         setProperty(DESTINATION_CHANNEL_PROP_NAME,
             "aeron:udp?control=localhost:10101|control-mode=dynamic|fc=min,g:/" + numDestinations +
             "|group=true|term-length=64k");
-        setProperty(NUMBER_OF_DESTINATIONS_PROP_NAME, Integer.toString(numDestinations));
+        setProperty(NUMBER_OF_RECEIVERS_PROP_NAME, Integer.toString(numDestinations));
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(1)
             .iterations(1)

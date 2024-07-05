@@ -46,7 +46,7 @@ public final class EchoNode implements AutoCloseable, Runnable
 {
     private final BufferClaim bufferClaim = new BufferClaim();
     private final FragmentHandler fragmentHandler;
-    private final int replierIndex;
+    private final int receiverIndex;
     private final ExclusivePublication publication;
     private final Subscription subscription;
     private final AtomicBoolean running;
@@ -56,7 +56,7 @@ public final class EchoNode implements AutoCloseable, Runnable
 
     EchoNode(final AtomicBoolean running)
     {
-        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true, replierIndex());
+        this(running, launchEmbeddedMediaDriverIfConfigured(), connect(), true, receiverIndex());
     }
 
     EchoNode(
@@ -64,19 +64,20 @@ public final class EchoNode implements AutoCloseable, Runnable
         final MediaDriver mediaDriver,
         final Aeron aeron,
         final boolean ownsAeronClient,
-        final int replierIndex)
+        final int receiverIndex)
     {
         this.running = running;
         this.mediaDriver = mediaDriver;
         this.aeron = aeron;
         this.ownsAeronClient = ownsAeronClient;
+        this.receiverIndex = receiverIndex;
 
         publication = aeron.addExclusivePublication(sourceChannel(), sourceStreamId());
         subscription = aeron.addSubscription(destinationChannel(), destinationStreamId());
 
         fragmentHandler = (buffer, offset, length, header) ->
         {
-            if (buffer.getInt(offset + REPLIER_INDEX_OFFSET, LITTLE_ENDIAN) == replierIndex)
+            if (buffer.getInt(offset + RECEIVER_INDEX_OFFSET, LITTLE_ENDIAN) == receiverIndex)
             {
                 long result;
                 while ((result = publication.tryClaim(length, bufferClaim)) <= 0)
@@ -90,7 +91,6 @@ public final class EchoNode implements AutoCloseable, Runnable
                     .commit();
             }
         };
-        this.replierIndex = replierIndex;
 
         awaitConnected(
             () -> subscription.isConnected() && publication.isConnected(),
@@ -149,7 +149,7 @@ public final class EchoNode implements AutoCloseable, Runnable
         {
             server.run();
 
-            final String prefix = "echo-server-" + server.replierIndex + "-";
+            final String prefix = "echo-server-" + server.receiverIndex + "-";
             AeronUtil.dumpAeronStats(
                 server.aeron.context().cncFile(),
                 outputDir.resolve(prefix + "aeron-stat.txt"),

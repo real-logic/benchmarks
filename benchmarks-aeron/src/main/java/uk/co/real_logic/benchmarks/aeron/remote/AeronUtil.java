@@ -87,12 +87,12 @@ import static uk.co.real_logic.benchmarks.aeron.remote.ArchivingMediaDriver.laun
 final class AeronUtil
 {
     static final int TIMESTAMP_OFFSET = 0;
-    static final int REPLIER_INDEX_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
-    static final int MIN_MESSAGE_LENGTH = REPLIER_INDEX_OFFSET + SIZE_OF_LONG + SIZE_OF_LONG;
+    static final int RECEIVER_INDEX_OFFSET = TIMESTAMP_OFFSET + SIZE_OF_LONG;
+    static final int MIN_MESSAGE_LENGTH = RECEIVER_INDEX_OFFSET + SIZE_OF_LONG + SIZE_OF_LONG;
 
-    static final String REPLIER_INDEX_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.replier.index";
-    static final String NUMBER_OF_DESTINATIONS_PROP_NAME =
-        "uk.co.real_logic.benchmarks.aeron.remote.number.destinations";
+    static final String RECEIVER_INDEX_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.receiver.index";
+    static final String NUMBER_OF_RECEIVERS_PROP_NAME =
+        "uk.co.real_logic.benchmarks.aeron.remote.receiver.count";
     static final String CLUSTER_SERVICE_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.cluster.service";
     static final String SNAPSHOT_SIZE_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.cluster.snapshot.size";
     static final long DEFAULT_SNAPSHOT_SIZE = 0;
@@ -123,14 +123,14 @@ final class AeronUtil
     {
     }
 
-    static int numberOfDestinations()
+    static int receiverCount()
     {
-        return Integer.getInteger(NUMBER_OF_DESTINATIONS_PROP_NAME, 1);
+        return Integer.getInteger(NUMBER_OF_RECEIVERS_PROP_NAME, 1);
     }
 
-    static int replierIndex()
+    static int receiverIndex()
     {
-        return Integer.getInteger(REPLIER_INDEX_PROP_NAME, 0);
+        return Integer.getInteger(RECEIVER_INDEX_PROP_NAME, 0);
     }
 
     static void validateMessageLength(final int messageLength)
@@ -345,8 +345,8 @@ final class AeronUtil
         final int messageLength,
         final long timestamp,
         final long checksum,
-        final MutableInteger replierIndex,
-        final int numDestinations)
+        final MutableInteger receiverIndex,
+        final int receiverCount)
     {
         int count = 0;
         for (int i = 0; i < numberOfMessages; i++)
@@ -365,9 +365,9 @@ final class AeronUtil
             final int offset = bufferClaim.offset();
             buffer.putLong(offset + TIMESTAMP_OFFSET, timestamp, LITTLE_ENDIAN);
 
-            // set replierIndex to ensure only one reply will be received
-            buffer.putInt(offset + REPLIER_INDEX_OFFSET, replierIndex.get(), LITTLE_ENDIAN);
-            replierIndex.set(BitUtil.next(replierIndex.get(), numDestinations));
+            // set receiverIndex to ensure only one reply will be received
+            buffer.putInt(offset + RECEIVER_INDEX_OFFSET, receiverIndex.get(), LITTLE_ENDIAN);
+            receiverIndex.set(BitUtil.next(receiverIndex.get(), receiverCount));
 
             buffer.putLong(offset + messageLength - SIZE_OF_LONG, checksum, LITTLE_ENDIAN);
             bufferClaim.commit();

@@ -70,8 +70,8 @@ abstract class AbstractTest<
         clearProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME);
         clearProperty(SOURCE_CHANNEL_PROP_NAME);
         clearProperty(DESTINATION_CHANNEL_PROP_NAME);
-        clearProperty(REPLIER_INDEX_PROP_NAME);
-        clearProperty(NUMBER_OF_DESTINATIONS_PROP_NAME);
+        clearProperty(RECEIVER_INDEX_PROP_NAME);
+        clearProperty(NUMBER_OF_RECEIVERS_PROP_NAME);
     }
 
     @Timeout(30)

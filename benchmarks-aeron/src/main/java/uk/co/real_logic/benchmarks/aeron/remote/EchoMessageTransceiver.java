@@ -50,11 +50,11 @@ public final class EchoMessageTransceiver extends MessageTransceiver
     private final MediaDriver mediaDriver;
     private final Aeron aeron;
     private final boolean ownsAeronClient;
-    private final MutableInteger replierIndex = new MutableInteger();
+    private final MutableInteger receiverIndex = new MutableInteger();
     private Path logsDir;
     ExclusivePublication publication;
     private Subscription subscription;
-    private int numDestinations;
+    private int receiverCount;
 
     public EchoMessageTransceiver(final NanoClock nanoClock, final ValueRecorder valueRecorder)
     {
@@ -77,7 +77,7 @@ public final class EchoMessageTransceiver extends MessageTransceiver
     public void init(final Configuration configuration)
     {
         logsDir = configuration.logsDir();
-        numDestinations = numberOfDestinations();
+        receiverCount = receiverCount();
         validateMessageLength(configuration.messageLength());
         publication = aeron.addExclusivePublication(destinationChannel(), destinationStreamId());
         subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
@@ -112,8 +112,8 @@ public final class EchoMessageTransceiver extends MessageTransceiver
             messageLength,
             timestamp,
             checksum,
-            replierIndex,
-            numDestinations);
+            receiverIndex,
+            receiverCount);
     }
 
     public void receive()

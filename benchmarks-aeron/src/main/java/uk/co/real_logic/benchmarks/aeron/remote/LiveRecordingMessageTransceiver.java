@@ -63,7 +63,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     private final ImageControlledFragmentAssembler messageHandler = new ImageControlledFragmentAssembler(this);
     private final ArchivingMediaDriver archivingMediaDriver;
     private final AeronArchive aeronArchive;
-    private final MutableInteger replierIndex = new MutableInteger();
+    private final MutableInteger receiverIndex = new MutableInteger();
 
     private ExclusivePublication publication;
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -146,7 +146,7 @@ public final class LiveRecordingMessageTransceiver extends MessageTransceiver im
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
         return sendMessages(
-            publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum, replierIndex, 1);
+            publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum, receiverIndex, 1);
     }
 
     public void receive()

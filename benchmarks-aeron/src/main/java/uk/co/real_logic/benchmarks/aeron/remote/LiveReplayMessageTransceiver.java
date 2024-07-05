@@ -57,7 +57,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
             final long checksum = buffer.getLong(offset + length - SIZE_OF_LONG, LITTLE_ENDIAN);
             onMessageReceived(timestamp, checksum);
         });
-    private final MutableInteger replierIndex = new MutableInteger();
+    private final MutableInteger receiverIndex = new MutableInteger();
     private Path logsDir;
 
     public LiveReplayMessageTransceiver(
@@ -123,7 +123,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
     public int send(final int numberOfMessages, final int messageLength, final long timestamp, final long checksum)
     {
         return sendMessages(
-            publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum, replierIndex, 1);
+            publication, bufferClaim, numberOfMessages, messageLength, timestamp, checksum, receiverIndex, 1);
     }
 
     public void receive()
