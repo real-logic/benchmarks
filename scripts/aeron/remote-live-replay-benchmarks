@@ -269,12 +269,12 @@ do
       && tail --pid=\$! -f /dev/null && kill -9 \${media_driver_pid}; wait"
 
       start_server="\
-      export JAVA_HOME=\"${SERVER_JAVA_HOME}\" PROCESS_FILE_NAME=\"live-replay-server-media-driver\" \
+      export JAVA_HOME=\"${SERVER_JAVA_HOME}\" PROCESS_FILE_NAME=\"archive-node-media-driver\" \
       ; $(kill_java_process "${server_class_name}") \
       ; rm -rf ${ARCHIVE_DIR} \
       ; sync; echo 3 | sudo tee /proc/sys/vm/drop_caches; fstrim --all \
       ; ${server_driver} \
-      && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${SERVER_NON_ISOLATED_CPU_CORES}\" ${SERVER_BENCHMARKS_PATH}/scripts/aeron/live-replay-server & \
+      && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${SERVER_NON_ISOLATED_CPU_CORES}\" ${SERVER_BENCHMARKS_PATH}/scripts/aeron/archive-node & \
       $(await_java_process_start "${server_class_name}") \
       ; $(pin_thread \${pid} "archive-recorde" "${SERVER_ARCHIVE_RECORDER_CPU_CORE}") \
       ; $(pin_thread \${pid} "archive-replaye" "${SERVER_ARCHIVE_REPLAYER_CPU_CORE}") \

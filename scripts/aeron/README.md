@@ -24,7 +24,7 @@ The following scenarios are covered:
     local IPC publication which records them into an archive. Finally, the client subscribes to the replay from that
     archive over UDP.
     
-    Start the scripts in the following order: `live-replay-server` -> `live-replay-client`.
+    Start the scripts in the following order: `archive-node` -> `live-replay-client`.
 
 3. Live recording, i.e. client runs records a publication into a local archive
     
