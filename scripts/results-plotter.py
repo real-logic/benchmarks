@@ -112,7 +112,7 @@ def plot_graphs(output_path, paths, percentiles_range_max, regex, group_by, filt
             nosummary = ''
             if hide_summaries:
                 nosummary = ' --nosummary '
-            os.system(f'hdr-plot --noversion --units us --summary-fields=min,median,p90,p99,p999,p9999,max --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {nosummary} {histogram_files}')
+            os.system(f'hdr-plot --noversion --units us --summary-fields=min,median,p99,p999,p9999,p99999,max --percentiles-range-max={percentiles_range_max} --output {filename} --title "{title}" {nosummary} {histogram_files}')
             shutil.copyfile(os.path.join(tmpdir, filename), os.path.join(output_path, filename))
 
 
