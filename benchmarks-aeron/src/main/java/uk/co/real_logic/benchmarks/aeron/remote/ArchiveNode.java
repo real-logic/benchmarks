@@ -113,7 +113,7 @@ public final class ArchiveNode implements AutoCloseable, Runnable
         {
             server.run();
 
-            final String prefix = "live-replay-server-";
+            final String prefix = "archive-node-";
             AeronUtil.dumpArchiveErrors(
                 server.archivingMediaDriver.archive.context().archiveDir(),
                 outputDir.resolve(prefix + "archive-errors.txt"));
