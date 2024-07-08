@@ -38,6 +38,7 @@ required_vars=(
   "SERVER_ARCHIVE_RECORDER_CPU_CORE"
   "SERVER_ARCHIVE_REPLAYER_CPU_CORE"
   "SERVER_ARCHIVE_CONDUCTOR_CPU_CORE"
+  "SERVER_ARCHIVE_NODE_CPU_CORE"
   "SERVER_NON_ISOLATED_CPU_CORES"
   "SERVER_CPU_NODE"
   "SERVER_INTERFACE"
@@ -279,6 +280,7 @@ do
       ; $(pin_thread \${pid} "archive-recorde" "${SERVER_ARCHIVE_RECORDER_CPU_CORE}") \
       ; $(pin_thread \${pid} "archive-replaye" "${SERVER_ARCHIVE_REPLAYER_CPU_CORE}") \
       ; $(pin_thread \${pid} "archive-conduct" "${SERVER_ARCHIVE_CONDUCTOR_CPU_CORE}") \
+      ; $(pin_thread \${pid} "archive-node" "${SERVER_ARCHIVE_NODE_CPU_CORE}") \
       && tail --pid=\$! -f /dev/null"
 
       stop_server="$(stop_java_process "${server_class_name}"); $(stop_media_driver)"
