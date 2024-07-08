@@ -18,7 +18,7 @@ taskset -c "${CGROUP_CPUSETS[1]}" "${DIR}/../aeron/echo-server" &
 f_wait_for_process 'uk.co.real_logic.benchmarks.aeron.remote.EchoNode'
 
 # Sets the affinities main echo thread
-f_pin_thread "echo" "${CGROUP_CPUSETS[2]}"
+f_pin_thread "echo-0" "${CGROUP_CPUSETS[2]}"
 
 # Wait for all background tasks
 fg
