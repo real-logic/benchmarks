@@ -91,7 +91,7 @@ public final class LiveReplayMessageTransceiver extends MessageTransceiver
         final SystemNanoClock clock = SystemNanoClock.INSTANCE;
         awaitConnected(publication::isConnected, connectionTimeoutNs, clock);
 
-        final long recordingId = findLastRecordingId(aeronArchive, archiveChannel(), archiveStream());
+        final long recordingId = findLastRecordingId(aeronArchive, recordChannel(), recordStream());
 
         final String replayChannel = sourceChannel();
         final int replayStreamId = sourceStreamId();

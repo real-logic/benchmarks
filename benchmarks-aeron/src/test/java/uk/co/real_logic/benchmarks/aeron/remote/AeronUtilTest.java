@@ -75,8 +75,10 @@ class AeronUtilTest
         clearProperty(DESTINATION_STREAM_PROP_NAME);
         clearProperty(SOURCE_CHANNEL_PROP_NAME);
         clearProperty(SOURCE_STREAM_PROP_NAME);
-        clearProperty(ARCHIVE_CHANNEL_PROP_NAME);
-        clearProperty(ARCHIVE_STREAM_PROP_NAME);
+        clearProperty(RECORD_CHANNEL_PROP_NAME);
+        clearProperty(RECORD_STREAM_PROP_NAME);
+        clearProperty(REPLAY_CHANNEL_PROP_NAME);
+        clearProperty(REPLAY_STREAM_PROP_NAME);
         clearProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME);
         clearProperty(IDLE_STRATEGY_PROP_NAME);
     }
@@ -88,8 +90,10 @@ class AeronUtilTest
         assertEquals(77777, destinationStreamId());
         assertEquals("aeron:udp?endpoint=localhost:13334|mtu=1408", sourceChannel());
         assertEquals(55555, sourceStreamId());
-        assertEquals(IPC_CHANNEL, archiveChannel());
-        assertEquals(99999, archiveStream());
+        assertEquals(IPC_CHANNEL, recordChannel());
+        assertEquals(99999, recordStream());
+        assertEquals("aeron:udp?endpoint=localhost:0", replayChannel());
+        assertEquals(88888, replayStreamId());
         assertFalse(embeddedMediaDriver());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
     }
@@ -101,8 +105,10 @@ class AeronUtilTest
         setProperty(DESTINATION_STREAM_PROP_NAME, "");
         setProperty(SOURCE_CHANNEL_PROP_NAME, "");
         setProperty(SOURCE_STREAM_PROP_NAME, "");
-        setProperty(ARCHIVE_CHANNEL_PROP_NAME, "");
-        setProperty(ARCHIVE_STREAM_PROP_NAME, "");
+        setProperty(RECORD_CHANNEL_PROP_NAME, "");
+        setProperty(RECORD_STREAM_PROP_NAME, "");
+        setProperty(REPLAY_CHANNEL_PROP_NAME, "");
+        setProperty(REPLAY_STREAM_PROP_NAME, "");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "");
         setProperty(IDLE_STRATEGY_PROP_NAME, "");
 
@@ -110,8 +116,10 @@ class AeronUtilTest
         assertEquals(77777, destinationStreamId());
         assertEquals("aeron:udp?endpoint=localhost:13334|mtu=1408", sourceChannel());
         assertEquals(55555, sourceStreamId());
-        assertEquals(IPC_CHANNEL, archiveChannel());
-        assertEquals(99999, archiveStream());
+        assertEquals(IPC_CHANNEL, recordChannel());
+        assertEquals(99999, recordStream());
+        assertEquals("aeron:udp?endpoint=localhost:0", replayChannel());
+        assertEquals(88888, replayStreamId());
         assertFalse(embeddedMediaDriver());
         assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
     }
@@ -123,8 +131,10 @@ class AeronUtilTest
         setProperty(DESTINATION_STREAM_PROP_NAME, "100");
         setProperty(SOURCE_CHANNEL_PROP_NAME, "ch1:8001,ch2:8002,ch3:8003");
         setProperty(SOURCE_STREAM_PROP_NAME, "200");
-        setProperty(ARCHIVE_CHANNEL_PROP_NAME, "localhost");
-        setProperty(ARCHIVE_STREAM_PROP_NAME, "777");
+        setProperty(RECORD_CHANNEL_PROP_NAME, "localhost");
+        setProperty(RECORD_STREAM_PROP_NAME, "777");
+        setProperty(REPLAY_CHANNEL_PROP_NAME, "aeron:udp?endpoint=localhost:5151");
+        setProperty(REPLAY_STREAM_PROP_NAME, "45454");
         setProperty(EMBEDDED_MEDIA_DRIVER_PROP_NAME, "true");
         setProperty(IDLE_STRATEGY_PROP_NAME, YieldingIdleStrategy.class.getName());
 
@@ -132,8 +142,10 @@ class AeronUtilTest
         assertEquals(100, destinationStreamId());
         assertEquals("ch1:8001,ch2:8002,ch3:8003", sourceChannel());
         assertEquals(200, sourceStreamId());
-        assertEquals("localhost", archiveChannel());
-        assertEquals(777, archiveStream());
+        assertEquals("localhost", recordChannel());
+        assertEquals(777, recordStream());
+        assertEquals("aeron:udp?endpoint=localhost:5151", replayChannel());
+        assertEquals(45454, replayStreamId());
         assertTrue(embeddedMediaDriver());
         assertEquals(YieldingIdleStrategy.class, idleStrategy().getClass());
     }

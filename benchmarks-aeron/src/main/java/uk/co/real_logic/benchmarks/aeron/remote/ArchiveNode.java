@@ -69,13 +69,13 @@ public final class ArchiveNode implements AutoCloseable, Runnable
 
         subscription = aeron.addSubscription(destinationChannel(), destinationStreamId());
 
-        final String archiveChannel = archiveChannel();
-        final int archiveStreamId = archiveStream();
-        publication = aeron.addExclusivePublication(archiveChannel, archiveStreamId);
+        final String recordChannel = recordChannel();
+        final int recordStreamId = recordStream();
+        publication = aeron.addExclusivePublication(recordChannel, recordStreamId);
 
         final int publicationSessionId = publication.sessionId();
-        final String channel = addSessionId(archiveChannel, publicationSessionId);
-        aeronArchive.startRecording(channel, archiveStreamId, LOCAL, true);
+        final String channel = addSessionId(recordChannel, publicationSessionId);
+        aeronArchive.startRecording(channel, recordStreamId, LOCAL, true);
 
         awaitConnected(
             () -> subscription.isConnected() && publication.isConnected(),

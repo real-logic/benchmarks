@@ -102,8 +102,10 @@ final class AeronUtil
         "uk.co.real_logic.benchmarks.aeron.remote.destination.stream";
     static final String SOURCE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.channel";
     static final String SOURCE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.source.stream";
-    static final String ARCHIVE_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.channel";
-    static final String ARCHIVE_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.archive.stream";
+    static final String RECORD_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.record.channel";
+    static final String RECORD_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.record.stream";
+    static final String REPLAY_CHANNEL_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.replay.channel";
+    static final String REPLAY_STREAM_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.replay.stream";
     static final String EMBEDDED_MEDIA_DRIVER_PROP_NAME =
         "uk.co.real_logic.benchmarks.aeron.remote.embedded.media.driver";
     static final String FRAGMENT_LIMIT_PROP_NAME = "uk.co.real_logic.benchmarks.aeron.remote.fragment.limit";
@@ -196,9 +198,9 @@ final class AeronUtil
         return Integer.parseInt(property);
     }
 
-    static String archiveChannel()
+    static String recordChannel()
     {
-        final String property = getProperty(ARCHIVE_CHANNEL_PROP_NAME);
+        final String property = getProperty(RECORD_CHANNEL_PROP_NAME);
         if (isEmpty(property))
         {
             return IPC_CHANNEL;
@@ -206,13 +208,35 @@ final class AeronUtil
         return property;
     }
 
-    static int archiveStream()
+    static int recordStream()
     {
-        final String property = getProperty(ARCHIVE_STREAM_PROP_NAME);
+        final String property = getProperty(RECORD_STREAM_PROP_NAME);
         if (isEmpty(property))
         {
             return 99999;
         }
+        return Integer.parseInt(property);
+    }
+
+    static String replayChannel()
+    {
+        final String property = getProperty(REPLAY_CHANNEL_PROP_NAME);
+        if (isEmpty(property))
+        {
+            return "aeron:udp?endpoint=localhost:0";
+        }
+
+        return property;
+    }
+
+    static int replayStreamId()
+    {
+        final String property = getProperty(REPLAY_STREAM_PROP_NAME);
+        if (isEmpty(property))
+        {
+            return 88888;
+        }
+
         return Integer.parseInt(property);
     }
 
@@ -405,8 +429,9 @@ final class AeronUtil
             {
                 return aeronArchive.startReplay(recordingId, 0, MAX_VALUE, replayChannel, replayStreamId);
             }
-            catch (final ArchiveException ignore)
+            catch (final ArchiveException ex)
             {
+                ex.printStackTrace();
                 yieldUninterruptedly();
             }
         }
