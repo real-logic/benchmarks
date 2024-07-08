@@ -32,7 +32,7 @@ required_vars=(
   "CLIENT_CPU_NODE"
   "CLIENT_SOURCE_CHANNEL"
   "CLIENT_DESTINATION_CHANNEL"
-  "DESTINATION_COUNT"
+  "RECEIVER_COUNT"
   "_BENCHMARKS_PATH"
   "_JAVA_HOME"
   "_DRIVER_CONDUCTOR_CPU_CORE"
@@ -47,7 +47,7 @@ required_vars=(
 for var in "${required_vars[@]}"; do
   if [[ ${var} == _* ]]
   then
-    for ((n = 0; n < DESTINATION_COUNT; n++))
+    for ((n = 0; n < RECEIVER_COUNT; n++))
     do
       node_var="NODE${n}${var}"
       if [[ -z "${!node_var+''}" ]]; then
@@ -337,7 +337,7 @@ do
   server_md=${server_drivers[index]# }
   for mtu in "${mtu_list[@]}"
   do
-    test="${test_type}_${client_md}-vs-${server_md}_${context}_receivers=${DESTINATION_COUNT}_mtu=${mtu}"
+    test="${test_type}_${client_md}-vs-${server_md}_${context}_receivers=${RECEIVER_COUNT}_mtu=${mtu}"
     echo -e "\n Testing scenario: '${test}'\n"
 
     client_driver="${drivers[${client_md}]//driver_mtu_var/${mtu}}"
@@ -378,7 +378,7 @@ do
           -Duk.co.real_logic.benchmarks.remote.output.directory=${CLIENT_BENCHMARKS_PATH}/${output_dir}\
           -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${CLIENT_DESTINATION_CHANNEL}\
           -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL}\
-          -Duk.co.real_logic.benchmarks.aeron.remote.receiver.count=${DESTINATION_COUNT}\
+          -Duk.co.real_logic.benchmarks.aeron.remote.receiver.count=${RECEIVER_COUNT}\
           ${CLIENT_EXTRA_PROPERTIES:-}\"\
           && export JAVA_HOME=\"${CLIENT_JAVA_HOME}\" PROCESS_FILE_NAME=\"client-media-driver\"\
           ; $(kill_java_process "${client_class_name}")\
@@ -388,7 +388,7 @@ do
           ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
           && tail --pid=\$! -f /dev/null; kill -9 \${media_driver_pid}; wait"
 
-          for (( n=0; n<DESTINATION_COUNT; n++ ))
+          for (( n=0; n<RECEIVER_COUNT; n++ ))
           do
             echo -e "\Stopping remote node ${n}..."
             ssh_user=SSH_USER${n}
@@ -397,7 +397,7 @@ do
             execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(kill_java_process "${node_class_name}"); $(stop_media_driver); true; exit"
           done
 
-          for (( n=0; n<DESTINATION_COUNT; n++ ))
+          for (( n=0; n<RECEIVER_COUNT; n++ ))
           do
             echo -e "\nStarting remote node ${n}..."
             ssh_user=SSH_USER${n}
@@ -426,7 +426,7 @@ do
           echo -e "\nRunning benchmark..."
           execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${start_client}; cp /dev/shm/*-gc.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; true; exit"
 
-          for (( n=0; n<DESTINATION_COUNT; n++ ))
+          for (( n=0; n<RECEIVER_COUNT; n++ ))
           do
             echo -e "\nStopping remote node ${n}..."
             ssh_user=SSH_USER${n}
@@ -441,7 +441,7 @@ do
   done
 done
 
-for (( n=0; n<DESTINATION_COUNT; n++ ))
+for (( n=0; n<RECEIVER_COUNT; n++ ))
 do
   echo -e "\nDownloading results from remote node ${n}..."
   ssh_user=SSH_USER${n}
