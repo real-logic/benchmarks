@@ -80,8 +80,6 @@ then
   dpdk_config_overrides+=" AERON_DPDK_PORT_ID=${AERON_DPDK_PORT_ID}"
 fi
 
-destination_stream_id="${DESTINATION_STREAM_ID:-1000000}"
-source_stream_id="${SOURCE_STREAM_ID:-2000000}"
 context=""
 mtu_list=(1408)
 onload="onload --profile=latency "
@@ -344,13 +342,9 @@ do
       "${SERVER_BENCHMARKS_PATH}/${output_dir}/${client_md}-vs-${server_md}_${context}_mtu=${mtu}" \
       "-Duk.co.real_logic.benchmarks.remote.output.file=${test} \
       -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${CLIENT_DESTINATION_CHANNEL} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}" \
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${CLIENT_SOURCE_CHANNEL}" \
       "-Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${SERVER_DESTINATION_CHANNEL} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.destination.stream=${destination_stream_id} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${SERVER_SOURCE_CHANNEL} \
-      -Duk.co.real_logic.benchmarks.aeron.remote.source.stream=${source_stream_id}"
+      -Duk.co.real_logic.benchmarks.aeron.remote.source.channel=${SERVER_SOURCE_CHANNEL}"
   done
 done
 
