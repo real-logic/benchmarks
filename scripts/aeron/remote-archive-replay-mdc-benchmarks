@@ -434,6 +434,7 @@ do
             ; ${server_driver} \
             && export JAVA_HOME=\"${SERVER_JAVA_HOME}\" PROCESS_FILE_NAME=\"archive-node\" \
             JVM_OPTS=\"\
+            -Duk.co.real_logic.benchmarks.aeron.remote.connection.timeout=${connectionTimeout}\
             -Duk.co.real_logic.benchmarks.remote.output.directory=${SERVER_BENCHMARKS_PATH}/${output_dir} \
             -Duk.co.real_logic.benchmarks.aeron.remote.destination.channel=${DESTINATION_CHANNEL} \
             -Duk.co.real_logic.benchmarks.aeron.remote.record.channel=${RECORD_CHANNEL} \
