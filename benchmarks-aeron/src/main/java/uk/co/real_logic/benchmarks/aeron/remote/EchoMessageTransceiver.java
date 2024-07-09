@@ -83,7 +83,8 @@ public final class EchoMessageTransceiver extends MessageTransceiver
         subscription = aeron.addSubscription(sourceChannel(), sourceStreamId());
 
         awaitConnected(
-            () -> subscription.isConnected() && publication.isConnected() && publication.availableWindow() > 0,
+            () -> subscription.isConnected() && subscription.imageCount() == receiverCount &&
+            publication.isConnected() && publication.availableWindow() > 0,
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
     }
