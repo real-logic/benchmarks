@@ -445,7 +445,8 @@ do
             -Daeron.archive.mark.file.dir=/dev/shm/aeron \
             -Daeron.archive.file.sync.level=${fsync} \
             -Daeron.archive.catalog.file.sync.level=${fsync} \
-            -Daeron.archive.max.concurrent.replays=$((1 + RECEIVER_COUNT)) \
+            -Daeron.archive.max.concurrent.replays=$((2 * RECEIVER_COUNT)) \
+            -Daeron.archive.max.concurrent.recordings=$((2 * RECEIVER_COUNT)) \
             -Daeron.archive.recording.events.enabled=false\" \
             ; numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${SERVER_NON_ISOLATED_CPU_CORES}\" ${SERVER_BENCHMARKS_PATH}/scripts/aeron/archive-node & \
             $(await_java_process_start "${server_class_name}") \
