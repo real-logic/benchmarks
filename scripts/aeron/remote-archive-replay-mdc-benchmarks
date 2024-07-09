@@ -467,7 +467,7 @@ do
             done
 
             echo -e "\Starting archive node ${n}..."
-            execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "(${start_server} &) > /tmp/benchmarks-server.log 2>&1 && exit"
+            execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "(${start_server} &) > /tmp/archive-node.log 2>&1 && exit"
 
             for (( n=0; n<RECEIVER_COUNT; n++ ))
             do
@@ -492,14 +492,14 @@ do
               node_driver="${node_driver//driver_receiver_cpu_core_var/${!node_driver_receiver_cpu_core}}"
               node_driver="${node_driver//driver_aeron_dpdk_gateway_ipv4_address_var/${!node_driver_aeron_dpdk_gateway_ipv4_address}}"
               node_driver="${node_driver//driver_aeron_dpdk_local_ipv4_address_var/${!node_driver_aeron_dpdk_local_ipv4_address}}"
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_replay_node "${n}" "${node_class_name}" "${node_driver}" "${!node_benchmarks_path}/${output_dir}") &) > /tmp/benchmarks-node-${n}.log 2>&1 && exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "($(start_replay_node "${n}" "${node_class_name}" "${node_driver}" "${!node_benchmarks_path}/${output_dir}") &) > /tmp/replay-node-${n}.log 2>&1 && exit"
             done
 
             echo -e "\nRunning benchmark..."
             execute_remote_command "${SSH_CLIENT_USER}" "${SSH_CLIENT_KEY_FILE}" "${SSH_CLIENT_NODE}" "${start_client}; cp /dev/shm/*-gc.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${CLIENT_BENCHMARKS_PATH}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; true; exit"
 
             echo -e "\Stopping archive node..."
-            execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${stop_server}; cp /dev/shm/*-gc.log \"${SERVER_BENCHMARKS_PATH}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${SERVER_BENCHMARKS_PATH}/${output_dir}/logs\"; cp /tmp/benchmarks-server.log \"${SERVER_BENCHMARKS_PATH}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; true; exit"
+            execute_remote_command "${SSH_SERVER_USER}" "${SSH_SERVER_KEY_FILE}" "${SSH_SERVER_NODE}" "${stop_server}; cp /dev/shm/*-gc.log \"${SERVER_BENCHMARKS_PATH}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${SERVER_BENCHMARKS_PATH}/${output_dir}/logs\"; cp /tmp/archive-node.log \"${SERVER_BENCHMARKS_PATH}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; true; exit"
 
             for (( n=0; n<RECEIVER_COUNT; n++ ))
             do
@@ -508,7 +508,7 @@ do
               ssh_key_file=SSH_KEY_FILE${n}
               ssh_node=SSH_NODE${n}
               node_benchmarks_path=NODE${n}_BENCHMARKS_PATH
-              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(stop_java_process "${node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!node_benchmarks_path}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${!node_benchmarks_path}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; cp /tmp/benchmarks-node-*.log \"${!node_benchmarks_path}/${output_dir}/logs\"; true; exit"
+              execute_remote_command "${!ssh_user}" "${!ssh_key_file}" "${!ssh_node}" "$(stop_java_process "${node_class_name}"); $(stop_media_driver); cp /dev/shm/*-gc.log \"${!node_benchmarks_path}/${output_dir}/logs\"; cp /dev/shm/*-crash.log \"${!node_benchmarks_path}/${output_dir}/logs\"; rm /dev/shm/*-gc.log; rm /dev/shm/*-crash.log; cp /tmp/replay-node-*.log \"${!node_benchmarks_path}/${output_dir}/logs\"; true; exit"
             done
           done
         done
