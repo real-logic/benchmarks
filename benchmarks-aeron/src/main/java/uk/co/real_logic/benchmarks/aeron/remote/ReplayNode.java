@@ -83,7 +83,7 @@ public final class ReplayNode implements AutoCloseable, Runnable
         final String alias = uri.get(CommonContext.ALIAS_PARAM_NAME);
         final long recordingId = findLastRecordingId(
             aeronArchive,
-            null != alias ? CommonContext.ALIAS_PARAM_NAME + "=" + alias : uri.media(),
+            null != alias ? CommonContext.ALIAS_PARAM_NAME + "=" + alias : "aeron:" + uri.media(),
             recordStream());
 
         final String replayChannel = replayChannel();
