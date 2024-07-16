@@ -19,6 +19,8 @@ RUN apt-get update &&\
   jq \
   lsb-release \
   python3-pip \
+  awscli \
+  curl \
   numactl \
   hwloc &&\
   pip3 install --upgrade --user hdr-plot

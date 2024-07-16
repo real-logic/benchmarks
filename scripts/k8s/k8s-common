@@ -54,7 +54,7 @@ function f_wait_for_dns() {
 function f_benchmark_pre(){
 
 echo '***********************************'
-echo "*** Running $* on ${HOSTNAME} ***"
+echo "*** Running on ${HOSTNAME} ***"
 echo '***********************************'
 
 # Sets our own bash script affinity to the first core
