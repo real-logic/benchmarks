@@ -58,6 +58,24 @@ For [Aeron](https://aeron.io/) the following test scenarios were implemented:
    The client sends messages to the Aeron Cluster over UDP. The Cluster sequences the messages into a log, reaches the
    consensus on the received messages, processes them and then replies to the client over UDP.
 
+
+5. Aeron Echo MDC benchmark. 
+
+   An extension to Aeron Echo benchmark which uses an MDC (or a multicast) channel to send the same data to multiple
+   receivers. Only one receiver at a time will respond to a given incoming message ensuring that the number of replies
+   matches the number of messages sent.
+
+
+6. Aeron Archive Replay MDC benchmark.
+
+   Aeron Archive benchmark that multiple replays. The benchmark consists of at least three nodes: 
+   - the client node sending the data
+   - the Archive node recording the data stream to disc
+   - the replay nodes requesting replay of the recording from the Archive
+   
+   Similar to the Aeron Echo MDC benchmark only one replay node at a time will send a response message back to the
+   client node thus ensuring that the number of messages sent and the number of replays match.
+
 Please the documentation in the ``scripts/aeron`` directory for more information.
 
 ### gRPC
