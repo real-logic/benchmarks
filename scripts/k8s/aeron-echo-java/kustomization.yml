@@ -3,6 +3,10 @@
 resources:
   - ../base
 patches:
+  # Test specific config
+  - path: all-pods.yml
+    target:
+      kind: Pod
   # Media driver specific config
   - path: aeronmd-java.yml
     target:

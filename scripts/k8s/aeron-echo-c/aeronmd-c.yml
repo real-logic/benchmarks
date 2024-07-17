@@ -1,0 +1,19 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+  labels:
+    aeronmd: java
+spec:
+  containers:
+    - name: aeronmd-c
+      imagePullPolicy: Always
+      command: ["/opt/aeron-benchmarks/scripts/k8s/k8s-c-media-driver.sh"]
+      volumeMounts:
+        - name: shm
+          mountPath: /dev/shm
+      resources:
+        limits:
+          cpu: "8"
+          memory: 8G

@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: all
+spec:
+  containers:
+    - name: benchmark
+      env:
+        - name: BENCHMARK_TYPE
+          value: "aeron-echo-java"
