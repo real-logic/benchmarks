@@ -119,6 +119,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         setProperty(NUMBER_OF_RECEIVERS_PROP_NAME, Integer.toString(numDestinations));
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(1)
+            .warmupMessageRate(1)
             .iterations(1)
             .messageRate(30)
             .messageLength(288)
