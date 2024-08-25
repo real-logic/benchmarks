@@ -28,7 +28,7 @@ plugins {
     id 'java-library'
     id 'checkstyle'
     id 'com.github.ben-manes.versions' version '0.51.0'
-    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
+    id 'com.gradleup.shadow' version '8.3.0' apply false
     id 'com.google.protobuf' version '0.9.4' apply false
 }
 
@@ -223,7 +223,7 @@ project(':benchmarks-kafka') {
 }
 
 project(':benchmarks-all') {
-    apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'com.gradleup.shadow'
 
     dependencies {
         implementation project(':benchmarks-aeron')
