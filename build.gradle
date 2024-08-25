@@ -109,6 +109,13 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
 
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(buildJavaVersion)
+        }
+        sourceCompatibility = JavaVersion.VERSION_17
+    }
+
     checkstyle.toolVersion = "${checkstyleVersion}"
 
     tasks.withType(Jar).configureEach {
@@ -132,10 +139,6 @@ subprojects {
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
-
-        if (buildJavaVersion >= 9) {
-            jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
-        }
 
         if (buildJavaVersion >= 21) {
             jvmArgs('-XX:+EnableDynamicAgentLoading')
