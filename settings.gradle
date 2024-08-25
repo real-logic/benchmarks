@@ -6,3 +6,5 @@ include (
     'benchmarks-grpc',
     'benchmarks-kafka',
     'benchmarks-all')
+
+project(':benchmarks-all').projectDir.mkdirs()
