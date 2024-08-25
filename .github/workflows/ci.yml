@@ -116,11 +116,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 17
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
           sudo apt-get update || true
@@ -172,11 +167,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 17
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
       - name: Install compiler
         run: |
           curl -L https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
