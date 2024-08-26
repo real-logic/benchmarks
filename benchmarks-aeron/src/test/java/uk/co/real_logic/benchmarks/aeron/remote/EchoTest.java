@@ -25,6 +25,8 @@ import org.HdrHistogram.ValueRecorder;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,13 +43,11 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.aeron.Aeron.connect;
 import static java.lang.System.setProperty;
 import static org.agrona.LangUtil.rethrowUnchecked;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static uk.co.real_logic.benchmarks.aeron.remote.AeronUtil.*;
 
 class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, EchoNode>
@@ -170,14 +170,14 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
                 thread.setName("destination-" + i);
                 thread.start();
                 return thread;
-            }).collect(Collectors.toList());
+            }).toList();
             try
             {
                 final NanoClock nanoClock = SystemNanoClock.INSTANCE;
                 final PersistedHistogram persistedHistogram = new SinglePersistedHistogram(new Histogram(3));
 
                 final ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
-                final PrintStream out = new PrintStream(baos, false, StandardCharsets.US_ASCII.name());
+                final PrintStream out = new PrintStream(baos, false, StandardCharsets.US_ASCII);
 
                 final LoadTestRig loadTestRig = new LoadTestRig(
                     configuration,
@@ -190,7 +190,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
                 loadTestRig.run();
 
                 final String ouptput = baos.toString();
-                assertEquals(-1, ouptput.indexOf("WARNING:"), ouptput);
+                MatcherAssert.assertThat(ouptput, CoreMatchers.not(CoreMatchers.containsString("WARNING:")));
             }
             finally
             {
