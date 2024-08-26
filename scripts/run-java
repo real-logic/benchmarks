@@ -21,8 +21,13 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
 class_name=${1##*.}
 log_file_name=${PROCESS_FILE_NAME:-${class_name}-%p}
-gc_log_file="/dev/shm/${log_file_name}-gc.log"
-error_log_file="/dev/shm/${log_file_name}-crash.log"
+if [ -d /dev/shm ]; then
+  gc_log_file="/dev/shm/${log_file_name}-gc.log"
+  error_log_file="/dev/shm/${log_file_name}-crash.log"
+else
+  gc_log_file="/tmp/${log_file_name}-gc.log"
+  error_log_file="/tmp/${log_file_name}-crash.log"
+fi
 
 java_options=(
   -Djava.net.preferIPv4Stack=true
@@ -41,27 +46,11 @@ java_options=(
 
 java_version=$("${JAVA_HOME}/bin/java" -version 2>&1 | awk -F '"' '/version/ {print $2}')
 
-if [[ ${java_version} == '1.8.'* ]]
-then
-  add_opens=()
-  java_options+=(-XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+PrintGCCause -XX:+PrintSafepointStatistics "-Xloggc:${gc_log_file}")
-else
-  major_java_version=${java_version%%[.-]*}
-  java_options+=("-Xlog:gc*,safepoint=info,arguments=info:file=${gc_log_file}:time")
+java_options+=(-XX:+EnableDynamicAgentLoading)
 
-  if [ "${major_java_version}" -lt 15 ]
-  then
-    java_options+=(-XX:+UseBiasedLocking -XX:BiasedLockingStartupDelay=0)
-  fi
-
-  java_options+=(-XX:+EnableDynamicAgentLoading)
-
-  add_opens=(
-  --add-opens
-  java.base/sun.nio.ch=ALL-UNNAMED
-  --add-opens
-  java.base/java.util.zip=ALL-UNNAMED)
-fi
+add_opens=(
+--add-opens
+java.base/java.util.zip=ALL-UNNAMED)
 
 jvm_opts=()
 
