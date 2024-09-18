@@ -13,23 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.ow2.asm:asm:9.7'
-        classpath 'org.ow2.asm:asm-commons:9.7'
-    }
-}
-
 plugins {
     id 'java-library'
     id 'checkstyle'
-    id 'com.github.ben-manes.versions' version '0.51.0'
-    id 'com.gradleup.shadow' version '8.3.0' apply false
-    id 'com.google.protobuf' version '0.9.4' apply false
+    alias(libs.plugins.versions)
+    alias(libs.plugins.shadow).apply(false)
+    alias(libs.plugins.protobuf).apply(false)
 }
 
 defaultTasks 'clean', 'build'
@@ -54,26 +43,6 @@ def toolchainCompiler = javaToolchains.compilerFor {
     languageVersion = JavaLanguageVersion.of(buildJavaVersion)
 }
 
-def agronaVersion = '1.23.0'
-def aeronVersion = '1.46.1'
-def byteBuddyVersion = '1.15.1'
-def jmhVersion = '1.37'
-def hdrHistogramVersion = '2.2.2'
-def disruptorVersion = '3.4.4'
-def junitVersion = '5.11.0'
-def mockitoVersion = '5.13.0'
-def hamcrestVersion = '3.0'
-def checkstyleVersion = '9.3'
-def grpcVersion = '1.66.0'
-def protobufVersion = '4.28.0'
-def errorproneVersion = '2.20.0'
-def checkerVersion = '3.33.0'
-def kafkaVersion = '3.7.1'
-def slf4jVersion = '1.7.36'
-def scalaVersion = '2.13.11'
-def jacksonVersion = '2.16.2'
-def annotationsApiVersion = '6.0.53'
-
 allprojects {
     repositories {
         mavenLocal()
@@ -84,18 +53,16 @@ allprojects {
         resolutionStrategy {
             failOnVersionConflict()
 
-            force "org.agrona:agrona:${agronaVersion}",
-                  "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
-                  "net.bytebuddy:byte-buddy-agent:${byteBuddyVersion}",
-                  "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}",
-                  "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}",
-                  "org.slf4j:slf4j-api:${slf4jVersion}",
-                  "org.slf4j:slf4j-log4j12:${slf4jVersion}",
-                  "org.scala-lang:scala-library:${scalaVersion}",
-                  "org.scala-lang:scala-reflect:${scalaVersion}",
-                  "com.google.protobuf:protobuf-java:${protobufVersion}",
-                  "com.google.errorprone:error_prone_annotations:${errorproneVersion}",
-                  "org.checkerframework:checker-qual:${checkerVersion}"
+            force libs.jackson.databind,
+                  libs.slf4j.api,
+                  libs.scala.library,
+                  libs.scala.reflect,
+                  libs.errorprone,
+                  libs.checker,
+                  "org.codehaus.plexus:plexus-utils:3.3.0",
+                  "org.apache.commons:commons-lang3:3.8.1",
+                  "org.apache.httpcomponents:httpcore:4.4.14",
+                  "commons-codec:commons-codec:1.15"
         }
     }
 }
@@ -105,10 +72,10 @@ subprojects {
     apply plugin: 'checkstyle'
 
     dependencies {
-        testImplementation platform("org.junit:junit-bom:${junitVersion}")
+        testImplementation platform("org.junit:junit-bom:${libs.versions.junit.get()}")
         testImplementation "org.junit.jupiter:junit-jupiter-params"
-        testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-        testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
+        testImplementation libs.mockito
+        testImplementation libs.hamcrest
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
         testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     }
@@ -120,7 +87,7 @@ subprojects {
         sourceCompatibility = JavaVersion.VERSION_17
     }
 
-    checkstyle.toolVersion = "${checkstyleVersion}"
+    checkstyle.toolVersion = libs.versions.checkstyle.get()
 
     tasks.withType(Jar).configureEach {
         enabled = true
@@ -128,14 +95,7 @@ subprojects {
     }
 
     tasks.withType(JavaCompile).configureEach {
-        if (buildJavaVersion >= 9) {
-            javaCompiler.set(toolchainCompiler)
-        }
-        else {
-            options.fork = true
-            def javaHome = toolchainCompiler.get().metadata.installationPath.asFile.toPath().toAbsolutePath()
-            options.forkOptions.javaHome = javaHome.toFile()
-        }
+        javaCompiler.set(toolchainCompiler)
         options.compilerArgs.add('-XDignore.symbol.file') // Suppress warnings about using Unsafe
         options.encoding = 'UTF-8'
         options.deprecation = true
@@ -163,20 +123,19 @@ subprojects {
 
 project(':benchmarks-api') {
     dependencies {
-        api "org.agrona:agrona:${agronaVersion}"
-        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+        api libs.agrona
+        api libs.hdrHistogram
     }
 }
 
 project(':benchmarks-aeron') {
     dependencies {
         api project(':benchmarks-api')
-        annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:${jmhVersion}"
-        implementation "org.openjdk.jmh:jmh-core:${jmhVersion}"
-        implementation "io.aeron:aeron-cluster:${aeronVersion}"
-        implementation "com.lmax:disruptor:${disruptorVersion}"
-        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
-        runtimeOnly "io.aeron:aeron-samples:${aeronVersion}"
+        annotationProcessor libs.jmh.generator.annprocess
+        implementation libs.jmh.core
+        implementation libs.aeron.cluster
+        implementation libs.disruptor
+        runtimeOnly libs.aeron.samples
     }
 }
 
@@ -185,17 +144,16 @@ project(':benchmarks-grpc') {
 
     dependencies {
         api project(':benchmarks-api')
-        implementation "io.grpc:grpc-protobuf:${grpcVersion}"
-        implementation "io.grpc:grpc-stub:${grpcVersion}"
-        implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
-        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
-        compileOnly "org.apache.tomcat:annotations-api:${annotationsApiVersion}"
+        implementation libs.grpc.protobuf
+        implementation libs.grpc.stub
+        implementation libs.grpc.netty.shaded
+        compileOnly libs.tomcat.annotations.api
     }
 
     protobuf {
-        protoc { artifact = "com.google.protobuf:protoc:${protobufVersion}" }
+        protoc { artifact = "com.google.protobuf:protoc:${libs.versions.protoc.get()}" }
         plugins {
-            grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
+            grpc { artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.get()}" }
         }
         generateProtoTasks {
             all()*.plugins { grpc {} }
@@ -218,14 +176,13 @@ project(':benchmarks-grpc') {
 project(':benchmarks-kafka') {
     dependencies {
         api project(':benchmarks-api')
-        implementation "org.apache.kafka:kafka-clients:${kafkaVersion}"
-        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
-        runtimeOnly "org.apache.kafka:kafka_2.13:${kafkaVersion}"
-        runtimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
-        testImplementation "org.apache.kafka:kafka_2.13:${kafkaVersion}"
-        testImplementation "org.apache.kafka:kafka-server-common:${kafkaVersion}"
-        testImplementation "org.apache.kafka:kafka-metadata:${kafkaVersion}"
-        testRuntimeOnly "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+        implementation libs.kafka.clients
+        runtimeOnly libs.kafka
+        runtimeOnly libs.slf4j.log4j12
+        testImplementation libs.kafka
+        testImplementation libs.kafka.server.common
+        testImplementation libs.kafka.metadata
+        testRuntimeOnly libs.slf4j.log4j12
     }
 }
 
@@ -248,11 +205,7 @@ project(':benchmarks-all') {
 }
 
 static def benchmarkJvmArgs() {
-    StringBuilder args = new StringBuilder("-Dagrona.disable.bounds.checks=true -XX:+UseParallelGC")
-    if (buildJavaVersion > 8) {
-        args.append(" --add-opens java.base/sun.nio.ch=ALL-UNNAMED")
-    }
-    return args.toString()
+    return "-Dagrona.disable.bounds.checks=true -XX:+UseParallelGC --add-opens java.base/sun.nio.ch=ALL-UNNAMED"
 }
 
 tasks.register('runJavaIpcBenchmarks', Exec) {
