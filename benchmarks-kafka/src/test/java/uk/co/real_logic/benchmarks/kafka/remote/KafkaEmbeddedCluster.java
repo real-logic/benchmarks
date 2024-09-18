@@ -47,7 +47,7 @@ class KafkaEmbeddedCluster implements AutoCloseable
             System.out,
             StorageTool.configToLogDirectories(config),
             StorageTool.buildMetadataProperties(clusterId.toString(), config),
-            MetadataVersion.IBP_3_7_IV4,
+            MetadataVersion.IBP_3_8_IV0,
             false);
 
         kafka = new KafkaRaftServer(config, Time.SYSTEM);
