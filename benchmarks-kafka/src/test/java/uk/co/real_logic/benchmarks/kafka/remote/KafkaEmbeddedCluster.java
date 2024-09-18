@@ -16,7 +16,6 @@
 package uk.co.real_logic.benchmarks.kafka.remote;
 
 import kafka.server.KafkaConfig;
-import kafka.server.KafkaConfig$;
 import kafka.server.KafkaRaftServer;
 import kafka.tools.StorageTool;
 import org.apache.kafka.common.Uuid;
@@ -61,43 +60,43 @@ class KafkaEmbeddedCluster implements AutoCloseable
         final int nodeId = 1;
 
 
-        props.put(KafkaConfig$.MODULE$.ProcessRolesProp(), "broker,controller");
-        props.put(KafkaConfig$.MODULE$.QuorumVotersProp(), "1@localhost:" + controllerPort);
-        props.put(KafkaConfig$.MODULE$.ControllerListenerNamesProp(), "CONTROLLER");
-        props.put(KafkaConfig$.MODULE$.ListenersProp(),
+        props.put("process.roles", "broker,controller");
+        props.put("controller.quorum.voters", "1@localhost:" + controllerPort);
+        props.put("controller.listener.names", "CONTROLLER");
+        props.put("listeners",
             "PLAINTEXT://localhost:" + httpPort +
             ",SSL://localhost:" + sslPort +
             ",CONTROLLER://localhost:" + controllerPort);
-        props.put(KafkaConfig$.MODULE$.ListenerSecurityProtocolMapProp(),
+        props.put("listener.security.protocol.map",
             "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL");
-        props.put(KafkaConfig$.MODULE$.NodeIdProp(), nodeId);
-        props.put(KafkaConfig$.MODULE$.BrokerIdProp(), nodeId);
-        props.put(KafkaConfig$.MODULE$.LogDirProp(), logDir.toAbsolutePath().toString());
-        props.put(KafkaConfig$.MODULE$.AdvertisedListenersProp(),
+        props.put("node.id", nodeId);
+        props.put("broker.id", nodeId);
+        props.put("log.dir", logDir.toAbsolutePath().toString());
+        props.put("advertised.listeners",
             "PLAINTEXT://localhost:" + httpPort + ",SSL://localhost:" + sslPort);
         final Path certificatesPath = Configuration.tryResolveCertificatesDirectory();
-        props.put(KafkaConfig$.MODULE$.SslTruststoreLocationProp(),
+        props.put("ssl.truststore.location",
             certificatesPath.resolve("truststore.p12").toString());
-        props.put(KafkaConfig$.MODULE$.SslTruststoreTypeProp(), "PKCS12");
-        props.put(KafkaConfig$.MODULE$.SslTruststorePasswordProp(), "truststore");
-        props.put(KafkaConfig$.MODULE$.SslKeystoreLocationProp(),
+        props.put("ssl.truststore.type", "PKCS12");
+        props.put("ssl.truststore.password", "truststore");
+        props.put("ssl.keystore.location",
             certificatesPath.resolve("server.keystore").toString());
-        props.put(KafkaConfig$.MODULE$.SslKeystoreTypeProp(), "PKCS12");
-        props.put(KafkaConfig$.MODULE$.SslKeystorePasswordProp(), "server");
-        props.put(KafkaConfig$.MODULE$.SslClientAuthProp(), "required");
-        props.put(KafkaConfig$.MODULE$.AutoCreateTopicsEnableProp(), valueOf(true));
-        props.put(KafkaConfig$.MODULE$.MessageMaxBytesProp(), valueOf(1000000));
-        props.put(KafkaConfig$.MODULE$.ControlledShutdownEnableProp(), valueOf(true));
-        props.put(KafkaConfig$.MODULE$.LogMessageDownConversionEnableProp(), valueOf(false));
-        props.put(KafkaConfig$.MODULE$.NumPartitionsProp(), valueOf(1));
-        props.put(KafkaConfig$.MODULE$.DefaultReplicationFactorProp(), valueOf(1));
-        props.put(KafkaConfig$.MODULE$.OffsetsTopicReplicationFactorProp(), valueOf(1));
-        props.put(KafkaConfig$.MODULE$.NumNetworkThreadsProp(), valueOf(1));
-        props.put(KafkaConfig$.MODULE$.NumIoThreadsProp(), valueOf(1));
-        props.put(KafkaConfig$.MODULE$.BackgroundThreadsProp(), valueOf(1));
-        props.put(KafkaConfig$.MODULE$.LogCleanerThreadsProp(), valueOf(1));
-        props.put(KafkaConfig$.MODULE$.NumRecoveryThreadsPerDataDirProp(), valueOf(1));
-        props.put(KafkaConfig$.MODULE$.NumReplicaAlterLogDirsThreadsProp(), valueOf(1));
+        props.put("ssl.keystore.type", "PKCS12");
+        props.put("ssl.keystore.password", "server");
+        props.put("ssl.client.auth", "required");
+        props.put("auto.create.topics.enable", valueOf(true));
+        props.put("message.max.bytes", valueOf(1000000));
+        props.put("controlled.shutdown.enable", valueOf(true));
+        props.put("log.message.downconversion.enable", valueOf(false));
+        props.put("num.partitions", valueOf(1));
+        props.put("default.replication.factor", valueOf(1));
+        props.put("offsets.topic.replication.factor", valueOf(1));
+        props.put("num.network.threads", valueOf(1));
+        props.put("num.io.threads", valueOf(1));
+        props.put("background.threads", valueOf(1));
+        props.put("log.cleaner.threads", valueOf(1));
+        props.put("num.recovery.threads.per.data.dir", valueOf(1));
+        props.put("num.replica.alter.log.dirs.threads", valueOf(1));
 
         return new KafkaConfig(props);
     }
