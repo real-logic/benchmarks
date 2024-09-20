@@ -27,6 +27,8 @@ iterations=60
 messageRate=501K
 burstSize=1
 messageLength=288
+warmupMessageRate=25K
+warmupIterations=30
 
 while [[ $# -gt 0 ]]
 do
@@ -42,6 +44,11 @@ do
       shift
       shift
       ;;
+    -M|--warmup-message-rate)
+      warmupMessageRate="${2}"
+      shift
+      shift
+      ;;
     -b|--burst-size)
       burstSize="${2}"
       shift
@@ -54,6 +61,11 @@ do
       ;;
     -i|--iterations)
       iterations="${2}";
+      shift
+      shift
+      ;;
+    -I|--warmup-iterations)
+      warmupIterations="${2}";
       shift
       shift
       ;;
@@ -75,6 +87,8 @@ then
 fi
 
 JVM_OPTS="${JVM_OPTS:-""} \
+-Duk.co.real_logic.benchmarks.remote.warmup.iterations=${warmupIterations} \
+-Duk.co.real_logic.benchmarks.remote.warmup.message.rate=${warmupMessageRate} \
 -Duk.co.real_logic.benchmarks.remote.output.file=${outputFileName} \
 -Duk.co.real_logic.benchmarks.remote.iterations=${iterations} \
 -Duk.co.real_logic.benchmarks.remote.message.rate=${messageRate} \
