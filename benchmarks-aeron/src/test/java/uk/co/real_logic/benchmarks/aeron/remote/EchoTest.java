@@ -107,7 +107,7 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         test(1000, 333, 1, tempDir);
     }
 
-    @Timeout(10)
+    @Timeout(30)
     @Test
     void multipleDestinations() throws Exception
     {
@@ -119,9 +119,9 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         setProperty(NUMBER_OF_RECEIVERS_PROP_NAME, Integer.toString(numDestinations));
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(1)
-            .warmupMessageRate(1)
+            .warmupMessageRate(5)
             .iterations(1)
-            .messageRate(30)
+            .messageRate(100)
             .messageLength(288)
             .messageTransceiverClass(messageTransceiverClass())
             .batchSize(1)
