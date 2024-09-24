@@ -91,7 +91,7 @@ public final class EchoNode implements AutoCloseable, Runnable
         };
 
         awaitConnected(
-            () -> subscription.isConnected() && publication.isConnected(),
+            () -> subscription.isConnected() && publication.isConnected() && publication.availableWindow() > 0,
             connectionTimeoutNs(),
             SystemNanoClock.INSTANCE);
     }
