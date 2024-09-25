@@ -143,6 +143,10 @@ kubectl -n "${K8S_NAMESPACE}" logs -c benchmark aeron-benchmark-1
 f_log "Collecting data"
 mkdir -p "results/${TIMESTAMP}"
 
+# Dump all the logs to the results-dir
+kubectl -n "${K8S_NAMESPACE}" logs --all-containers=true  aeron-benchmark-0 > results/${TIMESTAMP}/logs-0.txt
+kubectl -n "${K8S_NAMESPACE}" logs --all-containers=true  aeron-benchmark-1 > results/${TIMESTAMP}/logs-1.txt
+
 # Copy the tarball of results over
 kubectl -n "${K8S_NAMESPACE}" cp -c results aeron-benchmark-0:/dev/shm/results.tar.gz "results/${TIMESTAMP}/results-0.tar.gz"
 kubectl -n "${K8S_NAMESPACE}" cp -c results aeron-benchmark-1:/dev/shm/results.tar.gz "results/${TIMESTAMP}/results-1.tar.gz"
