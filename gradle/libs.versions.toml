@@ -39,5 +39,5 @@ jackson-databind = { group= "com.fasterxml.jackson.core" , name="jackson-databin
 
 [plugins]
 versions = { id = "com.github.ben-manes.versions", version = "0.51.0" }
-shadow = { id = "com.gradleup.shadow", version = "8.3.2" }
+shadow = { id = "com.gradleup.shadow", version = "8.3.3" }
 protobuf = { id = "com.google.protobuf", version = "0.9.4" }
