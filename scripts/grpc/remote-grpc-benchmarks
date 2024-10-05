@@ -121,7 +121,7 @@ do
   ; $(kill_java_process "uk.co.real_logic.benchmarks.remote.LoadTestRig") \
   ; numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} ${onload} ${CLIENT_BENCHMARKS_PATH}/scripts/grpc/streaming-client & \
   $(await_java_process_start "uk.co.real_logic.benchmarks.remote.LoadTestRig"); \
-  $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
+  $(pin_thread "\${pid}" "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}") \
   && tail --pid=\$! -f /dev/null"
 
   # shellcheck disable=SC2153

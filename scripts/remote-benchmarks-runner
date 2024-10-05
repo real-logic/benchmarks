@@ -167,7 +167,7 @@ function download_results()
 function await_process_start()
 {
   local pid=${1}
-  echo "pid=${pid}; while [ -z \"\${pid}\" ]; do sleep 0.5; pid=${pid}; done; echo \"pid='\${pid}'\""
+  echo "pid=${pid}; while [ -z \""\${pid}"\" ]; do sleep 0.5; pid=${pid}; done; echo \"pid='"\${pid}"'\""
 }
 
 function find_java_process()

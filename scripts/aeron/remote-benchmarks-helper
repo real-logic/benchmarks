@@ -33,15 +33,15 @@ function start_media_driver()
 
   if [[ "${executable}" =~ /media-driver$ ]]
   then
-    resolve_media_driver_pid="$(await_java_process_start "io.aeron.driver.MediaDriver"); media_driver_pid=\${pid}"
+    resolve_media_driver_pid="$(await_java_process_start "io.aeron.driver.MediaDriver"); media_driver_pid="\${pid}""
     driver_thread="driver-conducto"
     manually_pin_driver_threads=1
   elif [[ "${executable}" =~ /c-aeronmd-dpdk$ ]]
   then
-    resolve_media_driver_pid="$(await_process_start "\$(pgrep -x '^aeronmd_dpdk\$')"); media_driver_pid=\${pid}"
+    resolve_media_driver_pid="$(await_process_start "\$(pgrep -x '^aeronmd_dpdk\$')"); media_driver_pid="\${pid}""
     driver_thread="aeronmd_dpdk"
   else
-    resolve_media_driver_pid="$(await_process_start "\$(pgrep -x '^aeronmd\$')"); media_driver_pid=\${pid}"
+    resolve_media_driver_pid="$(await_process_start "\$(pgrep -x '^aeronmd\$')"); media_driver_pid="\${pid}""
     driver_thread="aeronmd"
   fi
 

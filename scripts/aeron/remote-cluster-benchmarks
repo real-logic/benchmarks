@@ -264,11 +264,11 @@ function start_cluster_node()
     ${!extra_properties_var:-}\" PROCESS_FILE_NAME=\"cluster-node-${node_id}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-node & \
     $(await_java_process_start "${cluster_node_class_name}") \
-    ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
-    ; $(pin_thread \${pid} "archive-replaye" "${!archive_replayer_cpu_var}") \
-    ; $(pin_thread \${pid} "archive-conduct" "${!archive_conductor_cpu_var}") \
-    ; $(pin_thread \${pid} "consensus-modul" "${!consensus_module_cpu_var}") \
-    ; $(pin_thread \${pid} "echo-service" "${!clustered_service_cpu_var}") \
+    ; $(pin_thread "\${pid}" "archive-recorde" "${!archive_recorder_cpu_var}") \
+    ; $(pin_thread "\${pid}" "archive-replaye" "${!archive_replayer_cpu_var}") \
+    ; $(pin_thread "\${pid}" "archive-conduct" "${!archive_conductor_cpu_var}") \
+    ; $(pin_thread "\${pid}" "consensus-modul" "${!consensus_module_cpu_var}") \
+    ; $(pin_thread "\${pid}" "echo-service" "${!clustered_service_cpu_var}") \
     && tail --pid=\$! -f /dev/null"
 }
 
@@ -323,10 +323,10 @@ function start_cluster_backup_node()
     -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir}\" PROCESS_FILE_NAME=\"cluster-backup-node-${node_id}\"\
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-backup-node & \
     $(await_java_process_start "${cluster_backup_node_class_name}") \
-    ; $(pin_thread \${pid} "archive-recorde" "${!archive_recorder_cpu_var}") \
-    ; $(pin_thread \${pid} "archive-replaye" "${!archive_replayer_cpu_var}") \
-    ; $(pin_thread \${pid} "archive-conduct" "${!archive_conductor_cpu_var}") \
-    ; $(pin_thread \${pid} "cluster-backup" "${!cluster_backup_cpu_var}") \
+    ; $(pin_thread "\${pid}" "archive-recorde" "${!archive_recorder_cpu_var}") \
+    ; $(pin_thread "\${pid}" "archive-replaye" "${!archive_replayer_cpu_var}") \
+    ; $(pin_thread "\${pid}" "archive-conduct" "${!archive_conductor_cpu_var}") \
+    ; $(pin_thread "\${pid}" "cluster-backup" "${!cluster_backup_cpu_var}") \
     && tail --pid=\$! -f /dev/null"
 }
 
@@ -500,7 +500,7 @@ do
             ; ${client_driver}\
             && numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} --physcpubind=\"${CLIENT_NON_ISOLATED_CPU_CORES}\" ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/${client_script} & \
             $(await_java_process_start "${client_class_name}")\
-            ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
+            ; $(pin_thread "\${pid}" "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
             && tail --pid=\$! -f /dev/null; kill -9 \${media_driver_pid}; wait"
 
             for (( n=0; n<CLUSTER_BACKUP_NODES; n++ ))

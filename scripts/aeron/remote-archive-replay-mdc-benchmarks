@@ -245,7 +245,7 @@ function start_replay_node()
     ${!extra_properties_var:-}\" PROCESS_FILE_NAME=\"replay-node-${node_id}\" \
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/replay-node & \
     $(await_java_process_start "${node_class_name}") \
-    ; $(pin_thread \${pid} "replay-${node_id}" "${!replay_cpu_var}") \
+    ; $(pin_thread "\${pid}" "replay-${node_id}" "${!replay_cpu_var}") \
     && tail --pid=\$! -f /dev/null"
 }
 
@@ -424,7 +424,7 @@ do
             ; export PROCESS_FILE_NAME=\"echo-client\"\
             && numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} --physcpubind=\"${CLIENT_NON_ISOLATED_CPU_CORES}\" ${CLIENT_BENCHMARKS_PATH}/scripts/aeron/echo-client & \
             $(await_java_process_start "${client_class_name}")\
-            ; $(pin_thread \${pid} "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
+            ; $(pin_thread "\${pid}" "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
             && tail --pid=\$! -f /dev/null; kill -9 \${media_driver_pid}; wait"
 
             start_server="export JAVA_HOME=\"${SERVER_JAVA_HOME}\" PROCESS_FILE_NAME=\"archive-node-media-driver\"\
@@ -451,10 +451,10 @@ do
             -Daeron.archive.recording.events.enabled=false\" \
             ; numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${SERVER_NON_ISOLATED_CPU_CORES}\" ${SERVER_BENCHMARKS_PATH}/scripts/aeron/archive-node & \
             $(await_java_process_start "${server_class_name}") \
-            ; $(pin_thread \${pid} "archive-recorde" "${SERVER_ARCHIVE_RECORDER_CPU_CORE}") \
-            ; $(pin_thread \${pid} "archive-replaye" "${SERVER_ARCHIVE_REPLAYER_CPU_CORE}") \
-            ; $(pin_thread \${pid} "archive-conduct" "${SERVER_ARCHIVE_CONDUCTOR_CPU_CORE}") \
-            ; $(pin_thread \${pid} "archive-node" "${SERVER_ARCHIVE_NODE_CPU_CORE}") \
+            ; $(pin_thread "\${pid}" "archive-recorde" "${SERVER_ARCHIVE_RECORDER_CPU_CORE}") \
+            ; $(pin_thread "\${pid}" "archive-replaye" "${SERVER_ARCHIVE_REPLAYER_CPU_CORE}") \
+            ; $(pin_thread "\${pid}" "archive-conduct" "${SERVER_ARCHIVE_CONDUCTOR_CPU_CORE}") \
+            ; $(pin_thread "\${pid}" "archive-node" "${SERVER_ARCHIVE_NODE_CPU_CORE}") \
             && tail --pid=\$! -f /dev/null"
 
             stop_server="$(stop_java_process "${server_class_name}"); $(stop_media_driver)"
