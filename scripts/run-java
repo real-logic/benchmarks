@@ -42,15 +42,11 @@ java_options=(
   -Xmx4G
   -XX:+AlwaysPreTouch
   -XX:MaxMetaspaceSize=1G
-  -XX:ReservedCodeCacheSize=1G)
+  -XX:ReservedCodeCacheSize=1G
+  -XX:+EnableDynamicAgentLoading
+  "-Xlog:gc*,safepoint=info,arguments=info:file=${gc_log_file}:time")
 
-java_version=$("${JAVA_HOME}/bin/java" -version 2>&1 | awk -F '"' '/version/ {print $2}')
-
-java_options+=(-XX:+EnableDynamicAgentLoading)
-
-add_opens=(
---add-opens
-java.base/java.util.zip=ALL-UNNAMED)
+add_opens=(--add-opens java.base/java.util.zip=ALL-UNNAMED)
 
 jvm_opts=()
 
