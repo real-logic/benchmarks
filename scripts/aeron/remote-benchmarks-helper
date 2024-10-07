@@ -54,9 +54,9 @@ function start_media_driver()
 
   if [[ "${manually_pin_driver_threads}" -eq 1 ]]
   then
-    command+="; $(pin_thread \${media_driver_pid} "${driver_thread}" "${5}")"
-    command+="; $(pin_thread \${media_driver_pid} "sender" "${6}")"
-    command+="; $(pin_thread \${media_driver_pid} "receiver" "${7}")"
+    command+="; $(pin_thread "\${media_driver_pid}" "${driver_thread}" "${5}")"
+    command+="; $(pin_thread "\${media_driver_pid}" "sender" "${6}")"
+    command+="; $(pin_thread "\${media_driver_pid}" "receiver" "${7}")"
   fi
 
   echo ${command}
