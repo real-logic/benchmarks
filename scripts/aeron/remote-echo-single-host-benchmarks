@@ -344,7 +344,7 @@ do
           ; $(kill_java_process "${server_class_name}")\
           ; ${media_driver}\
           && numactl --membind=${SERVER_CPU_NODE} --cpunodebind=${SERVER_CPU_NODE} --physcpubind=\"${NON_ISOLATED_CPU_CORES}\" ${BENCHMARKS_PATH}/scripts/aeron/echo-server & \
-          $(await_java_process_start "${server_class_name}"); $(pin_thread "\${pid}" "echo-0" "${SERVER_ECHO_CPU_CORE}"); echo_pid=\${pid} \
+          $(await_java_process_start "${server_class_name}"); $(pin_thread "\${pid}" "echo-0" "${SERVER_ECHO_CPU_CORE}"); echo_pid=\${pid}; echo \"echo_pid=\$echo_pid\" \
           && numactl --membind=${CLIENT_CPU_NODE} --cpunodebind=${CLIENT_CPU_NODE} --physcpubind=\"${NON_ISOLATED_CPU_CORES}\" ${BENCHMARKS_PATH}/scripts/aeron/echo-client & \
           $(await_java_process_start "${client_class_name}"); $(pin_thread "\${pid}" "load-test-rig" "${CLIENT_LOAD_TEST_RIG_MAIN_CPU_CORE}")\
           && tail --pid=\$! -f /dev/null; kill -9 \${echo_pid}; kill -9 \${media_driver_pid}; wait"
