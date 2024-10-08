@@ -291,7 +291,7 @@ do
   fi
 done
 
-test_type="aeron-echo-mdc"
+test_type="aeron-echo-single-host"
 test_dir="${test_type}-$(date '+%Y-%m-%d-%H-%M-%S')"
 output_dir_prefix="scripts/results/${test_dir}"
 for md in "${drivers[@]}"
