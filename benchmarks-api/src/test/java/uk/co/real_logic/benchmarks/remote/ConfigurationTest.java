@@ -102,6 +102,36 @@ class ConfigurationTest
     }
 
     @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void trackHistoryCanBeSet(final boolean trackHistory)
+    {
+        final Configuration configuration = new Builder()
+            .warmupMessageRate(1)
+            .messageRate(1_000)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .trackHistory(trackHistory)
+            .outputFileNamePrefix("test")
+            .build();
+
+        assertEquals(trackHistory, configuration.trackHistory());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void reportProgressCanBeSet(final boolean reportProgress)
+    {
+        final Configuration configuration = new Builder()
+            .warmupMessageRate(1)
+            .messageRate(1_000)
+            .messageTransceiverClass(InMemoryMessageTransceiver.class)
+            .reportProgress(reportProgress)
+            .outputFileNamePrefix("test")
+            .build();
+
+        assertEquals(reportProgress, configuration.reportProgress());
+    }
+
+    @ParameterizedTest
     @ValueSource(ints = { -200, 0 })
     void throwsIllegalArgumentExceptionIfIterationsIsInvalid(final int iterations)
     {
@@ -437,6 +467,8 @@ class ConfigurationTest
             "\n    messageLength=64" +
             "\n    messageTransceiverClass=uk.co.real_logic.benchmarks.remote.InMemoryMessageTransceiver" +
             "\n    idleStrategy=NoOpIdleStrategy{alias=noop}" +
+            "\n    trackHistory=false" +
+            "\n    reportProgress=true" +
             "\n    outputDirectory=" + Paths.get("results").toAbsolutePath() +
             "\n    outputFileNamePrefix=my-file_rate=777K_batch=2_length=64" +
             "_sha=73ccec448ba12264acb12e7f9f36fddc73e8c62e43549b786a901c88891610c9" +
@@ -557,6 +589,8 @@ class ConfigurationTest
         final Path outputDirectory = tempDir.resolve("my-output-dir-prop");
         setProperty(OUTPUT_DIRECTORY_PROP_NAME, outputDirectory.toAbsolutePath().toString());
         setProperty(OUTPUT_FILE_NAME_PROP_NAME, "my-out-file");
+        setProperty(TRACK_HISTORY_PROP_NAME, "true");
+        setProperty(REPORT_PROGRESS_PROP_NAME, "false");
 
         final Configuration configuration = fromSystemProperties();
 
@@ -567,7 +601,9 @@ class ConfigurationTest
         assertEquals(3, configuration.batchSize());
         assertEquals(24, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertTrue(configuration.idleStrategy() instanceof YieldingIdleStrategy);
+        assertInstanceOf(YieldingIdleStrategy.class, configuration.idleStrategy());
+        assertTrue(configuration.trackHistory());
+        assertFalse(configuration.reportProgress());
         assertEquals(outputDirectory.toAbsolutePath(), configuration.outputDirectory());
         assertTrue(configuration.outputFileNamePrefix().startsWith("my-out-file"));
     }

@@ -87,7 +87,9 @@ public final class LoadTestRig
             out,
             nanoClock,
             persistedHistogram,
-            new AsyncProgressReporter(out, new OneToOneConcurrentArrayQueue<>(16)));
+            configuration.reportProgress() ?
+            new AsyncProgressReporter(out, new OneToOneConcurrentArrayQueue<>(16)) :
+            ProgressReporter.NULL_PROGRESS_REPORTER);
     }
 
     LoadTestRig(

@@ -17,6 +17,18 @@ package uk.co.real_logic.benchmarks.remote;
 
 interface ProgressReporter
 {
+    ProgressReporter NULL_PROGRESS_REPORTER = new ProgressReporter()
+    {
+        public void reportProgress(
+            final long startTimeNs, final long nowNs, final long sentMessages, final int iterations)
+        {
+        }
+
+        public void reset()
+        {
+        }
+    };
+
     void reportProgress(long startTimeNs, long nowNs, long sentMessages, int iterations);
 
     void reset();

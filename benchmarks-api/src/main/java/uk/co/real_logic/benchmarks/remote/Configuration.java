@@ -81,9 +81,14 @@ public final class Configuration
     public static final int DEFAULT_BATCH_SIZE = 1;
 
     /**
-     * Default tracking of latency history
+     * Default tracking of latency history.
      */
     public static final boolean DEFAULT_TRACK_HISTORY = false;
+
+    /**
+     * Default progress reporting.
+     */
+    public static final boolean DEFAULT_REPORT_PROGESS = true;
 
     /**
      * Minimal length in bytes of a single message. Contains enough space to hold a {@code timestamp} and a
@@ -169,6 +174,11 @@ public final class Configuration
     public static final String TRACK_HISTORY_PROP_NAME = "uk.co.real_logic.benchmarks.remote.track.history";
 
     /**
+     * Name of property to enable or disable progress reporting. Defaults to {@code true}.
+     */
+    public static final String REPORT_PROGRESS_PROP_NAME = "uk.co.real_logic.benchmarks.remote.report.progress";
+
+    /**
      * Max message rate allowed, i.e. 1 message per nanosecond.
      */
     public static final int MAX_MESSAGE_RATE = 1_000_000_000;
@@ -203,6 +213,7 @@ public final class Configuration
     private final String rate;
     private final String outputFileNamePrefix;
     private final boolean trackHistory;
+    private final boolean reportProgress;
 
     private Configuration(final Builder builder)
     {
@@ -219,7 +230,8 @@ public final class Configuration
         this.idleStrategy = requireNonNull(builder.idleStrategy, "'" + IDLE_STRATEGY_PROP_NAME + "' cannot be null");
         this.outputDirectory = validateOutputDirectory(builder.outputDirectory);
         logsDir = resolveLogsDir(outputDirectory);
-        this.trackHistory = builder.trackHistory;
+        trackHistory = builder.trackHistory;
+        reportProgress = builder.reportProgress;
         rate = rateAsString();
         outputFileNamePrefix = computeFileNamePrefix(builder.outputFileNamePrefix, builder.systemProperties);
     }
@@ -345,6 +357,16 @@ public final class Configuration
     }
 
     /**
+     * Indicate if progress reporting should be enabled or disabled.
+     *
+     * @return {@code true} if progress should be reported.
+     */
+    public boolean reportProgress()
+    {
+        return reportProgress;
+    }
+
+    /**
      * Output file name prefix used for creating the file name to persist the results histogram.
      *
      * @return output file name prefix.
@@ -365,6 +387,8 @@ public final class Configuration
             "\n    messageLength=" + messageLength +
             "\n    messageTransceiverClass=" + messageTransceiverClass.getName() +
             "\n    idleStrategy=" + idleStrategy +
+            "\n    trackHistory=" + trackHistory +
+            "\n    reportProgress=" + reportProgress +
             "\n    outputDirectory=" + outputDirectory +
             "\n    outputFileNamePrefix=" + outputFileNamePrefix +
             "\n}";
@@ -418,6 +442,7 @@ public final class Configuration
         private Properties systemProperties = System.getProperties();
         private String outputFileNamePrefix;
         private boolean trackHistory = DEFAULT_TRACK_HISTORY;
+        private boolean reportProgress = DEFAULT_REPORT_PROGESS;
 
         /**
          * Set the number of warmup iterations.
@@ -553,6 +578,18 @@ public final class Configuration
         }
 
         /**
+         * Toggle whether the progress reporting is enabled or disabled.
+         *
+         * @param reportProgress {@code true} to report benchmark progress.
+         * @return this for a fluent API.
+         */
+        public Builder reportProgress(final boolean reportProgress)
+        {
+            this.reportProgress = reportProgress;
+            return this;
+        }
+
+        /**
          * Create a new instance of the {@link Configuration} class from this builder.
          *
          * @return a {@link Configuration} instance
@@ -615,6 +652,11 @@ public final class Configuration
         if (isPropertyProvided(TRACK_HISTORY_PROP_NAME))
         {
             builder.trackHistory(Boolean.getBoolean(TRACK_HISTORY_PROP_NAME));
+        }
+
+        if (isPropertyProvided(REPORT_PROGRESS_PROP_NAME))
+        {
+            builder.reportProgress(Boolean.getBoolean(REPORT_PROGRESS_PROP_NAME));
         }
 
         builder
