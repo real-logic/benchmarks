@@ -154,6 +154,9 @@ function f_benchmark_post(){
       "${BENCHMARKS_PATH}/scripts/results-plotter.py" "${TEST_OUTPUT_PATH}"
     fi
 
+    # Provide /proc/interrupts in the debug output
+    cp /proc/interrupts "${TEST_OUTPUT_PATH}/proc-interrupts.txt"
+
     echo "Creating results tarball: ${parent_dir}/results.tar.gz"
     tar -C "${parent_dir}" -czf "${parent_dir}/results.tar.gz" "${results_dir}"
   fi
@@ -162,7 +165,7 @@ function f_benchmark_post(){
 }
 
 #####################################################################################
-# CPUsets vars - this allways runs
+# CPUsets vars - this always runs
 if test -e "/sys/fs/cgroup/cpuset/cpuset.cpus"
 then
   echo "** Cgroup cpuset v1 found **"

@@ -34,7 +34,7 @@ RUN mkdir -p ${BENCHMARKS_PATH} &&\
 
 FROM ubuntu:noble AS runner
 
-RUN apt-get update &&\
+RUN apt-get update && \
   apt-get install -y \
   tar \
   openjdk-17-jdk-headless \
@@ -47,12 +47,13 @@ RUN apt-get update &&\
   jq \
   lsb-release \
   python3-pip \
-  awscli \
   curl \
   pipx \
   numactl \
-  hwloc &&\
-  pip install --break-system-packages hdr-plot
+  hwloc && \
+  pip install --break-system-packages hdr-plot && \
+  pip install --break-system-packages awscli
+
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.local/bin
 ENV BENCHMARKS_PATH=/opt/aeron-benchmarks
