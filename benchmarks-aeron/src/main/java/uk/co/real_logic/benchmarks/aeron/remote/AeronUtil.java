@@ -40,7 +40,6 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -48,6 +47,7 @@ import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.status.CountersReader;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
+import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,7 +70,6 @@ import static io.aeron.Publication.*;
 import static io.aeron.archive.status.RecordingPos.findCounterIdBySession;
 import static io.aeron.archive.status.RecordingPos.getRecordingId;
 import static java.lang.Boolean.getBoolean;
-import static java.lang.Class.forName;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.System.getProperty;
@@ -247,20 +246,7 @@ final class AeronUtil
 
     static IdleStrategy idleStrategy()
     {
-        final String idleStrategy = getProperty(IDLE_STRATEGY_PROP_NAME);
-        if (isEmpty(idleStrategy))
-        {
-            return NoOpIdleStrategy.INSTANCE;
-        }
-
-        try
-        {
-            return (IdleStrategy)forName(idleStrategy).getConstructor().newInstance();
-        }
-        catch (final ReflectiveOperationException | ClassCastException ex)
-        {
-            throw new IllegalArgumentException("Invalid IdleStrategy: " + idleStrategy, ex);
-        }
+        return Configuration.newIdleStrategy(getProperty(IDLE_STRATEGY_PROP_NAME));
     }
 
     static MediaDriver launchEmbeddedMediaDriverIfConfigured()

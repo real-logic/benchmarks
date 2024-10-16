@@ -18,9 +18,15 @@ package uk.co.real_logic.benchmarks.remote;
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.AsciiEncoding;
 import org.agrona.AsciiNumberFormatException;
+import org.agrona.Strings;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.concurrent.SleepingMillisIdleStrategy;
+import org.agrona.concurrent.YieldingIdleStrategy;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -641,7 +647,7 @@ public final class Configuration
 
         if (isPropertyProvided(IDLE_STRATEGY_PROP_NAME))
         {
-            builder.idleStrategy(resolveIdleStrategy());
+            builder.idleStrategy(newIdleStrategy(getPropertyValue(IDLE_STRATEGY_PROP_NAME)));
         }
 
         if (isPropertyProvided(OUTPUT_DIRECTORY_PROP_NAME))
@@ -714,6 +720,59 @@ public final class Configuration
         return directory;
     }
 
+    /**
+     * Return idle strategy by alias or fully qualified class name.
+     *
+     * @param name alias or FQN
+     * @return {@link IdleStrategy} instance.
+     */
+    public static IdleStrategy newIdleStrategy(final String name)
+    {
+        if (Strings.isEmpty(name))
+        {
+            return NoOpIdleStrategy.INSTANCE;
+        }
+
+        switch (name)
+        {
+            case "noop":
+            case "org.agrona.concurrent.NoOpIdleStrategy":
+                return NoOpIdleStrategy.INSTANCE;
+            case "spin":
+            case "org.agrona.concurrent.BusySpinIdleStrategy":
+                return BusySpinIdleStrategy.INSTANCE;
+            case "yield":
+            case "org.agrona.concurrent.YieldingIdleStrategy":
+                return YieldingIdleStrategy.INSTANCE;
+            case "backoff":
+            case "org.agrona.concurrent.BackoffIdleStrategy":
+                return new BackoffIdleStrategy(10L, 20L, 1000L, 1_000_000L);
+            case "sleep-ns":
+            case "org.agrona.concurrent.SleepingIdleStrategy":
+                return new SleepingIdleStrategy();
+            case "sleep-ms":
+            case "org.agrona.concurrent.SleepingMillisIdleStrategy":
+                return new SleepingMillisIdleStrategy();
+            default:
+                try
+                {
+                    final Class<?> klass = Class.forName(name);
+                    return (IdleStrategy)klass.getConstructor().newInstance();
+                }
+                catch (final ClassNotFoundException | InstantiationException | IllegalAccessException |
+                             NoSuchMethodException ex)
+                {
+                    throw new IllegalArgumentException(
+                        "invalid idle strategy '" + name + "', cause: " + ex.getMessage());
+                }
+                catch (final InvocationTargetException ex)
+                {
+                    throw new IllegalArgumentException(
+                        "invalid idle strategy '" + name + "', cause: " + ex.getCause().getMessage());
+                }
+        }
+    }
+
     private static int checkValueRange(final int value, final int minValue, final int maxValue, final String propName)
     {
         if (value < minValue)
@@ -776,26 +835,27 @@ public final class Configuration
 
             final int prefix = AsciiEncoding.parseIntAscii(value, 0, lastIndex);
 
-            switch (lastCharacter)
+            return switch (lastCharacter)
             {
-                case 'K':
+                case 'K' ->
+                {
                     if (prefix > MAX_K_VALUE)
                     {
                         throw new NumberFormatException(propName + " would overflow an int: " + value);
                     }
-                    return prefix * 1000;
-
-                case 'M':
+                    yield prefix * 1000;
+                }
+                case 'M' ->
+                {
                     if (prefix > MAX_M_VALUE)
                     {
                         throw new NumberFormatException(propName + " would overflow an int: " + value);
                     }
-                    return prefix * 1_000_000;
-
-                default:
-                    throw new NumberFormatException(
-                        propName + ": " + value + " should end with: K or M.");
-            }
+                    yield prefix * 1_000_000;
+                }
+                default -> throw new NumberFormatException(
+                    propName + ": " + value + " should end with: K or M.");
+            };
         }
         catch (final RuntimeException ex)
         {
@@ -839,26 +899,6 @@ public final class Configuration
         {
             throw new IllegalArgumentException(
                 "invalid class value for property '" + propName + "', cause: " + ex.getMessage());
-        }
-    }
-
-    private static IdleStrategy resolveIdleStrategy()
-    {
-        final Class<? extends IdleStrategy> klass = classProperty(IDLE_STRATEGY_PROP_NAME, IdleStrategy.class);
-        try
-        {
-            return klass.getConstructor().newInstance();
-        }
-        catch (final InstantiationException | IllegalAccessException | NoSuchMethodException ex)
-        {
-            throw new IllegalArgumentException(
-                "invalid IdleStrategy property '" + IDLE_STRATEGY_PROP_NAME + "', cause: " + ex.getMessage());
-        }
-        catch (final InvocationTargetException ex)
-        {
-            throw new IllegalArgumentException(
-                "invalid IdleStrategy property '" + IDLE_STRATEGY_PROP_NAME + "', cause: " +
-                    ex.getCause().getMessage());
         }
     }
 
