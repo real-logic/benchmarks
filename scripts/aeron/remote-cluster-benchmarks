@@ -247,6 +247,7 @@ function start_cluster_node()
     -Daeron.cluster.id=${CLUSTER_ID} \
     -Daeron.cluster.members=${CLUSTER_MEMBERS} \
     -Daeron.cluster.member.id=${node_id} \
+    -Daeron.cluster.appointed.leader.id=0 \
     -Daeron.cluster.consensus.channel=${!cluster_consensus_channel_var} \
     -Daeron.cluster.ingress.channel=${!cluster_ingress_channel_var} \
     -Daeron.cluster.log.channel=${!cluster_log_channel_var} \
