@@ -21,7 +21,7 @@
 # $ ./benchmark-runner --output-file "echo-test" --message-rate 100K --message-length 288 "aeron/echo-client"
 ##
 
-set -euxo pipefail
+set -euo pipefail
 
 iterations=60
 messageRate=501K
