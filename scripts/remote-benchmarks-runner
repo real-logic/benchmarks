@@ -160,8 +160,6 @@ function download_results()
    -o ConnectTimeout="${sshConnectTimeout}" \
    -o ServerAliveInterval="${sshServerAliveInterval}" \
    "${sshUser}"@"${server}":"${archive}" "${dest_dir}"
-
-  execute_remote_command "${sshUser}" "${sshKeyFile}" "${server}" "rm \"${archive}\""
 }
 
 function await_process_start()
