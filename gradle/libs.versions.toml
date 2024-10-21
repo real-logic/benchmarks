@@ -1,6 +1,6 @@
 [versions]
 aeron = "1.46.6"
-checkstyle = "10.18.1"
+checkstyle = "10.18.2"
 junit = "5.11.2"
 jmh = "1.37"
 grpc = "1.68.0"
