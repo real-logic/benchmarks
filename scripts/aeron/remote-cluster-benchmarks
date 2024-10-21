@@ -261,7 +261,8 @@ function start_cluster_node()
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false \
     -Daeron.archive.local.control.channel=aeron:ipc?term-length=64k \
-    -Daeron.archive.local.control.stream.id=120 \
+    -Daeron.archive.local.control.stream.id=110 \
+    -Daeron.archive.control.stream.id=110 \
     -Daeron.archive.control.response.stream.id=120 \
     -Duk.co.real_logic.benchmarks.aeron.remote.cluster.service=${cluster_service} \
     -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir} \
@@ -325,7 +326,8 @@ function start_cluster_backup_node()
     -Daeron.archive.catalog.file.sync.level=${fsync} \
     -Daeron.archive.recording.events.enabled=false \
     -Daeron.archive.local.control.channel=aeron:ipc?term-length=64k \
-    -Daeron.archive.local.control.stream.id=120 \
+    -Daeron.archive.local.control.stream.id=110 \
+    -Daeron.archive.control.stream.id=110 \
     -Daeron.archive.control.response.stream.id=120 \
     -Duk.co.real_logic.benchmarks.remote.output.directory=${output_dir}\" PROCESS_FILE_NAME=\"cluster-backup-node-${node_id}\"\
     && numactl --membind=${!cpu_node_var} --cpunodebind=${!cpu_node_var} --physcpubind=\"${!non_isolated_cpu_cores_var}\" ${!benchmarks_path_var}/scripts/aeron/cluster-backup-node & \
