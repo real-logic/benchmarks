@@ -16,7 +16,6 @@
 package uk.co.real_logic.benchmarks.aeron.remote;
 
 import io.aeron.archive.Archive;
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
@@ -26,7 +25,6 @@ import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
-import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.SystemEpochClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
@@ -61,12 +59,6 @@ public final class ClusterNode
             .recordingEventsEnabled(false);
 
         final String aeronDirectoryName = archiveContext.aeronDirectoryName();
-        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
-            .lock(NoOpLock.INSTANCE)
-            .controlRequestChannel(archiveContext.localControlChannel())
-            .controlResponseStreamId(archiveContext.localControlStreamId())
-            .controlResponseChannel(archiveContext.localControlChannel())
-            .aeronDirectoryName(aeronDirectoryName);
 
         // In local tests we could be racing with the Media Driver to start.
         // Await the driver dir to exist or creating the cluster mark file will fail.
@@ -81,7 +73,6 @@ public final class ClusterNode
         {
             final ConsensusModule.Context ctx = new ConsensusModule.Context()
                 .errorHandler(printingErrorHandler("consensus-module"))
-                .archiveContext(aeronArchiveContext.clone())
                 .aeronDirectoryName(aeronDirectoryName)
                 .clusterDir(clusterDir)
                 .epochClock(epochClock)
@@ -118,7 +109,6 @@ public final class ClusterNode
             final ClusteredServiceContainer.Context ctx = new ClusteredServiceContainer.Context()
                 .clusteredService(clusteredService)
                 .errorHandler(printingErrorHandler("service-container"))
-                .archiveContext(aeronArchiveContext.clone())
                 .aeronDirectoryName(aeronDirectoryName)
                 .clusterDir(clusterDir)
                 .epochClock(epochClock)
