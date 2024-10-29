@@ -1,5 +1,5 @@
 [versions]
-aeron = "1.46.6"
+aeron = "1.46.7"
 checkstyle = "10.19.0"
 junit = "5.11.3"
 jmh = "1.37"
