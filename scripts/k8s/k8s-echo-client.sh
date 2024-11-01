@@ -20,6 +20,9 @@ taskset -c "${CGROUP_CPUSETS[1]}" \
 # Wait for the Java process to be up
 f_wait_for_process 'uk.co.real_logic.benchmarks.remote.LoadTestRig'
 
+# Additional wait, because sometimes the thread isn't ready yet :-(
+sleep 2
+
 # Sets the affinities for high performance threads
 f_pin_thread "load-test-rig" "${CGROUP_CPUSETS[2]}"
 
