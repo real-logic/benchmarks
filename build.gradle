@@ -64,6 +64,7 @@ allprojects {
                   "org.apache.commons:commons-lang3:3.8.1",
                   "org.apache.httpcomponents:httpcore:4.4.14",
                   "commons-codec:commons-codec:1.15",
+                  "commons-io:commons-io:2.14.0",
                   "com.google.protobuf:protobuf-java:3.25.5"
         }
     }
