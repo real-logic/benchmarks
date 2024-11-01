@@ -22,6 +22,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.ValueRecorder;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.SystemNanoClock;
@@ -119,9 +120,9 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
         setProperty(NUMBER_OF_RECEIVERS_PROP_NAME, Integer.toString(numDestinations));
         final Configuration configuration = new Configuration.Builder()
             .warmupIterations(1)
-            .warmupMessageRate(5)
+            .warmupMessageRate(7)
             .iterations(1)
-            .messageRate(100)
+            .messageRate(19)
             .messageLength(288)
             .messageTransceiverClass(messageTransceiverClass())
             .batchSize(1)
@@ -133,9 +134,8 @@ class EchoTest extends AbstractTest<MediaDriver, Aeron, EchoMessageTransceiver, 
 
         try (MediaDriver driver = launchDriver(new MediaDriver.Context()
             .aeronDirectoryName(CommonContext.generateRandomDirName())
-            .threadingMode(ThreadingMode.SHARED_NETWORK)
-            .conductorIdleStrategy(NoOpIdleStrategy.INSTANCE)
-            .sharedNetworkIdleStrategy(NoOpIdleStrategy.INSTANCE));
+            .threadingMode(ThreadingMode.SHARED)
+            .sharedIdleStrategy(BusySpinIdleStrategy.INSTANCE));
             Aeron client = connectToDriver(driver.aeronDirectoryName()))
         {
             final AtomicBoolean running = new AtomicBoolean(true);
