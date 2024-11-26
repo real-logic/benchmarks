@@ -9,7 +9,7 @@ kafka = "3.8.1"
 slf4j = "2.0.16"
 scala = "2.13.14"
 jackson = "2.16.2"
-gradle = "8.11"
+gradle = "8.11.1"
 
 [libraries]
 agrona = { group = "org.agrona", name = "agrona", version = "1.23.1" }
