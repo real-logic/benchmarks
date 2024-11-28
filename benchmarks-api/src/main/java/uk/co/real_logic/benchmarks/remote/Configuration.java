@@ -443,7 +443,7 @@ public final class Configuration
         private int batchSize = DEFAULT_BATCH_SIZE;
         private int messageLength = MIN_MESSAGE_LENGTH;
         private Class<? extends MessageTransceiver> messageTransceiverClass;
-        private IdleStrategy idleStrategy = NoOpIdleStrategy.INSTANCE;
+        private IdleStrategy idleStrategy = BusySpinIdleStrategy.INSTANCE;
         private Path outputDirectory = Paths.get("results");
         private Properties systemProperties = System.getProperties();
         private String outputFileNamePrefix;
@@ -730,7 +730,7 @@ public final class Configuration
     {
         if (Strings.isEmpty(name))
         {
-            return NoOpIdleStrategy.INSTANCE;
+            return BusySpinIdleStrategy.INSTANCE;
         }
 
         switch (name)

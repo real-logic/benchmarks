@@ -22,9 +22,9 @@ import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import org.agrona.IoUtil;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 import org.agrona.concurrent.SystemEpochClock;
 import uk.co.real_logic.benchmarks.remote.Configuration;
@@ -68,7 +68,7 @@ public final class ClusterNode
         final File clusterDir = new File(ClusteredServiceContainer.Configuration.clusterDirName());
         final int memberId = ConsensusModule.Configuration.clusterMemberId();
 
-        final Supplier<IdleStrategy> idleStrategySupplier = () -> NoOpIdleStrategy.INSTANCE;
+        final Supplier<IdleStrategy> idleStrategySupplier = () -> BusySpinIdleStrategy.INSTANCE;
         final Component<ConsensusModule> consensusModule = new Component<>(() ->
         {
             final ConsensusModule.Context ctx = new ConsensusModule.Context()

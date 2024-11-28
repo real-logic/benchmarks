@@ -17,6 +17,7 @@ package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.ValueRecorder;
 import org.agrona.AsciiNumberFormatException;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -406,7 +407,7 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.idleStrategy());
+        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.idleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
         assertEquals("defaults_rate=123_batch=" + DEFAULT_BATCH_SIZE + "_length=" + MIN_MESSAGE_LENGTH +
             "_sha=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -571,7 +572,7 @@ class ConfigurationTest
         assertEquals(DEFAULT_BATCH_SIZE, configuration.batchSize());
         assertEquals(MIN_MESSAGE_LENGTH, configuration.messageLength());
         assertSame(InMemoryMessageTransceiver.class, configuration.messageTransceiverClass());
-        assertSame(NoOpIdleStrategy.INSTANCE, configuration.idleStrategy());
+        assertSame(BusySpinIdleStrategy.INSTANCE, configuration.idleStrategy());
         assertEquals(Paths.get("results").toAbsolutePath(), configuration.outputDirectory());
     }
 

@@ -22,9 +22,9 @@ import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.IoUtil;
 import org.agrona.MarkFile;
 import org.agrona.SemanticVersion;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -95,7 +95,7 @@ class AeronUtilTest
         assertEquals("aeron:udp?endpoint=localhost:0", replayChannel());
         assertEquals(88888, replayStreamId());
         assertFalse(embeddedMediaDriver());
-        assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
+        assertSame(BusySpinIdleStrategy.INSTANCE, idleStrategy());
     }
 
     @Test
@@ -121,7 +121,7 @@ class AeronUtilTest
         assertEquals("aeron:udp?endpoint=localhost:0", replayChannel());
         assertEquals(88888, replayStreamId());
         assertFalse(embeddedMediaDriver());
-        assertSame(NoOpIdleStrategy.INSTANCE, idleStrategy());
+        assertSame(BusySpinIdleStrategy.INSTANCE, idleStrategy());
     }
 
     @Test
