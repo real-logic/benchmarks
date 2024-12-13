@@ -24,8 +24,8 @@ grpc-protobuf = { group = "io.grpc", name = "grpc-protobuf", version.ref = "grpc
 grpc-stub = { group = "io.grpc", name = "grpc-stub", version.ref = "grpc" }
 grpc-netty-shaded = { group = "io.grpc", name = "grpc-netty-shaded", version.ref = "grpc" }
 tomcat-annotations-api = { group = "org.apache.tomcat", name = "annotations-api", version = "6.0.53" }
-checker = { group= "org.checkerframework" , name="checker-qual", version = "3.33.0" }
-errorprone = { group= "com.google.errorprone" , name="error_prone_annotations", version = "2.28.0" }
+checker = { group= "org.checkerframework" , name="checker-qual", version = "3.43.0" }
+errorprone = { group= "com.google.errorprone" , name="error_prone_annotations", version = "2.30.0" }
 disruptor = { group= "com.lmax" , name="disruptor", version = "3.4.0" }
 kafka = { group= "org.apache.kafka" , name="kafka_2.13", version.ref = "kafka" }
 kafka-clients = { group= "org.apache.kafka" , name="kafka-clients", version.ref = "kafka" }

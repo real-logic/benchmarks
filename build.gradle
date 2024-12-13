@@ -54,7 +54,6 @@ allprojects {
             failOnVersionConflict()
 
             force libs.agrona,
-                  libs.jackson.databind,
                   libs.slf4j.api,
                   libs.scala.library,
                   libs.scala.reflect,
