@@ -1,7 +1,7 @@
 [versions]
 aeron = "1.46.7"
 checkstyle = "10.21.0"
-junit = "5.11.3"
+junit = "5.11.4"
 jmh = "1.37"
 grpc = "1.69.0"
 protoc = "3.25.5"
