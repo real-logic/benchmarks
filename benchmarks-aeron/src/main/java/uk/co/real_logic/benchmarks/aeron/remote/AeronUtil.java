@@ -40,13 +40,11 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.ShutdownSignalBarrier;
+import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.status.CountersReader;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 import uk.co.real_logic.benchmarks.remote.Configuration;
 
 import java.io.File;
@@ -389,12 +387,7 @@ final class AeronUtil
 
     static void installSignalHandler(final Runnable onSignal)
     {
-        final SignalHandler terminationHandler = signal -> onSignal.run();
-
-        for (final String signalName : ShutdownSignalBarrier.SIGNAL_NAMES)
-        {
-            Signal.handle(new Signal(signalName), terminationHandler);
-        }
+        SigInt.register(onSignal);
     }
 
     static void yieldUninterruptedly()
