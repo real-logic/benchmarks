@@ -15,7 +15,7 @@ gradle = "8.11.1"
 agrona = { group = "org.agrona", name = "agrona", version = "1.23.1" }
 aeron-cluster = { group = "io.aeron", name = "aeron-cluster", version.ref = "aeron" }
 aeron-samples = { group = "io.aeron", name = "aeron-samples", version.ref = "aeron" }
-mockito = { group = "org.mockito", name = "mockito-core", version = "5.14.2" }
+mockito = { group = "org.mockito", name = "mockito-core", version = "5.15.2" }
 hamcrest = { group = "org.hamcrest", name = "hamcrest", version = "3.0" }
 hdrHistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version = "2.2.2" }
 jmh-core = { group = "org.openjdk.jmh", name = "jmh-core", version.ref = "jmh" }
