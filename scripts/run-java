@@ -46,7 +46,7 @@ java_options=(
   -XX:+EnableDynamicAgentLoading
   "-Xlog:gc*,safepoint=info,arguments=info:file=${gc_log_file}:time")
 
-add_opens=(--add-opens java.base/java.util.zip=ALL-UNNAMED)
+add_opens=(--add-opens java.base/java.util.zip=ALL-UNNAMED --add-opens java.base/jdk.internal.misc=ALL-UNNAMED)
 
 jvm_opts=()
 

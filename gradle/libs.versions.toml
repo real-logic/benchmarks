@@ -1,5 +1,5 @@
 [versions]
-aeron = "1.46.8"
+aeron = "1.47.0"
 checkstyle = "10.21.0"
 junit = "5.11.4"
 jmh = "1.37"
@@ -12,7 +12,7 @@ jackson = "2.16.2"
 gradle = "8.11.1"
 
 [libraries]
-agrona = { group = "org.agrona", name = "agrona", version = "1.23.1" }
+agrona = { group = "org.agrona", name = "agrona", version = "2.0.1" }
 aeron-cluster = { group = "io.aeron", name = "aeron-cluster", version.ref = "aeron" }
 aeron-samples = { group = "io.aeron", name = "aeron-samples", version.ref = "aeron" }
 mockito = { group = "org.mockito", name = "mockito-core", version = "5.15.2" }

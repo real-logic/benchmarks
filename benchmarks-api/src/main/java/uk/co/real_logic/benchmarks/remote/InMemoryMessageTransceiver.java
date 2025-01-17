@@ -17,21 +17,20 @@ package uk.co.real_logic.benchmarks.remote;
 
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.ValueRecorder;
+import org.agrona.UnsafeApi;
 import org.agrona.concurrent.NanoClock;
 
 import static java.lang.Integer.numberOfLeadingZeros;
 import static java.util.Arrays.fill;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.UnsafeAccess.UNSAFE;
-import static sun.misc.Unsafe.ARRAY_LONG_BASE_OFFSET;
-import static sun.misc.Unsafe.ARRAY_LONG_INDEX_SCALE;
 
 public final class InMemoryMessageTransceiver extends MessageTransceiver
 {
     static final int SIZE = 4096;
+    private static final int ARRAY_LONG_BASE_OFFSET = UnsafeApi.arrayBaseOffset(long[].class);
     private static final int MASK = SIZE - 1;
-    private static final int SHIFT = 31 - numberOfLeadingZeros(ARRAY_LONG_INDEX_SCALE);
+    private static final int SHIFT = 31 - numberOfLeadingZeros(UnsafeApi.arrayIndexScale(long[].class));
     private static final int PADDING = CACHE_LINE_LENGTH / SIZE_OF_LONG - 1;
     private final long[] messages = new long[SIZE];
 
@@ -62,19 +61,19 @@ public final class InMemoryMessageTransceiver extends MessageTransceiver
     {
         final long[] messages = this.messages;
         final long index = sendIndex;
-        if (0L != UNSAFE.getLongVolatile(messages, offset(index + 1 + messageIndexOffset(numberOfMessages))))
+        if (0L != UnsafeApi.getLongVolatile(messages, offset(index + 1 + messageIndexOffset(numberOfMessages))))
         {
             return 0;
         }
 
         for (int i = numberOfMessages; i > 1; i--)
         {
-            UNSAFE.putLong(messages, offset(index + messageIndexOffset(i)), timestamp);
-            UNSAFE.putLong(messages, offset(index + 1 + messageIndexOffset(i)), checksum);
+            UnsafeApi.putLong(messages, offset(index + messageIndexOffset(i)), timestamp);
+            UnsafeApi.putLong(messages, offset(index + 1 + messageIndexOffset(i)), checksum);
         }
 
-        UNSAFE.putLong(messages, offset(index), timestamp);
-        UNSAFE.putOrderedLong(messages, offset(index + 1), checksum);
+        UnsafeApi.putLong(messages, offset(index), timestamp);
+        UnsafeApi.putLongRelease(messages, offset(index + 1), checksum);
 
         sendIndex += messageIndexOffset(numberOfMessages + 1);
 
@@ -90,13 +89,13 @@ public final class InMemoryMessageTransceiver extends MessageTransceiver
     {
         final long checksumOffset = offset(receiveIndex + 1);
         final long[] messages = this.messages;
-        final long checksum = UNSAFE.getLongVolatile(messages, checksumOffset);
+        final long checksum = UnsafeApi.getLongVolatile(messages, checksumOffset);
         if (0L != checksum)
         {
             final long timestampOffset = offset(receiveIndex);
-            final long timestamp = UNSAFE.getLong(messages, timestampOffset);
-            UNSAFE.putLong(messages, timestampOffset, 0L);
-            UNSAFE.putOrderedLong(messages, checksumOffset, 0L);
+            final long timestamp = UnsafeApi.getLong(messages, timestampOffset);
+            UnsafeApi.putLong(messages, timestampOffset, 0L);
+            UnsafeApi.putLongRelease(messages, checksumOffset, 0L);
             onMessageReceived(timestamp, checksum);
             receiveIndex += (1 + PADDING);
         }
