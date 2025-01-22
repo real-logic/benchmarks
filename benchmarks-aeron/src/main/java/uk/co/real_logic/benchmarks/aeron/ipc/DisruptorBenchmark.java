@@ -22,7 +22,6 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Arrays;
@@ -131,7 +130,7 @@ public class DisruptorBenchmark
                 final Queue<Integer> responseQueue = responseQueues[value];
                 while (!responseQueue.offer(SENTINEL))
                 {
-                    ThreadHints.onSpinWait();
+                    Thread.onSpinWait();
                 }
             }
 
@@ -206,7 +205,7 @@ public class DisruptorBenchmark
                 break;
             }
 
-            ThreadHints.onSpinWait();
+            Thread.onSpinWait();
         }
 
         return value;
