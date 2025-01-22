@@ -23,7 +23,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 
 import java.nio.ByteBuffer;
@@ -141,7 +140,7 @@ public class ManyToOneRingBufferBenchmark
                 final Queue<Integer> responseQueue = responseQueues[value];
                 while (!responseQueue.offer(SENTINEL))
                 {
-                    ThreadHints.onSpinWait();
+                    Thread.onSpinWait();
                 }
             }
         }
@@ -181,7 +180,7 @@ public class ManyToOneRingBufferBenchmark
             tempBuffer.putInt(0, value);
             while (!ringBuffer.write(1, tempBuffer, 0, BitUtil.SIZE_OF_INT))
             {
-                ThreadHints.onSpinWait();
+                Thread.onSpinWait();
             }
         }
 
@@ -194,7 +193,7 @@ public class ManyToOneRingBufferBenchmark
                 break;
             }
 
-            ThreadHints.onSpinWait();
+            Thread.onSpinWait();
         }
 
         return value;

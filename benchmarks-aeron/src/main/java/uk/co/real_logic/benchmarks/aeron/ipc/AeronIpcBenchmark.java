@@ -29,7 +29,6 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Arrays;
@@ -175,7 +174,7 @@ public class AeronIpcBenchmark
                 final Queue<Integer> responseQueue = responseQueues[value];
                 while (!responseQueue.offer(SENTINEL))
                 {
-                    ThreadHints.onSpinWait();
+                    Thread.onSpinWait();
                 }
             }
         }
@@ -215,7 +214,7 @@ public class AeronIpcBenchmark
             buffer.putInt(0, value);
             while (publication.offer(buffer, 0, SIZE_OF_INT) < 0)
             {
-                ThreadHints.onSpinWait();
+                Thread.onSpinWait();
             }
         }
 
@@ -228,7 +227,7 @@ public class AeronIpcBenchmark
                 break;
             }
 
-            ThreadHints.onSpinWait();
+            Thread.onSpinWait();
         }
 
         return value;
