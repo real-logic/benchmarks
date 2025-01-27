@@ -237,17 +237,27 @@ public final class FailoverTestRig implements FailoverListener
             }
 
             int workCount = 0;
+
             final long now = clock.nanoTime();
 
             if (moreToGenerate && now - nextMessageAt >= 0)
             {
                 generationTimestamps[freePosition++] = now;
 
-                workCount += trySend();
+                int trySend = trySend(nextMessageAt);
 
-                generatedMessages++;
-                nextMessageAt += periodNs;
+                if (trySend == 0)
+                {
+                    freePosition--;
+                }
+                else
+                {
+                    workCount += trySend;
+                    generatedMessages++;
+                    nextMessageAt += periodNs;
+                }
 
+                // todo: not sure what to do with this section.
                 if (now - nextMessageAt >= 0)
                 {
                     fallingBehindCount++;
@@ -255,8 +265,6 @@ public final class FailoverTestRig implements FailoverListener
             }
 
             workCount += transceiver.receive();
-
-            workCount += trySend();
 
             if (now - deadline >= 0)
             {
@@ -285,7 +293,7 @@ public final class FailoverTestRig implements FailoverListener
         out.println("Stats: fallingBehindCount=" + fallingBehindCount);
     }
 
-    private int trySend()
+    private int trySend(final long timestamp)
     {
         if (!synced || sendPosition >= freePosition)
         {
@@ -293,7 +301,6 @@ public final class FailoverTestRig implements FailoverListener
         }
 
         final int sequence = sendPosition;
-        final long timestamp = generationTimestamps[sendPosition];
 
         if (transceiver.trySendEcho(sequence, timestamp))
         {
