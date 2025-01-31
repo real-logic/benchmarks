@@ -1,32 +1,42 @@
 [versions]
+agrona = "2.0.1"
 aeron = "1.47.0"
 checkstyle = "10.21.0"
-junit = "5.11.4"
-jmh = "1.37"
-grpc = "1.69.1"
-protoc = "3.25.5"
-kafka = "3.8.1"
-slf4j = "2.0.16"
-scala = "2.13.14"
-jackson = "2.16.2"
+disruptor = "3.4.0"
+errorprone = "2.30.0"
 gradle = "8.11.1"
+grpc = "1.69.1"
+hamcrest = "3.0"
+hdrHistogram = "2.2.2"
+jackson = "2.16.2"
+jmh = "1.37"
+junit = "5.11.4"
+kafka = "3.8.1"
+mockito = "5.15.2"
+protoc = "3.25.5"
+protobufPlugin = "0.9.4"
+scala = "2.13.14"
+shadow = "8.3.5"
+slf4j = "2.0.16"
+tomcat = "6.0.53"
+versions = "0.52.0"
 
 [libraries]
-agrona = { group = "org.agrona", name = "agrona", version = "2.0.1" }
+agrona = { group = "org.agrona", name = "agrona", version.ref = "agrona" }
 aeron-cluster = { group = "io.aeron", name = "aeron-cluster", version.ref = "aeron" }
 aeron-samples = { group = "io.aeron", name = "aeron-samples", version.ref = "aeron" }
-mockito = { group = "org.mockito", name = "mockito-core", version = "5.15.2" }
-hamcrest = { group = "org.hamcrest", name = "hamcrest", version = "3.0" }
-hdrHistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version = "2.2.2" }
+mockito = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
+hdrHistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version.ref = "hdrHistogram" }
 jmh-core = { group = "org.openjdk.jmh", name = "jmh-core", version.ref = "jmh" }
 jmh-generator-annprocess = { group = "org.openjdk.jmh", name = "jmh-generator-annprocess", version.ref = "jmh" }
 grpc-protobuf = { group = "io.grpc", name = "grpc-protobuf", version.ref = "grpc" }
 grpc-stub = { group = "io.grpc", name = "grpc-stub", version.ref = "grpc" }
 grpc-netty-shaded = { group = "io.grpc", name = "grpc-netty-shaded", version.ref = "grpc" }
-tomcat-annotations-api = { group = "org.apache.tomcat", name = "annotations-api", version = "6.0.53" }
+tomcat-annotations-api = { group = "org.apache.tomcat", name = "annotations-api", version.ref = "tomcat" }
 checker = { group= "org.checkerframework" , name="checker-qual", version = "3.43.0" }
-errorprone = { group= "com.google.errorprone" , name="error_prone_annotations", version = "2.30.0" }
-disruptor = { group= "com.lmax" , name="disruptor", version = "3.4.0" }
+errorprone = { group= "com.google.errorprone" , name="error_prone_annotations", version.ref = "errorprone" }
+disruptor = { group= "com.lmax" , name="disruptor", version.ref = "disruptor" }
 kafka = { group= "org.apache.kafka" , name="kafka_2.13", version.ref = "kafka" }
 kafka-clients = { group= "org.apache.kafka" , name="kafka-clients", version.ref = "kafka" }
 kafka-server-common = { group= "org.apache.kafka" , name="kafka-server-common", version.ref = "kafka" }
@@ -38,6 +48,7 @@ scala-reflect = { group= "org.scala-lang" , name="scala-reflect", version.ref = 
 jackson-databind = { group= "com.fasterxml.jackson.core" , name="jackson-databind", version.ref = "jackson" }
 
 [plugins]
-versions = { id = "com.github.ben-manes.versions", version = "0.51.0" }
-shadow = { id = "com.gradleup.shadow", version = "8.3.5" }
-protobuf = { id = "com.google.protobuf", version = "0.9.4" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "versions" }
+
