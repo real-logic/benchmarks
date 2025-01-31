@@ -1,6 +1,6 @@
 [versions]
 agrona = "2.0.1"
-aeron = "1.47.0"
+aeron = "1.47.2"
 checkstyle = "10.21.0"
 disruptor = "3.4.0"
 errorprone = "2.30.0"
