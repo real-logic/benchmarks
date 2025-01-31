@@ -17,7 +17,6 @@ package uk.co.real_logic.benchmarks.aeron.ipc;
 
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import org.agrona.hints.ThreadHints;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.Arrays;
@@ -72,7 +71,7 @@ public class ManyToOneConcurrentArrayQueueBenchmark
                                 break;
                             }
 
-                            ThreadHints.onSpinWait();
+                            Thread.onSpinWait();
                         }
                         else
                         {
@@ -82,7 +81,7 @@ public class ManyToOneConcurrentArrayQueueBenchmark
                                 final Queue<Integer> responseQueue = responseQueues[value];
                                 while (!responseQueue.offer(value))
                                 {
-                                    ThreadHints.onSpinWait();
+                                    Thread.onSpinWait();
                                 }
                             }
                         }
@@ -154,7 +153,7 @@ public class ManyToOneConcurrentArrayQueueBenchmark
         {
             while (!sendQueue.offer(value))
             {
-                ThreadHints.onSpinWait();
+                Thread.onSpinWait();
             }
         }
 
@@ -167,7 +166,7 @@ public class ManyToOneConcurrentArrayQueueBenchmark
                 break;
             }
 
-            ThreadHints.onSpinWait();
+            Thread.onSpinWait();
         }
 
         return value;
