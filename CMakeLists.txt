@@ -84,7 +84,7 @@ set(
 # Aeron from github or local git
 
 if (NOT AERON_GIT_URL)
-    set(AERON_GIT_URL "https://github.com/real-logic/aeron.git" CACHE STRING "Location of the Aeron git repo" FORCE)
+    set(AERON_GIT_URL "https://github.com/aeron-io/aeron.git" CACHE STRING "Location of the Aeron git repo" FORCE)
 endif (NOT AERON_GIT_URL)
 
 if (NOT AERON_GIT_SHA)

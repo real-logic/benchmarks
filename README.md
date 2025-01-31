@@ -1,15 +1,15 @@
 # Benchmarks
 
-This project is a collection of the various benchmarks primarily targeting the [Aeron](https://github.com/real-logic/aeron) project.
+This project is a collection of the various benchmarks primarily targeting the [Aeron](https://github.com/aeron-io/aeron) project.
 The benchmarks can be divided into two major categories:
 - [Messaging (remote) benchmarks](#remote-benchmarks-multiple-machines).
 
-    The core of the remote benchmarks is implemented by the [`LoadTestRig`](https://github.com/real-logic/benchmarks/blob/master/benchmarks-api/src/main/java/uk/co/real_logic/benchmarks/remote/LoadTestRig.java)
+    The core of the remote benchmarks is implemented by the [`LoadTestRig`](https://github.com/aeron-io/benchmarks/blob/master/benchmarks-api/src/main/java/uk/co/real_logic/benchmarks/remote/LoadTestRig.java)
     class which is a benchmarking harness that is sending messages to the remote node(s) and timing the responses as
     they are received. During a test run the `LoadTestRig` sends messages at the specified fixed rate with the specified
     payload size and the burst size. In the end it produces a latency histogram for an entire test run.
 
-    The `LoadTestRig` relies on the implementation of the [`MessageTransceiver`](https://github.com/real-logic/benchmarks/blob/master/benchmarks-api/src/main/java/uk/co/real_logic/benchmarks/remote/MessageTransceiver.java)
+    The `LoadTestRig` relies on the implementation of the [`MessageTransceiver`](https://github.com/aeron-io/benchmarks/blob/master/benchmarks-api/src/main/java/uk/co/real_logic/benchmarks/remote/MessageTransceiver.java)
     abstract class which is responsible for sending and receiving messages to/from the remote node.
 
     *NB: These benchmarks are written in Java, but they can target systems in other languages provided there is a
@@ -32,7 +32,7 @@ For [Aeron](https://aeron.io/) the following test scenarios were implemented:
 1. Echo benchmark.
 
    An Aeron Transport benchmark which consist of a client process that sends messages over UDP using an exclusive 
-   publication and zero-copy API (i.e. [`tryClaim`](https://github.com/real-logic/aeron/blob/3f6c5e15bd30a83d46978bf39eff8d927f30fe5a/aeron-client/src/main/java/io/aeron/Publication.java#L556)).
+   publication and zero-copy API (i.e. [`tryClaim`](https://github.com/aeron-io/aeron/blob/3f6c5e15bd30a83d46978bf39eff8d927f30fe5a/aeron-client/src/main/java/io/aeron/Publication.java#L556)).
    And the server process which echoes the received messages back using the same API.
 
 
@@ -267,7 +267,7 @@ This is the code in *this* repository. It must be built as a Docker container.
 
 Premium feature.
 
-If required/activated in your test configuration - see https://github.com/real-logic/premium-extensions/ or ask your support contact at [Adaptive](https://weareadaptive.com/)
+If required/activated in your test configuration - see https://github.com/aeron-io/premium-extensions/ or ask your support contact at [Adaptive](https://weareadaptive.com/)
 
 This is expected to reside in a container called in an accessible repository.
 
