@@ -105,6 +105,7 @@ subprojects {
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
         jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
+        jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
 
         if (buildJavaVersion >= 21) {
             jvmArgs('-XX:+EnableDynamicAgentLoading')
@@ -207,7 +208,7 @@ project(':benchmarks-all') {
 }
 
 static def benchmarkJvmArgs() {
-    return "-Dagrona.disable.bounds.checks=true -XX:+UseParallelGC --add-opens java.base/sun.nio.ch=ALL-UNNAMED"
+    return '-Dagrona.disable.bounds.checks=true -XX:+UseParallelGC --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.util.zip=ALL-UNNAMED'
 }
 
 tasks.register('runJavaIpcBenchmarks', Exec) {
